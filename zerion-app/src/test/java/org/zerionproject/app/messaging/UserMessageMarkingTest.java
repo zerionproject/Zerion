@@ -1,6 +1,8 @@
 package org.zerionproject.app.messaging;
 
 import org.zerionproject.app.api.messaging.PrivateMessage;
+import org.zerionproject.app.api.messaging.VoiceSignal;
+import org.zerionproject.app.api.messaging.VoiceSignalType;
 import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
@@ -129,6 +131,34 @@ public class UserMessageMarkingTest extends BrambleTestCase {
 		assertEquals("the mesh message is stored", before + 1,
 				storedMessages());
 		assertEquals(Collections.emptyList(), marked);
+	}
+
+	@Test
+	public void aCallSignalTheUserSendsIsMarked() throws Exception {
+		VoiceSignal placed = callSignal(VoiceSignalType.CALL_OFFER);
+
+		sender.addLocalVoiceSignal(placed, true);
+
+		assertEquals(Collections.singletonList(placed.getMessage().getId()),
+				marked);
+	}
+
+	@Test
+	public void aCallSignalTheAppSendsByItselfIsNotMarked() throws Exception {
+		VoiceSignal busy = callSignal(VoiceSignalType.CALL_BUSY);
+		int before = storedMessages();
+
+		sender.addLocalVoiceSignal(busy, false);
+
+		assertEquals("the signal is stored", before + 1, storedMessages());
+		assertEquals(Collections.emptyList(), marked);
+	}
+
+	private VoiceSignal callSignal(VoiceSignalType type) throws Exception {
+		Message m = clientHelper.createMessage(contactGroup.getId(),
+				++timestamp, BdfList.of(MessageTypes.VOICE_SIGNAL,
+						type.getValue(), "call", "payload"));
+		return new VoiceSignal(m, type, "call", "payload");
 	}
 
 	private int storedMessages() throws Exception {

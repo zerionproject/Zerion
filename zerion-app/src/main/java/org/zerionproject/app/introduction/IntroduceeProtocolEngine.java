@@ -22,6 +22,7 @@ import org.zerionproject.core.api.properties.TransportProperties;
 import org.zerionproject.core.api.properties.TransportPropertyManager;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.api.transport.KeyManager;
 import org.zerionproject.core.api.transport.KeySetId;
@@ -64,6 +65,7 @@ class IntroduceeProtocolEngine
 	private final IntroductionCrypto crypto;
 	private final KeyManager keyManager;
 	private final TransportPropertyManager transportPropertyManager;
+	private final UserMessageMarker userMessages;
 
 	@Inject
 	IntroduceeProtocolEngine(
@@ -82,7 +84,8 @@ class IntroduceeProtocolEngine
 			ClientVersioningManager clientVersioningManager,
 			AutoDeleteManager autoDeleteManager,
 			ConversationManager conversationManager,
-			Clock clock) {
+			Clock clock,
+			UserMessageMarker userMessages) {
 		super(db, clientHelper, contactManager, contactGroupFactory,
 				messageTracker, identityManager, authorManager, messageParser,
 				messageEncoder, clientVersioningManager, autoDeleteManager,
@@ -90,6 +93,7 @@ class IntroduceeProtocolEngine
 		this.crypto = crypto;
 		this.keyManager = keyManager;
 		this.transportPropertyManager = transportPropertyManager;
+		this.userMessages = userMessages;
 	}
 
 	@Override
@@ -286,6 +290,7 @@ class IntroduceeProtocolEngine
 		Message sent = sendAcceptMessage(txn, s, localTimestamp, publicKey,
 				localTimestamp, transportProperties, true, localMlDsaPubKey,
 				mlKemPub);
+		userMessages.noteUserMessage(sent.getId());
 		conversationManager.trackOutgoingMessage(txn, sent);
 		switch (s.getState()) {
 			case AWAIT_RESPONSES:
@@ -312,6 +317,7 @@ class IntroduceeProtocolEngine
 		long localTimestamp = getTimestampForVisibleMessage(txn, s);
 		Message sent =
 				sendDeclineMessage(txn, s, localTimestamp, true, isAutoDecline);
+		if (!isAutoDecline) userMessages.noteUserMessage(sent.getId());
 		conversationManager.trackOutgoingMessage(txn, sent);
 		IntroduceeState state =
 				s.getState() == AWAIT_RESPONSES ? LOCAL_DECLINED : START;

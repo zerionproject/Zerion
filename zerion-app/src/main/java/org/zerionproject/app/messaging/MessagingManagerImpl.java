@@ -1324,7 +1324,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	}
 
 	@Override
-	public void addLocalVoiceSignal(VoiceSignal signal) throws DbException {
+	public void addLocalVoiceSignal(VoiceSignal signal, boolean userAction)
+			throws DbException {
 		db.transaction(false, txn -> {
 			try {
 				BdfDictionary meta = new BdfDictionary();
@@ -1334,6 +1335,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				meta.put(MSG_KEY_MSG_TYPE, MessageTypes.VOICE_SIGNAL);
 				clientHelper.addLocalMessage(txn, signal.getMessage(), meta, true,
 						false);
+				if (userAction) {
+					userMessages.noteUserMessage(signal.getMessage().getId());
+				}
 				startEphemeralCleanupTimer(txn, signal.getMessage().getId());
 			} catch (FormatException e) {
 				throw new AssertionError(e);

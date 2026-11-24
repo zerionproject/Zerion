@@ -187,14 +187,25 @@ period gives a rough bound on how much was sent. Only a message the user
 chose to send starts or extends the two-minute window, and only when it
 leaves for the first time: a private message with its attachments, an edit, a
 reaction, a deletion for everyone, a pin, a group post, a group invite or its
-answer, a change the group owner makes, the introduction a user starts. The
+answer, a change the group owner makes, the introduction a user starts, the
+user's answer to an introduction (accept or decline), and the call signals
+that follow a tap: placing a call, answering it, declining it, hanging up,
+and switching video on or off or answering a video request during a call. The
 client that creates a message on behalf of such a user action says so when it
 stores the message; every other local message is taken as automatic and does
 not count. That covers address updates, typing notices, receipts, key and
 version updates, avatar re-sends, settings a group member passes on, relayed
 copies and every record a client creates while handling something the peer
 sent, so a contact who can make this side answer on its own cannot open the
-window (from 3.0.19; before, every message this side created counted).
+window (from 3.0.19; before, every message this side created counted). Of
+the call signals the automatic ones are the busy answer, a call or video
+request refused because calls or video are switched off or the request is
+malformed, the end of a call after a timeout, a failure or the peer's own
+hang-up, a video request that timed out, the video request a video call sends
+by itself once it is connected and the acceptance an answered video call
+gives by itself; of the introduction records, the decline the app sends by
+itself when an unanswered introduction is deleted and every later step of
+the exchange.
 Acknowledgements, offers and requests the peer's records provoke, and resends
 of messages the peer asks for again, do not count either, and from 3.0.19
 neither do the records of the root key evolution (up to 3.0.18 every such

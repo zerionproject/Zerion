@@ -111,7 +111,7 @@ public class ConversationCountDriftTest extends BrambleTestCase {
 				clientHelper.toByteArray(BdfList.of(VOICE_SIGNAL, 1, "call",
 						"key material")));
 		messagingManager.addLocalVoiceSignal(new VoiceSignal(m,
-				VoiceSignalType.fromValue(1), "call", "key material"));
+				VoiceSignalType.fromValue(1), "call", "key material"), false);
 
 		assertEquals("a sent voice signal, which the chat does not show, was"
 				+ " counted", before.getMsgCount(), count().getMsgCount());

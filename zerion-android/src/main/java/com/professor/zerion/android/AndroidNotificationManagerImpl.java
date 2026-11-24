@@ -1313,7 +1313,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				if (!voiceEnabled || (isVideoCall && !videoEnabled)) {
 					String reason = (isVideoCall && !videoEnabled && voiceEnabled)
 							? "video_disabled" : "calls_disabled";
-					rejectIncomingCall(contact, callId, reason);
+					rejectIncomingCall(contact, callId, reason, false);
 					return;
 				}
 
@@ -1377,7 +1377,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				Contact contact =
 						contactManager.getContact(new ContactId(contactId));
 				if (busy) sendBusy(contact, callId);
-				else rejectIncomingCall(contact, callId, null);
+				else rejectIncomingCall(contact, callId, null, true);
 			} catch (DbException e) {
 			}
 		});
@@ -1388,13 +1388,13 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			GroupId groupId = messagingManager.getContactGroup(contact).getId();
 			VoiceSignal signal = voiceSignalFactory.createCallBusy(groupId,
 					clock.currentTimeMillis(), callId);
-			messagingManager.addLocalVoiceSignal(signal);
+			messagingManager.addLocalVoiceSignal(signal, false);
 		} catch (Exception ignored) {
 		}
 	}
 
 	private void rejectIncomingCall(Contact contact, String callId,
-			@Nullable String reason) {
+			@Nullable String reason, boolean declinedByUser) {
 		if (callId == null) return;
 		androidExecutor.runOnBackgroundThread(() -> {
 			try {
@@ -1403,7 +1403,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				long timestamp = clock.currentTimeMillis();
 				VoiceSignal signal = voiceSignalFactory.createCallReject(
 						groupId, timestamp, callId, reason);
-				messagingManager.addLocalVoiceSignal(signal);
+				messagingManager.addLocalVoiceSignal(signal, declinedByUser);
 			} catch (Exception ignored) {
 			}
 		});

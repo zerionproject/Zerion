@@ -11,12 +11,14 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.zerionproject.app.grouptr.GroupTrTestNode.FORGED_SIG;
 import static org.zerionproject.app.grouptr.GroupTrTestNode.SIG;
 import static org.zerionproject.app.grouptr.GroupTrTestNode.countFrom;
@@ -168,18 +170,26 @@ public class GroupSettingsPassOnTest {
 	}
 
 	@Test
-	public void aMemberHandsTheSettingOnAsSoonAsItHoldsItAndOncePerSetting()
+	public void aMemberHandsTheSettingOnAShortWhileAfterItArrives()
 			throws Exception {
 		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
 		ContactId fromCreator = node.addContact(creatorKey);
 		ContactId a = node.addContact(aKey);
 		ContactId b = node.addContact(bKey);
 
 		settings(node, fromCreator, DAY, 10L, SIG);
 
+		assertEquals("nothing is handed on at receipt", 0,
+				settingsSent(node));
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MIN_DELAY_MS - 1);
+		assertEquals("nothing is handed on before the shortest wait", 0,
+				settingsSent(node));
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+
 		for (ContactId c : Arrays.asList(a, b)) {
 			List<BdfList> passed = recordsTo(node, c, 46L);
-			assertEquals("handed on before any post", 1, passed.size());
+			assertEquals("handed on without any post", 1, passed.size());
 			assertArrayEquals(groupId, passed.get(0).getRaw(1));
 			assertEquals(DAY, (long) passed.get(0).getLong(2));
 			assertEquals(10L, (long) passed.get(0).getLong(3));
@@ -187,32 +197,158 @@ public class GroupSettingsPassOnTest {
 		}
 		assertEquals("the owner is not sent its own setting", 0,
 				recordsTo(node, fromCreator, 46L).size());
+		later(node, DAY);
+		assertEquals("the pass runs once", 2, settingsSent(node));
+	}
+
+	@Test
+	public void theWaitBeforeHandingOnIsHalfAMinuteToTwoMinutes()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId a = node.addContact(aKey);
+		node.addContact(bKey);
+
+		settings(node, a, DAY, 10L, SIG);
+
+		List<Long> waits = node.waitingTimerDelays();
+		assertEquals(1, waits.size());
+		assertTrue(waits.get(0)
+				>= GroupTrManagerImpl.SETTINGS_PASS_MIN_DELAY_MS);
+		assertTrue(waits.get(0)
+				<= GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+	}
+
+	@Test
+	public void twoSettingsBeforeThePassAreHandedOnOnceAsTheNewer()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+
+		settings(node, a, DAY, 10L, SIG);
+		later(node, 1000L);
+		settings(node, a, HOUR, 20L, SIG);
+
+		assertEquals("one pass waits for the group", 1,
+				node.waitingTimerDelays().size());
+		assertEquals(0, settingsSent(node));
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+		List<BdfList> toB = recordsTo(node, b, 46L);
+		assertEquals("only the newer setting is handed on", 1, toB.size());
+		assertEquals(HOUR, (long) toB.get(0).getLong(2));
+		assertEquals(20L, (long) toB.get(0).getLong(3));
+		assertEquals("the member it came from is sent nothing", 0,
+				recordsTo(node, a, 46L).size());
+		assertEquals(0, node.waitingTimerDelays().size());
+	}
+
+	@Test
+	public void aSettingInsideTheQuietTimeIsHandedOnWhenThatTimeEnds()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		settings(node, a, DAY, 10L, SIG);
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+		assertEquals(1, recordsTo(node, b, 46L).size());
+
+		later(node, MINUTE);
+		settings(node, a, HOUR, 20L, SIG);
+		settings(node, a, DAY, 30L, SIG);
+
+		long quiet = GroupTrManagerImpl.SETTINGS_PASS_QUIET_MS;
+		assertEquals("the next pass waits for the end of the quiet time",
+				Collections.singletonList(quiet - MINUTE),
+				node.waitingTimerDelays());
+		later(node, quiet - MINUTE - 1);
+		assertEquals("nothing more is handed on inside the quiet time", 1,
+				recordsTo(node, b, 46L).size());
+		later(node, 1L);
+		List<BdfList> toB = recordsTo(node, b, 46L);
+		assertEquals(2, toB.size());
+		assertEquals(DAY, (long) toB.get(1).getLong(2));
+		assertEquals(30L, (long) toB.get(1).getLong(3));
+
+		later(node, quiet);
+		settings(node, a, HOUR, 40L, SIG);
+		List<Long> waits = node.waitingTimerDelays();
+		assertEquals(1, waits.size());
+		assertTrue("after the quiet time the wait is short again",
+				waits.get(0) <= GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+		assertEquals(3, recordsTo(node, b, 46L).size());
+	}
+
+	@Test
+	public void aPostHandsNothingOnAndASettingIsSentOncePerContact()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
 
 		node.manager.sendGroupPost(groupId, "one".getBytes("UTF-8"), 0L);
+
+		assertEquals("a post hands nothing on", 0, settingsSent(node));
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+		assertEquals(1, recordsTo(node, a, 46L).size());
+		assertEquals(1, recordsTo(node, b, 46L).size());
+
 		node.manager.sendGroupPost(groupId, "two".getBytes("UTF-8"), 0L);
+		node.manager.sendGroupPost(groupId, "three".getBytes("UTF-8"), 0L);
 		connected(node, a);
+		connected(node, b);
+		later(node, DAY);
 		assertEquals("a post or a connection sends the same setting again",
 				1, recordsTo(node, a, 46L).size());
 		assertEquals(1, recordsTo(node, b, 46L).size());
 
 		settings(node, fromCreator, HOUR, 20L, SIG);
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
 		List<BdfList> passed = recordsTo(node, a, 46L);
 		assertEquals("a newer setting is handed on once more", 2,
 				passed.size());
 		assertEquals(HOUR, (long) passed.get(1).getLong(2));
 		assertEquals(20L, (long) passed.get(1).getLong(3));
-		node.manager.sendGroupPost(groupId, "three".getBytes("UTF-8"), 0L);
+		node.manager.sendGroupPost(groupId, "four".getBytes("UTF-8"), 0L);
 		connected(node, a);
 		assertEquals(2, recordsTo(node, a, 46L).size());
 		assertEquals(2, recordsTo(node, b, 46L).size());
 	}
 
 	@Test
+	public void aMemberThatConnectsBeforeThePassIsSentTheSettingOnce()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+
+		connected(node, a);
+
+		assertEquals(1, recordsTo(node, a, 46L).size());
+		assertEquals(0, recordsTo(node, b, 46L).size());
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+		assertEquals("the pass leaves out the member already sent it", 1,
+				recordsTo(node, a, 46L).size());
+		assertEquals(1, recordsTo(node, b, 46L).size());
+	}
+
+	@Test
 	public void aMemberReachedLaterIsHandedTheSettingWhenItConnects()
 			throws Exception {
 		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
 		ContactId fromCreator = node.addContact(creatorKey);
 		settings(node, fromCreator, DAY, 10L, SIG);
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
 		ContactId a = node.addContact(aKey);
 		assertEquals(0, recordsTo(node, a, 46L).size());
 
@@ -226,10 +362,15 @@ public class GroupSettingsPassOnTest {
 		assertEquals(10L, (long) handed.get(0).getLong(3));
 		assertArrayEquals(SIG, handed.get(0).getRaw(4));
 
+		int writes = node.writeTxns();
+		int reads = node.readTxns();
 		connected(node, a);
 		connected(node, a);
 		assertEquals("a later connection sends the same setting again", 1,
 				recordsTo(node, a, 46L).size());
+		assertEquals("a connection of a member already sent it writes"
+				+ " nothing", writes, node.writeTxns());
+		assertEquals(reads, node.readTxns());
 
 		settings(node, fromCreator, HOUR, 20L, SIG);
 		ContactId b = node.addContact(bKey);
@@ -249,13 +390,18 @@ public class GroupSettingsPassOnTest {
 	public void aContactOnAnEarlierVersionIsHandedNothingWhenItConnects()
 			throws Exception {
 		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
 		ContactId fromCreator = node.addContact(creatorKey);
 		settings(node, fromCreator, DAY, 10L, SIG);
 		ContactId a = node.addContact(aKey);
 		node.announceMinorVersion(a, 15);
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+		int writes = node.writeTxns();
 
 		connected(node, a);
 		assertEquals(0, recordsTo(node, a, 46L).size());
+		assertEquals("a connection that cannot be sent the setting writes"
+				+ " nothing", writes, node.writeTxns());
 
 		node.versionUpdated(a, 16);
 		assertEquals(1, recordsTo(node, a, 46L).size());
@@ -284,12 +430,16 @@ public class GroupSettingsPassOnTest {
 	public void theMemberTheSettingCameFromIsNotHandedItBack()
 			throws Exception {
 		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
 		ContactId a = node.addContact(aKey);
 		ContactId b = node.addContact(bKey);
 
 		settings(node, a, DAY, 10L, SIG);
-		connected(node, a);
 
+		assertEquals("the member it came from is noted at receipt",
+				"10:" + a.getInt(), sentToNote(node));
+		connected(node, a);
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
 		assertEquals(0, recordsTo(node, a, 46L).size());
 		assertEquals(1, recordsTo(node, b, 46L).size());
 	}
@@ -314,25 +464,27 @@ public class GroupSettingsPassOnTest {
 	public void theNoteOfWhoWasSentTheSettingHoldsMembersOnly()
 			throws Exception {
 		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
 		ContactId fromCreator = node.addContact(creatorKey);
 		ContactId a = node.addContact(aKey);
 		ContactId b = node.addContact(bKey);
 		settings(node, fromCreator, DAY, 10L, SIG);
-		Settings held = node.namespace(GroupTrConstants.SETTINGS_NS_PREFIX
-				+ org.zerionproject.core.util.StringUtils.toHexString(groupId));
-		assertNotNull(held);
+		assertEquals("the owner is not noted", "10", sentToNote(node));
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
 		assertEquals("10:" + a.getInt() + "," + b.getInt(),
-				held.get(GroupTrConstants.S_SETTINGS_SENT_TO));
+				sentToNote(node));
 
 		node.removeContact(b);
 		node.manager.sendGroupPost(groupId, "one".getBytes("UTF-8"), 0L);
 		assertEquals(1, recordsTo(node, a, 46L).size());
 
 		settings(node, fromCreator, HOUR, 20L, SIG);
+		assertEquals("a newer setting starts the note afresh", "20",
+				sentToNote(node));
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_QUIET_MS);
 
-		assertEquals("a contact no longer reached drops out of the note",
-				"20:" + a.getInt(),
-				held.get(GroupTrConstants.S_SETTINGS_SENT_TO));
+		assertEquals("a contact no longer reached is not in the note",
+				"20:" + a.getInt(), sentToNote(node));
 		assertEquals(2, recordsTo(node, a, 46L).size());
 		assertEquals(1, recordsTo(node, b, 46L).size());
 	}
@@ -720,6 +872,25 @@ public class GroupSettingsPassOnTest {
 		assertEquals("a copy that teaches nothing costs no signature check",
 				before, node.signatureChecks());
 		assertEquals(DAY, node.group(groupId).getDefaultAutoDeleteTimerMs());
+	}
+
+	private static void later(GroupTrTestNode node, long ms) {
+		node.now += ms;
+		node.runDueTimers();
+	}
+
+	private static int settingsSent(GroupTrTestNode node) throws Exception {
+		int count = 0;
+		for (GroupTrTestNode.Sent s : node.sent) {
+			if (s.body.getLong(0) == 46L) count++;
+		}
+		return count;
+	}
+
+	private String sentToNote(GroupTrTestNode node) {
+		return node.namespace(GroupTrConstants.SETTINGS_NS_PREFIX
+				+ org.zerionproject.core.util.StringUtils.toHexString(groupId))
+				.get(GroupTrConstants.S_SETTINGS_SENT_TO);
 	}
 
 	private static void connected(GroupTrTestNode node, ContactId c) {

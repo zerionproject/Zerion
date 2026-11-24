@@ -182,7 +182,8 @@ public interface MessagingManager extends ConversationClient {
 		}
 	}
 
-	void addLocalVoiceSignal(VoiceSignal signal) throws DbException;
+	void addLocalVoiceSignal(VoiceSignal signal, boolean userAction)
+			throws DbException;
 
 	AttachmentHeader addLocalAttachment(GroupId groupId, long timestamp,
 			String contentType, InputStream is) throws DbException, IOException;

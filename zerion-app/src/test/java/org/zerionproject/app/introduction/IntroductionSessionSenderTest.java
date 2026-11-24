@@ -81,7 +81,8 @@ public class IntroductionSessionSenderTest extends BrambleMockTestCase {
 						context.mock(ClientVersioningManager.class, "cv1"),
 						context.mock(AutoDeleteManager.class),
 						context.mock(ConversationManager.class),
-						context.mock(Clock.class));
+						context.mock(Clock.class), id -> {
+						});
 		IntroductionManagerImpl manager = manager(null, introduceeEngine);
 
 		Author introducer = getAuthor();
