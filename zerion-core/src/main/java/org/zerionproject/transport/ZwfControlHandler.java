@@ -32,6 +32,9 @@ public interface ZwfControlHandler {
 
 	void onPeerStreamAuthenticated(long epoch);
 
+	default void closingAsRedundant() {
+	}
+
 	void close();
 
 	static Sender eager(java.util.function.Consumer<byte[]> sink) {

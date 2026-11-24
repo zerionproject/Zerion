@@ -65,6 +65,8 @@ public class RootEvolution implements ZwfControlHandler {
 	private boolean peerPaused = false;
 	private boolean selfPaused = false;
 	private boolean helloSeen = false;
+	private boolean helloOverdue = false;
+	private volatile boolean closingAsRedundant = false;
 	private volatile boolean peerAuthenticated = false;
 	@Nullable
 	private ScheduledFuture<?> deadline;
@@ -112,7 +114,6 @@ public class RootEvolution implements ZwfControlHandler {
 					awaitingHello = true;
 					holding = true;
 					armDeadline();
-					manager.holdStarted(contactId);
 				}
 				scheduleLive(manager.isDue(contactId)
 						? manager.liveIntervalMs()
@@ -206,6 +207,7 @@ public class RootEvolution implements ZwfControlHandler {
 					|| !(expected || awaitingHello)) {
 				return;
 			}
+			if (awaitingHello) helloOverdue = true;
 			if (!manager.hasOtherConnection(contactId, this)) {
 				manager.stalled(contactId);
 			}
@@ -384,6 +386,11 @@ public class RootEvolution implements ZwfControlHandler {
 	}
 
 	@Override
+	public void closingAsRedundant() {
+		closingAsRedundant = true;
+	}
+
+	@Override
 	public void close() {
 		ReentrantLock lock = manager.lock(contactId);
 		lock.lock();
@@ -394,11 +401,13 @@ public class RootEvolution implements ZwfControlHandler {
 			boolean alone = !manager.hasOtherConnection(contactId, this);
 			if (waiting && alone) manager.stalled(contactId);
 			if (first) {
-				boolean stalled = peerAuthenticated
-						&& (awaitingHello || (expected && peerEnforces));
+				boolean renewalOwed = peerEnforces ? waiting
+						: awaitingHello && helloOverdue;
+				boolean stalled = peerAuthenticated && renewalOwed
+						&& !closingAsRedundant;
 				if (alone) {
-					manager.connectionEnded(contactId, peerAuthenticated,
-							stalled);
+					manager.connectionEnded(contactId,
+							peerAuthenticated && !waiting, stalled);
 				} else if (stalled) {
 					manager.stalledBesideAnother(contactId);
 				}

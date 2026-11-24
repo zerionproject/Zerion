@@ -263,11 +263,11 @@ public class RootEvolutionManager {
 		connectionEnded(c, true, renewalOutstanding);
 	}
 
-	void connectionEnded(ContactId c, boolean peerAuthenticated,
+	void connectionEnded(ContactId c, boolean peerKeysConfirmed,
 			boolean renewalOutstanding) {
 		boolean stalled = stalledBeside.remove(c.getInt())
 				|| renewalOutstanding;
-		if (peerAuthenticated && !renewalOutstanding
+		if (peerKeysConfirmed && !renewalOutstanding
 				&& store.isOutOfSync(c)) {
 			store.markOutOfSync(c, false);
 		}
@@ -286,18 +286,9 @@ public class RootEvolutionManager {
 		if (notRenewing(count, since, now)) store.markNotRenewing(c, true);
 	}
 
-	void holdStarted(ContactId c) {
-		long[] stalls = store.stalls(c);
-		if (stalls == null) return;
-		long count = stalls[0];
-		long since = stalls[1];
-		long now = now();
-		if (count <= 0 || since <= 0 || since > now) return;
-		if (notRenewing(count, since, now)) store.markNotRenewing(c, true);
-	}
-
-	private static boolean notRenewing(long count, long since, long now) {
-		long elapsed = now - since;
+	private static boolean notRenewing(long count, long firstStalledAt,
+			long countedAt) {
+		long elapsed = countedAt - firstStalledAt;
 		return count >= NOT_RENEWING_AFTER_CONNECTIONS
 				|| (count >= NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS
 				&& elapsed >= NOT_RENEWING_AFTER_MS)
