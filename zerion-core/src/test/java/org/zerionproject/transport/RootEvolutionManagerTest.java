@@ -101,6 +101,36 @@ public class RootEvolutionManagerTest {
 	}
 
 	@Test
+	public void aPausedPeerIsRememberedPerContactUntilItRenewsOrThePauseLengthPasses() {
+		ContactId other = new ContactId(8);
+		manager.peerGreeted(contact, true);
+		assertTrue(manager.peerPauseRemembered(contact));
+		assertFalse("another contact is not affected",
+				manager.peerPauseRemembered(other));
+		manager.peerGreeted(contact, true);
+		assertEquals("one contact is remembered once", 1,
+				manager.peerPausesRemembered());
+		clock.addAndGet(RootEvolutionManager.PEER_PAUSE_MEMORY_MS);
+		manager.peerGreeted(other, true);
+		assertEquals("a pause that is over stayed in memory", 1,
+				manager.peerPausesRemembered());
+		assertFalse(manager.peerPauseRemembered(contact));
+		assertTrue(manager.peerPauseRemembered(other));
+		manager.peerGreeted(other, false);
+		assertFalse("a greeting that says not paused",
+				manager.peerPauseRemembered(other));
+		manager.peerGreeted(other, true);
+		manager.peerRenews(other);
+		assertFalse("an offer from the peer",
+				manager.peerPauseRemembered(other));
+		manager.peerGreeted(other, true);
+		manager.evolved(other);
+		assertFalse("a renewal that completed",
+				manager.peerPauseRemembered(other));
+		assertEquals(0, manager.peerPausesRemembered());
+	}
+
+	@Test
 	public void connectionsWithARenewalOutstandingAreCountedUntilOneCompletes() {
 		for (int i = 1; i < RootEvolutionManager
 				.NOT_RENEWING_AFTER_CONNECTIONS; i++) {

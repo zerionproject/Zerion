@@ -249,7 +249,8 @@ cannot change its flags.
   holds back one direction from the first frame therefore stops both. Such a
   connection, if the peer's stream authenticated on it and this side did not
   close it as redundant, counts as a stalled connection (see "Renewal that
-  does not complete") when the peer waits for evolutions, and for a peer not
+  does not complete", which also lists the connections that are not
+  counted) when the peer waits for evolutions, and for a peer not
   known to wait only when the hold ran to its deadline. In neither case does
   it clear the out-of-sync mark: without the greeting the connection says
   nothing about the peer's keys. A HELLO without the flag releases the hold
@@ -405,8 +406,9 @@ were held for it; when such a connection is counted, the run raises the
 not-renewing notice if it then holds six in a row, three or more with an
 hour or more between the first and the one just counted, or two or more with
 a day or more between the first and the one just counted. A connection on
-which the HELLO never arrived or a due renewal stayed outstanding never
-clears the out-of-sync mark, whether or not it is counted. The rules, and
+which the HELLO never arrived, from a contact that owes one, or a due
+renewal stayed outstanding never clears the out-of-sync mark, whether or not
+it is counted and whether or not this side is paused. The rules, and
 the connections that are not counted, are in "Renewal that does not
 complete". A new link
 exchange between the two re-keys the existing contact in place
@@ -475,18 +477,26 @@ table beside the other evolution state (`RootKeyStore`, keys `stalls.`,
   does, so both sides count.
 - when the first connection of the current run ended.
 
-Two kinds of connection are not counted although the peer authenticated and
-no HELLO arrived:
+Three kinds of connection are not counted although the peer authenticated
+and no HELLO arrived:
 
 - **A connection this side closed as redundant.** When both sides dial at
   the same moment, each side keeps the connection Alice dialled and closes
   the other one as soon as a first frame shows which is which
-  (`ZtpConnectionHandlerImpl.sessionLiveClosingRedundant`). The peer's stream
+  (`ZtpConnectionHandlerImpl.sessionLiveClosingRedundant`). When one side
+  holds two connections that it dialled itself, the connection registry
+  keeps the one with the higher priority and closes the other
+  (`ConnectionRegistryImpl.setPriority`, through
+  `SessionConnection.interruptOutgoingSession`), and that close is marked as
+  redundant in the same way. The peer's stream
   authenticates on its first frame, while its HELLO leaves only after the
   first round trip, so the closed connection has usually authenticated and
   not greeted. It is not counted for any kind of peer, neither by itself nor
   when the surviving connection ends, and without a greeting it does not
-  clear the out-of-sync mark.
+  clear the out-of-sync mark. A connection the registry closes for another
+  reason (the contact was removed, the transport went inactive) is closed
+  with `forceClose`, is not marked as redundant and is counted like any
+  other.
 - **A missing greeting from a phone not known to renew, unless the hold ran
   to its deadline.** Records are held for the HELLO of every contact that is
   known to greet, earlier releases included, and any connection can drop
@@ -494,6 +504,23 @@ no HELLO arrived:
   counted for a peer that never promised to wait for evolutions; a hold that
   lasted the full 30 seconds without a greeting is. A peer that greeted
   without the flag releases the hold and is not counted, as before.
+- **A missing greeting from a peer that said it is paused.** A peer that
+  made a backup renews nothing for 24 hours, so in that time nothing could
+  end a run of connections that drop between the first frame and the HELLO.
+  When the HELLO of a peer that waits for evolutions carries flag `0x08`,
+  this side remembers the time of that HELLO, per contact and in memory only.
+  Until `PEER_PAUSE_MEMORY_MS` (24 hours, the length of a pause) have passed
+  since the last such HELLO, a connection to that contact that ends without
+  the peer's HELLO is not counted. It does not clear the out-of-sync mark
+  either. A HELLO without the flag, an offer from the peer or a completed
+  evolution ends this at once. So does a clock that reads earlier, when a
+  connection to the contact ends, than it did at that HELLO or at the end of
+  the previous connection to the contact. A connection on which the HELLO
+  arrived is judged by that HELLO, as before. Because the time is not
+  stored, such endings are counted again after a restart of this phone,
+  until the next HELLO with the flag arrives. What is remembered is one
+  entry per contact, dropped when a later HELLO from any contact, or the end
+  of a connection to that contact, finds that it has run out.
 
 The contact is marked as not renewing (`ContactKeyRenewalEvent`) when a
 connection is counted and the run, that connection included, then meets any
@@ -522,8 +549,12 @@ appears. Three drops within a minute followed by a quiet hour therefore show
 nothing until a fourth connection stalls, and two drops at the same time
 followed by a quiet day show nothing until a third connection stalls. A peer
 that is paused after a backup says so in its HELLO, which releases the hold:
-its connections are not counted and raise nothing for as long as the pause
-lasts. Once the contact is marked, the conversation and the contact's
+a connection on which that HELLO arrived is not counted and raises nothing.
+For 24 hours after the last such HELLO, the length of the pause, a
+connection to that contact that ends before its HELLO arrives is not counted
+either (the third kind above). That time is kept in memory, so after a
+restart of this phone such endings count again until the next HELLO.
+Once the contact is marked, the conversation and the contact's
 details say that the connection keys are not being renewed, that a poor
 network can cause it, and offer to re-add the contact. The run and the mark
 are cleared only by a
@@ -548,7 +579,15 @@ peer's HELLO received: the peer does not wait for evolutions (an earlier
 release, iOS), either side has said in its HELLO that it is paused, or this
 side made a new root current less than ten minutes ago. In every other case,
 a connection whose HELLO never arrived included, an authenticated connection
-leaves the mark as it is. Ordinary records, which between two 3.0.19 sides do not
+leaves the mark as it is. A side that is itself paused holds no records,
+waits for no HELLO and counts nothing, but its own pause does not waive the
+greeting: on a paused side too the mark is cleared only by a connection on
+which the peer's HELLO arrived. The one connection that clears the mark
+without a HELLO is a connection to a contact that owes no greeting: its
+root has never evolved, it has never sent a HELLO and it is not recorded as
+waiting for evolutions. A stream that authenticated is all such a contact
+can show, on a paused side or not, as before.
+Ordinary records, which between two 3.0.19 sides do not
 flow before a due evolution anyway, can therefore not paper over a stalled
 rotation on either side. The run of failed dials that raises the mark is
 still ended by a dial that authenticates, so the mark is not raised by
@@ -563,7 +602,17 @@ the notice names that cause and goes away at the next completed evolution.
 Between two sides that wait for evolutions a connection that authenticated
 and ended before the HELLO arrived is counted whatever ended it, the other
 side's close of a redundant connection included, unless this side closed it
-as redundant. With a peer on 3.0.15 to 3.0.18, which cannot say that it is
+as redundant or the peer said within the last 24 hours that it is paused.
+For those 24 hours a party that cuts every connection to that peer before
+its HELLO is not counted. The peer's own pause began before that HELLO and
+can end sooner, so the count can resume up to 24 hours after the pause is
+over; no record is sent on a connection without the greeting, and the count
+resumes with the first HELLO without the flag, with an offer from the peer
+or when the 24 hours are over. A clock set
+back by less than the time that has passed since that HELLO, or since the
+end of the previous connection to the contact, is not noticed and lengthens
+the 24 hours by that much.
+With a peer on 3.0.15 to 3.0.18, which cannot say that it is
 paused, no run is kept for a due evolution that did not complete and an
 authenticated connection on which its HELLO arrived still clears the
 out-of-sync mark, as before, so that part of the notice needs both sides on
@@ -581,7 +630,11 @@ the stalled connection that reaches them, a run that is old enough and
 raises nothing when a connection starts or renews, a paused peer and a
 not-due connection, an earlier release, a withheld greeting that is counted
 at the deadline and not before for a peer not known to renew, a connection
-this side closed as redundant for both kinds of peer, and the
+this side closed as redundant for both kinds of peer, the lower of two
+dials closed by the connection registry, a peer whose pause is remembered
+over connections that end before its greeting (for the length of a pause,
+until a greeting without the flag, and not past a clock that went back), a
+paused side that clears the out-of-sync mark only on the greeting, and the
 unauthenticated and parallel cases; `RootEvolutionDeadlineTest`,
 `RootEvolutionManagerTest` and `RootKeyStoreDatabaseTest` cover the
 deadline, the counting and the stored state.

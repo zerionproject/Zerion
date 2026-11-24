@@ -83,7 +83,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 
 		@Override
 		public void interruptOutgoingSession() {
-			forceClose();
+			closeAsRedundant();
 		}
 
 		@Override

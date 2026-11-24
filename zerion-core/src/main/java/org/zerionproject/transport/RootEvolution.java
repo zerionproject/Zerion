@@ -61,6 +61,7 @@ public class RootEvolution implements ZwfControlHandler {
 	private volatile boolean holding = false;
 	private boolean expected = false;
 	private boolean awaitingHello = false;
+	private boolean greetingOwed = false;
 	private boolean peerEnforces = false;
 	private boolean peerPaused = false;
 	private boolean selfPaused = false;
@@ -108,9 +109,9 @@ public class RootEvolution implements ZwfControlHandler {
 			if (keys != null && manager.isEnforcing()) {
 				selfPaused = paused();
 				peerEnforces = store.peerEnforces(contactId);
-				boolean speaks = epoch > 0 || peerEnforces
+				greetingOwed = epoch > 0 || peerEnforces
 						|| store.peerEvolves(contactId);
-				if (speaks && !selfPaused) {
+				if (greetingOwed && !selfPaused) {
 					awaitingHello = true;
 					holding = true;
 					armDeadline();
@@ -403,11 +404,15 @@ public class RootEvolution implements ZwfControlHandler {
 			if (first) {
 				boolean renewalOwed = peerEnforces ? waiting
 						: awaitingHello && helloOverdue;
+				boolean peerSaidPaused = !helloSeen
+						&& manager.peerPauseRemembered(contactId);
 				boolean stalled = peerAuthenticated && renewalOwed
-						&& !closingAsRedundant;
+						&& !closingAsRedundant && !peerSaidPaused;
+				boolean greeted = helloSeen || !greetingOwed;
 				if (alone) {
 					manager.connectionEnded(contactId,
-							peerAuthenticated && !waiting, stalled);
+							peerAuthenticated && !waiting && greeted,
+							stalled);
 				} else if (stalled) {
 					manager.stalledBesideAnother(contactId);
 				}
@@ -445,6 +450,7 @@ public class RootEvolution implements ZwfControlHandler {
 			}
 			peerPaused = peerEnforces && (flags
 					& RootEvolutionRecord.FLAG_EVOLUTION_PAUSED) != 0;
+			manager.peerGreeted(contactId, peerPaused);
 			peerDue = peerEnforces && !peerPaused && keys != null
 					&& peerEpoch == keys.getEpoch() && (flags
 					& RootEvolutionRecord.FLAG_EVOLUTION_DUE) != 0;
@@ -553,6 +559,7 @@ public class RootEvolution implements ZwfControlHandler {
 		if (keys == null) return;
 		try {
 			peerPaused = false;
+			manager.peerRenews(contactId);
 			if (keys.getEpoch() != e) return;
 			SecretKey pending = keys.getPending();
 			if (pending != null) {
