@@ -97,6 +97,7 @@ final class GroupTrTestNode {
 	final LocalAuthor local;
 	GroupTrManagerImpl manager;
 	final List<Sent> sent = new ArrayList<>();
+	final List<MessageId> userMessages = new ArrayList<>();
 	final List<Object> broadcasts = new ArrayList<>();
 	final List<String> untransactedWrites = new ArrayList<>();
 	long now = 1_000_000L;
@@ -185,7 +186,8 @@ final class GroupTrTestNode {
 							if (deferTimers) timers.add((Runnable) args[0]);
 							else ((Runnable) args[0]).run();
 							return null;
-						}));
+						}),
+				userMessages::add);
 	}
 
 	void restart() throws Exception {

@@ -617,7 +617,9 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 				device.getAutoDeleteManager(),
 				device.getStreamingAttachmentWriter(),
 				device.getIdentityManager(), validator,
-				device.getCryptoComponent());
+				device.getCryptoComponent(),
+				id -> {
+				});
 	}
 
 	private PrivateMessageFormat formatSeenAt(int minorVersion)

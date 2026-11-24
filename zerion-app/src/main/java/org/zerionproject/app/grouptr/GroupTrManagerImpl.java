@@ -22,6 +22,7 @@ import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.api.system.TaskScheduler;
 import org.zerionproject.core.util.ByteUtils;
@@ -149,6 +150,7 @@ class GroupTrManagerImpl
 	private static final int MAX_PENDING_SETTINGS = 16;
 	private static final int MAX_SETTINGS_OFFERS_REMEMBERED = 1024;
 	private final TaskScheduler taskScheduler;
+	private final UserMessageMarker userMessages;
 	private final java.util.Map<String, Long> settingsOffered =
 			Collections.synchronizedMap(
 					new java.util.LinkedHashMap<String, Long>(16, 0.75f,
@@ -274,7 +276,8 @@ class GroupTrManagerImpl
 			SettingsManager settingsManager, ClientHelper clientHelper,
 			CryptoComponent crypto, IdentityManager identityManager,
 			ContactManager contactManager, MessagingManager messagingManager,
-			EventBus eventBus, Clock clock, TaskScheduler taskScheduler) {
+			EventBus eventBus, Clock clock, TaskScheduler taskScheduler,
+			UserMessageMarker userMessages) {
 		this.db = db;
 		this.ioExecutor = ioExecutor;
 		this.taskScheduler = taskScheduler;
@@ -286,6 +289,7 @@ class GroupTrManagerImpl
 		this.messagingManager = messagingManager;
 		this.eventBus = eventBus;
 		this.clock = clock;
+		this.userMessages = userMessages;
 		this.random = new SecureRandom();
 		this.keys = new GroupTrKeys(settingsManager, crypto, clientHelper);
 		this.removals = new GroupTrPostRemovals(db, settingsManager,
@@ -584,7 +588,7 @@ class GroupTrManagerImpl
 					}
 				}
 				db.transaction(false,
-						txn -> sendSettings(txn, s, to, record, now));
+						txn -> sendSettings(txn, s, to, record, now, false));
 			} catch (FormatException ex) {
 				throw new DbException(ex);
 			} finally {
@@ -723,7 +727,7 @@ class GroupTrManagerImpl
 					BdfList record = settingsRecord(s);
 					db.transaction(false, txn -> sendSettings(txn, s,
 							Collections.singletonList(memberPub), record,
-							clock.currentTimeMillis()));
+							clock.currentTimeMillis(), false));
 				} finally {
 					lock.unlock();
 				}
@@ -766,7 +770,7 @@ class GroupTrManagerImpl
 					BdfList record = pinRecord(s);
 					db.transaction(false, txn -> sendPin(txn, s,
 							Collections.singletonList(memberPub), record,
-							clock.currentTimeMillis()));
+							clock.currentTimeMillis(), false));
 				} finally {
 					lock.unlock();
 				}
@@ -2640,7 +2644,7 @@ class GroupTrManagerImpl
 				creatorPub, timestamp, sig);
 		db.transaction(false, txn -> {
 			Contact c = contactManager.getContact(txn, contactId);
-			dispatchToContact(txn, c, timestamp, body);
+			dispatchToContact(txn, c, timestamp, body, true);
 			persistInviteSent(txn, grouptrGroupId, contactId, contactPubKey,
 					contactName, timestamp);
 		});
@@ -2700,7 +2704,7 @@ class GroupTrManagerImpl
 				timestamp, sig, binding.toList());
 		byte[] identity = c.getAuthor().getPublicKey().getEncoded();
 		db.transaction(false, txn -> {
-			dispatchToContact(txn, c, timestamp, body);
+			dispatchToContact(txn, c, timestamp, body, true);
 			persistInviteSent(txn, groupId, contactId, identity, contactName,
 					timestamp);
 		});
@@ -2784,7 +2788,7 @@ class GroupTrManagerImpl
 							grouptrGroupId, ts, incognitoName, sig);
 			db.transaction(false, txn -> {
 				Contact c = contactManager.getContact(txn, pi.contactId);
-				dispatchToContact(txn, c, ts, body);
+				dispatchToContact(txn, c, ts, body, true);
 			});
 			materializeLocalState(grouptrGroupId, pi.creatorPubKey,
 					pi.creatorName, pi.groupName, pi.salt, pi.inviteTimestamp,
@@ -2841,7 +2845,7 @@ class GroupTrManagerImpl
 				false, members, 0L, GroupTrState.SCHEME_GROUP_KEYS);
 		db.transaction(false, txn -> {
 			Contact c = contactManager.getContact(txn, pi.contactId);
-			dispatchToContact(txn, c, ts, body);
+			dispatchToContact(txn, c, ts, body, true);
 			try {
 				persist(txn, s);
 			} catch (FormatException ex) {
@@ -2875,7 +2879,7 @@ class GroupTrManagerImpl
 				grouptrGroupId, ts, sig);
 		db.transaction(false, txn -> {
 			Contact c = contactManager.getContact(txn, pi.contactId);
-			dispatchToContact(txn, c, ts, body);
+			dispatchToContact(txn, c, ts, body, true);
 		});
 		removeInviteReceived(grouptrGroupId);
 	}
@@ -3371,7 +3375,7 @@ class GroupTrManagerImpl
 			String joinerName = ev.getJoinerName();
 			try {
 				addMember(grouptrGid, pis.contactPubKey, joinerName != null
-						? joinerName : pis.contactName);
+						? joinerName : pis.contactName, null, false);
 				try {
 					sendMemberListSnapshot(grouptrGid);
 				} catch (DbException ex) {
@@ -3423,7 +3427,7 @@ class GroupTrManagerImpl
 		mlDsaKeys.invalidate();
 		String joinerName = ev.getJoinerName();
 		addMember(groupId, b.pub, joinerName != null ? joinerName
-				: pis.contactName, b.mlDsa);
+				: pis.contactName, b.mlDsa, false);
 		byte[] tag = keys.removalTag(groupId, responderIdentity);
 		memberInvites.forgetRemovedTag(groupId, tag);
 		memberInvites.storeMemberTag(groupId, b.pub, tag);
@@ -4004,8 +4008,8 @@ class GroupTrManagerImpl
 		BdfList commitBody = BdfList.of(37L, s.getGroupId(),
 				(long) fromEpoch, (long) toEpoch, pqSeed, sigCommit);
 		db.transaction(false, txn -> {
-			fanOut(txn, s, removedBody, timestamp, null);
-			fanOut(txn, s, commitBody, timestamp, null);
+			fanOut(txn, s, removedBody, timestamp, null, false);
+			fanOut(txn, s, commitBody, timestamp, null, false);
 		});
 		s.setEpoch(toEpoch);
 		try {
@@ -4303,7 +4307,7 @@ class GroupTrManagerImpl
 					: MessagingManager.GROUP_SETTINGS_RELAY_MIN_VERSION;
 			db.transaction(false, txn -> sendSettings(txn, s,
 					Collections.singletonList(memberPub), record, now,
-					needed));
+					needed, false));
 		} catch (DbException | RuntimeException ex) {
 		}
 	}
@@ -4360,7 +4364,7 @@ class GroupTrManagerImpl
 							c.getId()) < needed) {
 						continue;
 					}
-					dispatchToContact(txn, c, now, record);
+					dispatchToContact(txn, c, now, record, false);
 					keep.add(id);
 				}
 				StringBuilder value = new StringBuilder().append(held);
@@ -4530,15 +4534,15 @@ class GroupTrManagerImpl
 	}
 
 	private int sendSettings(Transaction txn, GroupTrState s,
-			Collection<byte[]> to, BdfList record, long timestamp)
-			throws DbException {
+			Collection<byte[]> to, BdfList record, long timestamp,
+			boolean userAction) throws DbException {
 		return sendSettings(txn, s, to, record, timestamp,
-				MessagingManager.GROUP_PROTOCOL_V2_MIN_VERSION);
+				MessagingManager.GROUP_PROTOCOL_V2_MIN_VERSION, userAction);
 	}
 
 	private int sendSettings(Transaction txn, GroupTrState s,
 			Collection<byte[]> to, BdfList record, long timestamp,
-			int neededVersion) throws DbException {
+			int neededVersion, boolean userAction) throws DbException {
 		int skipped = 0;
 		Reach reach = reach(txn, s);
 		for (byte[] pub : to) {
@@ -4549,7 +4553,7 @@ class GroupTrManagerImpl
 				skipped++;
 				continue;
 			}
-			dispatchToContact(txn, c, timestamp, record);
+			dispatchToContact(txn, c, timestamp, record, userAction);
 		}
 		return skipped;
 	}
@@ -4649,7 +4653,7 @@ class GroupTrManagerImpl
 		} catch (FormatException ex) {
 			return;
 		}
-		dispatchToContact(txn, creator, timestamp, body);
+		dispatchToContact(txn, creator, timestamp, body, false);
 	}
 
 	private void handleRelayRecord(org.zerionproject.app.api.messaging.event
@@ -4768,10 +4772,11 @@ class GroupTrManagerImpl
 					}
 					if (keysSent.add(relayPair(pub,
 							listedMember.getJoinedAtEpoch(), signer))) {
-						dispatchToContact(txn, c, keysTimestamp, keysRecord);
+						dispatchToContact(txn, c, keysTimestamp, keysRecord,
+								false);
 					}
 					MessageId copy = dispatchToContact(txn, c, timestamp, inner,
-							dispatchedRecordMetadata(inner));
+							dispatchedRecordMetadata(inner), false);
 					db.setCleanupTimerDuration(txn, copy, duration);
 					db.startCleanupTimer(txn, copy);
 				}
@@ -5204,8 +5209,8 @@ class GroupTrManagerImpl
 
 		@Override
 		public void dispatch(Transaction txn, Contact c, long timestamp,
-				BdfList body) throws DbException {
-			dispatchToContact(txn, c, timestamp, body);
+				BdfList body, boolean userAction) throws DbException {
+			dispatchToContact(txn, c, timestamp, body, userAction);
 		}
 
 		@Override
@@ -5314,7 +5319,7 @@ class GroupTrManagerImpl
 		public void addMember(byte[] groupId, byte[] pubKey, String name,
 				byte[] mlDsaPubKey) throws DbException {
 			GroupTrManagerImpl.this.addMember(groupId, pubKey, name,
-					mlDsaPubKey);
+					mlDsaPubKey, false);
 		}
 
 		@Override
@@ -5353,7 +5358,7 @@ class GroupTrManagerImpl
 		@Override
 		public void dispatch(Transaction txn, Contact c, long timestamp,
 				BdfList body) throws DbException {
-			dispatchToContact(txn, c, timestamp, body);
+			dispatchToContact(txn, c, timestamp, body, false);
 		}
 
 		@Nullable
@@ -5852,7 +5857,7 @@ class GroupTrManagerImpl
 				try {
 					db.transaction(false, txn -> {
 						MessageId stored = dispatchToContact(txn, c,
-								timestamp, msgBody, selfMeta);
+								timestamp, msgBody, selfMeta, true);
 						if (effectiveTtl > 0) {
 							db.setCleanupTimerDuration(txn, stored,
 									effectiveTtl);
@@ -6045,9 +6050,10 @@ class GroupTrManagerImpl
 
 		@Override
 		public void dispatchRecord(Transaction txn, Contact c,
-				long timestamp, BdfList body, BdfDictionary meta)
-				throws DbException {
-			MessageId id = dispatchToContact(txn, c, timestamp, body, meta);
+				long timestamp, BdfList body, BdfDictionary meta,
+				boolean userAction) throws DbException {
+			MessageId id = dispatchToContact(txn, c, timestamp, body, meta,
+					userAction);
 			db.setCleanupTimerDuration(txn, id, RECORD_KEPT_AFTER_ACK_MS);
 		}
 
@@ -6132,7 +6138,7 @@ class GroupTrManagerImpl
 			}
 			Settings out = pinSettings(postId, ts);
 			int skipped = db.transactionWithResult(false, txn -> {
-				int n = sendPin(txn, s, to, record, now);
+				int n = sendPin(txn, s, to, record, now, true);
 				settingsManager.mergeSettings(txn, out, nsOf(groupId));
 				return n;
 			});
@@ -6224,8 +6230,8 @@ class GroupTrManagerImpl
 	}
 
 	private int sendPin(Transaction txn, GroupTrState s,
-			Collection<byte[]> to, BdfList record, long timestamp)
-			throws DbException {
+			Collection<byte[]> to, BdfList record, long timestamp,
+			boolean userAction) throws DbException {
 		int skipped = 0;
 		Reach reach = reach(txn, s);
 		for (byte[] pub : to) {
@@ -6236,7 +6242,7 @@ class GroupTrManagerImpl
 				skipped++;
 				continue;
 			}
-			dispatchToContact(txn, c, timestamp, record);
+			dispatchToContact(txn, c, timestamp, record, userAction);
 		}
 		return skipped;
 	}
@@ -6305,7 +6311,7 @@ class GroupTrManagerImpl
 				}
 			}
 			db.transaction(false, txn -> {
-				sendSettings(txn, s, to, record, now);
+				sendSettings(txn, s, to, record, now, true);
 			});
 		} catch (FormatException ex) {
 			throw new DbException(ex);
@@ -6388,12 +6394,12 @@ class GroupTrManagerImpl
 	@Override
 	public void addMember(byte[] groupId, byte[] addedPubKey,
 			String addedName) throws DbException {
-		addMember(groupId, addedPubKey, addedName, null);
+		addMember(groupId, addedPubKey, addedName, null, false);
 	}
 
 	private void addMember(byte[] groupId, byte[] addedPubKey,
-			String addedName, @Nullable byte[] addedMlDsaPubKey)
-			throws DbException {
+			String addedName, @Nullable byte[] addedMlDsaPubKey,
+			boolean userAction) throws DbException {
 		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
 		lock.lock();
 		try {
@@ -6416,7 +6422,8 @@ class GroupTrManagerImpl
 			BdfList body = BdfList.of(33L, groupId, addedPubKey, addedName,
 					(long) newEpoch, timestamp, sig);
 			db.transaction(false, txn ->
-					fanOutToAllPlusTarget(txn, s, body, timestamp, addedPubKey));
+					fanOutToAllPlusTarget(txn, s, body, timestamp, addedPubKey,
+							userAction));
 			applyLocalAdd(s, addedPubKey, addedName, timestamp, newEpoch,
 					addedMlDsaPubKey);
 			if (s.getDefaultAutoDeleteTimerMs() > 0
@@ -6426,7 +6433,7 @@ class GroupTrManagerImpl
 				db.transaction(false, txn -> {
 					sendSettings(txn, s,
 							Collections.singletonList(addedPubKey), record,
-							timestamp);
+							timestamp, userAction);
 				});
 			}
 			if (settingsManager.getSettings(nsOf(groupId))
@@ -6434,7 +6441,7 @@ class GroupTrManagerImpl
 				BdfList record = pinRecord(s);
 				db.transaction(false, txn -> {
 					sendPin(txn, s, Collections.singletonList(addedPubKey),
-							record, timestamp);
+							record, timestamp, userAction);
 				});
 			}
 			memberInvites.onMemberAdded(s, addedPubKey);
@@ -6445,20 +6452,20 @@ class GroupTrManagerImpl
 	}
 
 	private void fanOutToAllPlusTarget(Transaction txn, GroupTrState s,
-			BdfList body, long timestamp, byte[] targetPubKey)
-			throws DbException {
+			BdfList body, long timestamp, byte[] targetPubKey,
+			boolean userAction) throws DbException {
 		byte[] localPub = localKeyIn(txn, s);
 		Reach reach = reach(txn, s);
 		Contact target = reach.contact(targetPubKey);
 		if (target != null) {
-			dispatchToContact(txn, target, timestamp, body);
+			dispatchToContact(txn, target, timestamp, body, userAction);
 		}
 		for (GroupTrMember m : s.getMembers()) {
 			if (Arrays.equals(m.getPubKey(), localPub)) continue;
 			if (Arrays.equals(m.getPubKey(), targetPubKey)) continue;
 			Contact c = reach.contact(m.getPubKey());
 			if (c == null) continue;
-			dispatchToContact(txn, c, timestamp, body);
+			dispatchToContact(txn, c, timestamp, body, userAction);
 		}
 	}
 
@@ -6492,8 +6499,8 @@ class GroupTrManagerImpl
 			BdfList commitBody = BdfList.of(37L, groupId, (long) fromEpoch,
 					(long) toEpoch, pqSeed, sigCommit);
 			db.transaction(false, txn -> {
-				fanOut(txn, s, removedBody, timestamp, null);
-				fanOut(txn, s, commitBody, timestamp, removedPubKey);
+				fanOut(txn, s, removedBody, timestamp, null, true);
+				fanOut(txn, s, commitBody, timestamp, removedPubKey, true);
 			});
 			byte[] removedTag = null;
 			if (s.usesGroupKeys()) {
@@ -6538,7 +6545,7 @@ class GroupTrManagerImpl
 			BdfList body = BdfList.of(35L, groupId, localPub,
 					(long) newEpoch, timestamp, sig);
 			db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
-					localPub));
+					localPub, true));
 			applyLocalLeave(s, localPub, newEpoch);
 			removeFromDevice(groupId);
 		} finally {
@@ -6560,7 +6567,7 @@ class GroupTrManagerImpl
 			BdfList body = BdfList.of(36L, groupId, (long) newEpoch,
 					timestamp, sig);
 			db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
-					null));
+					null, true));
 			s.setDissolved(true);
 			s.setEpoch(newEpoch);
 			try {
@@ -6641,7 +6648,7 @@ class GroupTrManagerImpl
 	}
 
 	private void fanOut(Transaction txn, GroupTrState s, BdfList body,
-			long timestamp, @Nullable byte[] skipPubKey)
+			long timestamp, @Nullable byte[] skipPubKey, boolean userAction)
 			throws DbException {
 		byte[] localPub = localKeyIn(txn, s);
 		Reach reach = reach(txn, s);
@@ -6651,14 +6658,22 @@ class GroupTrManagerImpl
 					&& Arrays.equals(m.getPubKey(), skipPubKey)) continue;
 			Contact c = reach.contact(m.getPubKey());
 			if (c == null) continue;
-			dispatchToContact(txn, c, timestamp, body);
+			dispatchToContact(txn, c, timestamp, body, userAction);
 		}
 	}
 
+	/**
+	 * Stores one copy of a group record for a contact. The caller says
+	 * whether the record is a user action, such as a post, an invite or a
+	 * change the owner made; only such a record may open the active send
+	 * cadence. Records created while handling an incoming record, passed on
+	 * settings, relayed copies and key material are never user actions.
+	 */
 	private void dispatchToContact(Transaction txn, Contact c,
-			long timestamp, BdfList body) throws DbException {
+			long timestamp, BdfList body, boolean userAction)
+			throws DbException {
 		MessageId id = dispatchToContact(txn, c, timestamp, body,
-				dispatchedRecordMetadata(body));
+				dispatchedRecordMetadata(body), userAction);
 		db.setCleanupTimerDuration(txn, id, RECORD_KEPT_AFTER_ACK_MS);
 	}
 
@@ -6676,8 +6691,8 @@ class GroupTrManagerImpl
 	private static final long RECORD_KEPT_AFTER_ACK_MS = 5L * 60L * 1000L;
 
 	private MessageId dispatchToContact(Transaction txn, Contact c,
-			long timestamp, BdfList body, BdfDictionary meta)
-			throws DbException {
+			long timestamp, BdfList body, BdfDictionary meta,
+			boolean userAction) throws DbException {
 		byte[] contactGroupId =
 				messagingManager.getContactGroup(c).getId().getBytes();
 		try {
@@ -6693,6 +6708,7 @@ class GroupTrManagerImpl
 						.MSG_KEY_MESH_GROUP_PENDING, true);
 			}
 			clientHelper.addLocalMessage(txn, m, meta, !offline, false);
+			if (userAction) userMessages.noteUserMessage(m.getId());
 			if (offline) {
 				sink.floodRecord(c.getId().getInt(), bodyBytes, timestamp);
 			}
@@ -6819,7 +6835,8 @@ class GroupTrManagerImpl
 			BdfList blob = keyExchange.secretBlob(s, epoch);
 			if (blob != null) body.add(blob);
 		}
-		db.transaction(false, txn -> fanOut(txn, s, body, timestamp, null));
+		db.transaction(false, txn -> fanOut(txn, s, body, timestamp, null,
+				false));
 	}
 
 	private byte[] snapshotSignedInput(byte[] groupId, int epoch,
@@ -6870,7 +6887,7 @@ class GroupTrManagerImpl
 			BdfList body = BdfList.of(38L, groupId, targetPubKey,
 					(long) newRole.getInt(), (long) newEpoch, timestamp, sig);
 			db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
-					null));
+					null, true));
 			applyLocalRoleChange(s, targetPubKey, newRole, newEpoch);
 		} finally {
 			lock.unlock();

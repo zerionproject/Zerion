@@ -15,6 +15,8 @@ import org.zerionproject.sync.ZmmDbRecordSink;
 import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.connection.ContactConnectionDiagnostics;
 import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.sync.UserMessageMarker;
+import org.zerionproject.sync.LocalMessageLog;
 import org.zerionproject.sync.ZppConnectionRegistry;
 import org.zerionproject.sync.ZppConnectionRegistryImpl;
 import org.zerionproject.sync.ZppConnectionRunnerImpl;
@@ -79,6 +81,11 @@ public class ZerionTransportModule {
 	ZppConnectionRegistry provideConnectionRegistry(
 			ZppConnectionRegistryImpl registry) {
 		return registry;
+	}
+
+	@Provides
+	UserMessageMarker provideUserMessageMarker(LocalMessageLog log) {
+		return log;
 	}
 
 	@Provides

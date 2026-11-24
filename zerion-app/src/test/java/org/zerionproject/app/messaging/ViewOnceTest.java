@@ -1029,7 +1029,8 @@ public class ViewOnceTest extends BrambleTestCase {
 				c.getMetadataParser(), c.getConversationManager(),
 				c.getMessageTracker(), c.getContactGroupFactory(),
 				c.getAutoDeleteManager(), c.getStreamingAttachmentWriter(),
-				c.getIdentityManager(), d.validator, c.getCryptoComponent());
+				c.getIdentityManager(), d.validator, c.getCryptoComponent(), id -> {
+				});
 	}
 
 	private static ContactGroupScanTestComponent requireComponent(Device d) {
