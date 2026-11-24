@@ -80,17 +80,30 @@ become the expected gate on subsequent builds.
 ```
 cd packaging/monero-android
 docker build -t zerion-monero-build:v0.18.5.4 .
-docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -e ABI=arm64-v8a   -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4
-docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -e ABI=armeabi-v7a -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4
+./docker-run.sh arm64-v8a
+./docker-run.sh armeabi-v7a
 # artifacts: out/<abi>/libzmonero.so (+ .sha256, SOURCES.sha256)
 ```
 
-The container runs as the unprivileged user `builder` (uid 1000), not as root,
-and is started with every Linux capability dropped and without the right to
-gain new privileges; the build needs neither. The arm64-v8a library built
-with the two flags on 2026-11-23 was byte-identical to the pinned one.
-On a Linux host, create `out` first and make it writable by uid 1000; Docker
-Desktop maps the mount for you.
+The libraries are built by running `docker-run.sh` with the ABI as its
+argument (an optional second argument names another image tag). The script
+hard-codes the container flags and runs, for the reference, exactly this
+command:
+
+```
+docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -e ABI=arm64-v8a   -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4
+docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -e ABI=armeabi-v7a -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4
+```
+
+The image runs the build as the unprivileged user `builder` (uid 1000), not as
+root. When the container is started by `docker-run.sh` or by the command
+above, every Linux capability is dropped and the process cannot gain new
+privileges; the build needs neither. These two restrictions come from the
+`docker run` flags, not from the image, so a container started another way
+does not have them. The arm64-v8a library built with the two flags on
+2026-11-23 was byte-identical to the pinned one. On a Linux host, make `out`
+writable by uid 1000 (the script creates it); Docker Desktop maps the mount
+for you.
 
 Then copy each `libzmonero.so` into
 `zerion-android/src/main/jniLibs/<abi>/` and run the 16 KB verification

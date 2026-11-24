@@ -2043,19 +2043,27 @@ public class VaultViewModel extends AndroidViewModel {
 		isLoading.postValue(true);
 		dbExecutor.execute(() -> {
 			try {
-				vaultManager.deleteItem(itemId);
 				vaultManager.addMediaItemWithPassword(VaultItem.ItemType.DOCUMENT,
 						fileName, content, "text/plain", null);
-				loadVaultItems();
-				successMessage.postValue(text(R.string.vault_msg_document_updated));
-				isLoading.postValue(false);
 			} catch (SecurityException e) {
 				errorMessage.postValue(text(R.string.vault_locked));
 				isLoading.postValue(false);
+				return;
 			} catch (Exception e) {
 				errorMessage.postValue(text(R.string.vault_msg_update_document_failed));
 				isLoading.postValue(false);
+				return;
 			}
+			try {
+				vaultManager.deleteItem(itemId);
+				successMessage.postValue(text(R.string.vault_msg_document_updated));
+			} catch (SecurityException e) {
+				errorMessage.postValue(text(R.string.vault_locked));
+			} catch (Exception e) {
+				errorMessage.postValue(text(R.string.vault_msg_update_document_failed));
+			}
+			loadVaultItems();
+			isLoading.postValue(false);
 		});
 	}
 

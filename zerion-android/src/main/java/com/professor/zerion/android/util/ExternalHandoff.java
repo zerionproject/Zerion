@@ -43,6 +43,8 @@ public final class ExternalHandoff {
 	@Nullable
 	private static File staged;
 	@Nullable
+	private static String stagedType;
+	@Nullable
 	private static Uri granted;
 	private static boolean away;
 	@Nullable
@@ -164,8 +166,8 @@ public final class ExternalHandoff {
 			Prepared ready = null;
 			try {
 				ready = cleaner.prepare(app, content, type);
-				file = stage(app, ready.content, ready.type);
-				shown = ready.type;
+				shown = checkedType(ready.type, ready.content);
+				file = stage(app, ready.content, shown);
 			} catch (IOException | RuntimeException e) {
 				activity.runOnUiThread(onFailure);
 				return;
@@ -184,6 +186,20 @@ public final class ExternalHandoff {
 				}
 			});
 		});
+	}
+
+	/**
+	 * The type under which the bytes may leave the app: the one their content
+	 * checks as, which is never a type the system installs or imports, never
+	 * an installable package or program whatever type was declared, and never
+	 * active content under a media type. Every hand-off passes through here
+	 * before a copy is written, whether or not the caller checked already.
+	 */
+	static String checkedType(String declared, byte[] content)
+			throws IOException {
+		String type = ExternalViewerTypes.typeForContent(declared, content);
+		if (type == null) throw new IOException("content does not open");
+		return type;
 	}
 
 	static File stage(Context ctx, byte[] content, String type)
@@ -209,6 +225,7 @@ public final class ExternalHandoff {
 				throw e;
 			}
 			staged = f;
+			stagedType = type;
 			return f;
 		}
 	}
@@ -225,7 +242,7 @@ public final class ExternalHandoff {
 		view.setDataAndType(uri, type);
 		view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 		synchronized (LOCK) {
-			if (!file.equals(staged)) return false;
+			if (!file.equals(staged) || !type.equals(stagedType)) return false;
 			granted = uri;
 			away = false;
 		}
@@ -245,6 +262,7 @@ public final class ExternalHandoff {
 			file = staged;
 			uri = granted;
 			staged = null;
+			stagedType = null;
 			granted = null;
 			away = false;
 		}
@@ -271,6 +289,7 @@ public final class ExternalHandoff {
 	static void resetForTests() {
 		synchronized (LOCK) {
 			staged = null;
+			stagedType = null;
 			granted = null;
 			away = false;
 			watched = null;
