@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.zerionproject.core.account.PasswordNormalizer;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -64,6 +65,24 @@ public class VaultNewPasswordTest {
 	private static final char[] WIPED = new char[12];
 	private static final char[] WITH_A_ZERO_INSIDE =
 			{'n', 'e', 'w', ' ', 'p', 'a', 's', 's', 0, '5', '%', 'T'};
+	private static final char[] ONLY_PICTURES = ("\uD83D\uDE00\uD83D\uDD12"
+			+ "\uD83D\uDE00\uD83D\uDD12\uD83D\uDE00\uD83D\uDD12\uD83D\uDE00"
+			+ "\uD83D\uDD12").toCharArray();
+	private static final char[] OTHER_PICTURES = ("\uD83D\uDD12\uD83D\uDD11"
+			+ "\uD83D\uDD12\uD83D\uDD11\uD83D\uDD12\uD83D\uDD11\uD83D\uDD12"
+			+ "\uD83D\uDD11").toCharArray();
+	private static final char[] ONLY_INVISIBLE = ("\u200B\u200B\u200B\u200B"
+			+ "\u200B\u200B\u200B\u200B\u200B\u200B\u200B\u200B")
+			.toCharArray();
+	private static final char[] FOUR_AND_PICTURES =
+			"pass\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00".toCharArray();
+	private static final char[] SEVEN_AND_INVISIBLE =
+			"Seven7&\u200B\u200B\u200B".toCharArray();
+	private static final char[] EIGHT_AND_PICTURES =
+			"Eight8&x\uD83D\uDE00\uD83D\uDD12".toCharArray();
+	private static final char[] EIGHT = "Eight8&x".toCharArray();
+	private static final char[][] TOO_SHORT_IN_NORMAL_FORM = {ONLY_PICTURES,
+			ONLY_INVISIBLE, FOUR_AND_PICTURES, SEVEN_AND_INVISIBLE};
 
 	@Rule
 	public final InstantTaskExecutorRule instant =
@@ -309,6 +328,140 @@ public class VaultNewPasswordTest {
 				result.message);
 		assertTrue(m.listItems().isEmpty());
 		assertEquals(0, storedItems());
+	}
+
+	@Test
+	public void theRefusedPasswordsPassTheLengthCheckOfTheScreens() {
+		for (char[] typed : TOO_SHORT_IN_NORMAL_FORM) {
+			assertTrue(typed.length >= VaultManager.MIN_PASSWORD_LENGTH);
+			assertTrue(PasswordNormalizer.normalize(typed).length
+					< VaultManager.MIN_PASSWORD_LENGTH);
+		}
+		assertEquals(0, PasswordNormalizer.normalize(ONLY_PICTURES).length);
+		assertEquals(0, PasswordNormalizer.normalize(ONLY_INVISIBLE).length);
+		assertArrayEquals(EIGHT,
+				PasswordNormalizer.normalize(EIGHT_AND_PICTURES));
+	}
+
+	@Test
+	public void aVaultIsNotCreatedUnderAPasswordTooShortInItsNormalForm()
+			throws Exception {
+		for (char[] typed : TOO_SHORT_IN_NORMAL_FORM) {
+			VaultManager m = process();
+
+			assertThrows(IllegalArgumentException.class, () ->
+					m.createVault(typed.clone()));
+
+			assertFalse(m.vaultExists());
+			assertFalse(m.isUnlocked());
+			assertFalse(new File(vaultDir(), "vault.header").exists());
+
+			VaultViewModel vm = screens(m);
+			vm.createVault(typed.clone(), typed.clone());
+
+			assertEquals(app.getString(R.string.vault_msg_create_failed),
+					vm.getErrorMessage().getValue());
+			assertFalse(m.vaultExists());
+		}
+	}
+
+	@Test
+	public void aVaultIsNotReKeyedUnderAPasswordTooShortInItsNormalForm()
+			throws Exception {
+		VaultManager m = created();
+		m.addItem(VaultItem.ItemType.NOTE, "note", bytes("kept"));
+		byte[] before = header();
+
+		for (char[] typed : TOO_SHORT_IN_NORMAL_FORM) {
+			assertThrows(IllegalArgumentException.class, () ->
+					m.changePassword(PASSWORD.clone(), typed.clone()));
+
+			VaultViewModel vm = screens(m);
+			vm.changePassword(PASSWORD.clone(), typed.clone());
+
+			assertEquals(app.getString(
+					R.string.vault_msg_change_password_failed),
+					vm.getErrorMessage().getValue());
+			assertNull(vm.getSuccessMessage().getValue());
+		}
+
+		assertArrayEquals("the vault was given another key", before,
+				header());
+		assertEquals("opens", unlock(PASSWORD));
+		assertArrayEquals(bytes("kept"),
+				m.getItemContent(m.listItems().get(0).id));
+		assertEquals("refused", unlock(new char[0]));
+	}
+
+	@Test
+	public void aPasswordLongEnoughInItsNormalFormIsSetAndOpens()
+			throws Exception {
+		VaultManager m = process();
+		m.createVault(EIGHT_AND_PICTURES.clone());
+		m.addItem(VaultItem.ItemType.NOTE, "note", bytes("kept"));
+
+		assertEquals("opens", unlock(EIGHT_AND_PICTURES));
+		assertEquals("opens", unlock(EIGHT));
+
+		m.changePassword(EIGHT_AND_PICTURES.clone(), PASSWORD.clone());
+		m.changePassword(PASSWORD.clone(), EIGHT_AND_PICTURES.clone());
+
+		VaultManager after = process();
+		assertTrue(after.unlockVault(EIGHT_AND_PICTURES.clone()));
+		assertArrayEquals(bytes("kept"),
+				after.getItemContent(after.listItems().get(0).id));
+		assertEquals("refused", unlock(PASSWORD));
+	}
+
+	@Test
+	public void anExportIsNotSealedUnderAPasswordThatIsNothingInItsNormalForm()
+			throws Exception {
+		VaultManager m = created();
+		m.addItem(VaultItem.ItemType.NOTE, "note", bytes("kept"));
+
+		assertThrows(IllegalArgumentException.class, () ->
+				m.exportVault(ONLY_PICTURES.clone()));
+		assertThrows(IllegalArgumentException.class, () ->
+				m.exportVault(ONLY_INVISIBLE.clone()));
+		assertThrows(IllegalArgumentException.class, () ->
+				m.exportVault(WIPED.clone()));
+
+		VaultViewModel vm = screens(m);
+		String[] reported = new String[1];
+		byte[][] written = new byte[1][];
+		vm.exportVault(ONLY_PICTURES.clone(),
+				new VaultViewModel.ExportCallback() {
+					@Override
+					public void onExportSuccess(byte[] data) {
+						written[0] = data;
+					}
+
+					@Override
+					public void onExportError(String error) {
+						reported[0] = error;
+					}
+				});
+
+		assertNull(written[0]);
+		assertEquals(app.getString(
+				R.string.vault_document_export_generic_failed), reported[0]);
+		assertNotNull(m.exportVault(FOUR_AND_PICTURES.clone()));
+	}
+
+	@Test
+	public void anItemPasswordIsUsedAsTypedAndNotInANormalForm()
+			throws Exception {
+		VaultManager m = created();
+		VaultItem document = m.addItemWithPassword(
+				VaultItem.ItemType.DOCUMENT, "notes.txt",
+				bytes("first draft"), ONLY_PICTURES.clone());
+
+		assertArrayEquals(bytes("first draft"),
+				m.getItemContentWithPassword(document.id,
+						ONLY_PICTURES.clone()));
+		assertThrows(Exception.class, () ->
+				m.getItemContentWithPassword(document.id,
+						OTHER_PICTURES.clone()));
 	}
 
 	@Test

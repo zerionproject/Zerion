@@ -193,6 +193,11 @@ public class VaultClearedPasswordRecoveryTest {
 
 	private void sealUnderTheEmptyPassword(Argon2.Argon2Params params)
 			throws Exception {
+		sealVersionTwo(new char[0], params);
+	}
+
+	private void sealVersionTwo(char[] sealedUnder,
+			Argon2.Argon2Params params) throws Exception {
 		VaultCrypto crypto = new VaultCrypto();
 		VaultKeystore keystore = new VaultKeystore(app, location());
 		int slot = VaultKeystore.SLOT_A;
@@ -201,7 +206,7 @@ public class VaultClearedPasswordRecoveryTest {
 		byte[] wrapped = keystore.wrapSecret(secret, keystore.wrapKey(slot));
 		byte[] salt = new Argon2().generateSalt();
 		byte[] hashed = keystore.hmac(slot,
-				fakeDerive(new char[0], salt, params));
+				fakeDerive(sealedUnder, salt, params));
 		byte[] kek = crypto.hkdfSha256(crypto.xor(hashed, secret), salt,
 				"vault kek v2", 32);
 		byte[] master = crypto.generateKey();
@@ -217,6 +222,10 @@ public class VaultClearedPasswordRecoveryTest {
 	}
 
 	private void sealUnderZeros(int typedLength) throws Exception {
+		sealVersionOne(new char[typedLength]);
+	}
+
+	private void sealVersionOne(char[] sealedUnder) throws Exception {
 		VaultCrypto crypto = new VaultCrypto();
 		VaultKeystore keystore = new VaultKeystore(app, location());
 		SecretKey legacyKey = keystore.getOrCreateVaultKey();
@@ -224,7 +233,7 @@ public class VaultClearedPasswordRecoveryTest {
 		byte[] wrapped = keystore.wrapSecret(secret, legacyKey);
 		byte[] salt = new Argon2().generateSalt();
 		byte[] master = crypto.hkdfSha256(crypto.xor(
-				fakeDerive(new char[typedLength], salt, C), secret), salt,
+				fakeDerive(sealedUnder, salt, C), secret), salt,
 				"vault master", 32);
 		VaultHeader header = VaultHeader.createNew(salt, C.memoryKb,
 				C.iterations, wrapped, BIOMETRIC_SALT,
@@ -374,8 +383,8 @@ public class VaultClearedPasswordRecoveryTest {
 
 		assertEquals("opens", attempt(m, CHOSEN));
 
-		assertEquals(Arrays.asList("typed", "empty",
-				"zeros " + CHOSEN.length, "typed"), derivations);
+		assertEquals(Arrays.asList("typed", "zeros " + CHOSEN.length,
+				"typed"), derivations);
 		assertTrue(m.isUnlocked());
 		assertEquals("Testnote kept", note(m));
 		assertEquals(0, failures());
@@ -424,16 +433,66 @@ public class VaultClearedPasswordRecoveryTest {
 		sealUnderZeros(CHOSEN.length);
 		byte[] before = headerBytes();
 		assertEquals("refused", attempt(LONGER));
-		assertEquals(Arrays.asList("typed", "empty",
-				"zeros " + LONGER.length), derivations);
+		assertEquals(Arrays.asList("typed", "zeros " + LONGER.length),
+				derivations);
 		assertEquals(1, failures());
 		assertEquals("refused", attempt(MINIMUM));
+		assertEquals(Arrays.asList("typed", "zeros " + MINIMUM.length),
+				derivations);
 		assertArrayEquals(before, headerBytes());
 
 		assertEquals("opens", attempt(SAME_LENGTH));
 		assertEquals("opens", attempt(SAME_LENGTH));
 		assertEquals(Collections.singletonList("typed"), derivations);
 		assertEquals("refused", attempt(CHOSEN));
+	}
+
+	@Test
+	public void aKeystoreFactorHeaderNeverTriesTheZeroForm() throws Exception {
+		sealVersionTwo(new char[CHOSEN.length], C);
+		assertEquals(VaultHeader.VERSION_KEYSTORE_FACTOR, header().version);
+		byte[] before = headerBytes();
+		List<String> keys = aliases();
+
+		assertEquals("refused", attempt(CHOSEN));
+
+		assertEquals(Arrays.asList("typed", "empty"), derivations);
+		assertEquals(1, failures());
+		assertArrayEquals(before, headerBytes());
+		assertEquals(keys, aliases());
+	}
+
+	@Test
+	public void anOlderHeaderNeverTriesTheEmptyForm() throws Exception {
+		sealVersionOne(new char[0]);
+		assertTrue(header().version < VaultHeader.VERSION_KEYSTORE_FACTOR);
+		byte[] before = headerBytes();
+		List<String> keys = aliases();
+
+		assertEquals("refused", attempt(CHOSEN));
+
+		assertEquals(Arrays.asList("typed", "zeros " + CHOSEN.length),
+				derivations);
+		assertEquals(1, failures());
+		assertArrayEquals(before, headerBytes());
+		assertEquals(keys, aliases());
+	}
+
+	@Test
+	public void aRefusedUnlockDerivesTwoKeysWhateverTheHeader()
+			throws Exception {
+		sealUnderTheEmptyPassword();
+		VaultManager m = process();
+		assertEquals("opens", attempt(m, CHOSEN));
+		m.lockVault();
+		assertEquals("refused", attempt(LONGER));
+		assertEquals(2, derivations.size());
+
+		startOver();
+		sealVersionOne(PASSWORD);
+		assertEquals("refused", attempt(LONGER));
+		assertEquals(2, derivations.size());
+		assertEquals("opens", attempt(PASSWORD));
 	}
 
 	@Test
@@ -483,8 +542,7 @@ public class VaultClearedPasswordRecoveryTest {
 		List<String> keys = aliases();
 
 		assertEquals("refused", attempt(LONGER));
-		assertEquals(Arrays.asList("typed", "empty",
-				"zeros " + LONGER.length), derivations);
+		assertEquals(Arrays.asList("typed", "empty"), derivations);
 		assertEquals(1, failures());
 		assertEquals("refused", attempt(new char[0]));
 		assertEquals(Collections.singletonList("empty"), derivations);
@@ -508,6 +566,36 @@ public class VaultClearedPasswordRecoveryTest {
 		assertEquals(0, failures());
 		assertEquals("Testnote kept", note(m));
 		assertArrayEquals(before, headerBytes());
+	}
+
+	@Test
+	public void aVaultSealedUnderAShortNormalFormKeepsOpening()
+			throws Exception {
+		char[] typed = "pass\uD83D\uDE00\uD83D\uDE00".toCharArray();
+		assertEquals(VaultManager.MIN_PASSWORD_LENGTH, typed.length);
+		char[] normal = PasswordNormalizer.normalize(typed);
+		assertEquals(4, normal.length);
+		sealVersionTwo(normal, C);
+		byte[] before = headerBytes();
+		VaultManager m = process();
+
+		assertEquals("opens", attempt(m, typed));
+
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals("Testnote kept", note(m));
+		assertArrayEquals(before, headerBytes());
+		assertTrue(check(typed));
+		assertThrows(IllegalArgumentException.class, () ->
+				m.changePassword(typed.clone(), typed.clone()));
+		assertArrayEquals(before, headerBytes());
+		nextAttempt();
+
+		m.changePassword(typed.clone(), NEW_PASSWORD.clone());
+
+		assertEquals("Testnote kept", note(m));
+		VaultManager later = process();
+		assertEquals("opens", attempt(later, NEW_PASSWORD));
+		assertEquals("Testnote kept", note(later));
 	}
 
 	@Test

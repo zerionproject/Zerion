@@ -198,8 +198,8 @@ public class VaultManager
 		if (vaultExists()) {
 			throw new IllegalStateException("Vault already exists");
 		}
-		NewPassword.requireTypable(typed);
-		char[] password = PasswordNormalizer.normalize(typed);
+		char[] password =
+				NewPassword.normalForm(typed, MIN_PASSWORD_LENGTH);
 		byte[] masterKey = crypto.generateKey();
 		try {
 			VaultHeader header = sealMasterKey(masterKey, password,
@@ -650,19 +650,18 @@ public class VaultManager
 	private OpenedVault openForUnlock(VaultHeader header, char[] typed)
 			throws Exception {
 		OpenedVault opened = openWithEitherForm(header, typed);
-		if (opened != null || !canBeSet(typed)) return opened;
-		char[] zeros = new char[typed.length];
-		try {
-			byte[] master = openMasterKey(header, new char[0]);
-			if (master == null) master = openMasterKey(header, zeros);
-			return master == null ? null
-					: new OpenedVault(master, false, true);
-		} finally {
-			java.util.Arrays.fill(zeros, '\0');
-		}
+		if (opened != null || !couldHaveBeenSet(typed)) return opened;
+		char[] cleared = clearedForm(header, typed.length);
+		byte[] master = openMasterKey(header, cleared);
+		return master == null ? null : new OpenedVault(master, false, true);
 	}
 
-	private static boolean canBeSet(char[] typed) {
+	private static char[] clearedForm(VaultHeader header, int typedLength) {
+		return new char[header.version < VaultHeader.VERSION_KEYSTORE_FACTOR
+				? typedLength : 0];
+	}
+
+	private static boolean couldHaveBeenSet(char[] typed) {
 		if (typed.length < MIN_PASSWORD_LENGTH) return false;
 		char[] normal = PasswordNormalizer.normalize(typed);
 		boolean kept = normal.length > 0;
@@ -1492,25 +1491,16 @@ public class VaultManager
 		if (!isUnlocked || vaultMasterKey == null) {
 			throw new SecurityException(UNLOCK_FIRST);
 		}
-		NewPassword.requireTypable(newPassword);
-		if (!verifyPassword(oldPassword)) {
-			throw new SecurityException("Invalid current password");
-		}
-		char[] password = PasswordNormalizer.normalize(newPassword);
-		byte[] newMasterKey = crypto.generateKey();
-		VaultHeader old = currentHeader;
-		int slot = old.version < VaultHeader.VERSION_KEYSTORE_FACTOR
-				? VaultKeystore.SLOT_A : VaultKeystore.otherSlot(old.keySlot);
+		char[] password =
+				NewPassword.normalForm(newPassword, MIN_PASSWORD_LENGTH);
+		byte[] newMasterKey;
 		VaultHeader newHeader;
 		try {
-			newHeader = sealMasterKey(newMasterKey, password, slot,
-					old.biometricTokenSalt, old.createdTimestamp,
-					passwordChangeCandidates(old), paramsOf(old));
-			commitRekey(vaultMasterKey, newMasterKey, newHeader);
-		} catch (Exception e) {
-			keystore.deleteSlot(slot);
-			SecureMemory.shred(newMasterKey);
-			throw e;
+			if (!verifyPassword(oldPassword)) {
+				throw new SecurityException("Invalid current password");
+			}
+			newMasterKey = crypto.generateKey();
+			newHeader = rekeyUnder(newMasterKey, password);
 		} finally {
 			java.util.Arrays.fill(password, '\0');
 		}
@@ -1523,6 +1513,24 @@ public class VaultManager
 			deleteKeysNotNamedBy(newHeader);
 			invalidateCache();
 		} catch (Throwable ignored) {
+		}
+	}
+
+	private VaultHeader rekeyUnder(byte[] newMasterKey, char[] password)
+			throws Exception {
+		VaultHeader old = currentHeader;
+		int slot = old.version < VaultHeader.VERSION_KEYSTORE_FACTOR
+				? VaultKeystore.SLOT_A : VaultKeystore.otherSlot(old.keySlot);
+		try {
+			VaultHeader newHeader = sealMasterKey(newMasterKey, password,
+					slot, old.biometricTokenSalt, old.createdTimestamp,
+					passwordChangeCandidates(old), paramsOf(old));
+			commitRekey(vaultMasterKey, newMasterKey, newHeader);
+			return newHeader;
+		} catch (Exception e) {
+			keystore.deleteSlot(slot);
+			SecureMemory.shred(newMasterKey);
+			throw e;
 		}
 	}
 
@@ -1790,7 +1798,7 @@ public class VaultManager
 		dos.write(exportSalt);
 
 		char[] normalExportPassword =
-				PasswordNormalizer.normalize(exportPassword);
+				NewPassword.normalForm(exportPassword, 1);
 		DerivedKey derived;
 		try {
 			derived = derivePortable(normalExportPassword, exportSalt);
