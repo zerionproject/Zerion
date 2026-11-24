@@ -55,7 +55,7 @@ interface GroupTrConstants {
 	String S_REMOVED = "removed";
 	String S_SETTINGS_TIMESTAMP = "settingsTimestamp";
 	String S_SETTINGS_SIG = "settingsSig";
-	String S_SETTINGS_PASSED_ON = "settingsPassedOn";
+	String S_SETTINGS_SENT_TO = "settingsSentTo";
 	String S_SETTINGS_CONFIRMED = "settingsConfirmed";
 	String S_SETTINGS_PENDING = "settingsPending";
 	String S_PINNED_POST_ID = "pinnedPostId";

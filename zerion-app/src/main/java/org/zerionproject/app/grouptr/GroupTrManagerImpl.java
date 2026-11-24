@@ -680,6 +680,10 @@ class GroupTrManagerImpl
 				.ContactAddedEvent) {
 			mlDsaKeys.invalidate();
 			posts.forgetAllSummaries();
+		} else if (e instanceof org.zerionproject.core.api.plugin.event
+				.ContactConnectedEvent) {
+			handHeldSettingsTo(((org.zerionproject.core.api.plugin.event
+					.ContactConnectedEvent) e).getContactId());
 		} else if (e instanceof org.zerionproject.app.api.autodelete.event
 				.ConversationMessagesDeletedEvent) {
 			purgeExpiredPosts();
@@ -728,7 +732,7 @@ class GroupTrManagerImpl
 		}
 		if (v.getMinorVersion()
 				>= MessagingManager.GROUP_SETTINGS_RELAY_MIN_VERSION) {
-			offerHeldSettingsTo(e.getContactId());
+			handHeldSettingsTo(e.getContactId());
 		}
 		if (v.getMinorVersion() < MessagingManager.GROUP_ACTIONS_MIN_VERSION) {
 			return;
@@ -768,30 +772,6 @@ class GroupTrManagerImpl
 				}
 			}
 		} catch (DbException ex) {
-		}
-	}
-
-	private void offerHeldSettingsTo(ContactId contactId) {
-		try {
-			for (GroupTrState s : getGroups()) {
-				if (s.isDissolved()) continue;
-				if (Arrays.equals(s.getCreatorPubKey(), localKeyIn(s))) {
-					continue;
-				}
-				byte[] memberPub = contactKeyIn(s, contactId);
-				if (memberPub == null || !isMemberOrCreator(s, memberPub)) {
-					continue;
-				}
-				java.util.concurrent.locks.ReentrantLock lock =
-						lockFor(s.getGroupId());
-				lock.lock();
-				try {
-					offerSettings(s, memberPub, true);
-				} finally {
-					lock.unlock();
-				}
-			}
-		} catch (DbException | RuntimeException ex) {
 		}
 	}
 
@@ -4102,6 +4082,8 @@ class GroupTrManagerImpl
 			String pending = confirms ? withPending(current, chosen, timer)
 					: null;
 			if (chosen == held) {
+				boolean firstSig =
+						current.get(GroupTrConstants.S_SETTINGS_SIG) == null;
 				Settings keep = new Settings();
 				keep.put(GroupTrConstants.S_SETTINGS_SIG,
 						toHexString(e.getRecordSig()));
@@ -4112,11 +4094,13 @@ class GroupTrManagerImpl
 				}
 				settingsManager.mergeSettings(keep, ns);
 				if (confirms) applyConfirmedSettingsLater(s.getGroupId());
+				if (firstSig) handSettingsOn(s, null, e.getContactId());
 				return;
 			}
 			s.setDefaultAutoDeleteTimerMs(timer);
 			persistSettings(s, chosen, e.getRecordSig(), pending);
 			if (confirms) applyConfirmedSettingsLater(s.getGroupId());
+			handSettingsOn(s, null, e.getContactId());
 			eventBus.broadcast(new org.zerionproject.app.api.messaging.event
 					.GroupTrLocalStateChangedEvent(s.getGroupId(),
 					org.zerionproject.app.api.messaging.event
@@ -4324,33 +4308,118 @@ class GroupTrManagerImpl
 		}
 	}
 
-	private void passSettingsOn(GroupTrState s, byte[] localPub,
-			Collection<byte[]> recipients) {
-		if (Arrays.equals(localPub, s.getCreatorPubKey())) return;
+	/**
+	 * Hands the creator-signed settings record this device holds to the
+	 * fellow members it has not been sent to yet, or to the one contact
+	 * given, and remembers per contact that the held record was sent
+	 * (settings key settingsSentTo: the record's timestamp followed by the
+	 * contact ids; ids of contacts that are no longer members drop out when
+	 * the note is written). The contact the record came from counts as
+	 * sent. The creator's device hands nothing on; it sends its own record
+	 * when it sets the timer.
+	 */
+	private void handSettingsOn(GroupTrState s, @Nullable ContactId only,
+			@Nullable ContactId cameFrom) {
 		try {
+			byte[] localPub = localKeyIn(s);
+			if (Arrays.equals(localPub, s.getCreatorPubKey())) return;
 			String ns = nsOf(s.getGroupId());
 			Settings current = settingsManager.getSettings(ns);
 			if (current.get(S_SETTINGS_TIMESTAMP) == null) return;
 			long held = current.getLong(S_SETTINGS_TIMESTAMP, 0L);
-			if (current.get(GroupTrConstants.S_SETTINGS_PASSED_ON) != null
-					&& current.getLong(GroupTrConstants.S_SETTINGS_PASSED_ON,
-					0L) == held) {
-				return;
+			java.util.Set<Integer> sent = settingsSentTo(current, held);
+			if (only != null && sent.contains(only.getInt())) return;
+			int others = 0;
+			for (GroupTrMember m : s.getMembers()) {
+				if (!Arrays.equals(m.getPubKey(), s.getCreatorPubKey())
+						&& !Arrays.equals(m.getPubKey(), localPub)) {
+					others++;
+				}
 			}
+			if (only == null && sent.size() >= others) return;
 			BdfList record = heldSettingsRecord(s);
 			if (record == null) return;
-			List<byte[]> to = new ArrayList<>();
-			for (byte[] pub : recipients) {
-				if (!Arrays.equals(pub, s.getCreatorPubKey())) to.add(pub);
-			}
 			long now = clock.currentTimeMillis();
+			int needed = MessagingManager.GROUP_SETTINGS_RELAY_MIN_VERSION;
 			db.transaction(false, txn -> {
-				sendSettings(txn, s, to, record, now,
-						MessagingManager.GROUP_SETTINGS_RELAY_MIN_VERSION);
+				Reach reach = reach(txn, s);
+				java.util.TreeSet<Integer> keep = new java.util.TreeSet<>();
+				for (GroupTrMember m : s.getMembers()) {
+					if (Arrays.equals(m.getPubKey(), s.getCreatorPubKey())) {
+						continue;
+					}
+					Contact c = reach.contact(m.getPubKey());
+					if (c == null) continue;
+					int id = c.getId().getInt();
+					if (sent.contains(id) || c.getId().equals(cameFrom)) {
+						keep.add(id);
+						continue;
+					}
+					if (only != null && !only.equals(c.getId())) continue;
+					if (messagingManager.getContactClientMinorVersion(txn,
+							c.getId()) < needed) {
+						continue;
+					}
+					dispatchToContact(txn, c, now, record);
+					keep.add(id);
+				}
+				StringBuilder value = new StringBuilder().append(held);
+				char sep = ':';
+				for (Integer id : keep) {
+					value.append(sep).append(id);
+					sep = ',';
+				}
 				Settings mark = new Settings();
-				mark.putLong(GroupTrConstants.S_SETTINGS_PASSED_ON, held);
+				mark.put(GroupTrConstants.S_SETTINGS_SENT_TO, value.toString());
 				settingsManager.mergeSettings(txn, mark, ns);
 			});
+		} catch (DbException | RuntimeException ex) {
+		}
+	}
+
+	/**
+	 * The contact ids the held settings record was sent to, empty when the
+	 * note belongs to an earlier record.
+	 */
+	private static java.util.Set<Integer> settingsSentTo(Settings current,
+			long held) {
+		java.util.Set<Integer> out = new java.util.HashSet<>();
+		String value = current.get(GroupTrConstants.S_SETTINGS_SENT_TO);
+		if (value == null) return out;
+		int colon = value.indexOf(':');
+		String ts = colon < 0 ? value : value.substring(0, colon);
+		try {
+			if (Long.parseLong(ts) != held || colon < 0) return out;
+			for (String id : value.substring(colon + 1).split(",")) {
+				if (!id.isEmpty()) out.add(Integer.parseInt(id));
+			}
+		} catch (NumberFormatException ex) {
+			out.clear();
+		}
+		return out;
+	}
+
+	private void handHeldSettingsTo(ContactId contactId) {
+		try {
+			for (GroupTrState s : getGroups()) {
+				if (s.isDissolved()) continue;
+				if (Arrays.equals(s.getCreatorPubKey(), localKeyIn(s))) {
+					continue;
+				}
+				byte[] memberPub = contactKeyIn(s, contactId);
+				if (memberPub == null || !isMemberOrCreator(s, memberPub)
+						|| Arrays.equals(memberPub, s.getCreatorPubKey())) {
+					continue;
+				}
+				java.util.concurrent.locks.ReentrantLock lock =
+						lockFor(s.getGroupId());
+				lock.lock();
+				try {
+					handSettingsOn(s, contactId, null);
+				} finally {
+					lock.unlock();
+				}
+			}
 		} catch (DbException | RuntimeException ex) {
 		}
 	}
@@ -5807,7 +5876,7 @@ class GroupTrManagerImpl
 							localPub, msgBody, timestamp));
 				} catch (DbException | RuntimeException ex) {
 				}
-				passSettingsOn(s, localPub, recipientKeys.values());
+				handSettingsOn(s, null, null);
 			}
 			int others = 0;
 			for (GroupTrMember m : s.getMembers()) {
