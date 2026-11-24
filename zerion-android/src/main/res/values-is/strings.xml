@@ -625,7 +625,7 @@
 	<string name="i2p_toggle_summary">Beina umferð einnig um I2P-netið</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Tenging</string>
-	<string name="mesh_info_message">Skilaboð eru innsigluð fyrir viðtakandann og berast frá síma til síma um Bluetooth. Þegar kveikt er á þessu er beðið um heimildir fyrir Bluetooth og nálæg tæki. Með „Aðeins tengiliðum“ tengist síminn þinn aðeins símum tengiliða þinna og Bluetooth-merki hans ber ekkert fast auðkenni Zerion. Til þess þarf tengiliður að vera með Zerion 3.0.19 eða nýrra og þið bæði þurfið að hafa verið nettengd á sama tíma að minnsta kosti einu sinni eftir uppfærslu.</string>
+	<string name="mesh_info_message">Skilaboð eru innsigluð fyrir viðtakandann og berast frá síma til síma um Bluetooth. Þegar kveikt er á þessu er beðið um heimildir fyrir Bluetooth og nálæg tæki. Með „Aðeins tengiliðum“ tengist síminn þinn aðeins símum tengiliða þinna; fyrir alla aðra er Bluetooth-merki hans ónefnt tæki með breytilegt auðkenni sem aðeins tengiliðir þínir geta þekkt. Til þess þarf tengiliður að vera með Zerion 3.0.19 eða nýrra og þið bæði þurfið að hafa verið nettengd á sama tíma að minnsta kosti einu sinni eftir uppfærslu.</string>
 	<string name="mesh_reach_title">Möskvanetið tengist</string>
 	<string name="mesh_reach_contacts">Aðeins tengiliðum</string>
 	<string name="mesh_reach_everyone">Öllum Zerion-símum í nágrenninu</string>
@@ -771,6 +771,8 @@
 	<string name="vault_msg_invalid_document">Ógilt auðkenni skjals</string>
 	<string name="vault_msg_document_updated">Skjalið var uppfært</string>
 	<string name="vault_msg_update_document_failed">Ekki tókst að uppfæra skjalið</string>
+	<string name="vault_msg_saved_earlier_version_kept">Breytingarnar þínar voru vistaðar, en ekki tókst að fjarlægja fyrri útgáfuna. Þú getur eytt henni af listanum.</string>
+	<string name="vault_doc_password_needed_to_save">Þetta skjal er varið með lykilorði. Sláðu það lykilorð inn til að vista breytingarnar þínar.</string>
 	<string name="vault_msg_save_password_failed">Ekki tókst að vista lykilorðið</string>
 	<string name="vault_msg_note_title_empty">Titill minnispunkts má ekki vera auður</string>
 	<string name="vault_msg_saved">Vistað</string>
@@ -881,6 +883,8 @@
 	<string name="browser_tor_get">Sækja Tor Browser</string>
 	<string name="quick_reply_not_sent">Svarið þitt var ekki sent. Opnaðu spjallið til að reyna aftur.</string>
 	<string name="link_unsupported">Tengill ekki studdur</string>
+	<string name="link_host_other_alphabet">Vistfangið notar stafi úr öðru stafrófi.</string>
+	<string name="link_host_other_alphabet_mark">(stafir úr öðru stafrófi)</string>
 	<string name="settings_support_summary">Hjálpaðu til við að halda Zerion ókeypis og persónuverndandi</string>
 	<string name="login_tagline">Einkaskilaboð um Tor</string>
 	<string name="setup_password_subtitle">Þetta dulritunarlykilorð notandaaðgangsins er nauðsynlegt. Það verndar dulritaða notandaaðganginn þinn og gagnagrunninn á þessu tæki. Veldu sterkt lykilorð sem þú notar hvergi annars staðar.</string>
@@ -2384,10 +2388,16 @@
 	<string name="wallet_sp_enable_first">Virkjaðu Silent Payments fyrst</string>
 	<string name="grouptr_reach_title">Hverjir fá færslurnar þínar</string>
 	<string name="grouptr_reach_explanation">Færslur í hópnum fara beint á milli meðlima sem eru tengiliðir hver annars, og meðlimir áframsenda ekki færslur. Þessir meðlimir eru ekki tengiliðir þínir, svo þeir fá ekki færslurnar þínar og þú færð ekki þeirra:\n\n%1$s\n\nBættu þeim við sem tengiliðum til að ná til þeirra.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d meðlimur er ekki tengiliður þinn. Færslur berast honum í gegnum síma eiganda hópsins þegar hann notar 3.0.19 eða nýrra. Ýttu til að sjá nánar.</item>
+		<item quantity="other">%d meðlimir eru ekki tengiliðir þínir. Færslur berast þeim í gegnum síma eiganda hópsins þegar þeir nota 3.0.19 eða nýrra. Ýttu til að sjá nánar.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Færslur í hópnum fara beint á milli meðlima sem eru tengiliðir hver annars. Þessir meðlimir eru ekki tengiliðir þínir, svo sími eiganda hópsins sendir færslurnar þínar áfram til þeirra og færslurnar þeirra til þín, þegar þeir nota 3.0.19 eða nýrra:\n\n%1$s\n\nFærslur berast þegar sími eigandans hefur sent þær áfram. Mjög stórar færslur fara aðeins beint. Bættu þeim við sem tengiliðum til að fá beina leið.</string>
 	<string name="grouptr_ttl_set_by_creator">Sjálfeyðandi skilaboð í þessum hópi: %1$s. Aðeins eigandi hópsins getur breytt þessu.</string>
 	<string name="grouptr_sender_alias_format">%1$s (birtir sem „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (ekki nafn sem þú þekkir)</string>
 	<string name="grouptr_member_out_of_reach">ekki tengiliður þinn, fær ekki færslurnar þínar</string>
+	<string name="grouptr_member_out_of_reach_owner">ekki tengiliður þinn, næst í gegnum eiganda hópsins með 3.0.19 eða nýrra</string>
 	<string name="grouptr_member_invited">Boðið, bíður svars</string>
 	<string name="grouptr_confirm_revoke">Afturkalla boðið til %1$s? Svar frá viðkomandi verður hunsað.</string>
 	<string name="grouptr_revoke_invite">Afturkalla boð</string>
@@ -2846,6 +2856,7 @@
 	<string name="requests_state_withdrawn">Hætt við eftir afhendingu</string>
 	<string name="requests_state_cancelled_by_sender">Sendandi hætti við</string>
 	<string name="requests_state_contact_added">Tengilið bætt við</string>
+	<string name="requests_readd_needs_both_phones">Til að bæta %1$s við aftur þarf að gera það í báðum símum. Biddu viðkomandi að opna stillingar spjallsins ykkar og velja „Bæta tengiliðnum við aftur til að lagfæra tenginguna“ og reyndu svo aftur.</string>
 	<string name="requests_open_chat">Opna spjall</string>
 	<string name="requests_state_no_answer_yet">Ekkert svar enn</string>
 	<string name="requests_notification_accepted">Tengiliðabeiðnin þín var samþykkt</string>

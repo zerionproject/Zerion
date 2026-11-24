@@ -611,6 +611,8 @@
 	<string name="browser_tor_get">Obtener Tor Browser</string>
 	<string name="quick_reply_not_sent">Tu respuesta no se envió. Abre el chat para volver a intentarlo.</string>
 	<string name="link_unsupported">Enlace no compatible</string>
+	<string name="link_host_other_alphabet">La dirección usa letras de otro alfabeto.</string>
+	<string name="link_host_other_alphabet_mark">(letras de otro alfabeto)</string>
 	<string name="settings_support_summary">Ayuda a mantener Zerion gratis y privado</string>
 	<string name="login_tagline">Mensajería privada a través de Tor</string>
 	<string name="setup_password_subtitle">Tu contraseña protege tus datos cifrados. Elige una fuerte y única.</string>
@@ -649,7 +651,7 @@
 	<string name="settings_section_mesh">MALLA SIN CONEXIÓN</string>
 	<string name="mesh_toggle_title">Malla sin conexión</string>
 	<string name="mesh_toggle_summary">Contacta con personas cercanas sin internet, por Bluetooth</string>
-	<string name="mesh_info_message">Los mensajes se sellan para el destinatario y pasan de teléfono a teléfono por Bluetooth. Al activar esto se solicitan permisos de Bluetooth y de dispositivos cercanos. Con «Solo contactos», tu teléfono se conecta únicamente con los teléfonos de tus contactos, y su señal de Bluetooth no lleva ninguna marca fija de Zerion. Para ello, el contacto necesita Zerion 3.0.19 o posterior, y los dos deben haber estado en línea al mismo tiempo al menos una vez desde la actualización.</string>
+	<string name="mesh_info_message">Los mensajes se sellan para el destinatario y pasan de teléfono a teléfono por Bluetooth. Al activar esto se solicitan permisos de Bluetooth y de dispositivos cercanos. Con «Solo contactos», tu teléfono se conecta únicamente con los teléfonos de tus contactos; para cualquier otra persona, su señal de Bluetooth es un dispositivo sin nombre con un identificador cambiante que solo tus contactos pueden reconocer. Para ello, el contacto necesita Zerion 3.0.19 o posterior, y los dos deben haber estado en línea al mismo tiempo al menos una vez desde la actualización.</string>
 	<string name="mesh_reach_title">La malla se conecta con</string>
 	<string name="mesh_reach_contacts">Solo contactos</string>
 	<string name="mesh_reach_everyone">Todos los teléfonos con Zerion cercanos</string>
@@ -2302,10 +2304,17 @@
 	<string name="wallet_sp_enable_first">Activa primero Silent Payments</string>
 	<string name="grouptr_reach_title">A quién llegan tus mensajes</string>
 	<string name="grouptr_reach_explanation">Los mensajes del grupo viajan directamente entre miembros que son contactos entre sí, y los miembros no reenvían mensajes. Estos miembros no son tus contactos, así que no reciben tus mensajes y tú no recibes los suyos:\n\n%1$s\n\nAñádelos como contactos para llegar a ellos.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d miembro no es tu contacto. Los mensajes le llegan a través del teléfono del propietario del grupo si usa la versión 3.0.19 o posterior. Toca para ver detalles.</item>
+		<item quantity="many">%d miembros no son tus contactos. Los mensajes les llegan a través del teléfono del propietario del grupo si usan la versión 3.0.19 o posterior. Toca para ver detalles.</item>
+		<item quantity="other">%d miembros no son tus contactos. Los mensajes les llegan a través del teléfono del propietario del grupo si usan la versión 3.0.19 o posterior. Toca para ver detalles.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Los mensajes del grupo viajan directamente entre miembros que son contactos entre sí. Estos miembros no son tus contactos, así que el teléfono del propietario del grupo les pasa tus mensajes a ellos y los suyos a ti, si usan la versión 3.0.19 o posterior:\n\n%1$s\n\nLos mensajes llegan cuando el teléfono del propietario los ha pasado. Los mensajes muy grandes solo viajan directamente. Añádelos como contactos para tener un camino directo.</string>
 	<string name="grouptr_ttl_set_by_creator">Mensajes que desaparecen en este grupo: %1$s. Solo el propietario del grupo puede cambiarlo.</string>
 	<string name="grouptr_sender_alias_format">%1$s (publica como «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (no es un nombre que conozcas)</string>
 	<string name="grouptr_member_out_of_reach">no es tu contacto, no recibe tus mensajes</string>
+	<string name="grouptr_member_out_of_reach_owner">no es tu contacto, recibe tus mensajes a través del propietario del grupo con la versión 3.0.19 o posterior</string>
 	<string name="grouptr_member_invited">Invitado, esperando respuesta</string>
 	<string name="grouptr_confirm_revoke">¿Retirar la invitación a %1$s? Se ignorará su respuesta.</string>
 	<string name="grouptr_revoke_invite">Retirar invitación</string>
@@ -2411,6 +2420,8 @@
 	<string name="vault_msg_invalid_document">ID de documento no válido</string>
 	<string name="vault_msg_document_updated">Documento actualizado</string>
 	<string name="vault_msg_update_document_failed">No se pudo actualizar el documento</string>
+	<string name="vault_msg_saved_earlier_version_kept">Tus cambios se guardaron, pero no se pudo quitar la versión anterior. Puedes eliminarla de la lista.</string>
+	<string name="vault_doc_password_needed_to_save">Este documento está protegido con una contraseña. Introduce esa contraseña para guardar tus cambios.</string>
 	<string name="vault_msg_save_password_failed">No se pudo guardar la contraseña</string>
 	<string name="vault_msg_note_title_empty">El título de la nota no puede estar vacío</string>
 	<string name="vault_msg_saved">Guardado</string>
@@ -2903,6 +2914,7 @@
 	<string name="requests_state_withdrawn">Cancelada tras la entrega</string>
 	<string name="requests_state_cancelled_by_sender">Cancelada por el remitente</string>
 	<string name="requests_state_contact_added">Contacto añadido</string>
+	<string name="requests_readd_needs_both_phones">Para volver a añadir a %1$s hay que hacerlo en los dos teléfonos. Pídele que abra los ajustes de tu chat y elija «Volver a añadir el contacto para reparar la conexión», y luego inténtalo de nuevo.</string>
 	<string name="requests_open_chat">Abrir chat</string>
 	<string name="requests_state_no_answer_yet">Aún sin respuesta</string>
 	<string name="requests_notification_accepted">Se aceptó tu solicitud de contacto</string>

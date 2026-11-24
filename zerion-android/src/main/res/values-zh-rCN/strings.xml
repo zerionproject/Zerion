@@ -554,6 +554,8 @@
 	<string name="browser_tor_get">获取 Tor Browser</string>
 	<string name="quick_reply_not_sent">你的回复未发送。请打开聊天重试。</string>
 	<string name="link_unsupported">不支持的链接</string>
+	<string name="link_host_other_alphabet">该地址使用了其他字母表中的字母。</string>
+	<string name="link_host_other_alphabet_mark">（其他字母表中的字母）</string>
 	<string name="settings_support_summary">帮助 Zerion 保持免费和私密</string>
 	<string name="login_tagline">通过 Tor 进行私密通信</string>
 	<string name="setup_password_subtitle">你的密码用于保护加密数据。请选择一个强度高且独一无二的密码。</string>
@@ -592,7 +594,7 @@
 	<string name="settings_section_mesh">离线网状网络</string>
 	<string name="mesh_toggle_title">离线网状网络</string>
 	<string name="mesh_toggle_summary">无需互联网，通过 Bluetooth 联系附近的联系人</string>
-	<string name="mesh_info_message">消息会封装给收件人，并通过 Bluetooth 在手机之间传递。开启此项会请求 Bluetooth 和附近设备权限。选择“仅联系人”时，你的手机只与你联系人的手机连接，其 Bluetooth 信号中不带有 Zerion 的固定标记。为此，联系人需要使用 Zerion 3.0.19 或更高版本，并且更新后你们双方至少要同时在线过一次。</string>
+	<string name="mesh_info_message">消息会封装给收件人，并通过 Bluetooth 在手机之间传递。开启此项会请求 Bluetooth 和附近设备权限。选择“仅联系人”时，你的手机只与你联系人的手机连接；对其他任何人来说，其 Bluetooth 信号是一台未命名的设备，其不断变化的标识符只有你的联系人能够识别。为此，联系人需要使用 Zerion 3.0.19 或更高版本，并且更新后你们双方至少要同时在线过一次。</string>
 	<string name="mesh_reach_title">网状网络连接对象</string>
 	<string name="mesh_reach_contacts">仅联系人</string>
 	<string name="mesh_reach_everyone">附近所有 Zerion 手机</string>
@@ -2268,10 +2270,15 @@
 	<string name="wallet_sp_enable_first">请先启用 Silent Payments</string>
 	<string name="grouptr_reach_title">你的消息能送达谁</string>
 	<string name="grouptr_reach_explanation">群组消息只在互为联系人的成员之间直接传递，成员不会转发消息。以下成员不是你的联系人，因此他们收不到你的消息，你也收不到他们的消息：\n\n%1$s\n\n将他们添加为联系人即可联系到他们。</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="other">%d 名成员不是你的联系人。他们使用 3.0.19 或更高版本时，消息会通过群主的手机送达。点按查看详情。</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">群组消息在互为联系人的成员之间直接传递。以下成员不是你的联系人，因此在他们使用 3.0.19 或更高版本时，群主的手机会把你的消息转交给他们，并把他们的消息转交给你：\n\n%1$s\n\n消息在群主的手机转交后送达。非常大的消息只能直接传递。将他们添加为联系人即可获得直接路径。</string>
 	<string name="grouptr_ttl_set_by_creator">此群组的消失消息：%1$s。只有群主可以更改此设置。</string>
 	<string name="grouptr_sender_alias_format">%1$s（以“%2$s”的名义发言）</string>
 	<string name="grouptr_sender_unverified_format">“%1$s”（不是你认识的名字）</string>
 	<string name="grouptr_member_out_of_reach">不是你的联系人，收不到你的消息</string>
+	<string name="grouptr_member_out_of_reach_owner">不是你的联系人，使用 3.0.19 或更高版本时通过群主送达</string>
 	<string name="grouptr_member_invited">已邀请，等待回复</string>
 	<string name="grouptr_confirm_revoke">撤回对 %1$s 的邀请？对方的回复将被忽略。</string>
 	<string name="grouptr_revoke_invite">撤回邀请</string>
@@ -2349,6 +2356,8 @@
 	<string name="vault_msg_invalid_document">无效的文档 ID</string>
 	<string name="vault_msg_document_updated">文档已更新</string>
 	<string name="vault_msg_update_document_failed">更新文档失败</string>
+	<string name="vault_msg_saved_earlier_version_kept">你的更改已保存，但未能移除之前的版本。你可以从列表中将其删除。</string>
+	<string name="vault_doc_password_needed_to_save">此文档受密码保护。请输入该密码以保存你的更改。</string>
 	<string name="vault_msg_save_password_failed">保存密码失败</string>
 	<string name="vault_msg_note_title_empty">笔记标题不能为空</string>
 	<string name="vault_msg_saved">已保存</string>
@@ -2811,6 +2820,7 @@
 	<string name="requests_state_withdrawn">送达后已取消</string>
 	<string name="requests_state_cancelled_by_sender">已被发送者取消</string>
 	<string name="requests_state_contact_added">联系人已添加</string>
+	<string name="requests_readd_needs_both_phones">重新添加 %1$s 需要在两部手机上都执行重新添加。请让对方打开与你的聊天设置并选择“重新添加联系人以修复连接”，然后重试。</string>
 	<string name="requests_open_chat">打开聊天</string>
 	<string name="requests_state_no_answer_yet">尚无回复</string>
 	<string name="requests_notification_accepted">你的联系人请求已被接受</string>

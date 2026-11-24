@@ -409,7 +409,7 @@
 	<string name="i2p_toggle_summary">Encaminar tanben via la ret I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Connectivitat</string>
-	<string name="mesh_info_message">Los messatges son sagelats pel destinatari e passan de telefòn en telefòn per Bluetooth. Activar aquò demanda las autorizacions Bluetooth e d’aparelhs pròches. Amb « Sonque los contactes », vòstre telefòn se connecta sonque als telefòns de vòstres contactes, e son senhal Bluetooth pòrta pas cap de marca fixa de Zerion. Per aquò, lo contacte a besonh de Zerion 3.0.19 o mai recent, e vos cal aver estat en linha totes dos al meteis moment almens un còp dempuèi la mesa a jorn.</string>
+	<string name="mesh_info_message">Los messatges son sagelats pel destinatari e passan de telefòn en telefòn per Bluetooth. Activar aquò demanda las autorizacions Bluetooth e d’aparelhs pròches. Amb « Sonque los contactes », vòstre telefòn se connecta sonque als telefòns de vòstres contactes; per totes los autres, son senhal Bluetooth es un aparelh sens nom amb un identificant cambiadís que sonque vòstres contactes pòdon reconéisser. Per aquò, lo contacte a besonh de Zerion 3.0.19 o mai recent, e vos cal aver estat en linha totes dos al meteis moment almens un còp dempuèi la mesa a jorn.</string>
 	<string name="mesh_reach_title">Lo mesh se connecta a</string>
 	<string name="mesh_reach_contacts">Sonque los contactes</string>
 	<string name="mesh_reach_everyone">Totes los telefòns Zerion pròches</string>
@@ -574,6 +574,8 @@
 	<string name="vault_msg_invalid_document">ID de document invalid</string>
 	<string name="vault_msg_document_updated">Document mes a jorn</string>
 	<string name="vault_msg_update_document_failed">Impossible de metre a jorn lo document</string>
+	<string name="vault_msg_saved_earlier_version_kept">Vòstras modificacions son estadas enregistradas, mas la version precedenta s’es pas poguda levar. La podètz suprimir de la lista.</string>
+	<string name="vault_doc_password_needed_to_save">Aqueste document es protegit per un senhal. Picatz aquel senhal per enregistrar vòstras modificacions.</string>
 	<string name="vault_msg_save_password_failed">Impossible d’enregistrar lo senhal</string>
 	<string name="vault_msg_note_title_empty">Lo títol de la nòta pòt pas èsser void</string>
 	<string name="vault_msg_saved">Enregistrat</string>
@@ -684,6 +686,8 @@
 	<string name="browser_tor_get">Obténer Tor Browser</string>
 	<string name="quick_reply_not_sent">Vòstra responsa es pas estada mandada. Dobrissètz la discussion per tornar ensajar.</string>
 	<string name="link_unsupported">Ligam pas pres en carga</string>
+	<string name="link_host_other_alphabet">L’adreça utiliza de letras d’un autre alfabet.</string>
+	<string name="link_host_other_alphabet_mark">(letras d’un autre alfabet)</string>
 	<string name="settings_support_summary">Ajudatz Zerion a demorar gratuit e privat</string>
 	<string name="login_tagline">Messatjariá privada via Tor</string>
 	<string name="setup_password_subtitle">Aqueste senhal de chiframent del compte es obligatòri. Protegís vòstre compte chifrat local e la basa de donadas sus aqueste aparelh. Causissètz-ne un de fòrt e unic.</string>
@@ -2368,10 +2372,16 @@
 	<string name="wallet_sp_move_hint">Adreça Bitcoin ont desplaçar los fons</string>
 	<string name="grouptr_reach_title">Qual recep vòstras publicacions</string>
 	<string name="grouptr_reach_explanation">Las publicacions del grop circulan dirèctament entre los membres que son contactes l’un de l’autre, e los membres las transmeton pas. Aqueles membres son pas vòstres contactes, doncas recebon pas vòstras publicacions e vos recebètz pas las lor:\n\n%1$s\n\nAjustatz-los coma contactes per los jónher.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d membre es pas vòstre contacte. Las publicacions li arriban pel telefòn del proprietari del grop se utiliza la version 3.0.19 o mai recenta. Tocatz per los detalhs.</item>
+		<item quantity="other">%d membres son pas vòstres contactes. Las publicacions lor arriban pel telefòn del proprietari del grop se utilizan la version 3.0.19 o mai recenta. Tocatz per los detalhs.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Las publicacions del grop circulan dirèctament entre los membres que son contactes l’un de l’autre. Aqueles membres son pas vòstres contactes, doncas lo telefòn del proprietari del grop lor transmet vòstras publicacions e vos transmet las lor, se utilizan la version 3.0.19 o mai recenta:\n\n%1$s\n\nLas publicacions arriban un còp que lo telefòn del proprietari las a transmesas. Las publicacions fòrça grandas circulan sonque dirèctament. Ajustatz-los coma contactes per aver un camin dirècte.</string>
 	<string name="grouptr_ttl_set_by_creator">Messatges efemèrs dins aqueste grop: %1$s. Sonque lo proprietari del grop pòt cambiar aquò.</string>
 	<string name="grouptr_sender_alias_format">%1$s (publica coma « %2$s »)</string>
 	<string name="grouptr_sender_unverified_format">« %1$s » (pas un nom que coneissètz)</string>
 	<string name="grouptr_member_out_of_reach">pas vòstre contacte, recep pas vòstras publicacions</string>
+	<string name="grouptr_member_out_of_reach_owner">pas vòstre contacte, recep las publicacions pel proprietari del grop amb la version 3.0.19 o mai recenta</string>
 	<string name="grouptr_member_invited">Convidat, en espèra d’una responsa</string>
 	<string name="grouptr_confirm_revoke">Retirar la convidacion mandada a %1$s? Una responsa de sa part serà ignorada.</string>
 	<string name="grouptr_revoke_invite">Retirar la convidacion</string>
@@ -2830,6 +2840,7 @@
 	<string name="requests_state_withdrawn">Anullada aprèp la liurason</string>
 	<string name="requests_state_cancelled_by_sender">Anullada per l’expeditor</string>
 	<string name="requests_state_contact_added">Contacte apondut</string>
+	<string name="requests_readd_needs_both_phones">Per tornar ajustar %1$s, o cal far suls dos telefòns. Demandatz-li de dobrir los paramètres de vòstra discussion e de causir « Tornar ajustar lo contacte per reparar la connexion », puèi tornatz ensajar.</string>
 	<string name="requests_open_chat">Dobrir la discussion</string>
 	<string name="requests_state_no_answer_yet">Pas encara de responsa</string>
 	<string name="requests_notification_accepted">Vòstra demanda de contacte es estada acceptada</string>

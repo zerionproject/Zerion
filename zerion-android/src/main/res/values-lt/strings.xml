@@ -671,7 +671,7 @@
 	<string name="i2p_toggle_summary">Maršrutizuoti ir per I2P tinklą</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Ryšys</string>
-	<string name="mesh_info_message">Žinutės užšifruojamos taip, kad jas atidaryti galėtų tik gavėjas, ir per Bluetooth perduodamos iš telefono į telefoną. Įjungus šią funkciją, prašoma Bluetooth ir netoliese esančių įrenginių leidimų. Pasirinkus „Tik adresatai“, jūsų telefonas jungiasi tik su jūsų adresatų telefonais, o jo Bluetooth signale nėra jokios pastovios Zerion žymės. Tam adresatui reikia Zerion 3.0.19 arba naujesnės versijos, o po atnaujinimo jūs abu bent kartą turėjote būti prisijungę prie interneto tuo pačiu metu.</string>
+	<string name="mesh_info_message">Žinutės užšifruojamos taip, kad jas atidaryti galėtų tik gavėjas, ir per Bluetooth perduodamos iš telefono į telefoną. Įjungus šią funkciją, prašoma Bluetooth ir netoliese esančių įrenginių leidimų. Pasirinkus „Tik adresatai“, jūsų telefonas jungiasi tik su jūsų adresatų telefonais; visiems kitiems jo Bluetooth signalas yra bevardis įrenginys, kurio kintantį identifikatorių atpažinti gali tik jūsų adresatai. Tam adresatui reikia Zerion 3.0.19 arba naujesnės versijos, o po atnaujinimo jūs abu bent kartą turėjote būti prisijungę prie interneto tuo pačiu metu.</string>
 	<string name="mesh_reach_title">Su kuo jungiasi mesh tinklas</string>
 	<string name="mesh_reach_contacts">Tik adresatai</string>
 	<string name="mesh_reach_everyone">Visi netoliese esantys telefonai su Zerion</string>
@@ -831,6 +831,8 @@
 	<string name="vault_msg_invalid_document">Netinkamas dokumento ID</string>
 	<string name="vault_msg_document_updated">Dokumentas atnaujintas</string>
 	<string name="vault_msg_update_document_failed">Nepavyko atnaujinti dokumento</string>
+	<string name="vault_msg_saved_earlier_version_kept">Jūsų pakeitimai išsaugoti, tačiau ankstesnės versijos pašalinti nepavyko. Galite ją ištrinti iš sąrašo.</string>
+	<string name="vault_doc_password_needed_to_save">Šis dokumentas apsaugotas slaptažodžiu. Įveskite šį slaptažodį, kad išsaugotumėte pakeitimus.</string>
 	<string name="vault_msg_save_password_failed">Nepavyko įrašyti slaptažodžio</string>
 	<string name="vault_msg_note_title_empty">Užrašo pavadinimas negali būti tuščias</string>
 	<string name="vault_msg_saved">Įrašyta</string>
@@ -943,6 +945,8 @@
 	<string name="browser_tor_get">Gauti Tor Browser</string>
 	<string name="quick_reply_not_sent">Atsakymas neišsiųstas. Atidarykite pokalbį ir bandykite dar kartą.</string>
 	<string name="link_unsupported">Nepalaikoma nuoroda</string>
+	<string name="link_host_other_alphabet">Adrese naudojamos kitos abėcėlės raidės.</string>
+	<string name="link_host_other_alphabet_mark">(kitos abėcėlės raidės)</string>
 	<string name="settings_support_summary">Padėkite Zerion išlikti nemokamai ir privačiai</string>
 	<string name="login_tagline">Privatus susirašinėjimas per Tor</string>
 	<string name="setup_password_subtitle">Šis paskyros šifravimo slaptažodis yra privalomas. Jis apsaugo jūsų šifruotą paskyrą ir duomenų bazę, saugomas šiame įrenginyje. Pasirinkite stiprų, unikalų slaptažodį.</string>
@@ -2422,10 +2426,18 @@
 	<string name="wallet_sp_enable_first">Pirmiausia įjunkite Silent Payments</string>
 	<string name="grouptr_reach_title">Kas gauna jūsų įrašus</string>
 	<string name="grouptr_reach_explanation">Grupės įrašai keliauja tiesiogiai tarp narių, kurie yra vienas kito adresatai, ir nariai įrašų nepersiunčia toliau. Šie nariai nėra jūsų adresatai, todėl jie negauna jūsų įrašų, o jūs negaunate jų įrašų:\n\n%1$s\n\nPridėkite juos kaip adresatus, kad juos pasiektumėte.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d narys nėra jūsų adresatas. Įrašai jį pasiekia per grupės savininko telefoną, jei jis naudoja 3.0.19 arba naujesnę versiją. Bakstelėkite, kad sužinotumėte daugiau.</item>
+		<item quantity="few">%d nariai nėra jūsų adresatai. Įrašai juos pasiekia per grupės savininko telefoną, jei jie naudoja 3.0.19 arba naujesnę versiją. Bakstelėkite, kad sužinotumėte daugiau.</item>
+		<item quantity="many">%d nario nėra jūsų adresatai. Įrašai juos pasiekia per grupės savininko telefoną, jei jie naudoja 3.0.19 arba naujesnę versiją. Bakstelėkite, kad sužinotumėte daugiau.</item>
+		<item quantity="other">%d narių nėra jūsų adresatai. Įrašai juos pasiekia per grupės savininko telefoną, jei jie naudoja 3.0.19 arba naujesnę versiją. Bakstelėkite, kad sužinotumėte daugiau.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Grupės įrašai keliauja tiesiogiai tarp narių, kurie yra vienas kito adresatai. Šie nariai nėra jūsų adresatai, todėl grupės savininko telefonas perduoda jūsų įrašus jiems, o jų įrašus jums, jei jie naudoja 3.0.19 arba naujesnę versiją:\n\n%1$s\n\nĮrašai atkeliauja, kai savininko telefonas juos perduoda. Labai dideli įrašai keliauja tik tiesiogiai. Pridėkite juos kaip adresatus, kad turėtumėte tiesioginį kelią.</string>
 	<string name="grouptr_ttl_set_by_creator">Išnykstančios žinutės šioje grupėje: %1$s. Pakeisti tai gali tik grupės savininkas.</string>
 	<string name="grouptr_sender_alias_format">%1$s (rašo kaip „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (jums nežinomas vardas)</string>
 	<string name="grouptr_member_out_of_reach">ne jūsų adresatas, negauna jūsų įrašų</string>
+	<string name="grouptr_member_out_of_reach_owner">ne jūsų adresatas, pasiekiamas per grupės savininką su 3.0.19 arba naujesne versija</string>
 	<string name="grouptr_member_invited">Pakviestas, laukiama atsakymo</string>
 	<string name="grouptr_confirm_revoke">Atšaukti pakvietimą, skirtą %1$s? Šio asmens atsakymas bus ignoruojamas.</string>
 	<string name="grouptr_revoke_invite">Atšaukti pakvietimą</string>
@@ -2938,6 +2950,7 @@
 	<string name="requests_state_withdrawn">Atšaukta po pristatymo</string>
 	<string name="requests_state_cancelled_by_sender">Atšaukė siuntėjas</string>
 	<string name="requests_state_contact_added">Adresatas pridėtas</string>
+	<string name="requests_readd_needs_both_phones">Norint iš naujo pridėti %1$s, tai reikia padaryti abiejuose telefonuose. Paprašykite adresato atidaryti jūsų pokalbio nustatymus ir pasirinkti „Iš naujo pridėkite adresatą, kad pataisytumėte ryšį“, tada bandykite dar kartą.</string>
 	<string name="requests_open_chat">Atverti pokalbį</string>
 	<string name="requests_state_no_answer_yet">Atsakymo dar nėra</string>
 	<string name="requests_notification_accepted">Jūsų adresato užklausa priimta</string>

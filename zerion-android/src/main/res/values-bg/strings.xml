@@ -647,7 +647,7 @@
 	<string name="i2p_toggle_summary">Маршрутизиране и през мрежата I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Свързаност</string>
-	<string name="mesh_info_message">Съобщенията се запечатват за получателя и се предават от телефон на телефон чрез Bluetooth. Включването изисква разрешения за Bluetooth и за устройства наблизо. При „Само контакти“ телефонът ти се свързва само с телефоните на твоите контакти и неговият Bluetooth сигнал не съдържа постоянен белег на Zerion. За това контактът трябва да има Zerion 3.0.19 или по-нова версия и двамата трябва да сте били на линия по едно и също време поне веднъж след актуализацията.</string>
+	<string name="mesh_info_message">Съобщенията се запечатват за получателя и се предават от телефон на телефон чрез Bluetooth. Включването изисква разрешения за Bluetooth и за устройства наблизо. При „Само контакти“ телефонът ти се свързва само с телефоните на твоите контакти, а за всички останали неговият Bluetooth сигнал е устройство без име, чийто променящ се идентификатор могат да разпознаят само твоите контакти. За това контактът трябва да има Zerion 3.0.19 или по-нова версия и двамата трябва да сте били на линия по едно и също време поне веднъж след актуализацията.</string>
 	<string name="mesh_reach_title">Mesh мрежата се свързва с</string>
 	<string name="mesh_reach_contacts">Само контакти</string>
 	<string name="mesh_reach_everyone">Всеки телефон със Zerion наблизо</string>
@@ -797,6 +797,8 @@
 	<string name="browser_tor_get">Изтегли Tor Browser</string>
 	<string name="quick_reply_not_sent">Отговорът ти не беше изпратен. Отвори разговора, за да опиташ отново.</string>
 	<string name="link_unsupported">Неподдържан линк</string>
+	<string name="link_host_other_alphabet">Адресът използва букви от друга азбука.</string>
+	<string name="link_host_other_alphabet_mark">(букви от друга азбука)</string>
 	<string name="settings_support_summary">Помогни Zerion да остане безплатен и поверителен</string>
 	<string name="login_tagline">Поверителни съобщения през Tor</string>
 	<string name="setup_password_subtitle">Тази парола за шифроване на акаунта е задължителна. Тя защитава шифрования ти акаунт и базата данни на това устройство. Избери силна и уникална парола.</string>
@@ -2276,10 +2278,16 @@
 	<string name="wallet_sp_enable_first">Първо включи Silent Payments</string>
 	<string name="grouptr_reach_title">До кого достигат публикациите ти</string>
 	<string name="grouptr_reach_explanation">Публикациите в групата се предават директно между участници, които са контакти помежду си, а участниците не препращат публикации. Тези участници не са твои контакти, затова не получават твоите публикации, а ти не получаваш техните:\n\n%1$s\n\nДобави ги като контакти, за да достигаш до тях.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d участник не е твой контакт. Публикациите стигат до него през телефона на собственика на групата, когато използва версия 3.0.19 или по-нова. Докосни за подробности.</item>
+		<item quantity="other">%d участници не са твои контакти. Публикациите стигат до тях през телефона на собственика на групата, когато използват версия 3.0.19 или по-нова. Докосни за подробности.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Публикациите в групата се предават директно между участници, които са контакти помежду си. Тези участници не са твои контакти, затова телефонът на собственика на групата предава твоите публикации на тях и техните на теб, когато използват версия 3.0.19 или по-нова:\n\n%1$s\n\nПубликациите пристигат, след като телефонът на собственика ги предаде. Много големите публикации се предават само директно. Добави ги като контакти за директен път.</string>
 	<string name="grouptr_ttl_set_by_creator">Изчезващи съобщения в тази група: %1$s. Само собственикът на групата може да промени това.</string>
 	<string name="grouptr_sender_alias_format">%1$s (публикува като „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (име, което не познаваш)</string>
 	<string name="grouptr_member_out_of_reach">не е твой контакт, не получава публикациите ти</string>
+	<string name="grouptr_member_out_of_reach_owner">не е твой контакт, достига се през собственика на групата при версия 3.0.19 или по-нова</string>
 	<string name="grouptr_member_invited">Поканата е изпратена, чака се отговор</string>
 	<string name="grouptr_confirm_revoke">Да се оттегли ли поканата до %1$s? Отговор от този човек ще бъде пренебрегнат.</string>
 	<string name="grouptr_revoke_invite">Оттегли поканата</string>
@@ -2371,6 +2379,8 @@
 	<string name="vault_msg_invalid_document">Невалиден идентификатор на документа</string>
 	<string name="vault_msg_document_updated">Документът е обновен</string>
 	<string name="vault_msg_update_document_failed">Документът не можа да бъде обновен</string>
+	<string name="vault_msg_saved_earlier_version_kept">Промените ти са запазени, но предишната версия не можа да бъде премахната. Можеш да я изтриеш от списъка.</string>
+	<string name="vault_doc_password_needed_to_save">Този документ е защитен с парола. Въведи тази парола, за да запазиш промените си.</string>
 	<string name="vault_msg_save_password_failed">Паролата не можа да бъде запазена</string>
 	<string name="vault_msg_note_title_empty">Заглавието на бележката не може да е празно</string>
 	<string name="vault_msg_saved">Запазено</string>
@@ -2844,6 +2854,7 @@
 	<string name="requests_state_withdrawn">Отменена след доставяне</string>
 	<string name="requests_state_cancelled_by_sender">Отменена от подателя</string>
 	<string name="requests_state_contact_added">Контактът е добавен</string>
+	<string name="requests_readd_needs_both_phones">Повторното добавяне на %1$s изисква повторно добавяне и на двата телефона. Помоли контакта да отвори настройките на чата с теб и да избере „Добави контакта отново, за да поправиш връзката“, след което опитай отново.</string>
 	<string name="requests_open_chat">Отвори чата</string>
 	<string name="requests_state_no_answer_yet">Все още няма отговор</string>
 	<string name="requests_notification_accepted">Заявката ви за контакт е приета</string>

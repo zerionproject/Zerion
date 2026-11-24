@@ -584,7 +584,7 @@
 	<string name="i2p_toggle_summary">ניתוב גם דרך רשת I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">קישוריות</string>
-	<string name="mesh_info_message">ההודעות מוצפנות כך שרק הנמען יכול לפתוח אותן, ועוברות מטלפון לטלפון דרך Bluetooth. הפעלת האפשרות מבקשת הרשאות Bluetooth ומכשירים בקרבת מקום. עם \"אנשי קשר בלבד\", הטלפון שלך מתחבר רק לטלפונים של אנשי הקשר שלך, ואות ה-Bluetooth שלו לא נושא שום סימן קבוע של Zerion. לשם כך איש הקשר צריך Zerion 3.0.19 ומעלה, ושניכם צריכים להיות מחוברים לאינטרנט באותו זמן לפחות פעם אחת מאז העדכון.</string>
+	<string name="mesh_info_message">ההודעות מוצפנות כך שרק הנמען יכול לפתוח אותן, ועוברות מטלפון לטלפון דרך Bluetooth. הפעלת האפשרות מבקשת הרשאות Bluetooth ומכשירים בקרבת מקום. עם \"אנשי קשר בלבד\", הטלפון שלך מתחבר רק לטלפונים של אנשי הקשר שלך; עבור כל אחד אחר, אות ה-Bluetooth שלו הוא מכשיר ללא שם, שאת המזהה המשתנה שלו רק אנשי הקשר שלך יכולים לזהות. לשם כך איש הקשר צריך Zerion 3.0.19 ומעלה, ושניכם צריכים להיות מחוברים לאינטרנט באותו זמן לפחות פעם אחת מאז העדכון.</string>
 	<string name="mesh_reach_title">רשת ה-Mesh מתחברת אל</string>
 	<string name="mesh_reach_contacts">אנשי קשר בלבד</string>
 	<string name="mesh_reach_everyone">כל טלפון עם Zerion בקרבת מקום</string>
@@ -755,6 +755,8 @@
 	<string name="vault_msg_invalid_document">מזהה מסמך לא תקין</string>
 	<string name="vault_msg_document_updated">המסמך עודכן</string>
 	<string name="vault_msg_update_document_failed">עדכון המסמך נכשל</string>
+	<string name="vault_msg_saved_earlier_version_kept">השינויים שלך נשמרו, אבל לא ניתן היה להסיר את הגרסה הקודמת. אפשר למחוק אותה מהרשימה.</string>
+	<string name="vault_doc_password_needed_to_save">המסמך הזה מוגן בסיסמה. יש להזין את הסיסמה הזו כדי לשמור את השינויים שלך.</string>
 	<string name="vault_msg_save_password_failed">שמירת הסיסמה נכשלה</string>
 	<string name="vault_msg_note_title_empty">כותרת הפתק לא יכולה להיות ריקה</string>
 	<string name="vault_msg_saved">נשמר</string>
@@ -866,6 +868,8 @@
 	<string name="browser_tor_get">קבלת Tor Browser</string>
 	<string name="quick_reply_not_sent">התשובה שלך לא נשלחה. יש לפתוח את השיחה כדי לנסות שוב.</string>
 	<string name="link_unsupported">קישור לא נתמך</string>
+	<string name="link_host_other_alphabet">הכתובת משתמשת באותיות מאלפבית אחר.</string>
+	<string name="link_host_other_alphabet_mark">(אותיות מאלפבית אחר)</string>
 	<string name="settings_support_summary">עזרה לשמור על Zerion חינמי ופרטי</string>
 	<string name="login_tagline">הודעות פרטיות דרך Tor</string>
 	<string name="setup_password_subtitle">סיסמת ההצפנה הזו של החשבון היא חובה. היא מגינה על החשבון המקומי המוצפן ועל מסד הנתונים שלך במכשיר הזה. יש לבחור סיסמה חזקה וייחודית.</string>
@@ -2395,10 +2399,17 @@
 	<string name="wallet_sp_enable_first">יש להפעיל קודם את Silent Payments</string>
 	<string name="grouptr_reach_title">למי ההודעות שלך מגיעות</string>
 	<string name="grouptr_reach_explanation">הודעות בקבוצה עוברות ישירות בין חברים שהם אנשי קשר זה של זה, וחברים לא מעבירים הודעות הלאה. החברים האלה אינם אנשי הקשר שלך, ולכן הם לא מקבלים את ההודעות שלך וגם ההודעות שלהם לא מגיעות אליך:\n\n%1$s\n\nכדי להגיע אליהם, יש להוסיף אותם כאנשי קשר.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">חבר אחד אינו איש קשר שלך. ההודעות מגיעות אליו דרך הטלפון של הבעלים של הקבוצה כשהוא משתמש בגרסה 3.0.19 ומעלה. יש להקיש לפרטים.</item>
+		<item quantity="two">שני חברים אינם אנשי קשר שלך. ההודעות מגיעות אליהם דרך הטלפון של הבעלים של הקבוצה כשהם משתמשים בגרסה 3.0.19 ומעלה. יש להקיש לפרטים.</item>
+		<item quantity="other">%d חברים אינם אנשי קשר שלך. ההודעות מגיעות אליהם דרך הטלפון של הבעלים של הקבוצה כשהם משתמשים בגרסה 3.0.19 ומעלה. יש להקיש לפרטים.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">הודעות בקבוצה עוברות ישירות בין חברים שהם אנשי קשר זה של זה. החברים האלה אינם אנשי הקשר שלך, ולכן הטלפון של הבעלים של הקבוצה מעביר אליהם את ההודעות שלך ואליך את ההודעות שלהם, כשהם משתמשים בגרסה 3.0.19 ומעלה:\n\n%1$s\n\nההודעות מגיעות לאחר שהטלפון של הבעלים העביר אותן. הודעות גדולות מאוד עוברות רק ישירות. כדי לקבל נתיב ישיר, יש להוסיף אותם כאנשי קשר.</string>
 	<string name="grouptr_ttl_set_by_creator">הודעות נעלמות בקבוצה הזו: %1$s. רק הבעלים של הקבוצה יכול לשנות זאת.</string>
 	<string name="grouptr_sender_alias_format">%1$s (בשם \"%2$s\")</string>
 	<string name="grouptr_sender_unverified_format">\"%1$s\" (לא שם שמוכר לך)</string>
 	<string name="grouptr_member_out_of_reach">לא איש קשר שלך, לא מקבל את ההודעות שלך</string>
+	<string name="grouptr_member_out_of_reach_owner">לא איש קשר שלך, ההודעות מגיעות דרך הבעלים של הקבוצה בגרסה 3.0.19 ומעלה</string>
 	<string name="grouptr_member_invited">הוזמן, ממתין לתשובה</string>
 	<string name="grouptr_confirm_revoke">לבטל את ההזמנה אל %1$s? תשובה שתתקבל לא תילקח בחשבון.</string>
 	<string name="grouptr_revoke_invite">ביטול ההזמנה</string>
@@ -2886,6 +2897,7 @@
 	<string name="requests_state_withdrawn">בוטלה אחרי המסירה</string>
 	<string name="requests_state_cancelled_by_sender">בוטלה על ידי השולח</string>
 	<string name="requests_state_contact_added">איש הקשר נוסף</string>
+	<string name="requests_readd_needs_both_phones">כדי להוסיף מחדש את %1$s צריך לבצע הוספה מחדש בשני הטלפונים. יש לבקש מאיש הקשר לפתוח את הגדרות השיחה איתך ולבחור \"הוספת איש הקשר מחדש כדי לתקן את החיבור\", ואז לנסות שוב.</string>
 	<string name="requests_open_chat">פתיחת השיחה</string>
 	<string name="requests_state_no_answer_yet">עדיין אין תשובה</string>
 	<string name="requests_notification_accepted">בקשת הקשר שלך התקבלה</string>

@@ -470,7 +470,7 @@
 	<string name="i2p_toggle_summary">Trafiki I2P şəbəkəsi üzərindən də yönləndir</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Bağlantı</string>
-	<string name="mesh_info_message">Mesajlar yalnız alıcının aça biləcəyi şəkildə möhürlənir və Bluetooth vasitəsilə telefondan telefona ötürülür. Bunu aktiv etdikdə Bluetooth və yaxınlıqdakı cihazlar icazələri tələb olunur. «Yalnız kontaktlar» seçildikdə telefonunuz yalnız kontaktlarınızın telefonlarına qoşulur və onun Bluetooth siqnalında Zerion tətbiqinə aid heç bir sabit işarə olmur. Bunun üçün kontaktda Zerion 3.0.19 və ya daha yeni versiya olmalıdır və yeniləmədən sonra ikiniz də ən azı bir dəfə eyni vaxtda onlayn olmuş olmalısınız.</string>
+	<string name="mesh_info_message">Mesajlar yalnız alıcının aça biləcəyi şəkildə möhürlənir və Bluetooth vasitəsilə telefondan telefona ötürülür. Bunu aktiv etdikdə Bluetooth və yaxınlıqdakı cihazlar icazələri tələb olunur. «Yalnız kontaktlar» seçildikdə telefonunuz yalnız kontaktlarınızın telefonlarına qoşulur; başqaları üçün isə onun Bluetooth siqnalı adsız bir cihazdır və onun dəyişən identifikatorunu yalnız kontaktlarınız tanıya bilər. Bunun üçün kontaktda Zerion 3.0.19 və ya daha yeni versiya olmalıdır və yeniləmədən sonra ikiniz də ən azı bir dəfə eyni vaxtda onlayn olmuş olmalısınız.</string>
 	<string name="mesh_reach_title">Mesh bunlara qoşulur</string>
 	<string name="mesh_reach_contacts">Yalnız kontaktlar</string>
 	<string name="mesh_reach_everyone">Yaxınlıqdakı bütün Zerion telefonları</string>
@@ -639,6 +639,8 @@
 	<string name="browser_tor_get">Tor Browser əldə et</string>
 	<string name="quick_reply_not_sent">Cavabınız göndərilmədi. Yenidən cəhd etmək üçün söhbəti açın.</string>
 	<string name="link_unsupported">Dəstəklənməyən keçid</string>
+	<string name="link_host_other_alphabet">Ünvanda başqa əlifbanın hərfləri istifadə olunub.</string>
+	<string name="link_host_other_alphabet_mark">(başqa əlifbanın hərfləri)</string>
 	<string name="settings_support_summary">Zerion-un pulsuz və məxfi qalmasına kömək edin</string>
 	<string name="login_tagline">Tor üzərindən məxfi mesajlaşma</string>
 	<string name="setup_password_subtitle">Hesab şifrələmə parolu mütləqdir. O, bu cihazdakı lokal şifrəli hesabınızı və məlumat bazanızı qoruyur. Güclü və təkrarlanmayan parol seçin.</string>
@@ -2212,10 +2214,16 @@
 	<string name="wallet_sp_enable_first">Əvvəlcə Silent Payments-i aktiv edin</string>
 	<string name="grouptr_reach_title">Paylaşımlarınız kimə çatır</string>
 	<string name="grouptr_reach_explanation">Qrup paylaşımları bir-birinin kontaktı olan üzvlər arasında birbaşa ötürülür və üzvlər paylaşımları başqalarına ötürmür. Bu üzvlər sizin kontaktlarınız deyil, ona görə onlar sizin paylaşımlarınızı almır, siz də onlarınkını almırsınız:\n\n%1$s\n\nOnlara çatmaq üçün onları kontakt kimi əlavə edin.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d üzv kontaktınız deyil. 3.0.19 və ya daha yeni versiyadan istifadə etdikdə paylaşımlar ona qrup sahibinin telefonu vasitəsilə çatır. Ətraflı məlumat üçün toxunun.</item>
+		<item quantity="other">%d üzv kontaktınız deyil. 3.0.19 və ya daha yeni versiyadan istifadə etdikdə paylaşımlar onlara qrup sahibinin telefonu vasitəsilə çatır. Ətraflı məlumat üçün toxunun.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Qrup paylaşımları bir-birinin kontaktı olan üzvlər arasında birbaşa ötürülür. Bu üzvlər sizin kontaktlarınız deyil, ona görə onlar 3.0.19 və ya daha yeni versiyadan istifadə etdikdə qrup sahibinin telefonu sizin paylaşımlarınızı onlara, onların paylaşımlarını isə sizə ötürür:\n\n%1$s\n\nPaylaşımlar qrup sahibinin telefonu onları ötürdükdən sonra çatır. Çox böyük paylaşımlar yalnız birbaşa ötürülür. Birbaşa yol üçün onları kontakt kimi əlavə edin.</string>
 	<string name="grouptr_ttl_set_by_creator">Bu qrupda yox olan mesajlar: %1$s. Bunu yalnız qrup sahibi dəyişə bilər.</string>
 	<string name="grouptr_sender_alias_format">%1$s («%2$s» adı ilə paylaşır)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (tanıdığınız ad deyil)</string>
 	<string name="grouptr_member_out_of_reach">kontaktınız deyil, paylaşımlarınızı almır</string>
+	<string name="grouptr_member_out_of_reach_owner">kontaktınız deyil, 3.0.19 və ya daha yeni versiyada paylaşımlar qrup sahibi vasitəsilə çatır</string>
 	<string name="grouptr_member_invited">Dəvət olunub, cavab gözlənilir</string>
 	<string name="grouptr_confirm_revoke">%1$s üçün dəvət geri götürülsün? Ondan gələn cavab nəzərə alınmayacaq.</string>
 	<string name="grouptr_revoke_invite">Dəvəti geri götür</string>
@@ -2307,6 +2315,8 @@
 	<string name="vault_msg_invalid_document">Sənəd ID-si yanlışdır</string>
 	<string name="vault_msg_document_updated">Sənəd yeniləndi</string>
 	<string name="vault_msg_update_document_failed">Sənəd yenilənə bilmədi</string>
+	<string name="vault_msg_saved_earlier_version_kept">Dəyişiklikləriniz yadda saxlanıldı, lakin əvvəlki versiyanı silmək mümkün olmadı. Onu siyahıdan silə bilərsiniz.</string>
+	<string name="vault_doc_password_needed_to_save">Bu sənəd parolla qorunur. Dəyişikliklərinizi yadda saxlamaq üçün həmin parolu daxil edin.</string>
 	<string name="vault_msg_save_password_failed">Parol yadda saxlanıla bilmədi</string>
 	<string name="vault_msg_note_title_empty">Qeydin başlığı boş ola bilməz</string>
 	<string name="vault_msg_saved">Yadda saxlanıldı</string>
@@ -2780,6 +2790,7 @@
 	<string name="requests_state_withdrawn">Çatdırıldıqdan sonra ləğv edildi</string>
 	<string name="requests_state_cancelled_by_sender">Göndərən ləğv etdi</string>
 	<string name="requests_state_contact_added">Kontakt əlavə edildi</string>
+	<string name="requests_readd_needs_both_phones">%1$s kontaktını yenidən əlavə etmək üçün bunu hər iki telefonda etmək lazımdır. Ondan sizinlə söhbətin parametrlərini açıb «Bağlantını bərpa etmək üçün kontaktı yenidən əlavə et» seçimini etməsini xahiş edin, sonra yenidən cəhd edin.</string>
 	<string name="requests_open_chat">Söhbəti aç</string>
 	<string name="requests_state_no_answer_yet">Hələ cavab yoxdur</string>
 	<string name="requests_notification_accepted">Kontakt sorğunuz qəbul edildi</string>

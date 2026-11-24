@@ -602,6 +602,8 @@
 	<string name="browser_tor_get">Tor Browser holen</string>
 	<string name="quick_reply_not_sent">Deine Antwort wurde nicht gesendet. Öffne den Chat, um es erneut zu versuchen.</string>
 	<string name="link_unsupported">Nicht unterstützter Link</string>
+	<string name="link_host_other_alphabet">Die Adresse verwendet Buchstaben aus einem anderen Alphabet.</string>
+	<string name="link_host_other_alphabet_mark">(Buchstaben aus einem anderen Alphabet)</string>
 	<string name="settings_support_summary">Hilf, Zerion kostenlos und privat zu halten</string>
 	<string name="login_tagline">Private Nachrichten über Tor</string>
 	<string name="setup_password_subtitle">Dein Passwort schützt deine verschlüsselten Daten. Wähle ein starkes, einzigartiges Passwort.</string>
@@ -640,7 +642,7 @@
 	<string name="settings_section_mesh">OFFLINE-MESH</string>
 	<string name="mesh_toggle_title">Offline-Mesh</string>
 	<string name="mesh_toggle_summary">Nahe Kontakte ohne Internet über Bluetooth erreichen</string>
-	<string name="mesh_info_message">Nachrichten werden für den Empfänger versiegelt und über Bluetooth von Telefon zu Telefon weitergegeben. Beim Aktivieren werden Berechtigungen für Bluetooth und Geräte in der Nähe angefordert. Bei „Nur mit Kontakten“ verbindet sich dein Telefon nur mit den Telefonen deiner Kontakte, und sein Bluetooth-Signal enthält kein festes Zerion-Kennzeichen. Dafür braucht ein Kontakt Zerion 3.0.19 oder neuer, und ihr beide müsst seit dem Update mindestens einmal gleichzeitig online gewesen sein.</string>
+	<string name="mesh_info_message">Nachrichten werden für den Empfänger versiegelt und über Bluetooth von Telefon zu Telefon weitergegeben. Beim Aktivieren werden Berechtigungen für Bluetooth und Geräte in der Nähe angefordert. Bei „Nur mit Kontakten“ verbindet sich dein Telefon nur mit den Telefonen deiner Kontakte; für alle anderen ist sein Bluetooth-Signal ein unbenanntes Gerät, dessen wechselnde Kennung nur deine Kontakte erkennen können. Dafür braucht ein Kontakt Zerion 3.0.19 oder neuer, und ihr beide müsst seit dem Update mindestens einmal gleichzeitig online gewesen sein.</string>
 	<string name="mesh_reach_title">Mesh verbindet sich</string>
 	<string name="mesh_reach_contacts">Nur mit Kontakten</string>
 	<string name="mesh_reach_everyone">Mit jedem Zerion-Telefon in der Nähe</string>
@@ -2286,10 +2288,16 @@
 	<string name="wallet_sp_enable_first">Aktiviere zuerst Silent Payments</string>
 	<string name="grouptr_reach_title">Wen deine Nachrichten erreichen</string>
 	<string name="grouptr_reach_explanation">Gruppennachrichten werden direkt zwischen Mitgliedern übertragen, die gegenseitig Kontakte sind, und Mitglieder leiten Nachrichten nicht weiter. Diese Mitglieder sind nicht deine Kontakte, daher erhalten sie deine Nachrichten nicht und du ihre nicht:\n\n%1$s\n\nFüge sie als Kontakte hinzu, um sie zu erreichen.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d Mitglied ist nicht dein Kontakt. Nachrichten erreichen es über das Telefon des Gruppeneigentümers, wenn es 3.0.19 oder neuer nutzt. Tippe für Details.</item>
+		<item quantity="other">%d Mitglieder sind nicht deine Kontakte. Nachrichten erreichen sie über das Telefon des Gruppeneigentümers, wenn sie 3.0.19 oder neuer nutzen. Tippe für Details.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Gruppennachrichten werden direkt zwischen Mitgliedern übertragen, die gegenseitig Kontakte sind. Diese Mitglieder sind nicht deine Kontakte, daher gibt das Telefon des Gruppeneigentümers deine Nachrichten an sie und ihre Nachrichten an dich weiter, wenn sie 3.0.19 oder neuer nutzen:\n\n%1$s\n\nNachrichten kommen an, sobald das Telefon des Eigentümers sie weitergegeben hat. Sehr große Nachrichten werden nur direkt übertragen. Füge sie als Kontakte hinzu, um einen direkten Weg zu haben.</string>
 	<string name="grouptr_ttl_set_by_creator">Verschwindende Nachrichten in dieser Gruppe: %1$s. Nur der Gruppeneigentümer kann dies ändern.</string>
 	<string name="grouptr_sender_alias_format">%1$s (schreibt als „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (kein dir bekannter Name)</string>
 	<string name="grouptr_member_out_of_reach">nicht dein Kontakt, erhält deine Nachrichten nicht</string>
+	<string name="grouptr_member_out_of_reach_owner">nicht dein Kontakt, mit 3.0.19 oder neuer über den Gruppeneigentümer erreichbar</string>
 	<string name="grouptr_member_invited">Eingeladen, wartet auf Antwort</string>
 	<string name="grouptr_confirm_revoke">Die Einladung an %1$s zurückziehen? Eine Antwort dieser Person wird ignoriert.</string>
 	<string name="grouptr_revoke_invite">Einladung zurückziehen</string>
@@ -2381,6 +2389,8 @@
 	<string name="vault_msg_invalid_document">Ungültige Dokument-ID</string>
 	<string name="vault_msg_document_updated">Dokument aktualisiert</string>
 	<string name="vault_msg_update_document_failed">Dokument konnte nicht aktualisiert werden</string>
+	<string name="vault_msg_saved_earlier_version_kept">Deine Änderungen wurden gespeichert, aber die frühere Version konnte nicht entfernt werden. Du kannst sie aus der Liste löschen.</string>
+	<string name="vault_doc_password_needed_to_save">Dieses Dokument ist mit einem Passwort geschützt. Gib dieses Passwort ein, um deine Änderungen zu speichern.</string>
 	<string name="vault_msg_save_password_failed">Passwort konnte nicht gespeichert werden</string>
 	<string name="vault_msg_note_title_empty">Notiztitel darf nicht leer sein</string>
 	<string name="vault_msg_saved">Gespeichert</string>
@@ -2858,6 +2868,7 @@
 	<string name="requests_state_withdrawn">Abgebrochen nach Zustellung</string>
 	<string name="requests_state_cancelled_by_sender">Vom Absender abgebrochen</string>
 	<string name="requests_state_contact_added">Kontakt hinzugefügt</string>
+	<string name="requests_readd_needs_both_phones">Um %1$s erneut hinzuzufügen, ist das erneute Hinzufügen auf beiden Telefonen nötig. Bitte deinen Kontakt, die Einstellungen eures Chats zu öffnen und „Kontakt erneut hinzufügen, um die Verbindung zu reparieren“ zu wählen, und versuche es dann erneut.</string>
 	<string name="requests_open_chat">Chat öffnen</string>
 	<string name="requests_state_no_answer_yet">Noch keine Antwort</string>
 	<string name="requests_notification_accepted">Deine Kontaktanfrage wurde angenommen</string>

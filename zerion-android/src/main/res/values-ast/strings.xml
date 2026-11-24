@@ -124,7 +124,7 @@
 	<string name="i2p_toggle_summary">Enrutar tamién pela rede I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Conexón</string>
-	<string name="mesh_info_message">Los mensaxes van sellaos pal destinatariu y pasen de teléfonu en teléfonu per Bluetooth. Activar esto pide los permisos de Bluetooth y de dispositivos cercanos. Con «Namás contautos», el to teléfonu coneútase namás colos teléfonos de los tos contautos, y la so señal de Bluetooth nun lleva nenguna marca fixa de Zerion. Pa eso, el contautu precisa Zerion 3.0.19 o posterior, y los dos tenéis qu\'haber tao en llinia al empar polo menos una vegada dende l\'anovamientu.</string>
+	<string name="mesh_info_message">Los mensaxes van sellaos pal destinatariu y pasen de teléfonu en teléfonu per Bluetooth. Activar esto pide los permisos de Bluetooth y de dispositivos cercanos. Con «Namás contautos», el to teléfonu coneútase namás colos teléfonos de los tos contautos; pa cualesquier otra persona, la so señal de Bluetooth ye un dispositivu ensin nome con un identificador que cambia y que namás los tos contautos pueden reconocer. Pa eso, el contautu precisa Zerion 3.0.19 o posterior, y los dos tenéis qu\'haber tao en llinia al empar polo menos una vegada dende l\'anovamientu.</string>
 	<string name="mesh_reach_title">La rede en malla coneútase con</string>
 	<string name="mesh_reach_contacts">Namás contautos</string>
 	<string name="mesh_reach_everyone">Tolos teléfonos con Zerion cercanos</string>
@@ -293,6 +293,8 @@
 	<string name="browser_tor_get">Consiguir Tor Browser</string>
 	<string name="quick_reply_not_sent">Nun s\'unvió la rempuesta. Abri la charra pa volver tentalo.</string>
 	<string name="link_unsupported">Enllaz non compatible</string>
+	<string name="link_host_other_alphabet">La direición usa lletres d\'otru alfabetu.</string>
+	<string name="link_host_other_alphabet_mark">(lletres d\'otru alfabetu)</string>
 	<string name="settings_support_summary">Ayuda a que Zerion siga siendo de baldre y priváu</string>
 	<string name="login_tagline">Mensaxería privada per Tor</string>
 	<string name="setup_password_subtitle">Esta contraseña pa cifrar la cuenta ye obligatoria. Protexe la cuenta y la base de datos llocales cifraes d\'esti dispositivu. Escueyi una contraseña fuerte y única.</string>
@@ -2206,10 +2208,16 @@
 	<string name="wallet_sp_move_hint">Direición de Bitcoin a la que mover los fondos</string>
 	<string name="grouptr_reach_title">A quién lleguen les tos publicaciones</string>
 	<string name="grouptr_reach_explanation">Les publicaciones del grupu viaxen direutamente ente los miembros que son contautos ente sí, y los miembros nun reunvien publicaciones. Estos miembros nun son contautos tuyos, asina que nun reciben les tos publicaciones nin tu les suyes:\n\n%1$s\n\nAmiéstalos como contautos pa llegar a ellos.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d miembru nun ye contautu tuyu. Recibe les publicaciones pel teléfonu del propietariu del grupu si usa la versión 3.0.19 o posterior. Toca pa ver los detalles.</item>
+		<item quantity="other">%d miembros nun son contautos tuyos. Reciben les publicaciones pel teléfonu del propietariu del grupu si usen la versión 3.0.19 o posterior. Toca pa ver los detalles.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Les publicaciones del grupu viaxen direutamente ente los miembros que son contautos ente sí. Estos miembros nun son contautos tuyos, asina que\'l teléfonu del propietariu del grupu reunvía les tos publicaciones a ellos y les suyes a ti, si usen la versión 3.0.19 o posterior:\n\n%1$s\n\nLes publicaciones lleguen cuando\'l teléfonu del propietariu les reunvía. Les publicaciones mui grandes namás viaxen direutamente. Amiéstalos como contautos pa tener un camín direutu.</string>
 	<string name="grouptr_ttl_set_by_creator">Mensaxes que desapaecen nesti grupu: %1$s. Namás el propietariu del grupu pue camudar esto.</string>
 	<string name="grouptr_sender_alias_format">%1$s (publicando como «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (nun ye un nome que conozas)</string>
 	<string name="grouptr_member_out_of_reach">nun ye contautu tuyu, nun recibe les tos publicaciones</string>
+	<string name="grouptr_member_out_of_reach_owner">nun ye contautu tuyu, recibe les publicaciones pel propietariu del grupu cola versión 3.0.19 o posterior</string>
 	<string name="grouptr_member_invited">Invitáu, esperando rempuesta</string>
 	<string name="grouptr_confirm_revoke">¿Retirar la invitación a %1$s? Va inorase cualquier rempuesta que dea.</string>
 	<string name="grouptr_revoke_invite">Retirar la invitación</string>
@@ -2305,6 +2313,8 @@
 	<string name="vault_msg_invalid_document">La ID del documentu nun ye válida</string>
 	<string name="vault_msg_document_updated">Anovóse\'l documentu</string>
 	<string name="vault_msg_update_document_failed">Nun se pudo anovar el documentu</string>
+	<string name="vault_msg_saved_earlier_version_kept">Guardáronse los cambeos, pero nun se pudo quitar la versión anterior. Pues desaniciala de la llista.</string>
+	<string name="vault_doc_password_needed_to_save">Esti documentu ta protexíu con una contraseña. Introduz esa contraseña pa guardar los cambeos.</string>
 	<string name="vault_msg_save_password_failed">Nun se pudo guardar la contraseña</string>
 	<string name="vault_msg_note_title_empty">El títulu de la nota nun pue tar baleru</string>
 	<string name="vault_msg_saved">Guardóse</string>
@@ -2778,6 +2788,7 @@
 	<string name="requests_state_withdrawn">Encaboxada dempués de la entrega</string>
 	<string name="requests_state_cancelled_by_sender">Encaboxada pol remitente</string>
 	<string name="requests_state_contact_added">Amestóse\'l contautu</string>
+	<string name="requests_readd_needs_both_phones">P\'amestar de nueves a %1$s hai que facelo nos dos teléfonos. Pidi al contautu qu\'abra les preferencies de la to charra y escueya «Amestar de nueves el contautu pa iguar la conexón», y dempués volvi tentalo.</string>
 	<string name="requests_open_chat">Abrir la charra</string>
 	<string name="requests_state_no_answer_yet">Entá nun hai rempuesta</string>
 	<string name="requests_notification_accepted">Aceutóse la to solicitú de contautu</string>

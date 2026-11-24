@@ -550,7 +550,7 @@
 	<string name="i2p_toggle_summary">Enrutar también a través de la red I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Conectividad</string>
-	<string name="mesh_info_message">Los mensajes van sellados para el destinatario y pasan de teléfono en teléfono por Bluetooth. Al activar esto se piden los permisos de Bluetooth y de dispositivos cercanos. Con «Solo contactos», tu teléfono se conecta únicamente con los teléfonos de tus contactos, y su señal de Bluetooth no lleva ninguna marca fija de Zerion. Para eso, el contacto necesita Zerion 3.0.19 o posterior, y los dos deben haber estado en línea al mismo tiempo al menos una vez desde la actualización.</string>
+	<string name="mesh_info_message">Los mensajes van sellados para el destinatario y pasan de teléfono en teléfono por Bluetooth. Al activar esto se piden los permisos de Bluetooth y de dispositivos cercanos. Con «Solo contactos», tu teléfono se conecta únicamente con los teléfonos de tus contactos; para cualquier otra persona, su señal de Bluetooth es un dispositivo sin nombre con un identificador cambiante que solo tus contactos pueden reconocer. Para eso, el contacto necesita Zerion 3.0.19 o posterior, y los dos deben haber estado en línea al mismo tiempo al menos una vez desde la actualización.</string>
 	<string name="mesh_reach_title">La red en malla se conecta con</string>
 	<string name="mesh_reach_contacts">Solo contactos</string>
 	<string name="mesh_reach_everyone">Todos los teléfonos con Zerion cercanos</string>
@@ -1223,4 +1223,8 @@
 	<string name="grouptr_team_help_title">Configurar un equipo</string>
 	<string name="grouptr_team_help_text">Una persona crea el grupo y es su propietario.\n\nEl propietario del grupo crea un enlace de invitación en Enlaces de invitación (se mantiene igual hasta que se elimina) y lo comparte con el equipo. Cada uno abre Añadir el contacto, pega el enlace y envía una solicitud; el propietario del grupo acepta cada una.\n\nDespués el propietario del grupo invita a todos los miembros al grupo.\n\nLos miembros que no son contactos entre sí reciben las publicaciones a través del teléfono del propietario del grupo siempre que esté en línea. Hasta entonces la publicación espera en el teléfono del remitente; no se guarda nada en ningún servidor.\n\nLos miembros pueden añadirse entre sí como contactos para la entrega directa y las llamadas.\n\nLímites: un grupo tiene hasta 256 miembros, un teléfono guarda hasta 200 contactos con conexión privada, y el teléfono del propietario de un equipo grande debería estar en línea con frecuencia.</string>
 	<string name="contact_connection_auth_full">Este dispositivo no puede guardar más de 200 contactos con conexión privada.</string>
+	<string name="link_host_other_alphabet">La dirección usa letras de otro alfabeto.</string>
+	<string name="link_host_other_alphabet_mark">(letras de otro alfabeto)</string>
+	<string name="vault_msg_saved_earlier_version_kept">Tus cambios se guardaron, pero no se pudo quitar la versión anterior. Puedes eliminarla de la lista.</string>
+	<string name="vault_doc_password_needed_to_save">Este documento está protegido con una contraseña. Introduce esa contraseña para guardar tus cambios.</string>
 </resources>

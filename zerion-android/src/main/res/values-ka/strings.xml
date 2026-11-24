@@ -512,7 +512,7 @@
 	<string name="i2p_toggle_summary">მარშრუტიზაცია ასევე I2P-ქსელით</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">კავშირი</string>
-	<string name="mesh_info_message">შეტყობინებები ისე იდალუქება, რომ მხოლოდ მიმღებს შეუძლია მათი გახსნა, და Bluetooth-ით ტელეფონიდან ტელეფონზე გადაეცემა. ამის ჩართვისას მოითხოვება Bluetooth-ისა და ახლომდებარე მოწყობილობების ნებართვები. თუ არჩეულია „მხოლოდ კონტაქტები“, თქვენი ტელეფონი მხოლოდ თქვენი კონტაქტების ტელეფონებს უკავშირდება და მისი Bluetooth-სიგნალი Zerion-ის არანაირ მუდმივ ნიშანს არ შეიცავს. ამისთვის კონტაქტს Zerion 3.0.19 ან უფრო ახალი ვერსია სჭირდება, და განახლების შემდეგ ორივე ერთხელ მაინც ერთდროულად უნდა ყოფილიყავით ონლაინ.</string>
+	<string name="mesh_info_message">შეტყობინებები ისე იდალუქება, რომ მხოლოდ მიმღებს შეუძლია მათი გახსნა, და Bluetooth-ით ტელეფონიდან ტელეფონზე გადაეცემა. ამის ჩართვისას მოითხოვება Bluetooth-ისა და ახლომდებარე მოწყობილობების ნებართვები. თუ არჩეულია „მხოლოდ კონტაქტები“, თქვენი ტელეფონი მხოლოდ თქვენი კონტაქტების ტელეფონებს უკავშირდება; ყველა სხვისთვის მისი Bluetooth-სიგნალი უსახელო მოწყობილობაა, რომლის ცვალებადი იდენტიფიკატორის ამოცნობა მხოლოდ თქვენს კონტაქტებს შეუძლიათ. ამისთვის კონტაქტს Zerion 3.0.19 ან უფრო ახალი ვერსია სჭირდება, და განახლების შემდეგ ორივე ერთხელ მაინც ერთდროულად უნდა ყოფილიყავით ონლაინ.</string>
 	<string name="mesh_reach_title">ვის უკავშირდება mesh-ქსელი</string>
 	<string name="mesh_reach_contacts">მხოლოდ კონტაქტები</string>
 	<string name="mesh_reach_everyone">ახლომდებარე ყველა Zerion-ტელეფონი</string>
@@ -658,6 +658,8 @@
 	<string name="vault_msg_invalid_document">დოკუმენტის ID არასწორია</string>
 	<string name="vault_msg_document_updated">დოკუმენტი განახლდა</string>
 	<string name="vault_msg_update_document_failed">დოკუმენტის განახლება ვერ მოხერხდა</string>
+	<string name="vault_msg_saved_earlier_version_kept">თქვენი ცვლილებები შეინახა, მაგრამ წინა ვერსიის მოშორება ვერ მოხერხდა. შეგიძლიათ ის სიიდან წაშალოთ.</string>
+	<string name="vault_doc_password_needed_to_save">ეს დოკუმენტი პაროლით არის დაცული. ცვლილებების შესანახად შეიყვანეთ ეს პაროლი.</string>
 	<string name="vault_msg_save_password_failed">პაროლის შენახვა ვერ მოხერხდა</string>
 	<string name="vault_msg_note_title_empty">ჩანაწერის სათაური ცარიელი არ შეიძლება იყოს</string>
 	<string name="vault_msg_saved">შენახულია</string>
@@ -768,6 +770,8 @@
 	<string name="browser_tor_get">Tor Browser-ის მიღება</string>
 	<string name="quick_reply_not_sent">თქვენი პასუხი არ გაიგზავნა. ხელახლა საცდელად გახსენით ჩატი.</string>
 	<string name="link_unsupported">მხარდაუჭერელი ბმული</string>
+	<string name="link_host_other_alphabet">მისამართი სხვა ანბანის ასოებს იყენებს.</string>
+	<string name="link_host_other_alphabet_mark">(სხვა ანბანის ასოები)</string>
 	<string name="settings_support_summary">დაეხმარეთ Zerion-ს, დარჩეს უფასო და კონფიდენციალური</string>
 	<string name="login_tagline">პირადი მიმოწერა Tor-ით</string>
 	<string name="setup_password_subtitle">ანგარიშის დაშიფვრის ეს პაროლი სავალდებულოა. ის იცავს თქვენს ლოკალურ დაშიფრულ ანგარიშსა და მონაცემთა ბაზას ამ მოწყობილობაზე. აირჩიეთ ძლიერი და უნიკალური პაროლი.</string>
@@ -2385,10 +2389,16 @@
 	<string name="wallet_sp_move_hint">Bitcoin-ის მისამართი, სადაც თანხები გადაიტანება</string>
 	<string name="grouptr_reach_title">ვინ იღებს თქვენს პოსტებს</string>
 	<string name="grouptr_reach_explanation">ჯგუფის პოსტები პირდაპირ გადაიცემა იმ წევრებს შორის, რომლებიც ერთმანეთის კონტაქტები არიან, და წევრები პოსტებს შემდგომ არ გადასცემენ. ეს წევრები თქვენი კონტაქტები არ არიან, ამიტომ ისინი ვერ იღებენ თქვენს პოსტებს და თქვენ ვერ იღებთ მათსას:\n\n%1$s\n\nდაამატეთ ისინი კონტაქტებად, რომ მათამდე მიაღწიოთ.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d წევრი არ არის თქვენი კონტაქტი. პოსტები მასთან ჯგუფის მფლობელის ტელეფონის მეშვეობით აღწევს, თუ ის 3.0.19 ან უფრო ახალ ვერსიას იყენებს. შეეხეთ დეტალებისთვის.</item>
+		<item quantity="other">%d წევრი არ არის თქვენი კონტაქტი. პოსტები მათთან ჯგუფის მფლობელის ტელეფონის მეშვეობით აღწევს, თუ ისინი 3.0.19 ან უფრო ახალ ვერსიას იყენებენ. შეეხეთ დეტალებისთვის.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">ჯგუფის პოსტები პირდაპირ გადაიცემა იმ წევრებს შორის, რომლებიც ერთმანეთის კონტაქტები არიან. ეს წევრები თქვენი კონტაქტები არ არიან, ამიტომ ჯგუფის მფლობელის ტელეფონი თქვენს პოსტებს მათ გადასცემს, მათსას კი თქვენ, თუ ისინი 3.0.19 ან უფრო ახალ ვერსიას იყენებენ:\n\n%1$s\n\nპოსტები მას შემდეგ მოდის, რაც მფლობელის ტელეფონი მათ გადასცემს. ძალიან დიდი პოსტები მხოლოდ პირდაპირ გადაიცემა. პირდაპირი გზისთვის დაამატეთ ისინი კონტაქტებად.</string>
 	<string name="grouptr_ttl_set_by_creator">გაქრობადი შეტყობინებები ამ ჯგუფში: %1$s. ამის შეცვლა მხოლოდ ჯგუფის მფლობელს შეუძლია.</string>
 	<string name="grouptr_sender_alias_format">%1$s (აქვეყნებს როგორც „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (თქვენთვის უცნობი სახელი)</string>
 	<string name="grouptr_member_out_of_reach">არ არის თქვენი კონტაქტი, ვერ იღებს თქვენს პოსტებს</string>
+	<string name="grouptr_member_out_of_reach_owner">არ არის თქვენი კონტაქტი, პოსტებს ჯგუფის მფლობელის მეშვეობით იღებს 3.0.19 ან უფრო ახალი ვერსიით</string>
 	<string name="grouptr_member_invited">მოწვეულია, პასუხის მოლოდინში</string>
 	<string name="grouptr_confirm_revoke">გაუქმდეს მოწვევა %1$s-ისთვის? მისი პასუხი უგულებელყოფილი იქნება.</string>
 	<string name="grouptr_revoke_invite">მოწვევის გაუქმება</string>
@@ -2847,6 +2857,7 @@
 	<string name="requests_state_withdrawn">გაუქმებულია მიწოდების შემდეგ</string>
 	<string name="requests_state_cancelled_by_sender">გააუქმა გამგზავნმა</string>
 	<string name="requests_state_contact_added">კონტაქტი დაემატა</string>
+	<string name="requests_readd_needs_both_phones">%1$s-ის ხელახლა დასამატებლად ხელახლა დამატება ორივე ტელეფონზეა საჭირო. სთხოვეთ მას, გახსნას თქვენი ჩატის პარამეტრები და აირჩიოს „დაამატეთ კონტაქტი ხელახლა კავშირის აღსადგენად“, შემდეგ ხელახლა სცადეთ.</string>
 	<string name="requests_open_chat">ჩატის გახსნა</string>
 	<string name="requests_state_no_answer_yet">პასუხი ჯერ არ არის</string>
 	<string name="requests_notification_accepted">თქვენი კონტაქტის მოთხოვნა მიღებულია</string>

@@ -668,7 +668,7 @@
 	<string name="i2p_toggle_summary">Також маршрутизувати через мережу I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Зв\'язок</string>
-	<string name="mesh_info_message">Повідомлення запечатані так, що відкрити їх може лише одержувач, і передаються з телефона на телефон через Bluetooth. Під час увімкнення буде запитано дозволи на Bluetooth і доступ до пристроїв поблизу. У режимі «Лише контакти» ваш телефон з\'єднується лише з телефонами ваших контактів, а його сигнал Bluetooth не містить постійної мітки Zerion. Для цього контакт повинен мати Zerion 3.0.19 або новішу версію, і після оновлення ви обоє повинні були хоча б один раз одночасно бути в мережі.</string>
+	<string name="mesh_info_message">Повідомлення запечатані так, що відкрити їх може лише одержувач, і передаються з телефона на телефон через Bluetooth. Під час увімкнення буде запитано дозволи на Bluetooth і доступ до пристроїв поблизу. У режимі «Лише контакти» ваш телефон з\'єднується лише з телефонами ваших контактів; для всіх інших його сигнал Bluetooth є безіменним пристроєм, змінний ідентифікатор якого можуть розпізнати лише ваші контакти. Для цього контакт повинен мати Zerion 3.0.19 або новішу версію, і після оновлення ви обоє повинні були хоча б один раз одночасно бути в мережі.</string>
 	<string name="mesh_reach_title">З ким з\'єднується mesh-мережа</string>
 	<string name="mesh_reach_contacts">Лише контакти</string>
 	<string name="mesh_reach_everyone">Усі телефони з Zerion поблизу</string>
@@ -828,6 +828,8 @@
 	<string name="vault_msg_invalid_document">Недійсний ідентифікатор документа</string>
 	<string name="vault_msg_document_updated">Документ оновлено</string>
 	<string name="vault_msg_update_document_failed">Не вдалося оновити документ</string>
+	<string name="vault_msg_saved_earlier_version_kept">Ваші зміни збережено, але попередню версію не вдалося прибрати. Ви можете видалити її зі списку.</string>
+	<string name="vault_doc_password_needed_to_save">Цей документ захищено паролем. Введіть цей пароль, щоб зберегти зміни.</string>
 	<string name="vault_msg_save_password_failed">Не вдалося зберегти пароль</string>
 	<string name="vault_msg_note_title_empty">Назва нотатки не може бути порожньою</string>
 	<string name="vault_msg_saved">Збережено</string>
@@ -940,6 +942,8 @@
 	<string name="browser_tor_get">Отримати Tor Browser</string>
 	<string name="quick_reply_not_sent">Відповідь не надіслано. Відкрийте чат, щоб спробувати ще раз.</string>
 	<string name="link_unsupported">Непідтримуване посилання</string>
+	<string name="link_host_other_alphabet">В адресі використано літери з іншої абетки.</string>
+	<string name="link_host_other_alphabet_mark">(літери з іншої абетки)</string>
 	<string name="settings_support_summary">Допоможіть Zerion залишатися безкоштовним і приватним</string>
 	<string name="login_tagline">Приватне листування через Tor</string>
 	<string name="setup_password_subtitle">Цей пароль для шифрування облікового запису обов\'язковий. Він захищає ваш локальний зашифрований обліковий запис і базу даних на цьому пристрої. Виберіть надійний і унікальний пароль.</string>
@@ -2422,10 +2426,18 @@
 	<string name="wallet_sp_enable_first">Спершу ввімкніть Silent Payments</string>
 	<string name="grouptr_reach_title">Хто отримує ваші дописи</string>
 	<string name="grouptr_reach_explanation">Дописи в групі передаються напряму між учасниками, які є контактами одне одного, і учасники не пересилають дописи далі. Ці учасники не є вашими контактами, тому вони не отримують ваших дописів, а ви не отримуєте їхніх:\n\n%1$s\n\nДодайте їх у контакти, щоб ваші дописи до них доходили.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d учасник не є вашим контактом. Дописи доходять до нього через телефон власника групи, якщо він користується версією 3.0.19 або новішою. Торкніться, щоб дізнатися більше.</item>
+		<item quantity="few">%d учасники не є вашими контактами. Дописи доходять до них через телефон власника групи, якщо вони користуються версією 3.0.19 або новішою. Торкніться, щоб дізнатися більше.</item>
+		<item quantity="many">%d учасників не є вашими контактами. Дописи доходять до них через телефон власника групи, якщо вони користуються версією 3.0.19 або новішою. Торкніться, щоб дізнатися більше.</item>
+		<item quantity="other">%d учасника не є вашими контактами. Дописи доходять до них через телефон власника групи, якщо вони користуються версією 3.0.19 або новішою. Торкніться, щоб дізнатися більше.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Дописи в групі передаються напряму між учасниками, які є контактами одне одного. Ці учасники не є вашими контактами, тому телефон власника групи передає їм ваші дописи, а вам їхні, якщо вони користуються версією 3.0.19 або новішою:\n\n%1$s\n\nДописи надходять після того, як телефон власника їх передасть. Дуже великі дописи передаються лише напряму. Додайте їх у контакти, щоб мати прямий шлях.</string>
 	<string name="grouptr_ttl_set_by_creator">Самознищувані повідомлення в цій групі: %1$s. Змінити це може лише власник групи.</string>
 	<string name="grouptr_sender_alias_format">%1$s (публікує як «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (незнайоме вам ім\'я)</string>
 	<string name="grouptr_member_out_of_reach">не ваш контакт, не отримує ваших дописів</string>
+	<string name="grouptr_member_out_of_reach_owner">не ваш контакт, доступний через власника групи з версією 3.0.19 або новішою</string>
 	<string name="grouptr_member_invited">Запрошено, очікується відповідь</string>
 	<string name="grouptr_confirm_revoke">Відкликати запрошення для %1$s? Відповідь від цієї людини буде проігноровано.</string>
 	<string name="grouptr_revoke_invite">Відкликати запрошення</string>
@@ -2938,6 +2950,7 @@
 	<string name="requests_state_withdrawn">Скасовано після доставлення</string>
 	<string name="requests_state_cancelled_by_sender">Скасовано відправником</string>
 	<string name="requests_state_contact_added">Контакт додано</string>
+	<string name="requests_readd_needs_both_phones">Щоб додати %1$s знову, це потрібно зробити на обох телефонах. Попросіть контакт відкрити налаштування вашого чату й вибрати «Додати контакт знову, щоб відновити з\'єднання», а потім спробуйте ще раз.</string>
 	<string name="requests_open_chat">Відкрити чат</string>
 	<string name="requests_state_no_answer_yet">Відповіді ще немає</string>
 	<string name="requests_notification_accepted">Ваш запит на контакт прийнято</string>

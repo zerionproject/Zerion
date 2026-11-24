@@ -453,7 +453,7 @@
 	<string name="i2p_toggle_summary">Usmjeravaj saobraćaj i preko I2P mreže</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Povezanost</string>
-	<string name="mesh_info_message">Poruke su zapečaćene za primaoca i prenose se s telefona na telefon putem Bluetootha. Uključivanje traži dozvole za Bluetooth i uređaje u blizini. Uz „Samo kontakti“, tvoj telefon se povezuje samo s telefonima tvojih kontakata, a njegov Bluetooth signal ne nosi nikakvu stalnu oznaku aplikacije Zerion. Za to kontakt treba imati Zerion 3.0.19 ili noviji, a vas dvoje morate barem jednom nakon ažuriranja biti online u isto vrijeme.</string>
+	<string name="mesh_info_message">Poruke su zapečaćene za primaoca i prenose se s telefona na telefon putem Bluetootha. Uključivanje traži dozvole za Bluetooth i uređaje u blizini. Uz „Samo kontakti“, tvoj telefon se povezuje samo s telefonima tvojih kontakata; za sve ostale njegov Bluetooth signal je neimenovani uređaj čiji promjenjivi identifikator mogu prepoznati samo tvoji kontakti. Za to kontakt treba imati Zerion 3.0.19 ili noviji, a vas dvoje morate barem jednom nakon ažuriranja biti online u isto vrijeme.</string>
 	<string name="mesh_reach_title">S kim se povezuje mesh mreža</string>
 	<string name="mesh_reach_contacts">Samo kontakti</string>
 	<string name="mesh_reach_everyone">Svaki Zerion telefon u blizini</string>
@@ -632,6 +632,8 @@
 	<string name="browser_tor_get">Nabavi Tor Browser</string>
 	<string name="quick_reply_not_sent">Tvoj odgovor nije poslan. Otvori razgovor da pokušaš ponovo.</string>
 	<string name="link_unsupported">Nepodržan link</string>
+	<string name="link_host_other_alphabet">Adresa koristi slova iz drugog pisma.</string>
+	<string name="link_host_other_alphabet_mark">(slova iz drugog pisma)</string>
 	<string name="settings_support_summary">Pomozi da Zerion ostane besplatan i privatan</string>
 	<string name="login_tagline">Privatne poruke preko Tor mreže</string>
 	<string name="setup_password_subtitle">Ova lozinka za šifrovanje računa je obavezna. Ona štiti tvoj lokalni šifrovani račun i bazu podataka na ovom uređaju. Odaberi jaku i jedinstvenu lozinku.</string>
@@ -2199,10 +2201,17 @@
 	<string name="wallet_sp_enable_first">Prvo uključi Silent Payments</string>
 	<string name="grouptr_reach_title">Do koga stižu tvoje objave</string>
 	<string name="grouptr_reach_explanation">Objave u grupi putuju direktno između članova koji su međusobno kontakti, a članovi ne prosljeđuju objave dalje. Ovi članovi nisu tvoji kontakti, pa ne primaju tvoje objave, a ti ne primaš njihove:\n\n%1$s\n\nDodaj ih kao kontakte da bi i do njih stizale tvoje objave.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d član nije tvoj kontakt. Objave do njega stižu preko telefona vlasnika grupe kada koristi verziju 3.0.19 ili noviju. Dodirni za detalje.</item>
+		<item quantity="few">%d člana nisu među tvojim kontaktima. Objave do njih stižu preko telefona vlasnika grupe kada koriste verziju 3.0.19 ili noviju. Dodirni za detalje.</item>
+		<item quantity="other">%d članova nije među tvojim kontaktima. Objave do njih stižu preko telefona vlasnika grupe kada koriste verziju 3.0.19 ili noviju. Dodirni za detalje.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Objave u grupi putuju direktno između članova koji su međusobno kontakti. Ovi članovi nisu tvoji kontakti, pa telefon vlasnika grupe prosljeđuje tvoje objave njima, a njihove tebi, kada koriste verziju 3.0.19 ili noviju:\n\n%1$s\n\nObjave stižu nakon što ih telefon vlasnika proslijedi. Veoma velike objave putuju samo direktno. Dodaj ih kao kontakte za direktan put.</string>
 	<string name="grouptr_ttl_set_by_creator">Nestajuće poruke u ovoj grupi: %1$s. Ovo može promijeniti samo vlasnik grupe.</string>
 	<string name="grouptr_sender_alias_format">%1$s (objavljuje kao „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (ime koje ne poznaješ)</string>
 	<string name="grouptr_member_out_of_reach">nije tvoj kontakt, ne prima tvoje objave</string>
+	<string name="grouptr_member_out_of_reach_owner">nije tvoj kontakt, objave stižu preko vlasnika grupe uz verziju 3.0.19 ili noviju</string>
 	<string name="grouptr_member_invited">Pozvan, čeka se odgovor</string>
 	<string name="grouptr_confirm_revoke">Povući pozivnicu za %1$s? Odgovor te osobe bit će zanemaren.</string>
 	<string name="grouptr_revoke_invite">Povuci pozivnicu</string>
@@ -2338,6 +2347,8 @@
 	<string name="vault_msg_invalid_document">Nevažeći ID dokumenta</string>
 	<string name="vault_msg_document_updated">Dokument je ažuriran</string>
 	<string name="vault_msg_update_document_failed">Ažuriranje dokumenta nije uspjelo</string>
+	<string name="vault_msg_saved_earlier_version_kept">Tvoje promjene su sačuvane, ali ranija verzija nije mogla biti uklonjena. Možeš je obrisati s liste.</string>
+	<string name="vault_doc_password_needed_to_save">Ovaj dokument je zaštićen lozinkom. Unesi tu lozinku da sačuvaš promjene.</string>
 	<string name="vault_msg_save_password_failed">Čuvanje lozinke nije uspjelo</string>
 	<string name="vault_msg_note_title_empty">Naslov bilješke ne može biti prazan</string>
 	<string name="vault_msg_saved">Sačuvano</string>
@@ -2825,6 +2836,7 @@
 	<string name="requests_state_withdrawn">Otkazan nakon isporuke</string>
 	<string name="requests_state_cancelled_by_sender">Otkazao pošiljalac</string>
 	<string name="requests_state_contact_added">Kontakt je dodan</string>
+	<string name="requests_readd_needs_both_phones">Za ponovno dodavanje kontakta %1$s potrebno je ponovno dodavanje na oba telefona. Zamoli kontakt da otvori postavke razgovora s tobom i odabere „Ponovo dodaj kontakt da popraviš vezu“, pa pokušaj ponovo.</string>
 	<string name="requests_open_chat">Otvori razgovor</string>
 	<string name="requests_state_no_answer_yet">Još nema odgovora</string>
 	<string name="requests_notification_accepted">Vaš zahtjev za kontakt je prihvaćen</string>

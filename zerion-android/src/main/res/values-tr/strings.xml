@@ -689,7 +689,7 @@
 	<string name="i2p_toggle_summary">Trafiği I2P ağı üzerinden de yönlendir</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Bağlantı</string>
-	<string name="mesh_info_message">İletiler yalnızca alıcının açabileceği şekilde mühürlenir ve Bluetooth üzerinden telefondan telefona aktarılır. Bunu açmak Bluetooth ve yakındaki cihazlar izinlerini ister. “Yalnızca kişiler” seçiliyken telefonunuz yalnızca kişilerinizin telefonlarına bağlanır ve Bluetooth sinyali Zerion uygulamasına ait sabit bir işaret taşımaz. Bunun için kişide Zerion 3.0.19 veya daha yeni bir sürüm olmalı ve güncellemeden sonra ikiniz en az bir kez aynı anda çevrim içi olmuş olmalısınız.</string>
+	<string name="mesh_info_message">İletiler yalnızca alıcının açabileceği şekilde mühürlenir ve Bluetooth üzerinden telefondan telefona aktarılır. Bunu açmak Bluetooth ve yakındaki cihazlar izinlerini ister. “Yalnızca kişiler” seçiliyken telefonunuz yalnızca kişilerinizin telefonlarına bağlanır; başka herkes için Bluetooth sinyali, değişen tanımlayıcısını yalnızca kişilerinizin tanıyabildiği adsız bir cihazdır. Bunun için kişide Zerion 3.0.19 veya daha yeni bir sürüm olmalı ve güncellemeden sonra ikiniz en az bir kez aynı anda çevrim içi olmuş olmalısınız.</string>
 	<string name="mesh_reach_title">Mesh şunlara bağlanır</string>
 	<string name="mesh_reach_contacts">Yalnızca kişiler</string>
 	<string name="mesh_reach_everyone">Yakındaki tüm Zerion telefonları</string>
@@ -835,6 +835,8 @@
 	<string name="vault_msg_invalid_document">Geçersiz belge kimliği</string>
 	<string name="vault_msg_document_updated">Belge güncellendi</string>
 	<string name="vault_msg_update_document_failed">Belge güncellenemedi</string>
+	<string name="vault_msg_saved_earlier_version_kept">Değişiklikleriniz kaydedildi, ancak önceki sürüm kaldırılamadı. Onu listeden silebilirsiniz.</string>
+	<string name="vault_doc_password_needed_to_save">Bu belge bir parolayla korunuyor. Değişikliklerinizi kaydetmek için o parolayı girin.</string>
 	<string name="vault_msg_save_password_failed">Parola kaydedilemedi</string>
 	<string name="vault_msg_note_title_empty">Not başlığı boş olamaz</string>
 	<string name="vault_msg_saved">Kaydedildi</string>
@@ -945,6 +947,8 @@
 	<string name="browser_tor_get">Tor Browser edinin</string>
 	<string name="quick_reply_not_sent">Yanıtınız gönderilmedi. Yeniden denemek için sohbeti açın.</string>
 	<string name="link_unsupported">Desteklenmeyen bağlantı</string>
+	<string name="link_host_other_alphabet">Adreste başka bir alfabenin harfleri kullanılıyor.</string>
+	<string name="link_host_other_alphabet_mark">(başka bir alfabenin harfleri)</string>
 	<string name="settings_support_summary">Zerion\'un ücretsiz ve gizlilik odaklı kalmasına yardım edin</string>
 	<string name="login_tagline">Tor üzerinden özel mesajlaşma</string>
 	<string name="setup_password_subtitle">Bu hesap şifreleme parolası zorunludur. Bu cihazdaki şifrelenmiş yerel hesabınızı ve veri tabanınızı korur. Güçlü ve benzersiz bir parola seçin.</string>
@@ -2391,10 +2395,16 @@
 	<string name="wallet_sp_enable_first">Önce Silent Payments\'ı etkinleştirin</string>
 	<string name="grouptr_reach_title">Gönderileriniz kime ulaşıyor</string>
 	<string name="grouptr_reach_explanation">Grup gönderileri, birbirinin kişisi olan üyeler arasında doğrudan iletilir ve üyeler gönderileri başkalarına aktarmaz. Aşağıdaki üyeler kişileriniz değil; bu yüzden gönderilerinizi almazlar, siz de onlarınkini almazsınız:\n\n%1$s\n\nOnlara ulaşmak için onları kişi olarak ekleyin.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d üye kişiniz değil. 3.0.19 veya daha yeni bir sürüm kullandığında gönderiler ona grup sahibinin telefonu üzerinden ulaşır. Ayrıntılar için dokunun.</item>
+		<item quantity="other">%d üye kişiniz değil. 3.0.19 veya daha yeni bir sürüm kullandıklarında gönderiler onlara grup sahibinin telefonu üzerinden ulaşır. Ayrıntılar için dokunun.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Grup gönderileri, birbirinin kişisi olan üyeler arasında doğrudan iletilir. Aşağıdaki üyeler kişileriniz değil; bu yüzden 3.0.19 veya daha yeni bir sürüm kullandıklarında grup sahibinin telefonu sizin gönderilerinizi onlara, onların gönderilerini de size aktarır:\n\n%1$s\n\nGönderiler, grup sahibinin telefonu onları aktardıktan sonra ulaşır. Çok büyük gönderiler yalnızca doğrudan iletilir. Doğrudan bir yol için onları kişi olarak ekleyin.</string>
 	<string name="grouptr_ttl_set_by_creator">Bu gruptaki kaybolan iletiler: %1$s. Bunu yalnızca grup sahibi değiştirebilir.</string>
 	<string name="grouptr_sender_alias_format">%1$s (\"%2$s\" adıyla gönderiyor)</string>
 	<string name="grouptr_sender_unverified_format">\"%1$s\" (tanıdığınız bir ad değil)</string>
 	<string name="grouptr_member_out_of_reach">kişiniz değil, gönderilerinizi almıyor</string>
+	<string name="grouptr_member_out_of_reach_owner">kişiniz değil, 3.0.19 veya daha yeni sürümde grup sahibi üzerinden ulaşılır</string>
 	<string name="grouptr_member_invited">Davet edildi, yanıt bekleniyor</string>
 	<string name="grouptr_confirm_revoke">%1$s kişisine gönderilen davet geri çekilsin mi? Bu kişiden gelecek bir yanıt yok sayılır.</string>
 	<string name="grouptr_revoke_invite">Daveti geri çek</string>
@@ -2853,6 +2863,7 @@
 	<string name="requests_state_withdrawn">Teslimden sonra iptal edildi</string>
 	<string name="requests_state_cancelled_by_sender">Gönderen iptal etti</string>
 	<string name="requests_state_contact_added">Kişi eklendi</string>
+	<string name="requests_readd_needs_both_phones">%1$s kişisini yeniden eklemek için bunun iki telefonda da yapılması gerekir. Ondan sizinle olan sohbetin ayarlarını açıp “Bağlantıyı onarmak için kişiyi yeniden ekleyin” seçeneğini seçmesini isteyin, ardından yeniden deneyin.</string>
 	<string name="requests_open_chat">Sohbeti aç</string>
 	<string name="requests_state_no_answer_yet">Henüz yanıt yok</string>
 	<string name="requests_notification_accepted">Kişi isteğin kabul edildi</string>

@@ -531,6 +531,8 @@
 	<string name="browser_tor_get">Scarica Tor Browser</string>
 	<string name="quick_reply_not_sent">La tua risposta non è stata inviata. Apri la chat per riprovare.</string>
 	<string name="link_unsupported">Link non supportato</string>
+	<string name="link_host_other_alphabet">L\'indirizzo usa lettere di un altro alfabeto.</string>
+	<string name="link_host_other_alphabet_mark">(lettere di un altro alfabeto)</string>
 	<string name="settings_support_summary">Aiuta a mantenere Zerion gratuito e privato</string>
 	<string name="login_tagline">Messaggistica privata su Tor</string>
 	<string name="setup_password_subtitle">La tua password protegge i tuoi dati crittografati. Scegline una forte e unica.</string>
@@ -569,7 +571,7 @@
 	<string name="settings_section_mesh">MESH OFFLINE</string>
 	<string name="mesh_toggle_title">Mesh offline</string>
 	<string name="mesh_toggle_summary">Raggiungi i contatti nelle vicinanze senza internet, tramite Bluetooth</string>
-	<string name="mesh_info_message">I messaggi sono sigillati per il destinatario e passano da telefono a telefono tramite Bluetooth. Attivandolo si richiedono le autorizzazioni Bluetooth e per i dispositivi nelle vicinanze. Con «Solo contatti», il tuo telefono si connette solo ai telefoni dei tuoi contatti, e il suo segnale Bluetooth non contiene alcun contrassegno fisso di Zerion. Per questo il contatto deve avere Zerion 3.0.19 o versioni successive, e voi due dovete essere stati online nello stesso momento almeno una volta dopo l\'aggiornamento.</string>
+	<string name="mesh_info_message">I messaggi sono sigillati per il destinatario e passano da telefono a telefono tramite Bluetooth. Attivandolo si richiedono le autorizzazioni Bluetooth e per i dispositivi nelle vicinanze. Con «Solo contatti», il tuo telefono si connette solo ai telefoni dei tuoi contatti; per chiunque altro il suo segnale Bluetooth è un dispositivo senza nome, con un identificativo variabile che solo i tuoi contatti possono riconoscere. Per questo il contatto deve avere Zerion 3.0.19 o versioni successive, e voi due dovete essere stati online nello stesso momento almeno una volta dopo l\'aggiornamento.</string>
 	<string name="mesh_reach_title">La mesh si connette a</string>
 	<string name="mesh_reach_contacts">Solo contatti</string>
 	<string name="mesh_reach_everyone">Tutti i telefoni Zerion nelle vicinanze</string>
@@ -2292,10 +2294,17 @@
 	<string name="wallet_sp_enable_first">Attiva prima i Silent Payments</string>
 	<string name="grouptr_reach_title">Chi raggiungono i tuoi post</string>
 	<string name="grouptr_reach_explanation">I post del gruppo viaggiano direttamente tra i membri che sono contatti l\'uno dell\'altro, e i membri non inoltrano i post. Questi membri non sono tuoi contatti, quindi non ricevono i tuoi post e tu non ricevi i loro:\n\n%1$s\n\nAggiungili come contatti per raggiungerli.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d membro non è un tuo contatto. I post lo raggiungono tramite il telefono del proprietario del gruppo se usa la versione 3.0.19 o successive. Tocca per i dettagli.</item>
+		<item quantity="many">%d membri non sono tuoi contatti. I post li raggiungono tramite il telefono del proprietario del gruppo se usano la versione 3.0.19 o successive. Tocca per i dettagli.</item>
+		<item quantity="other">%d membri non sono tuoi contatti. I post li raggiungono tramite il telefono del proprietario del gruppo se usano la versione 3.0.19 o successive. Tocca per i dettagli.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">I post del gruppo viaggiano direttamente tra i membri che sono contatti l\'uno dell\'altro. Questi membri non sono tuoi contatti, quindi il telefono del proprietario del gruppo inoltra i tuoi post a loro e i loro post a te, se usano la versione 3.0.19 o successive:\n\n%1$s\n\nI post arrivano dopo che il telefono del proprietario li ha inoltrati. I post molto grandi viaggiano solo direttamente. Aggiungili come contatti per avere un percorso diretto.</string>
 	<string name="grouptr_ttl_set_by_creator">Messaggi dissolventi in questo gruppo: %1$s. Solo il proprietario del gruppo può modificarlo.</string>
 	<string name="grouptr_sender_alias_format">%1$s (pubblica come «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (non è un nome che conosci)</string>
 	<string name="grouptr_member_out_of_reach">non è un tuo contatto, non riceve i tuoi post</string>
+	<string name="grouptr_member_out_of_reach_owner">non è un tuo contatto, raggiunto tramite il proprietario del gruppo con la versione 3.0.19 o successive</string>
 	<string name="grouptr_member_invited">Invitato, in attesa di risposta</string>
 	<string name="grouptr_confirm_revoke">Ritirare l\'invito a %1$s? Una sua eventuale risposta verrà ignorata.</string>
 	<string name="grouptr_revoke_invite">Ritira invito</string>
@@ -2401,6 +2410,8 @@
 	<string name="vault_msg_invalid_document">ID documento non valido</string>
 	<string name="vault_msg_document_updated">Documento aggiornato</string>
 	<string name="vault_msg_update_document_failed">Impossibile aggiornare il documento</string>
+	<string name="vault_msg_saved_earlier_version_kept">Le tue modifiche sono state salvate, ma non è stato possibile rimuovere la versione precedente. Puoi eliminarla dall\'elenco.</string>
+	<string name="vault_doc_password_needed_to_save">Questo documento è protetto con una password. Inserisci quella password per salvare le modifiche.</string>
 	<string name="vault_msg_save_password_failed">Impossibile salvare la password</string>
 	<string name="vault_msg_note_title_empty">Il titolo della nota non può essere vuoto</string>
 	<string name="vault_msg_saved">Salvato</string>
@@ -2893,6 +2904,7 @@
 	<string name="requests_state_withdrawn">Annullata dopo la consegna</string>
 	<string name="requests_state_cancelled_by_sender">Annullata dal mittente</string>
 	<string name="requests_state_contact_added">Contatto aggiunto</string>
+	<string name="requests_readd_needs_both_phones">Per aggiungere di nuovo %1$s occorre farlo su entrambi i telefoni. Chiedi al contatto di aprire le impostazioni della vostra chat e scegliere «Aggiungi di nuovo il contatto per riparare la connessione», poi riprova.</string>
 	<string name="requests_open_chat">Apri chat</string>
 	<string name="requests_state_no_answer_yet">Ancora nessuna risposta</string>
 	<string name="requests_notification_accepted">La tua richiesta di contatto è stata accettata</string>

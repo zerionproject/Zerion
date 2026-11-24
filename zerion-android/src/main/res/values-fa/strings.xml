@@ -645,7 +645,7 @@
 	<string name="i2p_toggle_summary">مسیریابی از طریق شبکه I2P نیز</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">وضعیت اتصال</string>
-	<string name="mesh_info_message">پیام‌ها طوری مهر و موم می‌شوند که فقط گیرنده بتواند بازشان کند و از طریق Bluetooth از گوشی به گوشی منتقل می‌شوند. روشن کردن این گزینه مجوزهای Bluetooth و دستگاه‌های نزدیک را درخواست می‌کند. با گزینه «فقط مخاطبان»، گوشی شما فقط به گوشی‌های مخاطبانتان متصل می‌شود و سیگنال Bluetooth آن هیچ نشانه ثابتی از Zerion ندارد. برای این کار، مخاطب باید Zerion 3.0.19 یا جدیدتر داشته باشد و هر دوی شما باید پس از به‌روزرسانی دست‌کم یک بار هم‌زمان آنلاین بوده باشید.</string>
+	<string name="mesh_info_message">پیام‌ها طوری مهر و موم می‌شوند که فقط گیرنده بتواند بازشان کند و از طریق Bluetooth از گوشی به گوشی منتقل می‌شوند. روشن کردن این گزینه مجوزهای Bluetooth و دستگاه‌های نزدیک را درخواست می‌کند. با گزینه «فقط مخاطبان»، گوشی شما فقط به گوشی‌های مخاطبانتان متصل می‌شود؛ برای هر کس دیگری، سیگنال Bluetooth آن دستگاهی بی‌نام است با شناسه‌ای متغیر که فقط مخاطبانتان می‌توانند آن را بشناسند. برای این کار، مخاطب باید Zerion 3.0.19 یا جدیدتر داشته باشد و هر دوی شما باید پس از به‌روزرسانی دست‌کم یک بار هم‌زمان آنلاین بوده باشید.</string>
 	<string name="mesh_reach_title">شبکه مش به این‌ها متصل می‌شود</string>
 	<string name="mesh_reach_contacts">فقط مخاطبان</string>
 	<string name="mesh_reach_everyone">همه گوشی‌های Zerion در نزدیکی</string>
@@ -795,6 +795,8 @@
 	<string name="browser_tor_get">دریافت Tor Browser</string>
 	<string name="quick_reply_not_sent">پاسخ شما ارسال نشد. برای تلاش دوباره، گفتگو را باز کنید.</string>
 	<string name="link_unsupported">پیوند پشتیبانی‌نشده</string>
+	<string name="link_host_other_alphabet">این آدرس از حروف الفبای دیگری استفاده می‌کند.</string>
+	<string name="link_host_other_alphabet_mark">(حروف الفبای دیگر)</string>
 	<string name="settings_support_summary">به رایگان و خصوصی ماندن Zerion کمک کنید</string>
 	<string name="login_tagline">پیام‌رسانی خصوصی از طریق Tor</string>
 	<string name="setup_password_subtitle">این رمز عبور برای رمزگذاری حساب کاربری الزامی است. از حساب کاربری رمزگذاری‌شده محلی و پایگاه داده شما روی این دستگاه محافظت می‌کند. یک رمز عبور قوی و منحصربه‌فرد انتخاب کنید.</string>
@@ -2284,10 +2286,16 @@
 	<string name="wallet_sp_enable_first">ابتدا Silent Payments را فعال کنید</string>
 	<string name="grouptr_reach_title">پست‌های شما به چه کسانی می‌رسد</string>
 	<string name="grouptr_reach_explanation">پست‌های گروه مستقیماً بین اعضایی جابه‌جا می‌شوند که مخاطب یکدیگر هستند، و اعضا پست‌ها را برای دیگران بازارسال نمی‌کنند. این اعضا مخاطب شما نیستند، بنابراین پست‌های شما را دریافت نمی‌کنند و شما هم پست‌های آن‌ها را دریافت نمی‌کنید:\n\n%1$s\n\nبرای دسترسی به آن‌ها، آن‌ها را به‌عنوان مخاطب اضافه کنید.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d عضو مخاطب شما نیست. اگر از نسخه 3.0.19 یا جدیدتر استفاده کند، پست‌ها از طریق تلفن مالک گروه به او می‌رسند. برای جزئیات ضربه بزنید.</item>
+		<item quantity="other">%d عضو مخاطب شما نیستند. اگر از نسخه 3.0.19 یا جدیدتر استفاده کنند، پست‌ها از طریق تلفن مالک گروه به آن‌ها می‌رسند. برای جزئیات ضربه بزنید.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">پست‌های گروه مستقیماً بین اعضایی جابه‌جا می‌شوند که مخاطب یکدیگر هستند. این اعضا مخاطب شما نیستند، بنابراین اگر از نسخه 3.0.19 یا جدیدتر استفاده کنند، تلفن مالک گروه پست‌های شما را به آن‌ها و پست‌های آن‌ها را به شما منتقل می‌کند:\n\n%1$s\n\nپست‌ها زمانی می‌رسند که تلفن مالک آن‌ها را منتقل کرده باشد. پست‌های بسیار بزرگ فقط مستقیماً جابه‌جا می‌شوند. برای داشتن مسیر مستقیم، آن‌ها را به‌عنوان مخاطب اضافه کنید.</string>
 	<string name="grouptr_ttl_set_by_creator">پیام‌های ناپدید شونده در این گروه: %1$s. فقط مالک گروه می‌تواند این را تغییر دهد.</string>
 	<string name="grouptr_sender_alias_format">%1$s (با نام «%2$s» پست می‌گذارد)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (نامی نیست که بشناسید)</string>
 	<string name="grouptr_member_out_of_reach">مخاطب شما نیست، پست‌های شما را دریافت نمی‌کند</string>
+	<string name="grouptr_member_out_of_reach_owner">مخاطب شما نیست، با نسخه 3.0.19 یا جدیدتر از طریق مالک گروه در دسترس است</string>
 	<string name="grouptr_member_invited">دعوت شده، در انتظار پاسخ</string>
 	<string name="grouptr_confirm_revoke">دعوت از %1$s پس گرفته شود؟ پاسخ او نادیده گرفته می‌شود.</string>
 	<string name="grouptr_revoke_invite">پس گرفتن دعوت</string>
@@ -2379,6 +2387,8 @@
 	<string name="vault_msg_invalid_document">شناسه سند نامعتبر است</string>
 	<string name="vault_msg_document_updated">سند به‌روزرسانی شد</string>
 	<string name="vault_msg_update_document_failed">به‌روزرسانی سند ناموفق بود</string>
+	<string name="vault_msg_saved_earlier_version_kept">تغییرات شما ذخیره شد، اما نسخه قبلی حذف نشد. می‌توانید آن را از فهرست حذف کنید.</string>
+	<string name="vault_doc_password_needed_to_save">این سند با رمز عبور محافظت شده است. برای ذخیره تغییراتتان، آن رمز عبور را وارد کنید.</string>
 	<string name="vault_msg_save_password_failed">ذخیره رمز عبور ناموفق بود</string>
 	<string name="vault_msg_note_title_empty">عنوان یادداشت نمی‌تواند خالی باشد</string>
 	<string name="vault_msg_saved">ذخیره شد</string>
@@ -2852,6 +2862,7 @@
 	<string name="requests_state_withdrawn">پس از تحویل لغو شد</string>
 	<string name="requests_state_cancelled_by_sender">لغو شده توسط فرستنده</string>
 	<string name="requests_state_contact_added">مخاطب اضافه شد</string>
+	<string name="requests_readd_needs_both_phones">افزودن دوباره %1$s نیازمند افزودن دوباره در هر دو تلفن است. از او بخواهید تنظیمات گفتگوی شما را باز کند و «افزودن دوباره مخاطب برای رفع مشکل اتصال» را انتخاب کند، سپس دوباره تلاش کنید.</string>
 	<string name="requests_open_chat">باز کردن گفتگو</string>
 	<string name="requests_state_no_answer_yet">هنوز بی‌پاسخ</string>
 	<string name="requests_notification_accepted">درخواست مخاطب شما پذیرفته شد</string>

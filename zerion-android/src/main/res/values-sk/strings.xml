@@ -671,7 +671,7 @@
 	<string name="i2p_toggle_summary">Smerovať aj cez sieť I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Pripojenie</string>
-	<string name="mesh_info_message">Správy sú zapečatené tak, že ich otvorí len príjemca, a odovzdávajú sa z telefónu na telefón cez Bluetooth. Zapnutím sa vyžiadajú povolenia pre Bluetooth a zariadenia v okolí. Pri voľbe „Len kontakty“ sa váš telefón prepája len s telefónmi vašich kontaktov a jeho signál Bluetooth neobsahuje žiadnu stálu značku aplikácie Zerion. Kontakt na to potrebuje Zerion 3.0.19 alebo novší a od aktualizácie ste obaja museli byť aspoň raz online v rovnakom čase.</string>
+	<string name="mesh_info_message">Správy sú zapečatené tak, že ich otvorí len príjemca, a odovzdávajú sa z telefónu na telefón cez Bluetooth. Zapnutím sa vyžiadajú povolenia pre Bluetooth a zariadenia v okolí. Pri voľbe „Len kontakty“ sa váš telefón prepája len s telefónmi vašich kontaktov; pre kohokoľvek iného je jeho signál Bluetooth nepomenované zariadenie, ktorého meniaci sa identifikátor dokážu rozpoznať len vaše kontakty. Kontakt na to potrebuje Zerion 3.0.19 alebo novší a od aktualizácie ste obaja museli byť aspoň raz online v rovnakom čase.</string>
 	<string name="mesh_reach_title">S kým sa sieť mesh prepája</string>
 	<string name="mesh_reach_contacts">Len kontakty</string>
 	<string name="mesh_reach_everyone">Každý telefón s aplikáciou Zerion v okolí</string>
@@ -831,6 +831,8 @@
 	<string name="vault_msg_invalid_document">Neplatné ID dokumentu</string>
 	<string name="vault_msg_document_updated">Dokument bol aktualizovaný</string>
 	<string name="vault_msg_update_document_failed">Dokument sa nepodarilo aktualizovať</string>
+	<string name="vault_msg_saved_earlier_version_kept">Vaše zmeny boli uložené, ale predchádzajúcu verziu sa nepodarilo odobrať. Môžete ju odstrániť zo zoznamu.</string>
+	<string name="vault_doc_password_needed_to_save">Tento dokument je chránený heslom. Ak chcete uložiť zmeny, zadajte toto heslo.</string>
 	<string name="vault_msg_save_password_failed">Heslo sa nepodarilo uložiť</string>
 	<string name="vault_msg_note_title_empty">Názov poznámky nemôže byť prázdny</string>
 	<string name="vault_msg_saved">Uložené</string>
@@ -943,6 +945,8 @@
 	<string name="browser_tor_get">Získať Tor Browser</string>
 	<string name="quick_reply_not_sent">Odpoveď sa neodoslala. Otvorte chat a skúste to znova.</string>
 	<string name="link_unsupported">Nepodporovaný odkaz</string>
+	<string name="link_host_other_alphabet">Adresa používa písmená z inej abecedy.</string>
+	<string name="link_host_other_alphabet_mark">(písmená z inej abecedy)</string>
 	<string name="settings_support_summary">Pomôžte udržať Zerion bezplatný a súkromný</string>
 	<string name="login_tagline">Súkromné správy cez Tor</string>
 	<string name="setup_password_subtitle">Toto heslo na šifrovanie účtu je povinné. Chráni váš lokálny šifrovaný účet a databázu v tomto zariadení. Zvoľte si silné a jedinečné heslo.</string>
@@ -2422,10 +2426,18 @@
 	<string name="wallet_sp_enable_first">Najprv zapnite Silent Payments</string>
 	<string name="grouptr_reach_title">Ku komu sa dostanú vaše príspevky</string>
 	<string name="grouptr_reach_explanation">Skupinové príspevky putujú priamo medzi členmi, ktorí sú navzájom kontaktmi, a členovia príspevky ďalej neposúvajú. Títo členovia nie sú vašimi kontaktmi, takže nedostávajú vaše príspevky a vy nedostávate ich:\n\n%1$s\n\nAk sa k nim chcete dostať, pridajte si ich ako kontakty.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d člen nie je vaším kontaktom. Príspevky sa k nemu dostanú cez telefón vlastníka skupiny, ak používa verziu 3.0.19 alebo novšiu. Ťuknite a zobrazte podrobnosti.</item>
+		<item quantity="few">%d členovia nie sú vašimi kontaktmi. Príspevky sa k nim dostanú cez telefón vlastníka skupiny, ak používajú verziu 3.0.19 alebo novšiu. Ťuknite a zobrazte podrobnosti.</item>
+		<item quantity="many">%d členov nie je vašimi kontaktmi. Príspevky sa k nim dostanú cez telefón vlastníka skupiny, ak používajú verziu 3.0.19 alebo novšiu. Ťuknite a zobrazte podrobnosti.</item>
+		<item quantity="other">%d členov nie je vašimi kontaktmi. Príspevky sa k nim dostanú cez telefón vlastníka skupiny, ak používajú verziu 3.0.19 alebo novšiu. Ťuknite a zobrazte podrobnosti.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Skupinové príspevky putujú priamo medzi členmi, ktorí sú navzájom kontaktmi. Títo členovia nie sú vašimi kontaktmi, takže telefón vlastníka skupiny odovzdáva vaše príspevky im a ich príspevky vám, ak používajú verziu 3.0.19 alebo novšiu:\n\n%1$s\n\nPríspevky dorazia, keď ich telefón vlastníka odovzdá. Veľmi veľké príspevky putujú len priamo. Ak chcete priamu cestu, pridajte si ich ako kontakty.</string>
 	<string name="grouptr_ttl_set_by_creator">Miznúce správy v tejto skupine: %1$s. Zmeniť to môže len vlastník skupiny.</string>
 	<string name="grouptr_sender_alias_format">%1$s (píše ako „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (meno, ktoré nepoznáte)</string>
 	<string name="grouptr_member_out_of_reach">nie je váš kontakt, nedostáva vaše príspevky</string>
+	<string name="grouptr_member_out_of_reach_owner">nie je váš kontakt, dosiahnuteľný cez vlastníka skupiny s verziou 3.0.19 alebo novšou</string>
 	<string name="grouptr_member_invited">Pozvaný, čaká sa na odpoveď</string>
 	<string name="grouptr_confirm_revoke">Stiahnuť pozvánku pre %1$s? Odpoveď od tejto osoby bude ignorovaná.</string>
 	<string name="grouptr_revoke_invite">Stiahnuť pozvánku</string>
@@ -2938,6 +2950,7 @@
 	<string name="requests_state_withdrawn">Zrušené po doručení</string>
 	<string name="requests_state_cancelled_by_sender">Zrušené odosielateľom</string>
 	<string name="requests_state_contact_added">Kontakt pridaný</string>
+	<string name="requests_readd_needs_both_phones">Opätovné pridanie kontaktu %1$s vyžaduje opätovné pridanie na oboch telefónoch. Požiadajte kontakt, aby otvoril nastavenia vášho chatu a zvolil „Znova pridať kontakt a opraviť spojenie“, a potom to skúste znova.</string>
 	<string name="requests_open_chat">Otvoriť chat</string>
 	<string name="requests_state_no_answer_yet">Zatiaľ bez odpovede</string>
 	<string name="requests_notification_accepted">Vaša žiadosť o kontakt bola prijatá</string>

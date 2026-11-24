@@ -478,6 +478,8 @@
 	<string name="browser_tor_get">Tor Browser 받기</string>
 	<string name="quick_reply_not_sent">답장을 보내지 못했습니다. 채팅을 열어 다시 시도하세요.</string>
 	<string name="link_unsupported">지원되지 않는 링크</string>
+	<string name="link_host_other_alphabet">이 주소에는 다른 문자 체계의 글자가 사용되었습니다.</string>
+	<string name="link_host_other_alphabet_mark">(다른 문자 체계의 글자)</string>
 	<string name="settings_support_summary">Zerion을 무료로, 사생활을 지키도록 도와주세요</string>
 	<string name="login_tagline">Tor를 통한 비공개 메시징</string>
 	<string name="setup_password_subtitle">비밀번호가 암호화된 데이터를 보호합니다. 강력하고 고유한 비밀번호를 선택하세요.</string>
@@ -516,7 +518,7 @@
 	<string name="settings_section_mesh">오프라인 메시</string>
 	<string name="mesh_toggle_title">오프라인 메시</string>
 	<string name="mesh_toggle_summary">인터넷 없이 Bluetooth로 근처 연락처와 연결</string>
-	<string name="mesh_info_message">메시지는 수신자에게 봉인되어 Bluetooth를 통해 휴대폰에서 휴대폰으로 전달됩니다. 이 기능을 켜면 Bluetooth 및 근처 기기 권한을 요청합니다. ‘연락처만’을 선택하면 내 휴대폰은 내 연락처의 휴대폰과만 연결되며, Bluetooth 신호에 Zerion임을 나타내는 고정된 표식이 담기지 않습니다. 이를 위해서는 연락처가 Zerion 3.0.19 이상을 사용해야 하며, 업데이트 후 두 사람이 한 번 이상 동시에 온라인 상태였어야 합니다.</string>
+	<string name="mesh_info_message">메시지는 수신자에게 봉인되어 Bluetooth를 통해 휴대폰에서 휴대폰으로 전달됩니다. 이 기능을 켜면 Bluetooth 및 근처 기기 권한을 요청합니다. ‘연락처만’을 선택하면 내 휴대폰은 내 연락처의 휴대폰과만 연결되며, 그 밖의 사람에게는 Bluetooth 신호가 이름 없는 기기로 보이고 계속 바뀌는 식별자는 내 연락처만 알아볼 수 있습니다. 이를 위해서는 연락처가 Zerion 3.0.19 이상을 사용해야 하며, 업데이트 후 두 사람이 한 번 이상 동시에 온라인 상태였어야 합니다.</string>
 	<string name="mesh_reach_title">메시 연결 대상</string>
 	<string name="mesh_reach_contacts">연락처만</string>
 	<string name="mesh_reach_everyone">근처의 모든 Zerion 휴대폰</string>
@@ -2256,10 +2258,15 @@
 	<string name="wallet_sp_enable_first">먼저 Silent Payments를 활성화하세요</string>
 	<string name="grouptr_reach_title">내 게시물이 전달되는 사람</string>
 	<string name="grouptr_reach_explanation">그룹 게시물은 서로 연락처인 구성원 사이에서만 직접 전달되며, 구성원은 게시물을 다른 사람에게 전달하지 않습니다. 다음 구성원은 내 연락처가 아니므로 내 게시물을 받지 못하고, 나도 그들의 게시물을 받지 못합니다:\n\n%1$s\n\n이들에게 게시물을 전달하려면 연락처로 추가하세요.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="other">구성원 %d명이 내 연락처가 아닙니다. 상대가 3.0.19 이상을 사용하면 게시물이 그룹 소유자의 휴대폰을 통해 전달됩니다. 자세히 보려면 누르세요.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">그룹 게시물은 서로 연락처인 구성원 사이에서 직접 전달됩니다. 다음 구성원은 내 연락처가 아니므로, 이들이 3.0.19 이상을 사용하면 그룹 소유자의 휴대폰이 내 게시물을 이들에게, 이들의 게시물을 나에게 전달합니다:\n\n%1$s\n\n게시물은 소유자의 휴대폰이 전달한 후에 도착합니다. 매우 큰 게시물은 직접 전달만 됩니다. 직접 경로를 사용하려면 연락처로 추가하세요.</string>
 	<string name="grouptr_ttl_set_by_creator">이 그룹의 사라지는 메시지: %1$s. 그룹 소유자만 이 설정을 변경할 수 있습니다.</string>
 	<string name="grouptr_sender_alias_format">%1$s (게시 이름: “%2$s”)</string>
 	<string name="grouptr_sender_unverified_format">“%1$s” (알고 있는 이름이 아님)</string>
 	<string name="grouptr_member_out_of_reach">내 연락처가 아님, 내 게시물을 받지 않음</string>
+	<string name="grouptr_member_out_of_reach_owner">내 연락처가 아님, 3.0.19 이상에서 그룹 소유자를 통해 전달됨</string>
 	<string name="grouptr_member_invited">초대됨, 응답 대기 중</string>
 	<string name="grouptr_confirm_revoke">%1$s님에게 보낸 초대를 철회하시겠습니까? 상대방의 응답은 무시됩니다.</string>
 	<string name="grouptr_revoke_invite">초대 철회</string>
@@ -2337,6 +2344,8 @@
 	<string name="vault_msg_invalid_document">유효하지 않은 문서 ID</string>
 	<string name="vault_msg_document_updated">문서가 업데이트되었습니다</string>
 	<string name="vault_msg_update_document_failed">문서를 업데이트하지 못했습니다</string>
+	<string name="vault_msg_saved_earlier_version_kept">변경 사항이 저장되었지만 이전 버전을 제거하지 못했습니다. 목록에서 삭제할 수 있습니다.</string>
+	<string name="vault_doc_password_needed_to_save">이 문서는 비밀번호로 보호되어 있습니다. 변경 사항을 저장하려면 해당 비밀번호를 입력하세요.</string>
 	<string name="vault_msg_save_password_failed">비밀번호를 저장하지 못했습니다</string>
 	<string name="vault_msg_note_title_empty">노트 제목은 비워둘 수 없습니다</string>
 	<string name="vault_msg_saved">저장됨</string>
@@ -2799,6 +2808,7 @@
 	<string name="requests_state_withdrawn">전달 후 취소됨</string>
 	<string name="requests_state_cancelled_by_sender">보낸 사람이 취소함</string>
 	<string name="requests_state_contact_added">연락처를 추가했습니다</string>
+	<string name="requests_readd_needs_both_phones">%1$s 님을 다시 추가하려면 두 휴대폰 모두에서 다시 추가해야 합니다. 상대에게 나와의 채팅 설정을 열고 ‘연락처를 다시 추가하여 연결 복구’를 선택해 달라고 요청한 다음 다시 시도하세요.</string>
 	<string name="requests_open_chat">채팅 열기</string>
 	<string name="requests_state_no_answer_yet">아직 응답 없음</string>
 	<string name="requests_notification_accepted">연락 요청이 수락되었습니다</string>
