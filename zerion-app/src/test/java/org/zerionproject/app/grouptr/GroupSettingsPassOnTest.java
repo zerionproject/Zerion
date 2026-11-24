@@ -4,6 +4,8 @@ import org.zerionproject.app.api.grouptr.GroupTrPost;
 import org.zerionproject.app.api.messaging.event.GroupSettingsChangedEvent;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.data.BdfList;
+import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.sync.MessageId;
 import org.junit.Test;
 
@@ -13,6 +15,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.zerionproject.app.grouptr.GroupTrTestNode.FORGED_SIG;
 import static org.zerionproject.app.grouptr.GroupTrTestNode.SIG;
@@ -165,20 +168,19 @@ public class GroupSettingsPassOnTest {
 	}
 
 	@Test
-	public void aMemberPassesTheSettingOnWithItsNextPostOnly()
+	public void aMemberHandsTheSettingOnAsSoonAsItHoldsItAndOncePerSetting()
 			throws Exception {
 		GroupTrTestNode node = memberDevice();
 		ContactId fromCreator = node.addContact(creatorKey);
 		ContactId a = node.addContact(aKey);
 		ContactId b = node.addContact(bKey);
-		settings(node, fromCreator, DAY, 10L, SIG);
-		node.sent.clear();
 
-		node.manager.sendGroupPost(groupId, "one".getBytes("UTF-8"), 0L);
+		settings(node, fromCreator, DAY, 10L, SIG);
 
 		for (ContactId c : Arrays.asList(a, b)) {
 			List<BdfList> passed = recordsTo(node, c, 46L);
-			assertEquals(1, passed.size());
+			assertEquals("handed on before any post", 1, passed.size());
+			assertArrayEquals(groupId, passed.get(0).getRaw(1));
 			assertEquals(DAY, (long) passed.get(0).getLong(2));
 			assertEquals(10L, (long) passed.get(0).getLong(3));
 			assertArrayEquals(SIG, passed.get(0).getRaw(4));
@@ -186,14 +188,153 @@ public class GroupSettingsPassOnTest {
 		assertEquals("the owner is not sent its own setting", 0,
 				recordsTo(node, fromCreator, 46L).size());
 
+		node.manager.sendGroupPost(groupId, "one".getBytes("UTF-8"), 0L);
 		node.manager.sendGroupPost(groupId, "two".getBytes("UTF-8"), 0L);
+		connected(node, a);
+		assertEquals("a post or a connection sends the same setting again",
+				1, recordsTo(node, a, 46L).size());
+		assertEquals(1, recordsTo(node, b, 46L).size());
+
+		settings(node, fromCreator, HOUR, 20L, SIG);
+		List<BdfList> passed = recordsTo(node, a, 46L);
+		assertEquals("a newer setting is handed on once more", 2,
+				passed.size());
+		assertEquals(HOUR, (long) passed.get(1).getLong(2));
+		assertEquals(20L, (long) passed.get(1).getLong(3));
+		node.manager.sendGroupPost(groupId, "three".getBytes("UTF-8"), 0L);
+		connected(node, a);
+		assertEquals(2, recordsTo(node, a, 46L).size());
+		assertEquals(2, recordsTo(node, b, 46L).size());
+	}
+
+	@Test
+	public void aMemberReachedLaterIsHandedTheSettingWhenItConnects()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		ContactId fromCreator = node.addContact(creatorKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		ContactId a = node.addContact(aKey);
+		assertEquals(0, recordsTo(node, a, 46L).size());
+
+		connected(node, a);
+
+		List<BdfList> handed = recordsTo(node, a, 46L);
+		assertEquals("the setting is handed over at the connection", 1,
+				handed.size());
+		assertArrayEquals(groupId, handed.get(0).getRaw(1));
+		assertEquals(DAY, (long) handed.get(0).getLong(2));
+		assertEquals(10L, (long) handed.get(0).getLong(3));
+		assertArrayEquals(SIG, handed.get(0).getRaw(4));
+
+		connected(node, a);
+		connected(node, a);
+		assertEquals("a later connection sends the same setting again", 1,
+				recordsTo(node, a, 46L).size());
+
+		settings(node, fromCreator, HOUR, 20L, SIG);
+		ContactId b = node.addContact(bKey);
+		connected(node, b);
+		List<BdfList> toB = recordsTo(node, b, 46L);
+		assertEquals(1, toB.size());
+		assertEquals(HOUR, (long) toB.get(0).getLong(2));
+		assertEquals(20L, (long) toB.get(0).getLong(3));
+		connected(node, a);
+		List<BdfList> toA = recordsTo(node, a, 46L);
+		assertEquals("the newer setting is handed over once more", 2,
+				toA.size());
+		assertEquals(HOUR, (long) toA.get(1).getLong(2));
+	}
+
+	@Test
+	public void aContactOnAnEarlierVersionIsHandedNothingWhenItConnects()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		ContactId fromCreator = node.addContact(creatorKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		ContactId a = node.addContact(aKey);
+		node.announceMinorVersion(a, 15);
+
+		connected(node, a);
+		assertEquals(0, recordsTo(node, a, 46L).size());
+
+		node.versionUpdated(a, 16);
+		assertEquals(1, recordsTo(node, a, 46L).size());
+		connected(node, a);
+		assertEquals("the copy sent at the update is not sent again", 1,
+				recordsTo(node, a, 46L).size());
+	}
+
+	@Test
+	public void aContactOutsideTheGroupIsHandedNothingWhenItConnects()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		ContactId fromCreator = node.addContact(creatorKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		ContactId outsider = node.addContact(outsiderKey);
+
+		connected(node, outsider);
+		connected(node, fromCreator);
+
+		assertEquals(0, recordsTo(node, outsider, 46L).size());
+		assertEquals("the owner is handed nothing", 0,
+				recordsTo(node, fromCreator, 46L).size());
+	}
+
+	@Test
+	public void theMemberTheSettingCameFromIsNotHandedItBack()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+
+		settings(node, a, DAY, 10L, SIG);
+		connected(node, a);
+
+		assertEquals(0, recordsTo(node, a, 46L).size());
+		assertEquals(1, recordsTo(node, b, 46L).size());
+	}
+
+	@Test
+	public void theOwnersDeviceHandsNothingOnWhenAMemberConnects()
+			throws Exception {
+		GroupTrTestNode node = ownerDevice();
+		ContactId a = node.addContact(aKey);
+		node.manager.setGroupAutoDeleteTimer(groupId, DAY);
+		assertEquals(1, recordsTo(node, a, 46L).size());
+
+		connected(node, a);
+
+		assertEquals(1, recordsTo(node, a, 46L).size());
+		assertNull(node.namespace(GroupTrConstants.SETTINGS_NS_PREFIX
+				+ org.zerionproject.core.util.StringUtils.toHexString(groupId))
+				.get(GroupTrConstants.S_SETTINGS_SENT_TO));
+	}
+
+	@Test
+	public void theNoteOfWhoWasSentTheSettingHoldsMembersOnly()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		Settings held = node.namespace(GroupTrConstants.SETTINGS_NS_PREFIX
+				+ org.zerionproject.core.util.StringUtils.toHexString(groupId));
+		assertNotNull(held);
+		assertEquals("10:" + a.getInt() + "," + b.getInt(),
+				held.get(GroupTrConstants.S_SETTINGS_SENT_TO));
+
+		node.removeContact(b);
+		node.manager.sendGroupPost(groupId, "one".getBytes("UTF-8"), 0L);
 		assertEquals(1, recordsTo(node, a, 46L).size());
 
 		settings(node, fromCreator, HOUR, 20L, SIG);
-		node.manager.sendGroupPost(groupId, "three".getBytes("UTF-8"), 0L);
-		List<BdfList> passed = recordsTo(node, a, 46L);
-		assertEquals(2, passed.size());
-		assertEquals(HOUR, (long) passed.get(1).getLong(2));
+
+		assertEquals("a contact no longer reached drops out of the note",
+				"20:" + a.getInt(),
+				held.get(GroupTrConstants.S_SETTINGS_SENT_TO));
+		assertEquals(2, recordsTo(node, a, 46L).size());
+		assertEquals(1, recordsTo(node, b, 46L).size());
 	}
 
 	@Test
@@ -396,8 +537,9 @@ public class GroupSettingsPassOnTest {
 		settings(node, fromCreator, DAY, 10L, SIG);
 		long chosen = node.now;
 		node.now += MINUTE;
+		int before = node.copiesTo(a).size();
 		node.manager.sendGroupPost(groupId, "mine".getBytes("UTF-8"), 0L);
-		MessageId waiting = node.copiesTo(a).get(0);
+		MessageId waiting = node.copiesTo(a).get(before);
 		assertEquals(Long.valueOf(DAY), node.cleanupTimerDuration(waiting));
 
 		settings(node, fromCreator, HOUR, chosen, SIG);
@@ -578,6 +720,10 @@ public class GroupSettingsPassOnTest {
 		assertEquals("a copy that teaches nothing costs no signature check",
 				before, node.signatureChecks());
 		assertEquals(DAY, node.group(groupId).getDefaultAutoDeleteTimerMs());
+	}
+
+	private static void connected(GroupTrTestNode node, ContactId c) {
+		node.manager.eventOccurred(new ContactConnectedEvent(c));
 	}
 
 	private void settings(GroupTrTestNode node, ContactId from, long timer,

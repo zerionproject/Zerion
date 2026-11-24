@@ -106,7 +106,8 @@ the creator for nothing. See "Who receives a post".
 
 Minor version 16 (Android 3.0.19, `GROUP_SETTINGS_RELAY_MIN_VERSION`) changes
 no record format: a member on it takes the creator's settings record (46)
-also from another member and passes it on (see msgType 46). The same version
+also from another member and hands it on to each fellow member once, as soon
+as it holds it, without waiting for a post (see msgType 46). The same version
 adds the mesh link keys record to one-to-one chats (type 16, "Contacts only
 mode" in [MESH-TRANSPORT.md](../protocol/MESH-TRANSPORT.md)). Minor version 15
 adds pinned messages (msgType 59 and the one-to-one pin record).
@@ -672,16 +673,29 @@ From 3.0.19 (messaging version 16) the timer no longer depends on the one
 copy the creator sends:
 
 - A member keeps the creator's signature with the setting (settings key
-  `settingsSig`) and passes the record on unchanged: to the members its next
-  post goes to, once per setting (`settingsPassedOn`), to a member whose
-  post arrives signed with a timer other than the group's, and to a member
-  whose app reaches version 16. The creator answers such a post the same way
-  with a record it signs again over the same timestamp. A device that is
-  handed a record older than the one it holds answers with the one it holds.
-  The answers to a post and to an older record are limited to one per ten
-  minutes per member and setting (the limit is kept in memory and starts
-  afresh with the app). A member sends a passed-on record only to members on
-  version 16; an earlier version ignores it.
+  `settingsSig`) and passes the record on unchanged, once per setting and
+  fellow member, without waiting for a post: as soon as it takes the record,
+  to every fellow member it reaches as a contact; to a fellow member it
+  could not send it to then (not yet a contact, or on an earlier version)
+  the next time that contact connects or reaches version 16; and with its
+  next post to anyone still missing. It notes per group which contacts were
+  sent the setting in force (settings key `settingsSentTo`: the setting's
+  timestamp followed by the contact ids; ids of contacts that are no longer
+  members drop out whenever the note is written, and a newer setting starts
+  it afresh, so it never holds more ids than the group has members). The
+  contact the record came from counts as sent. The record is also sent,
+  regardless of that note, to a member whose post arrives signed with a
+  timer other than the group's. The creator answers such a post the same
+  way with a record it signs again over the same timestamp. A device that
+  is handed a record older than the one it holds answers with the one it
+  holds. The answers to a post and to an older record are limited to one
+  per ten minutes per member and setting (the limit is kept in memory and
+  starts afresh with the app). A member sends a passed-on record only to
+  members on version 16; an earlier version ignores it. The record travels
+  as a one-to-one message in the pairwise conversation, so a copy queued
+  for a contact that is offline is carried over at the next connection,
+  and a copy that arrives this way is taken exactly like one that arrives
+  with a post.
 - A record a member passed on applies from then on: to the posts the device
   sends and to the posts that arrive after it. It does not touch posts the
   device already holds, because a member can only show that the creator
