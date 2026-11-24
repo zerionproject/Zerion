@@ -124,6 +124,7 @@ public class RootEvolutionManager {
 			ConcurrentHashMap.newKeySet();
 	private final Map<Integer, PeerPause> peerPauses =
 			new ConcurrentHashMap<>();
+	private final Set<Integer> pausedInRun = ConcurrentHashMap.newKeySet();
 	private final ScheduledThreadPoolExecutor timer = newTimer();
 	@Nullable
 	private volatile byte[][] identityRecords;
@@ -285,12 +286,25 @@ public class RootEvolutionManager {
 	void peerGreeted(ContactId c, boolean paused) {
 		long now = now();
 		peerPauses.values().removeIf(p -> !p.holdsAt(now));
-		if (paused) peerPauses.put(c.getInt(), new PeerPause(now, now));
-		else peerPauses.remove(c.getInt());
+		if (!paused) {
+			peerPauseEnded(c, now);
+			return;
+		}
+		peerPauses.put(c.getInt(), new PeerPause(now, now));
+		pausedInRun.add(c.getInt());
+		stalledBeside.remove(c.getInt());
 	}
 
 	void peerRenews(ContactId c) {
+		peerPauseEnded(c, now());
+	}
+
+	private void peerPauseEnded(ContactId c, long now) {
 		peerPauses.remove(c.getInt());
+		if (!pausedInRun.remove(c.getInt())) return;
+		long[] stalls = store.stalls(c);
+		if (stalls == null || stalls[0] <= 0) return;
+		store.setStalls(c, (int) stalls[0], now);
 	}
 
 	boolean peerPauseRemembered(ContactId c) {
@@ -321,10 +335,11 @@ public class RootEvolutionManager {
 		if (stalls == null) return;
 		long count = stalls[0];
 		long since = stalls[1];
-		if (count <= 0 || since <= 0 || since > now) {
-			count = 0;
-			since = now;
-		}
+		PeerPause pause = peerPauses.get(c.getInt());
+		boolean pausedSince = pause != null && pause.holdsAt(now)
+				|| pausedInRun.remove(c.getInt());
+		if (count <= 0 || since <= 0 || since > now) count = 0;
+		if (count == 0 || pausedSince) since = now;
 		if (count < Integer.MAX_VALUE) count++;
 		store.setStalls(c, (int) count, since);
 		if (notRenewing(count, since, now)) store.markNotRenewing(c, true);
@@ -409,6 +424,7 @@ public class RootEvolutionManager {
 		stalledAt.remove(c.getInt());
 		stalledBeside.remove(c.getInt());
 		peerPauses.remove(c.getInt());
+		pausedInRun.remove(c.getInt());
 		store.renewed(c, now);
 		Set<RootEvolution> set = watchers.get(c.getInt());
 		if (set == null) return;

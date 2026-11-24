@@ -785,6 +785,67 @@ public class RootEvolutionStallWarningTest {
 	}
 
 	@Test
+	public void aConnectionThatEndedBesideOneOnWhichThePeerSaysItIsPausedIsNotCounted() {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		bed.passTime();
+		RootEvolution dropped = new RootEvolution(m, BOB, true);
+		RootEvolution other = new RootEvolution(m, BOB, true);
+		dropped.start(silent());
+		other.start(silent());
+		dropped.onPeerStreamAuthenticated(0);
+		other.onPeerStreamAuthenticated(0);
+		dropped.close();
+		assertEquals("a pause was known before the peer said so", 0,
+				m.peerPausesRemembered());
+		assertEquals(0, alice.store.stalls(BOB)[0]);
+		other.onRecord(greeting(FLAG_ENFORCES_EVOLUTION
+				| FLAG_EVOLUTION_PAUSED));
+		assertFalse("a paused peer is not waited for",
+				other.holdsUserRecords());
+		other.close();
+		assertEquals("a connection that ended before the greeting, beside"
+						+ " the one on which the peer said it is paused, was"
+						+ " counted", 0, alice.store.stalls(BOB)[0]);
+		assertFalse(alice.store.isNotRenewing(BOB));
+		endedBeforeTheGreeting(m);
+		assertEquals(0, alice.store.stalls(BOB)[0]);
+	}
+
+	@Test
+	public void theTimeAPeerWasPausedDoesNotCountTowardTheDayBetweenTwoStalls() {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		bed.passTime();
+		endedBeforeTheGreeting(m);
+		assertEquals(1, alice.store.stalls(BOB)[0]);
+		long firstStalledAt = alice.store.stalls(BOB)[1];
+		for (int i = 0; i < 4; i++) {
+			greetedAndEnded(m, FLAG_ENFORCES_EVOLUTION
+					| FLAG_EVOLUTION_PAUSED);
+			bed.clock.addAndGet(NOT_RENEWING_AFTER_LONG_MS / 4);
+			endedBeforeTheGreeting(m);
+		}
+		assertEquals("a paused peer was counted", 1,
+				alice.store.stalls(BOB)[0]);
+		assertEquals(firstStalledAt, alice.store.stalls(BOB)[1]);
+		long pauseEndedAt = bed.clock.get();
+		assertTrue(pauseEndedAt - firstStalledAt
+				>= NOT_RENEWING_AFTER_LONG_MS);
+		greetedAndEnded(m, FLAG_ENFORCES_EVOLUTION);
+		assertEquals("the renewal that was due after the pause and did not"
+				+ " complete was not counted", 2, alice.store.stalls(BOB)[0]);
+		assertEquals("the time of the run did not start again when the"
+				+ " pause ended", pauseEndedAt, alice.store.stalls(BOB)[1]);
+		assertFalse("the time the peer was paused counted toward the day"
+				+ " between two stalls", alice.store.isNotRenewing(BOB));
+		assertEquals(0, alice.store.notRenewingRaised.get());
+		bed.clock.addAndGet(NOT_RENEWING_AFTER_LONG_MS);
+		endedBeforeTheGreeting(m);
+		assertEquals(3, alice.store.stalls(BOB)[0]);
+		assertTrue("a day without a pause did not count",
+				alice.store.isNotRenewing(BOB));
+	}
+
+	@Test
 	public void aPausedSideClearsTheOutOfSyncMarkOnlyOnThePeersGreeting() {
 		RootEvolutionManager m = manager(alice);
 		m.evolved(BOB);

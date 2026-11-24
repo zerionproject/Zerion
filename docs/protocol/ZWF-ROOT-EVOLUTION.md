@@ -512,11 +512,15 @@ and no HELLO arrived:
   Until `PEER_PAUSE_MEMORY_MS` (24 hours, the length of a pause) have passed
   since the last such HELLO, a connection to that contact that ends without
   the peer's HELLO is not counted. It does not clear the out-of-sync mark
-  either. A HELLO without the flag, an offer from the peer or a completed
-  evolution ends this at once. So does a clock that reads earlier, when a
-  connection to the contact ends, than it did at that HELLO or at the end of
-  the previous connection to the contact. A connection on which the HELLO
-  arrived is judged by that HELLO, as before. Because the time is not
+  either. A HELLO with the flag also drops the note of a connection to that
+  contact that ended earlier beside another one (below), so a connection
+  that ended before its HELLO, before this side knew of the pause, beside
+  the connection on which the peer then says it is paused is not counted
+  when that one ends. A HELLO without the flag, an offer from the peer or a
+  completed evolution ends this at once. So does a clock that reads earlier,
+  when a connection to the contact ends, than it did at that HELLO or at the
+  end of the previous connection to the contact. A connection on which the
+  HELLO arrived is judged by that HELLO, as before. Because the time is not
   stored, such endings are counted again after a restart of this phone,
   until the next HELLO with the flag arrives. What is remembered is one
   entry per contact, dropped when a later HELLO from any contact, or the end
@@ -554,6 +558,14 @@ For 24 hours after the last such HELLO, the length of the pause, a
 connection to that contact that ends before its HELLO arrives is not counted
 either (the third kind above). That time is kept in memory, so after a
 restart of this phone such endings count again until the next HELLO.
+The time for which a peer's pause was remembered does not count toward the
+hour and the day rule: when the remembered pause ends with a HELLO without
+the flag or an offer from the peer, and when a connection is counted while
+a pause is remembered or as the first one after a pause ran out, a run that
+is not empty keeps its count and takes that moment as the end of its first
+connection. A notice the run raised before the pause stays, the six in a
+row rule counts through a pause, and a pause this side did not learn from a
+HELLO since its last restart, its own pause included, is not taken off.
 Once the contact is marked, the conversation and the contact's
 details say that the connection keys are not being renewed, that a poor
 network can cause it, and offer to re-add the contact. The run and the mark
@@ -566,7 +578,8 @@ which nothing from the peer authenticated is not counted; the six-dial rule
 above covers it on the dialling side. A connection that ends with an
 evolution outstanding while another connection to the contact is open is
 noted and counted once when the last of those connections ends, whatever its
-own state, so a group of overlapping connections counts at most once; a
+own state, unless an evolution completed or the peer said that it is paused
+in between, so a group of overlapping connections counts at most once; a
 connection closed twice counts once. If the stored run cannot be read the
 connection is not counted. A clock that jumps forward between two stalled
 connections brings the notice forward; a clock that went back starts the run
@@ -634,6 +647,8 @@ this side closed as redundant for both kinds of peer, the lower of two
 dials closed by the connection registry, a peer whose pause is remembered
 over connections that end before its greeting (for the length of a pause,
 until a greeting without the flag, and not past a clock that went back), a
+connection that ended beside the one on which the peer says it is paused,
+the time of a remembered pause left out of the day between two stalls, a
 paused side that clears the out-of-sync mark only on the greeting, and the
 unauthenticated and parallel cases; `RootEvolutionDeadlineTest`,
 `RootEvolutionManagerTest` and `RootKeyStoreDatabaseTest` cover the
