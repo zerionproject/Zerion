@@ -123,18 +123,29 @@ public final class ExternalHandoff {
 
 	public static void open(Activity activity, Executor io, byte[] content,
 			String type, Runnable onFailure) {
-		open(activity, io, content, type, onFailure, false);
+		open(activity, io, content, type, onFailure, onFailure, false);
+	}
+
+	public static void open(Activity activity, Executor io, byte[] content,
+			String type, Runnable onRefused, Runnable onNoApp) {
+		open(activity, io, content, type, onRefused, onNoApp, false);
 	}
 
 	public static void openCopy(Activity activity, Executor io, byte[] copy,
 			String type, Runnable onFailure) {
-		open(activity, io, copy, type, onFailure, true);
+		open(activity, io, copy, type, onFailure, onFailure, true);
+	}
+
+	public static void openCopy(Activity activity, Executor io, byte[] copy,
+			String type, Runnable onRefused, Runnable onNoApp) {
+		open(activity, io, copy, type, onRefused, onNoApp, true);
 	}
 
 	private static void open(Activity activity, Executor io, byte[] content,
-			String type, Runnable onFailure, boolean owned) {
+			String type, Runnable onRefused, Runnable onNoApp, boolean owned) {
 		if (!asksFirst(type)) {
-			stageAndLaunch(activity, io, content, type, onFailure, owned);
+			stageAndLaunch(activity, io, content, type, onRefused, onNoApp,
+					owned);
 			return;
 		}
 		boolean[] confirmed = {false};
@@ -143,8 +154,8 @@ public final class ExternalHandoff {
 				.setMessage(R.string.external_open_message)
 				.setPositiveButton(R.string.external_open_confirm, (d, w) -> {
 					confirmed[0] = true;
-					stageAndLaunch(activity, io, content, type, onFailure,
-							owned);
+					stageAndLaunch(activity, io, content, type, onRefused,
+							onNoApp, owned);
 				})
 				.setNegativeButton(android.R.string.cancel, null)
 				.setOnDismissListener(d -> {
@@ -158,7 +169,8 @@ public final class ExternalHandoff {
 	}
 
 	private static void stageAndLaunch(Activity activity, Executor io,
-			byte[] content, String type, Runnable onFailure, boolean owned) {
+			byte[] content, String type, Runnable onRefused, Runnable onNoApp,
+			boolean owned) {
 		Context app = activity.getApplicationContext();
 		io.execute(() -> {
 			File file;
@@ -169,7 +181,7 @@ public final class ExternalHandoff {
 				shown = checkedType(ready.type, ready.content);
 				file = stage(app, ready.content, shown);
 			} catch (IOException | RuntimeException e) {
-				activity.runOnUiThread(onFailure);
+				activity.runOnUiThread(onRefused);
 				return;
 			} finally {
 				if (ready != null && ready.content != content) {
@@ -182,7 +194,7 @@ public final class ExternalHandoff {
 					end(app);
 				} else if (!launch(activity, file, shown)) {
 					end(app);
-					onFailure.run();
+					onNoApp.run();
 				}
 			});
 		});
@@ -197,6 +209,9 @@ public final class ExternalHandoff {
 
 	static File stage(Context ctx, byte[] content, String type)
 			throws IOException {
+		if (!checkedType(type, content).equals(type)) {
+			throw new IOException("content does not open as the given type");
+		}
 		end(ctx);
 		synchronized (LOCK) {
 			File dir = new File(ctx.getCacheDir(), DIR);

@@ -2168,7 +2168,7 @@ public class ChannelFeedActivity extends ZerionActivity
 					.ExternalViewerTypes.typeForContent(mime,
 							blob.getPlaintextBytes());
 			if (viewType == null) {
-				refuse(R.string.channels_attach_open_failed);
+				refuse(R.string.media_document_open_failed);
 				return;
 			}
 			if (viewType.startsWith("image/")) {
@@ -2182,6 +2182,9 @@ public class ChannelFeedActivity extends ZerionActivity
 			runOnUiThreadUnlessDestroyed(() -> com.professor.zerion.android
 					.util.ExternalHandoff.open(this, ioExecutor,
 							blob.getPlaintextBytes(), viewType,
+							() -> Toast.makeText(this,
+									R.string.media_document_open_failed,
+									Toast.LENGTH_LONG).show(),
 							() -> Toast.makeText(this,
 									R.string.channels_attach_open_failed,
 									Toast.LENGTH_LONG).show()));

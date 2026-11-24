@@ -424,10 +424,20 @@ public class SecureNoteFragment extends BaseFragment {
 
 		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
 			if (error != null && !error.isEmpty()) {
+				boolean wasSaving = isSaving;
 				isSaving = false;
 				progressOverlay.setVisibility(View.GONE);
 				setInputsEnabled(true);
 				saveFab.setEnabled(true);
+
+				if (wasSaving && viewModel.isMessage(error,
+						R.string.vault_msg_saved_earlier_version_kept)) {
+					closeAfterSave();
+					return;
+				}
+				if (wasSaving) {
+					hasChanges = true;
+				}
 
 				showSnackbar(error, com.google.android.material.snackbar.Snackbar
 						.LENGTH_LONG);
@@ -442,13 +452,17 @@ public class SecureNoteFragment extends BaseFragment {
 
 				isSaving = false;
 
-				mainHandler.postDelayed(() -> {
-					if (isAdded() && getActivity() != null) {
-						requireActivity().getOnBackPressedDispatcher().onBackPressed();
-					}
-				}, 300);
+				closeAfterSave();
 			}
 		});
+	}
+
+	private void closeAfterSave() {
+		mainHandler.postDelayed(() -> {
+			if (isAdded() && getActivity() != null) {
+				requireActivity().getOnBackPressedDispatcher().onBackPressed();
+			}
+		}, 300);
 	}
 
 	private void setInputsEnabled(boolean enabled) {
