@@ -574,7 +574,7 @@
 	<string name="i2p_toggle_summary">I2P नेटवर्क से भी रूट करें</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">कनेक्टिविटी</string>
-	<string name="mesh_info_message">संदेश इस तरह सील किए जाते हैं कि केवल प्राप्तकर्ता ही उन्हें खोल सके, और वे Bluetooth से एक फ़ोन से दूसरे फ़ोन तक पहुँचते हैं। इसे चालू करने पर Bluetooth और आस-पास के डिवाइस की अनुमतियाँ माँगी जाती हैं। “केवल संपर्क” चुनने पर आपका फ़ोन केवल आपके संपर्कों के फ़ोन से जुड़ता है, और इसके Bluetooth सिग्नल में Zerion का कोई स्थायी निशान नहीं होता। इसके लिए संपर्क के पास Zerion 3.0.19 या नया संस्करण होना चाहिए, और अपडेट के बाद आप दोनों का कम से कम एक बार एक ही समय पर ऑनलाइन रहना ज़रूरी है।</string>
+	<string name="mesh_info_message">संदेश इस तरह सील किए जाते हैं कि केवल प्राप्तकर्ता ही उन्हें खोल सके, और वे Bluetooth से एक फ़ोन से दूसरे फ़ोन तक पहुँचते हैं। इसे चालू करने पर Bluetooth और आस-पास के डिवाइस की अनुमतियाँ माँगी जाती हैं। “केवल संपर्क” चुनने पर आपका फ़ोन केवल आपके संपर्कों के फ़ोन से जुड़ता है; बाकी सभी के लिए इसका Bluetooth सिग्नल एक बिना नाम का डिवाइस है, जिसके बदलते पहचानकर्ता को केवल आपके संपर्क पहचान सकते हैं। इसके लिए संपर्क के पास Zerion 3.0.19 या नया संस्करण होना चाहिए, और अपडेट के बाद आप दोनों का कम से कम एक बार एक ही समय पर ऑनलाइन रहना ज़रूरी है।</string>
 	<string name="mesh_reach_title">मेश इनसे जुड़ता है</string>
 	<string name="mesh_reach_contacts">केवल संपर्क</string>
 	<string name="mesh_reach_everyone">आस-पास का हर Zerion फ़ोन</string>
@@ -739,6 +739,8 @@
 	<string name="vault_msg_invalid_document">अमान्य दस्तावेज़ ID</string>
 	<string name="vault_msg_document_updated">दस्तावेज़ अपडेट हो गया</string>
 	<string name="vault_msg_update_document_failed">दस्तावेज़ अपडेट नहीं किया जा सका</string>
+	<string name="vault_msg_saved_earlier_version_kept">आपके बदलाव सहेज लिए गए, लेकिन पिछला संस्करण हटाया नहीं जा सका। आप उसे सूची से हटा सकते हैं।</string>
+	<string name="vault_doc_password_needed_to_save">यह दस्तावेज़ पासवर्ड से सुरक्षित है। अपने बदलाव सहेजने के लिए वही पासवर्ड डालें।</string>
 	<string name="vault_msg_save_password_failed">पासवर्ड सहेजा नहीं जा सका</string>
 	<string name="vault_msg_note_title_empty">नोट का शीर्षक खाली नहीं हो सकता</string>
 	<string name="vault_msg_saved">सहेजा गया</string>
@@ -849,6 +851,8 @@
 	<string name="browser_tor_get">Tor Browser पाएँ</string>
 	<string name="quick_reply_not_sent">आपका जवाब नहीं भेजा गया। फिर से कोशिश करने के लिए चैट खोलें।</string>
 	<string name="link_unsupported">असमर्थित लिंक</string>
+	<string name="link_host_other_alphabet">इस पते में किसी दूसरी वर्णमाला के अक्षर हैं।</string>
+	<string name="link_host_other_alphabet_mark">(दूसरी वर्णमाला के अक्षर)</string>
 	<string name="settings_support_summary">Zerion को मुफ़्त और निजी बनाए रखने में मदद करें</string>
 	<string name="login_tagline">Tor पर निजी मैसेजिंग</string>
 	<string name="setup_password_subtitle">खाते का यह एन्क्रिप्शन पासवर्ड ज़रूरी है। यह इस डिवाइस पर आपके स्थानीय एन्क्रिप्टेड खाते और डेटाबेस की सुरक्षा करता है। एक मज़बूत और अनोखा पासवर्ड चुनें।</string>
@@ -2382,10 +2386,16 @@
 	<string name="wallet_sp_enable_first">पहले Silent Payments चालू करें</string>
 	<string name="grouptr_reach_title">आपकी पोस्ट किन तक पहुँचती हैं</string>
 	<string name="grouptr_reach_explanation">समूह की पोस्ट सीधे उन सदस्यों के बीच जाती हैं जो एक-दूसरे के संपर्क हैं, और सदस्य पोस्ट आगे नहीं भेजते। ये सदस्य आपके संपर्क नहीं हैं, इसलिए इन्हें आपकी पोस्ट नहीं मिलतीं और आपको इनकी पोस्ट नहीं मिलतीं:\n\n%1$s\n\nइन तक पहुँचने के लिए इन्हें संपर्क के रूप में जोड़ें।</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d सदस्य आपका संपर्क नहीं है। 3.0.19 या नया संस्करण चलाने पर पोस्ट उस तक समूह के मालिक के फ़ोन के ज़रिए पहुँचती हैं। विवरण के लिए टैप करें।</item>
+		<item quantity="other">%d सदस्य आपके संपर्क नहीं हैं। 3.0.19 या नया संस्करण चलाने पर पोस्ट उन तक समूह के मालिक के फ़ोन के ज़रिए पहुँचती हैं। विवरण के लिए टैप करें।</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">समूह की पोस्ट सीधे उन सदस्यों के बीच जाती हैं जो एक-दूसरे के संपर्क हैं। ये सदस्य आपके संपर्क नहीं हैं, इसलिए जब ये 3.0.19 या नया संस्करण चलाते हैं, तो समूह के मालिक का फ़ोन आपकी पोस्ट इन तक और इनकी पोस्ट आप तक पहुँचाता है:\n\n%1$s\n\nमालिक के फ़ोन के आगे पहुँचा देने के बाद पोस्ट पहुँचती हैं। बहुत बड़ी पोस्ट केवल सीधे जाती हैं। सीधे रास्ते के लिए इन्हें संपर्क के रूप में जोड़ें।</string>
 	<string name="grouptr_ttl_set_by_creator">इस समूह में गायब होने वाले संदेश: %1$s। केवल समूह का मालिक ही इसे बदल सकता है।</string>
 	<string name="grouptr_sender_alias_format">%1$s (\"%2$s\" के नाम से पोस्ट कर रहे हैं)</string>
 	<string name="grouptr_sender_unverified_format">\"%1$s\" (ऐसा नाम नहीं जिसे आप जानते हों)</string>
 	<string name="grouptr_member_out_of_reach">आपका संपर्क नहीं है, आपकी पोस्ट नहीं मिलतीं</string>
+	<string name="grouptr_member_out_of_reach_owner">आपका संपर्क नहीं है, 3.0.19 या नए संस्करण पर समूह के मालिक के ज़रिए पोस्ट मिलती हैं</string>
 	<string name="grouptr_member_invited">आमंत्रित, जवाब का इंतज़ार है</string>
 	<string name="grouptr_confirm_revoke">%1$s को भेजा गया आमंत्रण वापस लें? उनके किसी भी जवाब को अनदेखा किया जाएगा।</string>
 	<string name="grouptr_revoke_invite">आमंत्रण वापस लें</string>
@@ -2844,6 +2854,7 @@
 	<string name="requests_state_withdrawn">पहुँचने के बाद रद्द किया गया</string>
 	<string name="requests_state_cancelled_by_sender">भेजने वाले ने रद्द किया</string>
 	<string name="requests_state_contact_added">संपर्क जोड़ा गया</string>
+	<string name="requests_readd_needs_both_phones">%1$s को फिर से जोड़ने के लिए दोनों फ़ोन पर फिर से जोड़ना ज़रूरी है। उनसे कहें कि वे आपकी चैट सेटिंग्स खोलें और “कनेक्शन ठीक करने के लिए संपर्क को फिर से जोड़ें” चुनें, फिर दोबारा कोशिश करें।</string>
 	<string name="requests_open_chat">चैट खोलें</string>
 	<string name="requests_state_no_answer_yet">अभी तक कोई जवाब नहीं</string>
 	<string name="requests_notification_accepted">आपका संपर्क अनुरोध स्वीकार कर लिया गया</string>

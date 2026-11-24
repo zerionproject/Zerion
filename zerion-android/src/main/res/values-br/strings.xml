@@ -137,7 +137,7 @@
 	<string name="i2p_toggle_summary">Tremen ivez dre ar rouedad I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Kennaskadurezh</string>
-	<string name="mesh_info_message">Ar c\'hemennadennoù a vez siellet evit an degemerer hag a dremen eus ur pellgomzer d\'egile dre Bluetooth. Gweredekaat an dra-se a c\'houlenn an aotreoù Bluetooth hag an aotreoù evit an trevnadoù tost. Gant « Darempredoù hepken » ne gennask ho pellgomzer nemet ouzh pellgomzerioù ho tarempredoù, ha n\'eus merk digemm ebet eus Zerion en e sinal Bluetooth. Evit se e rank an darempred kaout Zerion 3.0.19 pe nevesoc\'h, hag e rankit bezañ bet enlinenn ho-taou war un dro ur wech da nebeutañ abaoe an hizivadenn.</string>
+	<string name="mesh_info_message">Ar c\'hemennadennoù a vez siellet evit an degemerer hag a dremen eus ur pellgomzer d\'egile dre Bluetooth. Gweredekaat an dra-se a c\'houlenn an aotreoù Bluetooth hag an aotreoù evit an trevnadoù tost. Gant « Darempredoù hepken » ne gennask ho pellgomzer nemet ouzh pellgomzerioù ho tarempredoù; evit an holl re all ez eo e sinal Bluetooth un trevnad dizanv, gant un anavezer a gemm ha na c\'hall bezañ anavezet nemet gant ho tarempredoù. Evit se e rank an darempred kaout Zerion 3.0.19 pe nevesoc\'h, hag e rankit bezañ bet enlinenn ho-taou war un dro ur wech da nebeutañ abaoe an hizivadenn.</string>
 	<string name="mesh_reach_title">Ar mesh a gennask ouzh</string>
 	<string name="mesh_reach_contacts">Darempredoù hepken</string>
 	<string name="mesh_reach_everyone">Kement pellgomzer Zerion tost</string>
@@ -337,6 +337,8 @@
 	<string name="browser_tor_get">Kaout Tor Browser</string>
 	<string name="quick_reply_not_sent">N\'eo ket bet kaset ho respont. Digorit ar gaozeadenn evit klask en-dro.</string>
 	<string name="link_unsupported">Ere n\'eo ket skoret</string>
+	<string name="link_host_other_alphabet">Implijout a ra ar chomlec\'h lizherennoù eus ul lizherenneg all.</string>
+	<string name="link_host_other_alphabet_mark">(lizherennoù eus ul lizherenneg all)</string>
 	<string name="settings_support_summary">Sikourit Zerion da chom digoust ha prevez</string>
 	<string name="login_tagline">Kemennadennoù prevez dre Tor</string>
 	<string name="setup_password_subtitle">Ret eo kaout ar ger-tremen enrinegañ-mañ evit ar gont. Gwareziñ a ra ho kont hag ho stlennvon lec\'hel enrineget war an trevnad-mañ. Dibabit unan kreñv ha dibar.</string>
@@ -2247,10 +2249,19 @@
 	<string name="wallet_sp_move_hint">Chomlec\'h Bitcoin da zilec\'hiañ an arc\'hant dezhañ</string>
 	<string name="grouptr_reach_title">Piv a vez tizhet gant ho kemennadennoù</string>
 	<string name="grouptr_reach_explanation">Kemennadennoù ar strollad a dremen war-eeun etre an izili a zo darempredoù an eil d\'egile, ha ne gas ket an izili ar c\'hemennadennoù pelloc\'h. An izili-mañ n\'int ket darempredoù deoc\'h, neuze ne resevont ket ho kemennadennoù ha ne resevit ket o re:\n\n%1$s\n\nOuzhpennit anezho evel darempredoù evit o zizhout.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d ezel n\'eo ket en ho tarempredoù. Resev a ra ar c\'hemennadennoù dre bellgomzer perc\'henn ar strollad pa implij 3.0.19 pe nevesoc\'h. Touchit evit ar munudoù.</item>
+		<item quantity="two">%d ezel n\'int ket en ho tarempredoù. Resev a reont ar c\'hemennadennoù dre bellgomzer perc\'henn ar strollad pa implijont 3.0.19 pe nevesoc\'h. Touchit evit ar munudoù.</item>
+		<item quantity="few">%d ezel n\'int ket en ho tarempredoù. Resev a reont ar c\'hemennadennoù dre bellgomzer perc\'henn ar strollad pa implijont 3.0.19 pe nevesoc\'h. Touchit evit ar munudoù.</item>
+		<item quantity="many">%d a izili n\'int ket en ho tarempredoù. Resev a reont ar c\'hemennadennoù dre bellgomzer perc\'henn ar strollad pa implijont 3.0.19 pe nevesoc\'h. Touchit evit ar munudoù.</item>
+		<item quantity="other">%d ezel n\'int ket en ho tarempredoù. Resev a reont ar c\'hemennadennoù dre bellgomzer perc\'henn ar strollad pa implijont 3.0.19 pe nevesoc\'h. Touchit evit ar munudoù.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Kemennadennoù ar strollad a dremen war-eeun etre an izili a zo darempredoù an eil d\'egile. An izili-mañ n\'int ket darempredoù deoc\'h, neuze e kas pellgomzer perc\'henn ar strollad ho kemennadennoù dezho hag o re deoc\'h, pa implijont 3.0.19 pe nevesoc\'h:\n\n%1$s\n\nDegouezhout a ra ar c\'hemennadennoù ur wech kaset gant pellgomzer ar perc\'henn. Ar c\'hemennadennoù bras-tre ne dremenont nemet war-eeun. Ouzhpennit anezho evel darempredoù evit kaout un hent war-eeun.</string>
 	<string name="grouptr_ttl_set_by_creator">Kemennadennoù a steuz er strollad-mañ: %1$s. Perc\'henn ar strollad hepken a c\'hall cheñch an dra-se.</string>
 	<string name="grouptr_sender_alias_format">%1$s (o skrivañ evel « %2$s »)</string>
 	<string name="grouptr_sender_unverified_format">« %1$s » (n\'eo ket un anv anavezet ganeoc\'h)</string>
 	<string name="grouptr_member_out_of_reach">n\'eo ket un darempred deoc\'h, ne resev ket ho kemennadennoù</string>
+	<string name="grouptr_member_out_of_reach_owner">n\'eo ket un darempred deoc\'h, tizhet dre berc\'henn ar strollad gant 3.0.19 pe nevesoc\'h</string>
 	<string name="grouptr_member_invited">Pedet, o c\'hortoz ur respont</string>
 	<string name="grouptr_confirm_revoke">Tennañ en-dro ar bedadenn evit %1$s? Ne vo ket kemeret e kont ur respont digant an den-se.</string>
 	<string name="grouptr_revoke_invite">Tennañ ar bedadenn en-dro</string>
@@ -2398,6 +2409,8 @@
 	<string name="vault_msg_invalid_document">ID teul direizh</string>
 	<string name="vault_msg_document_updated">Teul hizivaet</string>
 	<string name="vault_msg_update_document_failed">N\'eus ket bet gallet hizivaat an teul</string>
+	<string name="vault_msg_saved_earlier_version_kept">Enrollet eo bet ho kemmoù, met n\'eus ket bet gallet dilemel an handelv kent. Gallout a rit he dilemel diwar ar roll.</string>
+	<string name="vault_doc_password_needed_to_save">Gwarezet eo an teul-mañ gant ur ger-tremen. Roit ar ger-tremen-se evit enrollañ ho kemmoù.</string>
 	<string name="vault_msg_save_password_failed">N\'eus ket bet gallet enrollañ ar ger-tremen</string>
 	<string name="vault_msg_note_title_empty">Ne c\'hall ket titl an notenn bezañ goullo</string>
 	<string name="vault_msg_saved">Enrollet</string>
@@ -2913,6 +2926,7 @@
 	<string name="requests_state_withdrawn">Nullet goude bezañ bet degaset</string>
 	<string name="requests_state_cancelled_by_sender">Nullet gant ar c\'haser</string>
 	<string name="requests_state_contact_added">Darempred ouzhpennet</string>
+	<string name="requests_readd_needs_both_phones">Evit adouzhpennañ %1$s e ranker en ober war an daou bellgomzer. Goulennit digant an darempred digeriñ arventennoù ho kaozeadenn ha dibab « Adouzhpennañ an darempred evit reizhañ ar c\'hennask », ha klaskit en-dro goude.</string>
 	<string name="requests_open_chat">Digeriñ ar gaozeadenn</string>
 	<string name="requests_state_no_answer_yet">Respont ebet c\'hoazh</string>
 	<string name="requests_notification_accepted">Degemeret eo bet ho koulenn darempred</string>

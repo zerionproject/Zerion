@@ -514,6 +514,8 @@
 	<string name="browser_tor_get">取得 Tor Browser</string>
 	<string name="quick_reply_not_sent">您的回覆未傳送。請開啟聊天再試一次。</string>
 	<string name="link_unsupported">不支援的連結</string>
+	<string name="link_host_other_alphabet">這個位址使用了其他字母系統的字母。</string>
+	<string name="link_host_other_alphabet_mark">（其他字母系統的字母）</string>
 	<string name="settings_support_summary">協助讓 Zerion 保持免費與私密</string>
 	<string name="login_tagline">透過 Tor 的私密通訊</string>
 	<string name="setup_password_subtitle">您的密碼會保護您的加密資料。請選擇一組強而獨特的密碼。</string>
@@ -552,7 +554,7 @@
 	<string name="settings_section_mesh">離線網狀網路</string>
 	<string name="mesh_toggle_title">離線網狀網路</string>
 	<string name="mesh_toggle_summary">在沒有網際網路的情況下透過 Bluetooth 聯絡附近的聯絡人</string>
-	<string name="mesh_info_message">訊息會針對收件者密封，並透過 Bluetooth 在手機之間傳遞。開啟此功能會要求 Bluetooth 與鄰近裝置權限。選擇「僅限聯絡人」時，您的手機只會與聯絡人的手機連線，其 Bluetooth 訊號中不帶有 Zerion 的固定標記。為此，聯絡人需要使用 Zerion 3.0.19 或更新版本，而且更新後雙方至少要同時上線過一次。</string>
+	<string name="mesh_info_message">訊息會針對收件者密封，並透過 Bluetooth 在手機之間傳遞。開啟此功能會要求 Bluetooth 與鄰近裝置權限。選擇「僅限聯絡人」時，您的手機只會與聯絡人的手機連線；對其他任何人而言，其 Bluetooth 訊號是一部未命名的裝置，其不斷變動的識別碼只有您的聯絡人能夠辨識。為此，聯絡人需要使用 Zerion 3.0.19 或更新版本，而且更新後雙方至少要同時上線過一次。</string>
 	<string name="mesh_reach_title">網狀網路連線對象</string>
 	<string name="mesh_reach_contacts">僅限聯絡人</string>
 	<string name="mesh_reach_everyone">附近所有 Zerion 手機</string>
@@ -2266,10 +2268,15 @@
 	<string name="wallet_sp_enable_first">請先啟用 Silent Payments</string>
 	<string name="grouptr_reach_title">您的貼文能送達誰</string>
 	<string name="grouptr_reach_explanation">群組貼文會在彼此互為聯絡人的成員之間直接傳遞，成員不會轉傳貼文。這些成員不是您的聯絡人，因此他們不會收到您的貼文，您也不會收到他們的貼文：\n\n%1$s\n\n將他們新增為聯絡人，即可與他們互通。</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="other">%d 位成員不是您的聯絡人。他們使用 3.0.19 或更新版本時，貼文會透過群組擁有者的手機送達。點一下即可查看詳細資訊。</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">群組貼文會在彼此互為聯絡人的成員之間直接傳遞。這些成員不是您的聯絡人，因此在他們使用 3.0.19 或更新版本時，群組擁有者的手機會將您的貼文轉交給他們，並將他們的貼文轉交給您：\n\n%1$s\n\n貼文會在擁有者的手機轉交後送達。非常大的貼文只能直接傳遞。將他們新增為聯絡人，即可取得直接路徑。</string>
 	<string name="grouptr_ttl_set_by_creator">此群組的自動消失訊息：%1$s。只有群組擁有者可以變更此設定。</string>
 	<string name="grouptr_sender_alias_format">%1$s（以「%2$s」名義發文）</string>
 	<string name="grouptr_sender_unverified_format">「%1$s」（不是您認識的名稱）</string>
 	<string name="grouptr_member_out_of_reach">不是您的聯絡人，不會收到您的貼文</string>
+	<string name="grouptr_member_out_of_reach_owner">不是您的聯絡人，使用 3.0.19 或更新版本時透過群組擁有者送達</string>
 	<string name="grouptr_member_invited">已邀請，等待回覆</string>
 	<string name="grouptr_confirm_revoke">要撤回給 %1$s 的邀請嗎？對方的回覆將被忽略。</string>
 	<string name="grouptr_revoke_invite">撤回邀請</string>
@@ -2347,6 +2354,8 @@
 	<string name="vault_msg_invalid_document">無效的文件 ID</string>
 	<string name="vault_msg_document_updated">已更新文件</string>
 	<string name="vault_msg_update_document_failed">更新文件失敗</string>
+	<string name="vault_msg_saved_earlier_version_kept">您的變更已儲存，但無法移除先前的版本。您可以從清單中將其刪除。</string>
+	<string name="vault_doc_password_needed_to_save">這份文件受密碼保護。請輸入該密碼以儲存您的變更。</string>
 	<string name="vault_msg_save_password_failed">儲存密碼失敗</string>
 	<string name="vault_msg_note_title_empty">筆記標題不可為空</string>
 	<string name="vault_msg_saved">已儲存</string>
@@ -2809,6 +2818,7 @@
 	<string name="requests_state_withdrawn">送達後已取消</string>
 	<string name="requests_state_cancelled_by_sender">已由傳送者取消</string>
 	<string name="requests_state_contact_added">已新增聯絡人</string>
+	<string name="requests_readd_needs_both_phones">重新新增 %1$s 需要在兩支手機上都執行重新新增。請對方開啟與您的聊天設定並選擇「重新新增聯絡人以修復連線」，然後再試一次。</string>
 	<string name="requests_open_chat">開啟聊天</string>
 	<string name="requests_state_no_answer_yet">尚無回覆</string>
 	<string name="requests_notification_accepted">你的聯絡人請求已被接受</string>

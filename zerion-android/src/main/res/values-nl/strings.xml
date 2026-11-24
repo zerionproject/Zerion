@@ -529,6 +529,8 @@
 	<string name="browser_tor_get">Tor Browser downloaden</string>
 	<string name="quick_reply_not_sent">Je antwoord is niet verzonden. Open de chat om het opnieuw te proberen.</string>
 	<string name="link_unsupported">Link wordt niet ondersteund</string>
+	<string name="link_host_other_alphabet">Het adres gebruikt letters uit een ander alfabet.</string>
+	<string name="link_host_other_alphabet_mark">(letters uit een ander alfabet)</string>
 	<string name="settings_support_summary">Help Zerion gratis en privé te houden</string>
 	<string name="login_tagline">Privéberichten via Tor</string>
 	<string name="setup_password_subtitle">Je wachtwoord beschermt je versleutelde gegevens. Kies een sterk, uniek wachtwoord.</string>
@@ -571,7 +573,7 @@
 	<string name="settings_section_mesh">OFFLINE MESH</string>
 	<string name="mesh_toggle_title">Offline mesh</string>
 	<string name="mesh_toggle_summary">Bereik contacten in de buurt zonder internet, via Bluetooth</string>
-	<string name="mesh_info_message">Berichten worden verzegeld voor de ontvanger en gaan via Bluetooth van telefoon naar telefoon. Dit inschakelen vraagt om toestemming voor Bluetooth en apparaten in de buurt. Met Alleen contacten maakt je telefoon alleen verbinding met de telefoons van je contacten, en bevat het Bluetooth-signaal geen vast kenmerk van Zerion. Daarvoor heeft een contact Zerion 3.0.19 of nieuwer nodig, en moeten jullie sinds het updaten minstens één keer tegelijk online zijn geweest.</string>
+	<string name="mesh_info_message">Berichten worden verzegeld voor de ontvanger en gaan via Bluetooth van telefoon naar telefoon. Dit inschakelen vraagt om toestemming voor Bluetooth en apparaten in de buurt. Met Alleen contacten maakt je telefoon alleen verbinding met de telefoons van je contacten; voor ieder ander is het Bluetooth-signaal een naamloos apparaat met een wisselende identificatie die alleen je contacten kunnen herkennen. Daarvoor heeft een contact Zerion 3.0.19 of nieuwer nodig, en moeten jullie sinds het updaten minstens één keer tegelijk online zijn geweest.</string>
 	<string name="mesh_reach_title">Mesh maakt verbinding met</string>
 	<string name="mesh_reach_contacts">Alleen contacten</string>
 	<string name="mesh_reach_everyone">Elke Zerion-telefoon in de buurt</string>
@@ -1901,6 +1903,11 @@
 	</plurals>
 	<string name="grouptr_reach_title">Wie je berichten bereiken</string>
 	<string name="grouptr_reach_explanation">Groepsberichten gaan rechtstreeks tussen leden die elkaars contact zijn, en leden sturen berichten niet door. Deze leden zijn geen contact van je, dus zij krijgen je berichten niet en jij krijgt die van hen niet:\n\n%1$s\n\nVoeg ze toe als contact om ze te bereiken.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d lid is geen contact van je. Berichten bereiken dit lid via de telefoon van de groepseigenaar als het 3.0.19 of nieuwer gebruikt. Tik voor details.</item>
+		<item quantity="other">%d leden zijn geen contact van je. Berichten bereiken hen via de telefoon van de groepseigenaar als zij 3.0.19 of nieuwer gebruiken. Tik voor details.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Groepsberichten gaan rechtstreeks tussen leden die elkaars contact zijn. Deze leden zijn geen contact van je, dus de telefoon van de groepseigenaar geeft jouw berichten aan hen door en die van hen aan jou, als zij 3.0.19 of nieuwer gebruiken:\n\n%1$s\n\nBerichten komen aan zodra de telefoon van de eigenaar ze heeft doorgegeven. Zeer grote berichten gaan alleen rechtstreeks. Voeg ze toe als contact voor een rechtstreekse route.</string>
 	<string name="grouptr_reach_add_contact">Contact toevoegen</string>
 	<string name="grouptr_team_help_title">Een team opzetten</string>
 	<string name="grouptr_team_help_text">Eén persoon maakt de groep en is de groepseigenaar.\n\nDe groepseigenaar maakt onder Uitnodigingslinks één uitnodigingslink (die blijft gelijk tot hij wordt verwijderd) en deelt die met het team. Iedereen opent Contact toevoegen, plakt de link en stuurt een verzoek; de groepseigenaar accepteert elk verzoek.\n\nDaarna nodigt de groepseigenaar alle leden uit in de groep.\n\nLeden die geen contacten van elkaar zijn, krijgen de berichten via de telefoon van de groepseigenaar zodra die online is. Tot dan wacht een bericht op de telefoon van de afzender; er wordt niets op een server opgeslagen.\n\nLeden kunnen elkaar als contact toevoegen voor directe bezorging en gesprekken.\n\nGrenzen: een groep heeft maximaal 256 leden, één telefoon houdt maximaal 200 contacten met een privéverbinding, en de telefoon van de groepseigenaar van een groot team hoort vaak online te zijn.</string>
@@ -1921,6 +1928,7 @@
 	<string name="grouptr_sender_alias_format">%1$s (plaatst als \"%2$s\")</string>
 	<string name="grouptr_sender_unverified_format">\"%1$s\" (geen naam die je kent)</string>
 	<string name="grouptr_member_out_of_reach">geen contact, krijgt je berichten niet</string>
+	<string name="grouptr_member_out_of_reach_owner">geen contact, bereikt via de groepseigenaar met 3.0.19 of nieuwer</string>
 	<string name="grouptr_member_invited">Uitgenodigd, wacht op antwoord</string>
 	<string name="grouptr_confirm_revoke">De uitnodiging aan %1$s intrekken? Een antwoord van die persoon wordt dan genegeerd.</string>
 	<string name="grouptr_revoke_invite">Uitnodiging intrekken</string>
@@ -2375,6 +2383,8 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="vault_msg_invalid_document">Ongeldige document-ID</string>
 	<string name="vault_msg_document_updated">Document bijgewerkt</string>
 	<string name="vault_msg_update_document_failed">Bijwerken van document mislukt</string>
+	<string name="vault_msg_saved_earlier_version_kept">Je wijzigingen zijn opgeslagen, maar de eerdere versie kon niet worden verwijderd. Je kunt die uit de lijst verwijderen.</string>
+	<string name="vault_doc_password_needed_to_save">Dit document is beschermd met een wachtwoord. Voer dat wachtwoord in om je wijzigingen op te slaan.</string>
 	<string name="vault_msg_save_password_failed">Opslaan van wachtwoord mislukt</string>
 	<string name="vault_msg_note_title_empty">Titel van notitie mag niet leeg zijn</string>
 	<string name="vault_msg_saved">Opgeslagen</string>
@@ -2872,6 +2882,7 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="requests_state_withdrawn">Geannuleerd na aflevering</string>
 	<string name="requests_state_cancelled_by_sender">Geannuleerd door afzender</string>
 	<string name="requests_state_contact_added">Contact toegevoegd</string>
+	<string name="requests_readd_needs_both_phones">Om %1$s opnieuw toe te voegen moet dat op beide telefoons gebeuren. Vraag je contact om de instellingen van jullie chat te openen en te kiezen voor Contact opnieuw toevoegen om de verbinding te herstellen. Probeer het daarna opnieuw.</string>
 	<string name="requests_open_chat">Chat openen</string>
 	<string name="requests_state_no_answer_yet">Nog geen antwoord</string>
 	<string name="requests_notification_accepted">Je contactverzoek is geaccepteerd</string>

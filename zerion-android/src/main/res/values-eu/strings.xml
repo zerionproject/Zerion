@@ -545,7 +545,7 @@
 	<string name="i2p_toggle_summary">Bideratu I2P sarearen bidez ere</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Konektagarritasuna</string>
-	<string name="mesh_info_message">Mezuak zigilatu egiten dira hartzaileak soilik ireki ditzan, eta telefonotik telefonora igarotzen dira Bluetooth bidez. Hau aktibatzean, Bluetooth eta inguruko gailuen baimenak eskatzen dira. «Kontaktuak soilik» aukerarekin, zure telefonoa zure kontaktuen telefonoekin bakarrik konektatzen da, eta haren Bluetooth seinaleak ez darama Zerion aplikazioaren marka finkorik. Horretarako, kontaktuak Zerion 3.0.19 edo berriagoa behar du, eta biek aldi berean konektatuta egon behar izan duzue gutxienez behin, eguneratu ondoren.</string>
+	<string name="mesh_info_message">Mezuak zigilatu egiten dira hartzaileak soilik ireki ditzan, eta telefonotik telefonora igarotzen dira Bluetooth bidez. Hau aktibatzean, Bluetooth eta inguruko gailuen baimenak eskatzen dira. «Kontaktuak soilik» aukerarekin, zure telefonoa zure kontaktuen telefonoekin bakarrik konektatzen da; beste edonorentzat, haren Bluetooth seinalea izenik gabeko gailu bat da, eta haren identifikatzaile aldakorra zure kontaktuek soilik ezagut dezakete. Horretarako, kontaktuak Zerion 3.0.19 edo berriagoa behar du, eta biek aldi berean konektatuta egon behar izan duzue gutxienez behin, eguneratu ondoren.</string>
 	<string name="mesh_reach_title">Mesh sarea hauekin konektatzen da</string>
 	<string name="mesh_reach_contacts">Kontaktuak soilik</string>
 	<string name="mesh_reach_everyone">Inguruko Zerion telefono guztiak</string>
@@ -714,6 +714,8 @@
 	<string name="browser_tor_get">Eskuratu Tor Browser</string>
 	<string name="quick_reply_not_sent">Ez da zure erantzuna bidali. Ireki txata berriro saiatzeko.</string>
 	<string name="link_unsupported">Onartzen ez den esteka</string>
+	<string name="link_host_other_alphabet">Helbideak beste alfabeto bateko letrak erabiltzen ditu.</string>
+	<string name="link_host_other_alphabet_mark">(beste alfabeto bateko letrak)</string>
 	<string name="settings_support_summary">Lagundu Zerion doakoa eta pribatua izaten</string>
 	<string name="login_tagline">Mezularitza pribatua Tor bidez</string>
 	<string name="setup_password_subtitle">Kontua zifratzeko pasahitz hau beharrezkoa da. Gailu honetako zure kontu eta datu-base zifratuak babesten ditu. Aukeratu pasahitz sendo bat, beste inon erabiltzen ez duzuna.</string>
@@ -2263,10 +2265,16 @@
 	<string name="wallet_sp_enable_first">Gaitu Silent Payments lehenik</string>
 	<string name="grouptr_reach_title">Zure mezuak nori iristen zaizkion</string>
 	<string name="grouptr_reach_explanation">Taldeko mezuak zuzenean bidaiatzen dute elkarren kontaktu diren kideen artean, eta kideek ez dituzte mezuak birbidaltzen. Kide hauek ez dira zure kontaktuak; beraz, ez dituzte zure mezuak jasotzen, eta zuk ere ez dituzu haienak jasotzen:\n\n%1$s\n\nGehitu kontaktu gisa haiengana iristeko.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">Kide %d ez da zure kontaktua. Mezuak taldearen jabearen telefonoaren bidez iristen zaizkio, 3.0.19 edo berriagoa erabiltzen badu. Sakatu xehetasunetarako.</item>
+		<item quantity="other">%d kide ez dira zure kontaktuak. Mezuak taldearen jabearen telefonoaren bidez iristen zaizkie, 3.0.19 edo berriagoa erabiltzen badute. Sakatu xehetasunetarako.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Taldeko mezuak zuzenean bidaiatzen dute elkarren kontaktu diren kideen artean. Kide hauek ez dira zure kontaktuak; beraz, taldearen jabearen telefonoak zure mezuak haiei helarazten dizkie, eta haienak zuri, 3.0.19 edo berriagoa erabiltzen badute:\n\n%1$s\n\nMezuak jabearen telefonoak helarazi ondoren iristen dira. Mezu oso handiek zuzenean soilik bidaiatzen dute. Gehitu kontaktu gisa bide zuzena izateko.</string>
 	<string name="grouptr_ttl_set_by_creator">Desagertzen diren mezuak talde honetan: %1$s. Taldearen jabeak soilik alda dezake hau.</string>
 	<string name="grouptr_sender_alias_format">%1$s («%2$s» izenarekin idazten)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (ezagutzen ez duzun izena)</string>
 	<string name="grouptr_member_out_of_reach">ez da zure kontaktua, ez ditu zure mezuak jasotzen</string>
+	<string name="grouptr_member_out_of_reach_owner">ez da zure kontaktua, mezuak taldearen jabearen bidez jasotzen ditu 3.0.19 edo berriagoarekin</string>
 	<string name="grouptr_member_invited">Gonbidatuta, erantzunaren zain</string>
 	<string name="grouptr_confirm_revoke">%1$s kontaktuari bidalitako gonbidapena kendu? Haren erantzuna ez da kontuan hartuko.</string>
 	<string name="grouptr_revoke_invite">Kendu gonbidapena</string>
@@ -2358,6 +2366,8 @@
 	<string name="vault_msg_invalid_document">Dokumentuaren ID baliogabea</string>
 	<string name="vault_msg_document_updated">Dokumentua eguneratu da</string>
 	<string name="vault_msg_update_document_failed">Ezin izan da dokumentua eguneratu</string>
+	<string name="vault_msg_saved_earlier_version_kept">Zure aldaketak gorde dira, baina ezin izan da aurreko bertsioa kendu. Zerrendatik ezaba dezakezu.</string>
+	<string name="vault_doc_password_needed_to_save">Dokumentu hau pasahitz batekin babestuta dago. Sartu pasahitz hori zure aldaketak gordetzeko.</string>
 	<string name="vault_msg_save_password_failed">Ezin izan da pasahitza gorde</string>
 	<string name="vault_msg_note_title_empty">Oharraren izenburua ezin da hutsik egon</string>
 	<string name="vault_msg_saved">Gordeta</string>
@@ -2831,6 +2841,7 @@
 	<string name="requests_state_withdrawn">Ezeztatuta entregatu ondoren</string>
 	<string name="requests_state_cancelled_by_sender">Bidaltzaileak ezeztatuta</string>
 	<string name="requests_state_contact_added">Kontaktua gehitu da</string>
+	<string name="requests_readd_needs_both_phones">%1$s berriro gehitzeko, bi telefonoetan egin behar da. Eskatu zure txataren ezarpenak ireki eta «Gehitu kontaktua berriro konexioa konpontzeko» aukeratzeko, eta saiatu berriro.</string>
 	<string name="requests_open_chat">Ireki txata</string>
 	<string name="requests_state_no_answer_yet">Oraindik erantzunik ez</string>
 	<string name="requests_notification_accepted">Zure kontaktu-eskaera onartu da</string>

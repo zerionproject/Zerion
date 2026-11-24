@@ -598,6 +598,8 @@
 	<string name="browser_tor_get">الحصول على Tor Browser</string>
 	<string name="quick_reply_not_sent">لم يُرسَل ردك. افتح المحادثة لتحاول مرة أخرى.</string>
 	<string name="link_unsupported">رابط غير مدعوم</string>
+	<string name="link_host_other_alphabet">يستخدم العنوان حروفًا من أبجدية أخرى.</string>
+	<string name="link_host_other_alphabet_mark">(حروف من أبجدية أخرى)</string>
 	<string name="settings_support_summary">ساعد في إبقاء Zerion مجانيًا وخاصًا</string>
 	<string name="login_tagline">مراسلة خاصة عبر Tor</string>
 	<string name="setup_password_subtitle">كلمة مرورك تحمي بياناتك المشفّرة. اختر كلمة قوية وفريدة.</string>
@@ -636,7 +638,7 @@
 	<string name="settings_section_mesh">الشبكة المتداخلة دون اتصال</string>
 	<string name="mesh_toggle_title">الشبكة المتداخلة دون اتصال</string>
 	<string name="mesh_toggle_summary">الوصول إلى جهات الاتصال القريبة دون إنترنت، عبر Bluetooth</string>
-	<string name="mesh_info_message">تُختم الرسائل للمستلم وتنتقل من هاتف إلى آخر عبر Bluetooth. تشغيل هذا يطلب أذونات Bluetooth والأجهزة القريبة. مع خيار «جهات الاتصال فقط»، يتصل هاتفك بهواتف جهات اتصالك فقط، ولا تحمل إشارة Bluetooth الصادرة عنه أي علامة ثابتة تدل على Zerion. لذلك يجب أن يكون لدى جهة الاتصال Zerion 3.0.19 أو أحدث، وأن تكونا قد كنتما متصلين بالإنترنت في الوقت نفسه مرة واحدة على الأقل منذ التحديث.</string>
+	<string name="mesh_info_message">تُختم الرسائل للمستلم وتنتقل من هاتف إلى آخر عبر Bluetooth. تشغيل هذا يطلب أذونات Bluetooth والأجهزة القريبة. مع خيار «جهات الاتصال فقط»، يتصل هاتفك بهواتف جهات اتصالك فقط؛ أما بالنسبة إلى أي شخص آخر فإشارة Bluetooth الصادرة عنه هي جهاز بلا اسم بمعرّف متغيّر لا يستطيع التعرف عليه سوى جهات اتصالك. لذلك يجب أن يكون لدى جهة الاتصال Zerion 3.0.19 أو أحدث، وأن تكونا قد كنتما متصلين بالإنترنت في الوقت نفسه مرة واحدة على الأقل منذ التحديث.</string>
 	<string name="mesh_reach_title">الشبكة المتداخلة تتصل مع</string>
 	<string name="mesh_reach_contacts">جهات الاتصال فقط</string>
 	<string name="mesh_reach_everyone">كل هاتف قريب يستخدم Zerion</string>
@@ -2347,10 +2349,20 @@
 	<string name="wallet_sp_enable_first">فعّل Silent Payments أولًا</string>
 	<string name="grouptr_reach_title">من تصل إليهم منشوراتك</string>
 	<string name="grouptr_reach_explanation">تنتقل منشورات المجموعة مباشرةً بين الأعضاء الذين هم جهات اتصال لبعضهم، ولا يمرّر الأعضاء المنشورات إلى غيرهم. هؤلاء الأعضاء ليسوا من جهات اتصالك، لذا لا يتلقون منشوراتك ولا تتلقى منشوراتهم:\n\n%1$s\n\nأضفهم كجهات اتصال للوصول إليهم.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="zero">لا يوجد أعضاء خارج جهات اتصالك. اضغط للتفاصيل.</item>
+		<item quantity="one">عضو واحد ليس من جهات اتصالك. تصله المنشورات عبر هاتف مالك المجموعة إذا كان يستخدم الإصدار 3.0.19 أو أحدث. اضغط للتفاصيل.</item>
+		<item quantity="two">عضوان ليسا من جهات اتصالك. تصلهما المنشورات عبر هاتف مالك المجموعة إذا كانا يستخدمان الإصدار 3.0.19 أو أحدث. اضغط للتفاصيل.</item>
+		<item quantity="few">%d أعضاء ليسوا من جهات اتصالك. تصلهم المنشورات عبر هاتف مالك المجموعة إذا كانوا يستخدمون الإصدار 3.0.19 أو أحدث. اضغط للتفاصيل.</item>
+		<item quantity="many">%d عضوًا ليسوا من جهات اتصالك. تصلهم المنشورات عبر هاتف مالك المجموعة إذا كانوا يستخدمون الإصدار 3.0.19 أو أحدث. اضغط للتفاصيل.</item>
+		<item quantity="other">%d عضو ليسوا من جهات اتصالك. تصلهم المنشورات عبر هاتف مالك المجموعة إذا كانوا يستخدمون الإصدار 3.0.19 أو أحدث. اضغط للتفاصيل.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">تنتقل منشورات المجموعة مباشرةً بين الأعضاء الذين هم جهات اتصال لبعضهم. هؤلاء الأعضاء ليسوا من جهات اتصالك، لذا يمرّر هاتف مالك المجموعة منشوراتك إليهم ومنشوراتهم إليك، إذا كانوا يستخدمون الإصدار 3.0.19 أو أحدث:\n\n%1$s\n\nتصل المنشورات بعد أن يمرّرها هاتف المالك. المنشورات الكبيرة جدًا تنتقل مباشرةً فقط. أضفهم كجهات اتصال للحصول على مسار مباشر.</string>
 	<string name="grouptr_ttl_set_by_creator">الرسائل المختفية في هذه المجموعة: %1$s. وحده مالك المجموعة يمكنه تغيير ذلك.</string>
 	<string name="grouptr_sender_alias_format">%1$s (ينشر باسم «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (ليس اسمًا تعرفه)</string>
 	<string name="grouptr_member_out_of_reach">ليس من جهات اتصالك، ولا يتلقى منشوراتك</string>
+	<string name="grouptr_member_out_of_reach_owner">ليس من جهات اتصالك، تصله المنشورات عبر مالك المجموعة مع الإصدار 3.0.19 أو أحدث</string>
 	<string name="grouptr_member_invited">تمت دعوته، بانتظار الرد</string>
 	<string name="grouptr_confirm_revoke">سحب الدعوة الموجهة إلى %1$s؟ سيتم تجاهل أي رد منه.</string>
 	<string name="grouptr_revoke_invite">سحب الدعوة</string>
@@ -2498,6 +2510,8 @@
 	<string name="vault_msg_invalid_document">معرّف المستند غير صالح</string>
 	<string name="vault_msg_document_updated">تم تحديث المستند</string>
 	<string name="vault_msg_update_document_failed">فشل تحديث المستند</string>
+	<string name="vault_msg_saved_earlier_version_kept">تم حفظ تغييراتك، لكن تعذّرت إزالة النسخة السابقة. يمكنك حذفها من القائمة.</string>
+	<string name="vault_doc_password_needed_to_save">هذا المستند محمي بكلمة مرور. أدخل كلمة المرور هذه لحفظ تغييراتك.</string>
 	<string name="vault_msg_save_password_failed">فشل حفظ كلمة المرور</string>
 	<string name="vault_msg_note_title_empty">لا يمكن أن يكون عنوان الملاحظة فارغًا</string>
 	<string name="vault_msg_saved">تم الحفظ</string>
@@ -3035,6 +3049,7 @@
 	<string name="requests_state_withdrawn">أُلغي بعد التسليم</string>
 	<string name="requests_state_cancelled_by_sender">ألغاه المرسل</string>
 	<string name="requests_state_contact_added">تمت إضافة جهة الاتصال</string>
+	<string name="requests_readd_needs_both_phones">إعادة إضافة %1$s تتطلب إعادة الإضافة على كلا الهاتفين. اطلب منه فتح إعدادات محادثتك واختيار «أعد إضافة جهة الاتصال لإصلاح الاتصال»، ثم حاول مرة أخرى.</string>
 	<string name="requests_open_chat">فتح المحادثة</string>
 	<string name="requests_state_no_answer_yet">لا رد بعد</string>
 	<string name="requests_notification_accepted">تم قبول طلب الاتصال الخاص بك</string>

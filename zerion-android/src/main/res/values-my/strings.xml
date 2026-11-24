@@ -519,7 +519,7 @@
 	<string name="i2p_toggle_summary">I2P ကွန်ရက်မှတစ်ဆင့်လည်း လမ်းကြောင်းပေးမည်</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">ချိတ်ဆက်နိုင်မှု</string>
-	<string name="mesh_info_message">မက်ဆေ့ချ်များကို လက်ခံသူသာ ဖွင့်နိုင်အောင် တံဆိပ်ခတ်ပြီး Bluetooth ဖြင့် ဖုန်းတစ်လုံးမှ တစ်လုံးသို့ လက်ဆင့်ကမ်း ပို့သည်။ ဤအရာကို ဖွင့်လျှင် Bluetooth နှင့် အနီးရှိစက်များ ခွင့်ပြုချက်များကို တောင်းခံမည်။ “အဆက်အသွယ်များသာ” ကို ရွေးထားလျှင် သင့်ဖုန်းသည် သင့်အဆက်အသွယ်များ၏ ဖုန်းများနှင့်သာ ချိတ်ဆက်ပြီး ၎င်း၏ Bluetooth အချက်ပြတွင် Zerion ၏ ပုံသေ အမှတ်အသား မပါဝင်ပါ။ ထိုသို့ဖြစ်ရန် အဆက်အသွယ်တွင် Zerion 3.0.19 သို့မဟုတ် ထို့ထက်အသစ် ရှိရမည်ဖြစ်ပြီး အပ်ဒိတ်လုပ်ပြီးနောက် သင်တို့နှစ်ဦးစလုံး အနည်းဆုံး တစ်ကြိမ် တစ်ချိန်တည်းတွင် အွန်လိုင်း ရှိခဲ့ရမည်။</string>
+	<string name="mesh_info_message">မက်ဆေ့ချ်များကို လက်ခံသူသာ ဖွင့်နိုင်အောင် တံဆိပ်ခတ်ပြီး Bluetooth ဖြင့် ဖုန်းတစ်လုံးမှ တစ်လုံးသို့ လက်ဆင့်ကမ်း ပို့သည်။ ဤအရာကို ဖွင့်လျှင် Bluetooth နှင့် အနီးရှိစက်များ ခွင့်ပြုချက်များကို တောင်းခံမည်။ “အဆက်အသွယ်များသာ” ကို ရွေးထားလျှင် သင့်ဖုန်းသည် သင့်အဆက်အသွယ်များ၏ ဖုန်းများနှင့်သာ ချိတ်ဆက်သည်။ အခြားသူများအတွက် ၎င်း၏ Bluetooth အချက်ပြသည် အမည်မဲ့ စက်တစ်ခုဖြစ်ပြီး ၎င်း၏ ပြောင်းလဲနေသော အိုင်ဒီကို သင့်အဆက်အသွယ်များသာ မှတ်မိနိုင်သည်။ ထိုသို့ဖြစ်ရန် အဆက်အသွယ်တွင် Zerion 3.0.19 သို့မဟုတ် ထို့ထက်အသစ် ရှိရမည်ဖြစ်ပြီး အပ်ဒိတ်လုပ်ပြီးနောက် သင်တို့နှစ်ဦးစလုံး အနည်းဆုံး တစ်ကြိမ် တစ်ချိန်တည်းတွင် အွန်လိုင်း ရှိခဲ့ရမည်။</string>
 	<string name="mesh_reach_title">မက်ရှ်က ချိတ်ဆက်မည့်သူများ</string>
 	<string name="mesh_reach_contacts">အဆက်အသွယ်များသာ</string>
 	<string name="mesh_reach_everyone">အနီးရှိ Zerion ဖုန်းအားလုံး</string>
@@ -658,6 +658,8 @@
 	<string name="vault_msg_invalid_document">စာရွက်စာတမ်း ID မမှန်ကန်ပါ</string>
 	<string name="vault_msg_document_updated">စာရွက်စာတမ်းကို အပ်ဒိတ်လုပ်ပြီးပါပြီ</string>
 	<string name="vault_msg_update_document_failed">စာရွက်စာတမ်းကို အပ်ဒိတ်လုပ်၍ မရပါ</string>
+	<string name="vault_msg_saved_earlier_version_kept">သင့်ပြောင်းလဲမှုများကို သိမ်းပြီးပါပြီ၊ သို့သော် ယခင်ဗားရှင်းကို ဖယ်ရှား၍ မရပါ။ ၎င်းကို စာရင်းမှ ဖျက်နိုင်ပါသည်။</string>
+	<string name="vault_doc_password_needed_to_save">ဤစာရွက်စာတမ်းကို စကားဝှက်ဖြင့် ကာကွယ်ထားသည်။ သင့်ပြောင်းလဲမှုများကို သိမ်းရန် ထိုစကားဝှက်ကို ထည့်ပါ။</string>
 	<string name="vault_msg_save_password_failed">စကားဝှက်ကို သိမ်း၍ မရပါ</string>
 	<string name="vault_msg_note_title_empty">မှတ်စု ခေါင်းစဉ် ဗလာ ဖြစ်၍ မရပါ</string>
 	<string name="vault_msg_saved">သိမ်းပြီးပါပြီ</string>
@@ -767,6 +769,8 @@
 	<string name="browser_tor_get">Tor Browser ရယူရန်</string>
 	<string name="quick_reply_not_sent">သင့်ပြန်စာကို ပို့၍ မရခဲ့ပါ။ ထပ်ကြိုးစားရန် ချတ်ကို ဖွင့်ပါ။</string>
 	<string name="link_unsupported">ပံ့ပိုးမထားသော လင့်ခ်</string>
+	<string name="link_host_other_alphabet">လိပ်စာတွင် အခြားအက္ခရာစနစ်မှ စာလုံးများ ပါဝင်သည်။</string>
+	<string name="link_host_other_alphabet_mark">(အခြားအက္ခရာစနစ်မှ စာလုံးများ)</string>
 	<string name="settings_support_summary">Zerion ကို အခမဲ့နှင့် ကိုယ်ရေးလုံခြုံစွာ ဆက်ရှိနေစေရန် ကူညီပါ</string>
 	<string name="login_tagline">Tor မှတစ်ဆင့် ကိုယ်ရေးလုံခြုံသော မက်ဆေ့ချ်ပို့ခြင်း</string>
 	<string name="setup_password_subtitle">ဤအကောင့် ကုဒ်ဝှက်ရေး စကားဝှက်သည် မဖြစ်မနေ လိုအပ်သည်။ ၎င်းသည် ဤစက်ပေါ်ရှိ ကုဒ်ဝှက်ထားသော သင့်အကောင့်နှင့် အချက်အလက်အစုကို ကာကွယ်ပေးသည်။ ခိုင်မာပြီး အခြားနေရာတွင် မသုံးဖူးသော စကားဝှက်တစ်ခုကို ရွေးပါ။</string>
@@ -2373,10 +2377,15 @@
 	<string name="wallet_sp_move_hint">ငွေ ရွှေ့မည့် Bitcoin လိပ်စာ</string>
 	<string name="grouptr_reach_title">သင့်ပို့စ်များ မည်သူထံ ရောက်သနည်း</string>
 	<string name="grouptr_reach_explanation">အဖွဲ့ ပို့စ်များသည် အချင်းချင်း အဆက်အသွယ်ဖြစ်သော အဖွဲ့ဝင်များကြား တိုက်ရိုက် သွားလာပြီး အဖွဲ့ဝင်များက ပို့စ်များကို ဆင့်မပို့ပါ။ ဤအဖွဲ့ဝင်များသည် သင့်အဆက်အသွယ် မဟုတ်သဖြင့် သင့်ပို့စ်များကို ၎င်းတို့ မရရှိသလို ၎င်းတို့၏ ပို့စ်များကိုလည်း သင် မရရှိပါ:\n\n%1$s\n\n၎င်းတို့ထံ ရောက်စေရန် ၎င်းတို့ကို အဆက်အသွယ်အဖြစ် ထည့်ပါ။</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="other">အဖွဲ့ဝင် %d ဦးသည် သင့်အဆက်အသွယ် မဟုတ်ပါ။ ၎င်းတို့က 3.0.19 သို့မဟုတ် ထို့ထက်အသစ်ကို သုံးလျှင် ပို့စ်များသည် အဖွဲ့ ပိုင်ရှင်၏ ဖုန်းမှတစ်ဆင့် ၎င်းတို့ထံ ရောက်သည်။ အသေးစိတ်အတွက် နှိပ်ပါ။</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">အဖွဲ့ ပို့စ်များသည် အချင်းချင်း အဆက်အသွယ်ဖြစ်သော အဖွဲ့ဝင်များကြား တိုက်ရိုက် သွားလာသည်။ ဤအဖွဲ့ဝင်များသည် သင့်အဆက်အသွယ် မဟုတ်သဖြင့် ၎င်းတို့က 3.0.19 သို့မဟုတ် ထို့ထက်အသစ်ကို သုံးလျှင် အဖွဲ့ ပိုင်ရှင်၏ ဖုန်းက သင့်ပို့စ်များကို ၎င်းတို့ထံ၊ ၎င်းတို့၏ ပို့စ်များကို သင့်ထံ လက်ဆင့်ကမ်း ပို့ပေးသည်:\n\n%1$s\n\nပိုင်ရှင်၏ ဖုန်းက လက်ဆင့်ကမ်း ပို့ပြီးသည့်အခါ ပို့စ်များ ရောက်လာသည်။ အလွန်ကြီးသော ပို့စ်များသည် တိုက်ရိုက်သာ သွားလာသည်။ တိုက်ရိုက်လမ်းကြောင်းအတွက် ၎င်းတို့ကို အဆက်အသွယ်အဖြစ် ထည့်ပါ။</string>
 	<string name="grouptr_ttl_set_by_creator">ဤအဖွဲ့ရှိ ပျောက်ကွယ် မက်ဆေ့ချ်များ: %1$s။ အဖွဲ့ ပိုင်ရှင်သာ ၎င်းကို ပြောင်းနိုင်သည်။</string>
 	<string name="grouptr_sender_alias_format">%1$s (“%2$s” အမည်ဖြင့် ပို့စ်တင်နေသည်)</string>
 	<string name="grouptr_sender_unverified_format">“%1$s” (သင် သိသော အမည် မဟုတ်ပါ)</string>
 	<string name="grouptr_member_out_of_reach">သင့်အဆက်အသွယ် မဟုတ်ပါ၊ သင့်ပို့စ်များကို မရရှိပါ</string>
+	<string name="grouptr_member_out_of_reach_owner">သင့်အဆက်အသွယ် မဟုတ်ပါ၊ 3.0.19 သို့မဟုတ် ထို့ထက်အသစ်တွင် အဖွဲ့ ပိုင်ရှင်မှတစ်ဆင့် ပို့စ်များ ရရှိသည်</string>
 	<string name="grouptr_member_invited">ဖိတ်ကြားထားသည်၊ အဖြေကို စောင့်နေသည်</string>
 	<string name="grouptr_confirm_revoke">%1$s ထံ ဖိတ်ကြားချက်ကို ပြန်ရုပ်သိမ်းမလား? ၎င်းတို့ထံမှ အဖြေကို လျစ်လျူရှုမည်။</string>
 	<string name="grouptr_revoke_invite">ဖိတ်ကြားချက်ကို ပြန်ရုပ်သိမ်းမည်</string>
@@ -2808,6 +2817,7 @@
 	<string name="requests_state_withdrawn">ပို့ဆောင်ပြီးနောက် ပယ်ဖျက်ပြီး</string>
 	<string name="requests_state_cancelled_by_sender">ပေးပို့သူက ပယ်ဖျက်ပြီး</string>
 	<string name="requests_state_contact_added">အဆက်အသွယ် ထည့်ပြီးပါပြီ</string>
+	<string name="requests_readd_needs_both_phones">%1$s ကို ပြန်ထည့်ရန် ဖုန်းနှစ်လုံးစလုံးတွင် ပြန်ထည့်ရန် လိုအပ်သည်။ ၎င်းအား သင့်ချတ် ဆက်တင်များကို ဖွင့်ပြီး “ချိတ်ဆက်မှုကို ပြင်ရန် အဆက်အသွယ်ကို ပြန်ထည့်ပါ” ကို ရွေးရန် ပြောပါ၊ ထို့နောက် ထပ်ကြိုးစားပါ။</string>
 	<string name="requests_open_chat">ချတ် ဖွင့်မည်</string>
 	<string name="requests_state_no_answer_yet">အကြောင်းပြန်ချက် မရသေးပါ</string>
 	<string name="requests_notification_accepted">သင့်အဆက်အသွယ် တောင်းဆိုချက်ကို လက်ခံလိုက်ပါပြီ</string>

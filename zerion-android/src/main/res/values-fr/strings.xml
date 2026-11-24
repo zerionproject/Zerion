@@ -534,6 +534,8 @@ copies des messages que vous envoyez.
 	<string name="browser_tor_get">Obtenir Tor Browser</string>
 	<string name="quick_reply_not_sent">Votre réponse n\'a pas été envoyée. Ouvrez la discussion pour réessayer.</string>
 	<string name="link_unsupported">Lien non pris en charge</string>
+	<string name="link_host_other_alphabet">L\'adresse utilise des lettres d\'un autre alphabet.</string>
+	<string name="link_host_other_alphabet_mark">(lettres d\'un autre alphabet)</string>
 	<string name="settings_support_summary">Aidez à garder Zerion gratuit et privé</string>
 	<string name="login_tagline">Messagerie privée via Tor</string>
 	<string name="setup_password_subtitle">Votre mot de passe protège vos données chiffrées. Choisissez-en un fort et unique.</string>
@@ -572,7 +574,7 @@ copies des messages que vous envoyez.
 	<string name="settings_section_mesh">MAILLAGE HORS LIGNE</string>
 	<string name="mesh_toggle_title">Maillage hors ligne</string>
 	<string name="mesh_toggle_summary">Joindre les contacts proches sans Internet, via Bluetooth</string>
-	<string name="mesh_info_message">Les messages sont scellés pour le destinataire et passent de téléphone en téléphone par Bluetooth. Activer cette option demande les autorisations Bluetooth et d\'appareils à proximité. Avec « Contacts uniquement », votre téléphone se connecte uniquement aux téléphones de vos contacts, et son signal Bluetooth ne porte aucune marque fixe de Zerion. Pour cela, le contact doit avoir Zerion 3.0.19 ou une version plus récente, et vous devez tous les deux avoir été en ligne en même temps au moins une fois depuis la mise à jour.</string>
+	<string name="mesh_info_message">Les messages sont scellés pour le destinataire et passent de téléphone en téléphone par Bluetooth. Activer cette option demande les autorisations Bluetooth et d\'appareils à proximité. Avec « Contacts uniquement », votre téléphone se connecte uniquement aux téléphones de vos contacts ; pour toute autre personne, son signal Bluetooth est celui d\'un appareil sans nom dont seuls vos contacts peuvent reconnaître l\'identifiant changeant. Pour cela, le contact doit avoir Zerion 3.0.19 ou une version plus récente, et vous devez tous les deux avoir été en ligne en même temps au moins une fois depuis la mise à jour.</string>
 	<string name="mesh_reach_title">Le maillage se connecte à</string>
 	<string name="mesh_reach_contacts">Contacts uniquement</string>
 	<string name="mesh_reach_everyone">Tous les téléphones Zerion à proximité</string>
@@ -2295,10 +2297,17 @@ copies des messages que vous envoyez.
 	<string name="wallet_sp_enable_first">Activez d\'abord Silent Payments</string>
 	<string name="grouptr_reach_title">Qui reçoit vos messages</string>
 	<string name="grouptr_reach_explanation">Les messages de groupe circulent directement entre les membres qui sont contacts les uns des autres, et les membres ne les retransmettent pas. Ces membres ne font pas partie de vos contacts, donc ils ne reçoivent pas vos messages et vous ne recevez pas les leurs :\n\n%1$s\n\nAjoutez-les comme contacts pour les joindre.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d membre ne fait pas partie de vos contacts. Les messages lui parviennent par le téléphone du propriétaire du groupe s\'il utilise la version 3.0.19 ou une version plus récente. Appuyez pour plus de détails.</item>
+		<item quantity="many">%d membres ne font pas partie de vos contacts. Les messages leur parviennent par le téléphone du propriétaire du groupe s\'ils utilisent la version 3.0.19 ou une version plus récente. Appuyez pour plus de détails.</item>
+		<item quantity="other">%d membres ne font pas partie de vos contacts. Les messages leur parviennent par le téléphone du propriétaire du groupe s\'ils utilisent la version 3.0.19 ou une version plus récente. Appuyez pour plus de détails.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Les messages de groupe circulent directement entre les membres qui sont contacts les uns des autres. Ces membres ne font pas partie de vos contacts, donc le téléphone du propriétaire du groupe leur transmet vos messages et vous transmet les leurs, s\'ils utilisent la version 3.0.19 ou une version plus récente :\n\n%1$s\n\nLes messages arrivent une fois que le téléphone du propriétaire les a transmis. Les messages très volumineux ne circulent que directement. Ajoutez-les comme contacts pour disposer d\'un chemin direct.</string>
 	<string name="grouptr_ttl_set_by_creator">Messages éphémères dans ce groupe : %1$s. Seul le propriétaire du groupe peut modifier ce réglage.</string>
 	<string name="grouptr_sender_alias_format">%1$s (publie sous le nom « %2$s »)</string>
 	<string name="grouptr_sender_unverified_format">« %1$s » (nom que vous ne connaissez pas)</string>
 	<string name="grouptr_member_out_of_reach">pas votre contact, ne reçoit pas vos messages</string>
+	<string name="grouptr_member_out_of_reach_owner">pas votre contact, joint par l\'intermédiaire du propriétaire du groupe avec la version 3.0.19 ou une version plus récente</string>
 	<string name="grouptr_member_invited">Invité, en attente de réponse</string>
 	<string name="grouptr_confirm_revoke">Retirer l\'invitation envoyée à %1$s ? Une réponse de sa part sera ignorée.</string>
 	<string name="grouptr_revoke_invite">Retirer l\'invitation</string>
@@ -2404,6 +2413,8 @@ copies des messages que vous envoyez.
 	<string name="vault_msg_invalid_document">Identifiant de document non valide</string>
 	<string name="vault_msg_document_updated">Document mis à jour</string>
 	<string name="vault_msg_update_document_failed">Échec de la mise à jour du document</string>
+	<string name="vault_msg_saved_earlier_version_kept">Vos modifications ont été enregistrées, mais la version précédente n\'a pas pu être retirée. Vous pouvez la supprimer de la liste.</string>
+	<string name="vault_doc_password_needed_to_save">Ce document est protégé par un mot de passe. Saisissez ce mot de passe pour enregistrer vos modifications.</string>
 	<string name="vault_msg_save_password_failed">Échec de l\'enregistrement du mot de passe</string>
 	<string name="vault_msg_note_title_empty">Le titre de la note ne peut pas être vide</string>
 	<string name="vault_msg_saved">Enregistré</string>
@@ -2896,6 +2907,7 @@ copies des messages que vous envoyez.
 	<string name="requests_state_withdrawn">Annulée après réception</string>
 	<string name="requests_state_cancelled_by_sender">Annulée par l\'expéditeur</string>
 	<string name="requests_state_contact_added">Contact ajouté</string>
+	<string name="requests_readd_needs_both_phones">Pour rajouter %1$s, il faut le faire sur les deux téléphones. Demandez-lui d\'ouvrir les paramètres de votre discussion et de choisir « Rajouter le contact pour réparer la connexion », puis réessayez.</string>
 	<string name="requests_open_chat">Ouvrir la discussion</string>
 	<string name="requests_state_no_answer_yet">Pas encore de réponse</string>
 	<string name="requests_notification_accepted">Votre demande de contact a été acceptée</string>

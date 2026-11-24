@@ -645,7 +645,7 @@
 	<string name="i2p_toggle_summary">Dirigera även trafik via I2P-nätverket</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Anslutning</string>
-	<string name="mesh_info_message">Meddelanden förseglas för mottagaren och skickas från telefon till telefon via Bluetooth. När du slår på detta begärs behörigheter för Bluetooth och enheter i närheten. Med ”Bara kontakter” ansluter din telefon bara till dina kontakters telefoner, och dess Bluetooth-signal har inget fast Zerion-kännetecken. För det behöver kontakten Zerion 3.0.19 eller senare, och ni två måste ha varit online samtidigt minst en gång sedan uppdateringen.</string>
+	<string name="mesh_info_message">Meddelanden förseglas för mottagaren och skickas från telefon till telefon via Bluetooth. När du slår på detta begärs behörigheter för Bluetooth och enheter i närheten. Med ”Bara kontakter” ansluter din telefon bara till dina kontakters telefoner; för alla andra är dess Bluetooth-signal en namnlös enhet med en växlande identifierare som bara dina kontakter kan känna igen. För det behöver kontakten Zerion 3.0.19 eller senare, och ni två måste ha varit online samtidigt minst en gång sedan uppdateringen.</string>
 	<string name="mesh_reach_title">Meshen ansluter till</string>
 	<string name="mesh_reach_contacts">Bara kontakter</string>
 	<string name="mesh_reach_everyone">Alla Zerion-telefoner i närheten</string>
@@ -791,6 +791,8 @@
 	<string name="vault_msg_invalid_document">Ogiltigt dokument-ID</string>
 	<string name="vault_msg_document_updated">Dokumentet har uppdaterats</string>
 	<string name="vault_msg_update_document_failed">Det gick inte att uppdatera dokumentet</string>
+	<string name="vault_msg_saved_earlier_version_kept">Dina ändringar sparades, men den tidigare versionen kunde inte tas bort. Du kan radera den från listan.</string>
+	<string name="vault_doc_password_needed_to_save">Det här dokumentet skyddas av ett lösenord. Ange det lösenordet för att spara dina ändringar.</string>
 	<string name="vault_msg_save_password_failed">Det gick inte att spara lösenordet</string>
 	<string name="vault_msg_note_title_empty">Anteckningens titel får inte vara tom</string>
 	<string name="vault_msg_saved">Sparat</string>
@@ -901,6 +903,8 @@
 	<string name="browser_tor_get">Hämta Tor Browser</string>
 	<string name="quick_reply_not_sent">Svaret skickades inte. Öppna chatten för att försöka igen.</string>
 	<string name="link_unsupported">Länken stöds inte</string>
+	<string name="link_host_other_alphabet">Adressen använder bokstäver från ett annat alfabet.</string>
+	<string name="link_host_other_alphabet_mark">(bokstäver från ett annat alfabet)</string>
 	<string name="settings_support_summary">Hjälp till att hålla Zerion gratis och privat</string>
 	<string name="login_tagline">Privata meddelanden via Tor</string>
 	<string name="setup_password_subtitle">Det här lösenordet för kontokrypteringen krävs. Det skyddar ditt lokala krypterade konto och din databas på den här enheten. Välj ett starkt och unikt lösenord.</string>
@@ -2386,10 +2390,16 @@
 	<string name="wallet_sp_enable_first">Aktivera Silent Payments först</string>
 	<string name="grouptr_reach_title">Vem dina inlägg når</string>
 	<string name="grouptr_reach_explanation">Gruppinlägg går direkt mellan medlemmar som är varandras kontakter, och medlemmar skickar inte vidare inlägg. De här medlemmarna är inte dina kontakter, så de får inte dina inlägg och du får inte deras:\n\n%1$s\n\nLägg till dem som kontakter för att nå dem.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d medlem är inte din kontakt. Inlägg når medlemmen via gruppägarens telefon om medlemmen använder 3.0.19 eller senare. Tryck för mer information.</item>
+		<item quantity="other">%d medlemmar är inte dina kontakter. Inlägg når dem via gruppägarens telefon om de använder 3.0.19 eller senare. Tryck för mer information.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Gruppinlägg går direkt mellan medlemmar som är varandras kontakter. De här medlemmarna är inte dina kontakter, så gruppägarens telefon skickar dina inlägg vidare till dem och deras inlägg vidare till dig, om de använder 3.0.19 eller senare:\n\n%1$s\n\nInlägg kommer fram när ägarens telefon har skickat dem vidare. Mycket stora inlägg går bara direkt. Lägg till dem som kontakter för att få en direkt väg.</string>
 	<string name="grouptr_ttl_set_by_creator">Försvinnande meddelanden i den här gruppen: %1$s. Bara gruppägaren kan ändra detta.</string>
 	<string name="grouptr_sender_alias_format">%1$s (skriver som ”%2$s”)</string>
 	<string name="grouptr_sender_unverified_format">”%1$s” (inte ett namn du känner)</string>
 	<string name="grouptr_member_out_of_reach">inte din kontakt, får inte dina inlägg</string>
+	<string name="grouptr_member_out_of_reach_owner">inte din kontakt, nås via gruppägaren med 3.0.19 eller senare</string>
 	<string name="grouptr_member_invited">Inbjuden, väntar på svar</string>
 	<string name="grouptr_confirm_revoke">Dra tillbaka inbjudan till %1$s? Ett svar från personen kommer att ignoreras.</string>
 	<string name="grouptr_revoke_invite">Dra tillbaka inbjudan</string>
@@ -2848,6 +2858,7 @@
 	<string name="requests_state_withdrawn">Avbruten efter leverans</string>
 	<string name="requests_state_cancelled_by_sender">Avbruten av avsändaren</string>
 	<string name="requests_state_contact_added">Kontakt tillagd</string>
+	<string name="requests_readd_needs_both_phones">För att lägga till %1$s igen måste det göras på båda telefonerna. Be kontakten öppna inställningarna för er chatt och välja ”Lägg till kontakten igen för att reparera anslutningen”, och försök sedan igen.</string>
 	<string name="requests_open_chat">Öppna chatt</string>
 	<string name="requests_state_no_answer_yet">Inget svar än</string>
 	<string name="requests_notification_accepted">Din kontaktförfrågan har godkänts</string>

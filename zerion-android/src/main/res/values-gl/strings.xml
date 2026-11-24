@@ -611,7 +611,7 @@
 	<string name="i2p_toggle_summary">Enrutar tamén a través da rede I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Conectividade</string>
-	<string name="mesh_info_message">As mensaxes van seladas para o destinatario e pasan de teléfono en teléfono por Bluetooth. Ao activar isto, pídense os permisos de Bluetooth e de dispositivos próximos. Con «Só contactos», o teu teléfono conéctase só cos teléfonos dos teus contactos, e o seu sinal de Bluetooth non leva ningunha marca fixa de Zerion. Para iso, o contacto precisa Zerion 3.0.19 ou posterior, e os dous tedes que ter estado en liña ao mesmo tempo polo menos unha vez desde a actualización.</string>
+	<string name="mesh_info_message">As mensaxes van seladas para o destinatario e pasan de teléfono en teléfono por Bluetooth. Ao activar isto, pídense os permisos de Bluetooth e de dispositivos próximos. Con «Só contactos», o teu teléfono conéctase só cos teléfonos dos teus contactos; para calquera outra persoa, o seu sinal de Bluetooth é un dispositivo sen nome cun identificador cambiante que só os teus contactos poden recoñecer. Para iso, o contacto precisa Zerion 3.0.19 ou posterior, e os dous tedes que ter estado en liña ao mesmo tempo polo menos unha vez desde a actualización.</string>
 	<string name="mesh_reach_title">A rede en malla conéctase con</string>
 	<string name="mesh_reach_contacts">Só contactos</string>
 	<string name="mesh_reach_everyone">Todos os teléfonos con Zerion próximos</string>
@@ -757,6 +757,8 @@
 	<string name="vault_msg_invalid_document">ID de documento non válido</string>
 	<string name="vault_msg_document_updated">Documento actualizado</string>
 	<string name="vault_msg_update_document_failed">Non se puido actualizar o documento</string>
+	<string name="vault_msg_saved_earlier_version_kept">Os teus cambios gardáronse, pero non se puido quitar a versión anterior. Podes eliminala da lista.</string>
+	<string name="vault_doc_password_needed_to_save">Este documento está protexido cun contrasinal. Introduce ese contrasinal para gardar os teus cambios.</string>
 	<string name="vault_msg_save_password_failed">Non se puido gardar o contrasinal</string>
 	<string name="vault_msg_note_title_empty">O título da nota non pode estar baleiro</string>
 	<string name="vault_msg_saved">Gardado</string>
@@ -867,6 +869,8 @@
 	<string name="browser_tor_get">Obter Tor Browser</string>
 	<string name="quick_reply_not_sent">A túa resposta non se enviou. Abre o chat para tentalo de novo.</string>
 	<string name="link_unsupported">Ligazón non compatible</string>
+	<string name="link_host_other_alphabet">O enderezo usa letras doutro alfabeto.</string>
+	<string name="link_host_other_alphabet_mark">(letras doutro alfabeto)</string>
 	<string name="settings_support_summary">Axuda a manter Zerion gratuíto e privado</string>
 	<string name="login_tagline">Mensaxería privada a través de Tor</string>
 	<string name="setup_password_subtitle">Este contrasinal de cifrado da conta é obrigatorio. Protexe a túa conta e a túa base de datos locais e cifradas neste dispositivo. Escolle un contrasinal forte e único.</string>
@@ -2380,10 +2384,16 @@
 	<string name="wallet_sp_enable_first">Activa primeiro Silent Payments</string>
 	<string name="grouptr_reach_title">A quen chegan as túas publicacións</string>
 	<string name="grouptr_reach_explanation">As publicacións do grupo viaxan directamente entre membros que son contactos entre si, e os membros non reenvían publicacións. Estes membros non son contactos teus, así que non reciben as túas publicacións e ti non recibes as súas:\n\n%1$s\n\nEngádeos como contactos para chegar a eles.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d membro non é contacto teu. As publicacións chéganlle a través do teléfono do propietario do grupo se usa a versión 3.0.19 ou posterior. Toca para ver os detalles.</item>
+		<item quantity="other">%d membros non son contactos teus. As publicacións chéganlles a través do teléfono do propietario do grupo se usan a versión 3.0.19 ou posterior. Toca para ver os detalles.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">As publicacións do grupo viaxan directamente entre membros que son contactos entre si. Estes membros non son contactos teus, así que o teléfono do propietario do grupo pásalles as túas publicacións a eles e as súas a ti, se usan a versión 3.0.19 ou posterior:\n\n%1$s\n\nAs publicacións chegan cando o teléfono do propietario as pasou. As publicacións moi grandes só viaxan directamente. Engádeos como contactos para ter un camiño directo.</string>
 	<string name="grouptr_ttl_set_by_creator">Mensaxes efémeras neste grupo: %1$s. Só o propietario do grupo pode cambialo.</string>
 	<string name="grouptr_sender_alias_format">%1$s (publicando como «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (non é un nome que coñezas)</string>
 	<string name="grouptr_member_out_of_reach">non é contacto teu, non recibe as túas publicacións</string>
+	<string name="grouptr_member_out_of_reach_owner">non é contacto teu, recibe as túas publicacións a través do propietario do grupo coa versión 3.0.19 ou posterior</string>
 	<string name="grouptr_member_invited">Convidado, agardando resposta</string>
 	<string name="grouptr_confirm_revoke">Queres retirar o convite a %1$s? Ignorarase calquera resposta súa.</string>
 	<string name="grouptr_revoke_invite">Retirar convite</string>
@@ -2842,6 +2852,7 @@
 	<string name="requests_state_withdrawn">Cancelada despois da entrega</string>
 	<string name="requests_state_cancelled_by_sender">Cancelada polo remitente</string>
 	<string name="requests_state_contact_added">Contacto engadido</string>
+	<string name="requests_readd_needs_both_phones">Para volver engadir a %1$s hai que facelo nos dous teléfonos. Pídelle que abra os axustes da túa conversa e escolla «Volver engadir o contacto para reparar a conexión», e despois téntao de novo.</string>
 	<string name="requests_open_chat">Abrir a conversa</string>
 	<string name="requests_state_no_answer_yet">Aínda sen resposta</string>
 	<string name="requests_notification_accepted">Aceptouse a túa solicitude de contacto</string>

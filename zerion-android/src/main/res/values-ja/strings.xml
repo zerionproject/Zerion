@@ -543,6 +543,8 @@
 	<string name="browser_tor_get">Tor Browser を入手</string>
 	<string name="quick_reply_not_sent">返信を送信できませんでした。チャットを開いてもう一度お試しください。</string>
 	<string name="link_unsupported">対応していないリンク</string>
+	<string name="link_host_other_alphabet">このアドレスには別の文字体系の文字が使われています。</string>
+	<string name="link_host_other_alphabet_mark">（別の文字体系の文字）</string>
 	<string name="settings_support_summary">Zerion の無料とプライバシーの維持に協力する</string>
 	<string name="login_tagline">Tor を経由したプライベートなメッセージング</string>
 	<string name="setup_password_subtitle">パスワードは暗号化されたデータを保護します。強力で固有のものを選んでください。</string>
@@ -581,7 +583,7 @@
 	<string name="settings_section_mesh">オフラインメッシュ</string>
 	<string name="mesh_toggle_title">オフラインメッシュ</string>
 	<string name="mesh_toggle_summary">インターネットなしで、Bluetooth 経由で近くの連絡先に接続</string>
-	<string name="mesh_info_message">メッセージは受信者宛てに封印され、Bluetooth 経由で端末から端末へと渡されます。これをオンにすると Bluetooth と近距離デバイスの権限が要求されます。「連絡先のみ」では、この端末はあなたの連絡先の端末とだけ接続し、Bluetooth の信号に Zerion を示す固定の目印は含まれません。そのためには、連絡先の相手が Zerion 3.0.19 以降を使っていて、更新後に少なくとも一度、あなたと相手が同時にオンラインになっている必要があります。</string>
+	<string name="mesh_info_message">メッセージは受信者宛てに封印され、Bluetooth 経由で端末から端末へと渡されます。これをオンにすると Bluetooth と近距離デバイスの権限が要求されます。「連絡先のみ」では、この端末はあなたの連絡先の端末とだけ接続し、それ以外の相手には、Bluetooth の信号は名前のないデバイスとして見え、変化する識別子を認識できるのはあなたの連絡先だけです。そのためには、連絡先の相手が Zerion 3.0.19 以降を使っていて、更新後に少なくとも一度、あなたと相手が同時にオンラインになっている必要があります。</string>
 	<string name="mesh_reach_title">メッシュの接続先</string>
 	<string name="mesh_reach_contacts">連絡先のみ</string>
 	<string name="mesh_reach_everyone">近くにあるすべての Zerion 端末</string>
@@ -2265,10 +2267,15 @@
 	<string name="wallet_sp_enable_first">先にサイレントペイメントを有効にしてください</string>
 	<string name="grouptr_reach_title">投稿が届く相手</string>
 	<string name="grouptr_reach_explanation">グループの投稿は、互いに連絡先であるメンバーの間で直接届けられ、メンバーが投稿を中継することはありません。次のメンバーはあなたの連絡先ではないため、あなたの投稿は届かず、あなたも相手の投稿を受け取りません:\n\n%1$s\n\nこれらのメンバーに届けるには、連絡先として追加してください。</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="other">%d 人のメンバーはあなたの連絡先ではありません。相手が 3.0.19 以降を使っていれば、投稿はグループのオーナーの端末を通じて届きます。タップして詳細を表示。</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">グループの投稿は、互いに連絡先であるメンバーの間で直接届けられます。次のメンバーはあなたの連絡先ではないため、相手が 3.0.19 以降を使っていれば、グループのオーナーの端末があなたの投稿を相手に、相手の投稿をあなたに中継します:\n\n%1$s\n\n投稿は、オーナーの端末が中継した時点で届きます。非常に大きな投稿は直接でしか届きません。直接届くようにするには、連絡先として追加してください。</string>
 	<string name="grouptr_ttl_set_by_creator">このグループの消えるメッセージ: %1$s。変更できるのはグループのオーナーだけです。</string>
 	<string name="grouptr_sender_alias_format">%1$s（「%2$s」として投稿）</string>
 	<string name="grouptr_sender_unverified_format">「%1$s」（知らない名前）</string>
 	<string name="grouptr_member_out_of_reach">連絡先ではないため、あなたの投稿は届きません</string>
+	<string name="grouptr_member_out_of_reach_owner">連絡先ではないため、3.0.19 以降でグループのオーナー経由で届きます</string>
 	<string name="grouptr_member_invited">招待済み、返答待ち</string>
 	<string name="grouptr_confirm_revoke">%1$s への招待を取り消しますか？相手からの返答は無視されます。</string>
 	<string name="grouptr_revoke_invite">招待を取り消す</string>
@@ -2346,6 +2353,8 @@
 	<string name="vault_msg_invalid_document">無効なドキュメント ID</string>
 	<string name="vault_msg_document_updated">ドキュメントを更新しました</string>
 	<string name="vault_msg_update_document_failed">ドキュメントの更新に失敗しました</string>
+	<string name="vault_msg_saved_earlier_version_kept">変更は保存されましたが、以前のバージョンを削除できませんでした。一覧から削除できます。</string>
+	<string name="vault_doc_password_needed_to_save">このドキュメントはパスワードで保護されています。変更を保存するには、そのパスワードを入力してください。</string>
 	<string name="vault_msg_save_password_failed">パスワードの保存に失敗しました</string>
 	<string name="vault_msg_note_title_empty">ノートのタイトルは空にできません</string>
 	<string name="vault_msg_saved">保存しました</string>
@@ -2808,6 +2817,7 @@
 	<string name="requests_state_withdrawn">配信後にキャンセル済み</string>
 	<string name="requests_state_cancelled_by_sender">送信者がキャンセル</string>
 	<string name="requests_state_contact_added">連絡先を追加しました</string>
+	<string name="requests_readd_needs_both_phones">%1$s を再追加するには、両方の端末で再追加が必要です。相手にあなたとのチャットの設定を開いて「連絡先を再追加して接続を修復」を選んでもらってから、もう一度お試しください。</string>
 	<string name="requests_open_chat">チャットを開く</string>
 	<string name="requests_state_no_answer_yet">まだ応答がありません</string>
 	<string name="requests_notification_accepted">連絡先リクエストが承認されました</string>

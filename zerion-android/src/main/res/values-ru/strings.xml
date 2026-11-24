@@ -576,6 +576,8 @@
 	<string name="browser_tor_get">Скачать Tor Browser</string>
 	<string name="quick_reply_not_sent">Ответ не отправлен. Откройте чат, чтобы повторить попытку.</string>
 	<string name="link_unsupported">Неподдерживаемая ссылка</string>
+	<string name="link_host_other_alphabet">В адресе используются буквы другого алфавита.</string>
+	<string name="link_host_other_alphabet_mark">(буквы другого алфавита)</string>
 	<string name="settings_support_summary">Помогите сохранить Zerion бесплатным и приватным</string>
 	<string name="login_tagline">Приватные сообщения через Tor</string>
 	<string name="setup_password_subtitle">Ваш пароль защищает зашифрованные данные. Выберите надёжный и уникальный.</string>
@@ -614,7 +616,7 @@
 	<string name="settings_section_mesh">АВТОНОМНАЯ MESH-СЕТЬ</string>
 	<string name="mesh_toggle_title">Автономная mesh-сеть</string>
 	<string name="mesh_toggle_summary">Связывайтесь с ближайшими контактами без интернета через Bluetooth</string>
-	<string name="mesh_info_message">Сообщения запечатываются для получателя и передаются с телефона на телефон по Bluetooth. Включение запрашивает разрешения на Bluetooth и устройства поблизости. В режиме «Только контакты» ваш телефон связывается только с телефонами ваших контактов, а его сигнал Bluetooth не содержит постоянной метки Zerion. Для этого у контакта должен быть Zerion 3.0.19 или новее, и после обновления вы оба должны были хотя бы один раз одновременно быть в сети.</string>
+	<string name="mesh_info_message">Сообщения запечатываются для получателя и передаются с телефона на телефон по Bluetooth. Включение запрашивает разрешения на Bluetooth и устройства поблизости. В режиме «Только контакты» ваш телефон связывается только с телефонами ваших контактов; для всех остальных его сигнал Bluetooth выглядит как безымянное устройство, меняющийся идентификатор которого могут распознать только ваши контакты. Для этого у контакта должен быть Zerion 3.0.19 или новее, и после обновления вы оба должны были хотя бы один раз одновременно быть в сети.</string>
 	<string name="mesh_reach_title">С кем связывается mesh-сеть</string>
 	<string name="mesh_reach_contacts">Только контакты</string>
 	<string name="mesh_reach_everyone">Все телефоны с Zerion поблизости</string>
@@ -2313,10 +2315,18 @@
 	<string name="wallet_sp_enable_first">Сначала включите Silent Payments</string>
 	<string name="grouptr_reach_title">Кто получает ваши сообщения</string>
 	<string name="grouptr_reach_explanation">Сообщения в группе передаются напрямую между участниками, которые являются контактами друг друга, и участники не пересылают их дальше. Эти участники не входят в ваши контакты, поэтому они не получают ваши сообщения, а вы не получаете их сообщения:\n\n%1$s\n\nДобавьте их в контакты, чтобы связаться с ними.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d участник не является вашим контактом. Сообщения доходят до него через телефон владельца группы, если у него версия 3.0.19 или новее. Нажмите, чтобы узнать подробности.</item>
+		<item quantity="few">%d участника не являются вашими контактами. Сообщения доходят до них через телефон владельца группы, если у них версия 3.0.19 или новее. Нажмите, чтобы узнать подробности.</item>
+		<item quantity="many">%d участников не являются вашими контактами. Сообщения доходят до них через телефон владельца группы, если у них версия 3.0.19 или новее. Нажмите, чтобы узнать подробности.</item>
+		<item quantity="other">%d участника не являются вашими контактами. Сообщения доходят до них через телефон владельца группы, если у них версия 3.0.19 или новее. Нажмите, чтобы узнать подробности.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Сообщения в группе передаются напрямую между участниками, которые являются контактами друг друга. Эти участники не входят в ваши контакты, поэтому телефон владельца группы передаёт им ваши сообщения, а вам их сообщения, если у них версия 3.0.19 или новее:\n\n%1$s\n\nСообщения приходят после того, как телефон владельца их передаст. Очень большие сообщения передаются только напрямую. Добавьте их в контакты, чтобы получить прямой путь.</string>
 	<string name="grouptr_ttl_set_by_creator">Исчезающие сообщения в этой группе: %1$s. Изменить это может только владелец группы.</string>
 	<string name="grouptr_sender_alias_format">%1$s (пишет как «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (незнакомое вам имя)</string>
 	<string name="grouptr_member_out_of_reach">не ваш контакт, не получает ваши сообщения</string>
+	<string name="grouptr_member_out_of_reach_owner">не ваш контакт, доступен через владельца группы с версией 3.0.19 или новее</string>
 	<string name="grouptr_member_invited">Приглашён, ожидается ответ</string>
 	<string name="grouptr_confirm_revoke">Отозвать приглашение для %1$s? Ответ этого человека будет проигнорирован.</string>
 	<string name="grouptr_revoke_invite">Отозвать приглашение</string>
@@ -2436,6 +2446,8 @@
 	<string name="vault_msg_invalid_document">Неверный идентификатор документа</string>
 	<string name="vault_msg_document_updated">Документ обновлён</string>
 	<string name="vault_msg_update_document_failed">Не удалось обновить документ</string>
+	<string name="vault_msg_saved_earlier_version_kept">Ваши изменения сохранены, но прежнюю версию не удалось убрать. Вы можете удалить её из списка.</string>
+	<string name="vault_doc_password_needed_to_save">Этот документ защищён паролем. Введите этот пароль, чтобы сохранить изменения.</string>
 	<string name="vault_msg_save_password_failed">Не удалось сохранить пароль</string>
 	<string name="vault_msg_note_title_empty">Название заметки не может быть пустым</string>
 	<string name="vault_msg_saved">Сохранено</string>
@@ -2943,6 +2955,7 @@
 	<string name="requests_state_withdrawn">Отменён после доставки</string>
 	<string name="requests_state_cancelled_by_sender">Отменён отправителем</string>
 	<string name="requests_state_contact_added">Контакт добавлен</string>
+	<string name="requests_readd_needs_both_phones">Чтобы добавить %1$s заново, это нужно сделать на обоих телефонах. Попросите контакт открыть настройки вашего чата и выбрать «Добавить контакт заново, чтобы восстановить соединение», затем повторите попытку.</string>
 	<string name="requests_open_chat">Открыть чат</string>
 	<string name="requests_state_no_answer_yet">Ответа пока нет</string>
 	<string name="requests_notification_accepted">Ваш запрос на контакт принят</string>

@@ -561,7 +561,7 @@ Umepoteza nenosiri.</string>
 	<string name="i2p_toggle_summary">Pitisha pia kupitia mtandao wa I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Muunganisho</string>
-	<string name="mesh_info_message">Ujumbe hufungwa ili mpokeaji pekee aweze kuufungua, na hupitishwa kutoka simu hadi simu kupitia Bluetooth. Kuwasha hii huomba ruhusa za Bluetooth na vifaa vilivyo karibu. Ukichagua “Watu unaowasiliana nao pekee”, simu yako huunganishwa tu na simu za watu unaowasiliana nao, na mawimbi yake ya Bluetooth hayabebi alama yoyote ya kudumu ya Zerion. Kwa hilo, mtu unayewasiliana naye anahitaji Zerion 3.0.19 au mpya zaidi, na nyinyi wawili lazima muwe mmewahi kuunganishwa kwenye intaneti kwa wakati mmoja angalau mara moja tangu kusasisha.</string>
+	<string name="mesh_info_message">Ujumbe hufungwa ili mpokeaji pekee aweze kuufungua, na hupitishwa kutoka simu hadi simu kupitia Bluetooth. Kuwasha hii huomba ruhusa za Bluetooth na vifaa vilivyo karibu. Ukichagua “Watu unaowasiliana nao pekee”, simu yako huunganishwa tu na simu za watu unaowasiliana nao; kwa mtu mwingine yeyote, mawimbi yake ya Bluetooth ni kifaa kisicho na jina chenye kitambulisho kinachobadilika ambacho ni watu unaowasiliana nao pekee wanaoweza kukitambua. Kwa hilo, mtu unayewasiliana naye anahitaji Zerion 3.0.19 au mpya zaidi, na nyinyi wawili lazima muwe mmewahi kuunganishwa kwenye intaneti kwa wakati mmoja angalau mara moja tangu kusasisha.</string>
 	<string name="mesh_reach_title">Mesh huunganishwa na</string>
 	<string name="mesh_reach_contacts">Watu unaowasiliana nao pekee</string>
 	<string name="mesh_reach_everyone">Kila simu ya Zerion iliyo karibu</string>
@@ -722,6 +722,8 @@ Umepoteza nenosiri.</string>
 	<string name="vault_msg_invalid_document">ID ya hati si sahihi</string>
 	<string name="vault_msg_document_updated">Hati imesasishwa</string>
 	<string name="vault_msg_update_document_failed">Imeshindwa kusasisha hati</string>
+	<string name="vault_msg_saved_earlier_version_kept">Mabadiliko yako yamehifadhiwa, lakini toleo la awali halikuweza kuondolewa. Unaweza kulifuta kwenye orodha.</string>
+	<string name="vault_doc_password_needed_to_save">Hati hii inalindwa kwa nenosiri. Weka nenosiri hilo ili kuhifadhi mabadiliko yako.</string>
 	<string name="vault_msg_save_password_failed">Imeshindwa kuhifadhi nenosiri</string>
 	<string name="vault_msg_note_title_empty">Kichwa cha dokezo hakiwezi kuwa tupu</string>
 	<string name="vault_msg_saved">Imehifadhiwa</string>
@@ -832,6 +834,8 @@ Umepoteza nenosiri.</string>
 	<string name="browser_tor_get">Pata Tor Browser</string>
 	<string name="quick_reply_not_sent">Jibu lako halikutumwa. Fungua gumzo ili ujaribu tena.</string>
 	<string name="link_unsupported">Kiungo kisichotumika</string>
+	<string name="link_host_other_alphabet">Anwani inatumia herufi za alfabeti nyingine.</string>
+	<string name="link_host_other_alphabet_mark">(herufi za alfabeti nyingine)</string>
 	<string name="settings_support_summary">Saidia Zerion ibaki bila malipo na ya faragha</string>
 	<string name="login_tagline">Ujumbe wa faragha kupitia Tor</string>
 	<string name="setup_password_subtitle">Nenosiri hili la usimbaji fiche wa akaunti linahitajika. Linalinda akaunti yako na hifadhidata yako iliyosimbwa kwa njia fiche kwenye kifaa hiki. Chagua nenosiri imara na la kipekee.</string>
@@ -2362,10 +2366,16 @@ Umepoteza nenosiri.</string>
 	<string name="wallet_sp_enable_first">Washa Silent Payments kwanza</string>
 	<string name="grouptr_reach_title">Nani anapokea machapisho yako</string>
 	<string name="grouptr_reach_explanation">Machapisho ya kikundi husafiri moja kwa moja kati ya wanachama wanaowasiliana wao kwa wao, na wanachama hawapitishi machapisho kwa wengine. Wanachama hawa si watu unaowasiliana nao, kwa hivyo hawapokei machapisho yako na wewe hupokei yao:\n\n%1$s\n\nWaongeze kama watu unaowasiliana nao ili kuwafikia.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">Mwanachama %d si mtu unayewasiliana naye. Machapisho humfikia kupitia simu ya mmiliki wa kikundi anapotumia toleo la 3.0.19 au jipya zaidi. Gusa kwa maelezo.</item>
+		<item quantity="other">Wanachama %d si watu unaowasiliana nao. Machapisho huwafikia kupitia simu ya mmiliki wa kikundi wanapotumia toleo la 3.0.19 au jipya zaidi. Gusa kwa maelezo.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Machapisho ya kikundi husafiri moja kwa moja kati ya wanachama wanaowasiliana wao kwa wao. Wanachama hawa si watu unaowasiliana nao, kwa hivyo simu ya mmiliki wa kikundi hupitisha machapisho yako kwao na machapisho yao kwako, wanapotumia toleo la 3.0.19 au jipya zaidi:\n\n%1$s\n\nMachapisho hufika baada ya simu ya mmiliki kuyapitisha. Machapisho makubwa sana husafiri moja kwa moja pekee. Waongeze kama watu unaowasiliana nao ili kupata njia ya moja kwa moja.</string>
 	<string name="grouptr_ttl_set_by_creator">Ujumbe unaopotea katika kikundi hiki: %1$s. Ni mmiliki wa kikundi pekee anayeweza kubadilisha hili.</string>
 	<string name="grouptr_sender_alias_format">%1$s (anachapisha kama “%2$s”)</string>
 	<string name="grouptr_sender_unverified_format">“%1$s” (si jina unalolijua)</string>
 	<string name="grouptr_member_out_of_reach">si mtu unayewasiliana naye, hapokei machapisho yako</string>
+	<string name="grouptr_member_out_of_reach_owner">si mtu unayewasiliana naye, hufikiwa kupitia mmiliki wa kikundi kwa toleo la 3.0.19 au jipya zaidi</string>
 	<string name="grouptr_member_invited">Amealikwa, jibu linasubiriwa</string>
 	<string name="grouptr_confirm_revoke">Uondoe mwaliko kwa %1$s? Jibu kutoka kwake litapuuzwa.</string>
 	<string name="grouptr_revoke_invite">Ondoa mwaliko</string>
@@ -2840,6 +2850,7 @@ Umepoteza nenosiri.</string>
 	<string name="requests_state_withdrawn">Limeghairiwa baada ya kuwasilishwa</string>
 	<string name="requests_state_cancelled_by_sender">Limeghairiwa na mtumaji</string>
 	<string name="requests_state_contact_added">Mawasiliano yameongezwa</string>
+	<string name="requests_readd_needs_both_phones">Kumwongeza tena %1$s kunahitaji kufanyika kwenye simu zote mbili. Mwombe afungue mipangilio ya mazungumzo yenu na achague “Mwongeze tena mtu huyu ili kurekebisha muunganisho”, kisha ujaribu tena.</string>
 	<string name="requests_open_chat">Fungua mazungumzo</string>
 	<string name="requests_state_no_answer_yet">Bado hakuna jibu</string>
 	<string name="requests_notification_accepted">Ombi lako la mawasiliano limekubaliwa</string>

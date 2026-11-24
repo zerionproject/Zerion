@@ -652,7 +652,7 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="i2p_toggle_summary">Forgalom irányítása az I2P hálózaton keresztül is</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Kapcsolódás</string>
-	<string name="mesh_info_message">Az üzeneteket a rendszer a címzett számára lepecsételi, és Bluetooth-on keresztül telefonról telefonra továbbítja. Bekapcsoláskor az alkalmazás engedélyt kér a Bluetooth és a közeli eszközök használatára. A „Csak kapcsolatok” beállításnál a telefonja csak a kapcsolatai telefonjaihoz csatlakozik, és a Bluetooth-jele nem tartalmaz állandó Zerion-azonosítót. Ehhez a kapcsolatnak Zerion 3.0.19 vagy újabb verzióra van szüksége, és a frissítés óta legalább egyszer mindkettőjüknek egyszerre kellett online lennie.</string>
+	<string name="mesh_info_message">Az üzeneteket a rendszer a címzett számára lepecsételi, és Bluetooth-on keresztül telefonról telefonra továbbítja. Bekapcsoláskor az alkalmazás engedélyt kér a Bluetooth és a közeli eszközök használatára. A „Csak kapcsolatok” beállításnál a telefonja csak a kapcsolatai telefonjaihoz csatlakozik; mindenki más számára a Bluetooth-jele egy névtelen eszköz, amelynek változó azonosítóját csak az Ön kapcsolatai ismerhetik fel. Ehhez a kapcsolatnak Zerion 3.0.19 vagy újabb verzióra van szüksége, és a frissítés óta legalább egyszer mindkettőjüknek egyszerre kellett online lennie.</string>
 	<string name="mesh_reach_title">A mesh ezekhez csatlakozik</string>
 	<string name="mesh_reach_contacts">Csak kapcsolatok</string>
 	<string name="mesh_reach_everyone">Minden közeli Zerion-telefon</string>
@@ -798,6 +798,8 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="vault_msg_invalid_document">Érvénytelen dokumentumazonosító</string>
 	<string name="vault_msg_document_updated">Dokumentum frissítve</string>
 	<string name="vault_msg_update_document_failed">Nem sikerült frissíteni a dokumentumot</string>
+	<string name="vault_msg_saved_earlier_version_kept">A módosításait mentettük, de a korábbi verziót nem sikerült eltávolítani. A listából törölheti.</string>
+	<string name="vault_doc_password_needed_to_save">Ez a dokumentum jelszóval védett. A módosítások mentéséhez adja meg ezt a jelszót.</string>
 	<string name="vault_msg_save_password_failed">Nem sikerült menteni a jelszót</string>
 	<string name="vault_msg_note_title_empty">A jegyzet címe nem lehet üres</string>
 	<string name="vault_msg_saved">Mentve</string>
@@ -908,6 +910,8 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="browser_tor_get">Tor Browser letöltése</string>
 	<string name="quick_reply_not_sent">A válasz nem lett elküldve. Nyissa meg a csevegést, és próbálja újra.</string>
 	<string name="link_unsupported">Nem támogatott link</string>
+	<string name="link_host_other_alphabet">A cím egy másik ábécé betűit használja.</string>
+	<string name="link_host_other_alphabet_mark">(másik ábécé betűi)</string>
 	<string name="settings_support_summary">Segítsen, hogy a Zerion ingyenes és privát maradjon</string>
 	<string name="login_tagline">Privát üzenetküldés a Tor hálózaton keresztül</string>
 	<string name="setup_password_subtitle">Ez a fióktitkosítási jelszó kötelező. Ez védi a titkosított helyi fiókját és adatbázisát ezen az eszközön. Válasszon erős, egyedi jelszót.</string>
@@ -2390,10 +2394,16 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="wallet_sp_enable_first">Először engedélyezze a Silent Payments funkciót</string>
 	<string name="grouptr_reach_title">Kikhez jutnak el a bejegyzései</string>
 	<string name="grouptr_reach_explanation">A csoportbejegyzések közvetlenül azok között a tagok között jutnak el, akik egymás kapcsolatai, és a tagok nem adják tovább a bejegyzéseket. Ezek a tagok nem az Ön kapcsolatai, ezért nem kapják meg az Ön bejegyzéseit, és Ön sem kapja meg az övéiket:\n\n%1$s\n\nAdja hozzá őket kapcsolatként, hogy elérje őket.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d tag nem az Ön kapcsolata. A bejegyzések a csoport tulajdonosának telefonján keresztül jutnak el hozzá, ha 3.0.19 vagy újabb verziót használ. Koppintson a részletekért.</item>
+		<item quantity="other">%d tag nem az Ön kapcsolata. A bejegyzések a csoport tulajdonosának telefonján keresztül jutnak el hozzájuk, ha 3.0.19 vagy újabb verziót használnak. Koppintson a részletekért.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">A csoportbejegyzések közvetlenül azok között a tagok között jutnak el, akik egymás kapcsolatai. Ezek a tagok nem az Ön kapcsolatai, ezért a csoport tulajdonosának telefonja adja tovább nekik az Ön bejegyzéseit, Önnek pedig az övéiket, ha 3.0.19 vagy újabb verziót használnak:\n\n%1$s\n\nA bejegyzések akkor érkeznek meg, amikor a tulajdonos telefonja továbbadta őket. A nagyon nagy bejegyzések csak közvetlenül jutnak el. Adja hozzá őket kapcsolatként a közvetlen útvonalhoz.</string>
 	<string name="grouptr_ttl_set_by_creator">Eltűnő üzenetek ebben a csoportban: %1$s. Ezt csak a csoport tulajdonosa módosíthatja.</string>
 	<string name="grouptr_sender_alias_format">%1$s („%2$s” néven ír)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s” (Ön által nem ismert név)</string>
 	<string name="grouptr_member_out_of_reach">nem az Ön kapcsolata, nem kapja meg a bejegyzéseit</string>
+	<string name="grouptr_member_out_of_reach_owner">nem az Ön kapcsolata, a csoport tulajdonosán keresztül érhető el 3.0.19 vagy újabb verzióval</string>
 	<string name="grouptr_member_invited">Meghívva, válaszra vár</string>
 	<string name="grouptr_confirm_revoke">Visszavonja %1$s meghívását? Az esetleges válasza figyelmen kívül marad.</string>
 	<string name="grouptr_revoke_invite">Meghívás visszavonása</string>
@@ -2852,6 +2862,7 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="requests_state_withdrawn">Kézbesítés után visszavonva</string>
 	<string name="requests_state_cancelled_by_sender">A küldő visszavonta</string>
 	<string name="requests_state_contact_added">Kapcsolat hozzáadva</string>
+	<string name="requests_readd_needs_both_phones">%1$s újbóli hozzáadásához mindkét telefonon újbóli hozzáadás szükséges. Kérje meg, hogy nyissa meg az Önnel folytatott csevegés beállításait, és válassza a „Kapcsolat újbóli hozzáadása a kapcsolódás javításához” lehetőséget, majd próbálja újra.</string>
 	<string name="requests_open_chat">Csevegés megnyitása</string>
 	<string name="requests_state_no_answer_yet">Még nincs válasz</string>
 	<string name="requests_notification_accepted">A kapcsolatfelvételi kérésedet elfogadták</string>

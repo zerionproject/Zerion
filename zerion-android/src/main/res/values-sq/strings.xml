@@ -654,7 +654,7 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="i2p_toggle_summary">Kalo trafikun edhe përmes rrjetit I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Lidhja</string>
-	<string name="mesh_info_message">Mesazhet vulosen për marrësin dhe kalojnë nga telefoni në telefon përmes Bluetooth-it. Aktivizimi i kësaj kërkon leje për Bluetooth dhe për pajisjet në afërsi. Me «Vetëm kontaktet», telefoni yt lidhet vetëm me telefonat e kontakteve të tua, dhe sinjali i tij Bluetooth nuk mban asnjë shenjë të pandryshueshme të Zerion-it. Për këtë, kontakti duhet të ketë Zerion 3.0.19 ose më të ri, dhe ju të dy duhet të keni qenë në linjë në të njëjtën kohë të paktën një herë që nga përditësimi.</string>
+	<string name="mesh_info_message">Mesazhet vulosen për marrësin dhe kalojnë nga telefoni në telefon përmes Bluetooth-it. Aktivizimi i kësaj kërkon leje për Bluetooth dhe për pajisjet në afërsi. Me «Vetëm kontaktet», telefoni yt lidhet vetëm me telefonat e kontakteve të tua; për këdo tjetër, sinjali i tij Bluetooth është një pajisje pa emër, me një identifikues që ndryshon dhe që vetëm kontaktet e tua mund ta njohin. Për këtë, kontakti duhet të ketë Zerion 3.0.19 ose më të ri, dhe ju të dy duhet të keni qenë në linjë në të njëjtën kohë të paktën një herë që nga përditësimi.</string>
 	<string name="mesh_reach_title">Rrjeti mesh lidhet me</string>
 	<string name="mesh_reach_contacts">Vetëm kontaktet</string>
 	<string name="mesh_reach_everyone">Çdo telefon me Zerion aty pranë</string>
@@ -800,6 +800,8 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="vault_msg_invalid_document">ID dokumenti e pavlefshme</string>
 	<string name="vault_msg_document_updated">Dokumenti u përditësua</string>
 	<string name="vault_msg_update_document_failed">Dokumenti nuk u përditësua dot</string>
+	<string name="vault_msg_saved_earlier_version_kept">Ndryshimet e tua u ruajtën, por versioni i mëparshëm nuk u hoq dot. Mund ta fshish nga lista.</string>
+	<string name="vault_doc_password_needed_to_save">Ky dokument është i mbrojtur me një fjalëkalim. Fute atë fjalëkalim për të ruajtur ndryshimet e tua.</string>
 	<string name="vault_msg_save_password_failed">Fjalëkalimi nuk u ruajt dot</string>
 	<string name="vault_msg_note_title_empty">Titulli i shënimit nuk mund të jetë i zbrazët</string>
 	<string name="vault_msg_saved">U ruajt</string>
@@ -910,6 +912,8 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="browser_tor_get">Merrni Tor Browser</string>
 	<string name="quick_reply_not_sent">Përgjigjja jote nuk u dërgua. Hap bisedën për të provuar sërish.</string>
 	<string name="link_unsupported">Lidhje e pambështetur</string>
+	<string name="link_host_other_alphabet">Adresa përdor shkronja nga një alfabet tjetër.</string>
+	<string name="link_host_other_alphabet_mark">(shkronja nga një alfabet tjetër)</string>
 	<string name="settings_support_summary">Ndihmo që Zerion-i të mbetet falas dhe privat</string>
 	<string name="login_tagline">Mesazhe private përmes Tor</string>
 	<string name="setup_password_subtitle">Ky fjalëkalim për fshehtëzimin e llogarisë është i detyrueshëm. Ai mbron llogarinë tënde lokale të fshehtëzuar dhe bazën e të dhënave në këtë pajisje. Zgjidh një fjalëkalim të fortë dhe unik.</string>
@@ -2387,10 +2391,16 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="wallet_sp_enable_first">Aktivizo më parë Silent Payments</string>
 	<string name="grouptr_reach_title">Kë arrijnë postimet e tua</string>
 	<string name="grouptr_reach_explanation">Postimet e grupit udhëtojnë drejtpërdrejt mes anëtarëve që janë kontakte të njëri-tjetrit, dhe anëtarët nuk i përcjellin postimet më tej. Këta anëtarë nuk janë kontaktet e tua, ndaj nuk marrin postimet e tua dhe ti nuk merr të tyret:\n\n%1$s\n\nShtoji si kontakte për t\'i arritur.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d anëtar nuk është kontakti yt. Postimet i mbërrijnë përmes telefonit të pronarit të grupit kur përdor versionin 3.0.19 ose më të ri. Prek për hollësi.</item>
+		<item quantity="other">%d anëtarë nuk janë kontaktet e tua. Postimet u mbërrijnë përmes telefonit të pronarit të grupit kur përdorin versionin 3.0.19 ose më të ri. Prek për hollësi.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Postimet e grupit udhëtojnë drejtpërdrejt mes anëtarëve që janë kontakte të njëri-tjetrit. Këta anëtarë nuk janë kontaktet e tua, ndaj telefoni i pronarit të grupit ua përcjell atyre postimet e tua dhe ty postimet e tyre, kur përdorin versionin 3.0.19 ose më të ri:\n\n%1$s\n\nPostimet mbërrijnë pasi telefoni i pronarit t\'i ketë përcjellë. Postimet shumë të mëdha udhëtojnë vetëm drejtpërdrejt. Shtoji si kontakte për një rrugë të drejtpërdrejtë.</string>
 	<string name="grouptr_ttl_set_by_creator">Mesazhe që treten në këtë grup: %1$s. Këtë mund ta ndryshojë vetëm pronari i grupit.</string>
 	<string name="grouptr_sender_alias_format">%1$s (poston si «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (nuk është emër që e njeh)</string>
 	<string name="grouptr_member_out_of_reach">nuk është kontakti yt, nuk i merr postimet e tua</string>
+	<string name="grouptr_member_out_of_reach_owner">nuk është kontakti yt, arrihet përmes pronarit të grupit me versionin 3.0.19 ose më të ri</string>
 	<string name="grouptr_member_invited">I ftuar, në pritje të përgjigjes</string>
 	<string name="grouptr_confirm_revoke">Të tërhiqet ftesa për %1$s? Një përgjigje nga ky person do të shpërfillet.</string>
 	<string name="grouptr_revoke_invite">Tërhiq ftesën</string>
@@ -2849,6 +2859,7 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="requests_state_withdrawn">E anuluar pas dorëzimit</string>
 	<string name="requests_state_cancelled_by_sender">Anuluar nga dërguesi</string>
 	<string name="requests_state_contact_added">Kontakti u shtua</string>
+	<string name="requests_readd_needs_both_phones">Për ta shtuar sërish %1$s duhet bërë kjo në të dy telefonat. Kërkoji të hapë cilësimet e bisedës me ty dhe të zgjedhë «Shtoje sërish kontaktin për të riparuar lidhjen», pastaj provo sërish.</string>
 	<string name="requests_open_chat">Hap bisedën</string>
 	<string name="requests_state_no_answer_yet">Ende pa përgjigje</string>
 	<string name="requests_notification_accepted">Kërkesa juaj për kontakt u pranua</string>

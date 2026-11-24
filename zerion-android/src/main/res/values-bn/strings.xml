@@ -657,7 +657,7 @@
 	<string name="i2p_toggle_summary">I2P নেটওয়ার্কের মাধ্যমেও রুট করুন</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">সংযোগ</string>
-	<string name="mesh_info_message">বার্তাগুলি এমনভাবে সিল করা হয় যাতে শুধু প্রাপকই খুলতে পারেন, এবং Bluetooth-এর মাধ্যমে এক ফোন থেকে আরেক ফোনে পৌঁছায়। এটি চালু করলে Bluetooth ও কাছাকাছি ডিভাইসের অনুমতি চাওয়া হয়। “শুধু পরিচিতি” বেছে নিলে আপনার ফোন শুধু আপনার পরিচিতিদের ফোনের সঙ্গে যুক্ত হয়, এবং এর Bluetooth সংকেতে Zerion-এর কোনো স্থায়ী চিহ্ন থাকে না। এর জন্য পরিচিতির Zerion 3.0.19 বা তার নতুন সংস্করণ প্রয়োজন, এবং আপডেটের পর অন্তত একবার আপনাদের দুজনকে একই সময়ে অনলাইনে থাকতে হবে।</string>
+	<string name="mesh_info_message">বার্তাগুলি এমনভাবে সিল করা হয় যাতে শুধু প্রাপকই খুলতে পারেন, এবং Bluetooth-এর মাধ্যমে এক ফোন থেকে আরেক ফোনে পৌঁছায়। এটি চালু করলে Bluetooth ও কাছাকাছি ডিভাইসের অনুমতি চাওয়া হয়। “শুধু পরিচিতি” বেছে নিলে আপনার ফোন শুধু আপনার পরিচিতিদের ফোনের সঙ্গে যুক্ত হয়; অন্য সবার কাছে এর Bluetooth সংকেত একটি নামহীন ডিভাইস, যার পরিবর্তনশীল শনাক্তকারী শুধু আপনার পরিচিতিরাই চিনতে পারেন। এর জন্য পরিচিতির Zerion 3.0.19 বা তার নতুন সংস্করণ প্রয়োজন, এবং আপডেটের পর অন্তত একবার আপনাদের দুজনকে একই সময়ে অনলাইনে থাকতে হবে।</string>
 	<string name="mesh_reach_title">মেশ যাদের সঙ্গে যুক্ত হয়</string>
 	<string name="mesh_reach_contacts">শুধু পরিচিতি</string>
 	<string name="mesh_reach_everyone">কাছাকাছি থাকা প্রতিটি Zerion ফোন</string>
@@ -807,6 +807,8 @@
 	<string name="browser_tor_get">Tor Browser নিন</string>
 	<string name="quick_reply_not_sent">আপনার উত্তর পাঠানো হয়নি। আবার চেষ্টা করতে চ্যাট খুলুন।</string>
 	<string name="link_unsupported">অসমর্থিত লিংক</string>
+	<string name="link_host_other_alphabet">ঠিকানাটিতে অন্য বর্ণমালার অক্ষর ব্যবহার করা হয়েছে।</string>
+	<string name="link_host_other_alphabet_mark">(অন্য বর্ণমালার অক্ষর)</string>
 	<string name="settings_support_summary">Zerion-কে বিনামূল্যে ও গোপনীয় রাখতে সাহায্য করুন</string>
 	<string name="login_tagline">Tor-এর মাধ্যমে ব্যক্তিগত বার্তা আদান-প্রদান</string>
 	<string name="setup_password_subtitle">অ্যাকাউন্ট এনক্রিপশনের এই পাসওয়ার্ডটি আবশ্যক। এটি এই ডিভাইসে আপনার এনক্রিপ্ট করা স্থানীয় অ্যাকাউন্ট ও ডেটাবেস সুরক্ষিত রাখে। একটি শক্তিশালী ও অনন্য পাসওয়ার্ড বেছে নিন।</string>
@@ -2282,10 +2284,16 @@
 	<string name="wallet_sp_enable_first">আগে Silent Payments চালু করুন</string>
 	<string name="grouptr_reach_title">আপনার পোস্ট কারা পায়</string>
 	<string name="grouptr_reach_explanation">গ্রুপের পোস্ট সরাসরি সেই সদস্যদের মধ্যে যায় যারা একে অপরের পরিচিতি, এবং সদস্যরা পোস্ট অন্যদের কাছে পাঠিয়ে দেয় না। এই সদস্যরা আপনার পরিচিতি নয়, তাই তারা আপনার পোস্ট পায় না এবং আপনিও তাদের পোস্ট পান না:\n\n%1$s\n\nতাদের কাছে পৌঁছাতে তাদের পরিচিতি হিসেবে যোগ করুন।</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d জন সদস্য আপনার পরিচিতি নয়। তারা 3.0.19 বা তার নতুন সংস্করণ ব্যবহার করলে গ্রুপের মালিকের ফোনের মাধ্যমে তাদের কাছে পোস্ট পৌঁছায়। বিস্তারিত দেখতে ট্যাপ করুন।</item>
+		<item quantity="other">%d জন সদস্য আপনার পরিচিতি নয়। তারা 3.0.19 বা তার নতুন সংস্করণ ব্যবহার করলে গ্রুপের মালিকের ফোনের মাধ্যমে তাদের কাছে পোস্ট পৌঁছায়। বিস্তারিত দেখতে ট্যাপ করুন।</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">গ্রুপের পোস্ট সরাসরি সেই সদস্যদের মধ্যে যায় যারা একে অপরের পরিচিতি। এই সদস্যরা আপনার পরিচিতি নয়, তাই তারা 3.0.19 বা তার নতুন সংস্করণ ব্যবহার করলে গ্রুপের মালিকের ফোন আপনার পোস্ট তাদের কাছে এবং তাদের পোস্ট আপনার কাছে পৌঁছে দেয়:\n\n%1$s\n\nমালিকের ফোন পোস্টগুলো পৌঁছে দেওয়ার পর সেগুলো এসে পৌঁছায়। খুব বড় পোস্ট শুধু সরাসরি যায়। সরাসরি পথের জন্য তাদের পরিচিতি হিসেবে যোগ করুন।</string>
 	<string name="grouptr_ttl_set_by_creator">এই গ্রুপে অদৃশ্য হওয়া বার্তা: %1$s। শুধু গ্রুপের মালিক এটি পরিবর্তন করতে পারেন।</string>
 	<string name="grouptr_sender_alias_format">%1$s (“%2$s” নামে পোস্ট করছেন)</string>
 	<string name="grouptr_sender_unverified_format">“%1$s” (আপনার পরিচিত কোনো নাম নয়)</string>
 	<string name="grouptr_member_out_of_reach">আপনার পরিচিতি নয়, আপনার পোস্ট পায় না</string>
+	<string name="grouptr_member_out_of_reach_owner">আপনার পরিচিতি নয়, 3.0.19 বা তার নতুন সংস্করণে গ্রুপের মালিকের মাধ্যমে পোস্ট পায়</string>
 	<string name="grouptr_member_invited">আমন্ত্রিত, উত্তরের অপেক্ষায়</string>
 	<string name="grouptr_confirm_revoke">%1$s-কে পাঠানো আমন্ত্রণ প্রত্যাহার করবেন? তার কাছ থেকে আসা উত্তর উপেক্ষা করা হবে।</string>
 	<string name="grouptr_revoke_invite">আমন্ত্রণ প্রত্যাহার করুন</string>
@@ -2377,6 +2385,8 @@
 	<string name="vault_msg_invalid_document">ডকুমেন্টের ID সঠিক নয়</string>
 	<string name="vault_msg_document_updated">ডকুমেন্ট আপডেট করা হয়েছে</string>
 	<string name="vault_msg_update_document_failed">ডকুমেন্ট আপডেট করা যায়নি</string>
+	<string name="vault_msg_saved_earlier_version_kept">আপনার পরিবর্তনগুলো সংরক্ষণ করা হয়েছে, তবে আগের সংস্করণটি সরানো যায়নি। আপনি তালিকা থেকে সেটি মুছে ফেলতে পারেন।</string>
+	<string name="vault_doc_password_needed_to_save">এই ডকুমেন্টটি একটি পাসওয়ার্ড দিয়ে সুরক্ষিত। আপনার পরিবর্তনগুলো সংরক্ষণ করতে সেই পাসওয়ার্ডটি লিখুন।</string>
 	<string name="vault_msg_save_password_failed">পাসওয়ার্ড সংরক্ষণ করা যায়নি</string>
 	<string name="vault_msg_note_title_empty">নোটের শিরোনাম খালি রাখা যাবে না</string>
 	<string name="vault_msg_saved">সংরক্ষণ করা হয়েছে</string>
@@ -2850,6 +2860,7 @@
 	<string name="requests_state_withdrawn">পৌঁছানোর পরে বাতিল করা হয়েছে</string>
 	<string name="requests_state_cancelled_by_sender">প্রেরক বাতিল করেছেন</string>
 	<string name="requests_state_contact_added">পরিচিতি যোগ করা হয়েছে</string>
+	<string name="requests_readd_needs_both_phones">%1$s-কে আবার যোগ করতে দুটি ফোনেই আবার যোগ করা প্রয়োজন। তাকে আপনার চ্যাট সেটিংস খুলে “সংযোগ ঠিক করতে পরিচিতিটি আবার যোগ করুন” বেছে নিতে বলুন, তারপর আবার চেষ্টা করুন।</string>
 	<string name="requests_open_chat">চ্যাট খুলুন</string>
 	<string name="requests_state_no_answer_yet">এখনও কোনো উত্তর নেই</string>
 	<string name="requests_notification_accepted">আপনার পরিচিতির অনুরোধ গ্রহণ করা হয়েছে</string>

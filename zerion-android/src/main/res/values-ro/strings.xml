@@ -662,7 +662,7 @@
 	<string name="i2p_toggle_summary">Rutare și prin rețeaua I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Conectivitate</string>
-	<string name="mesh_info_message">Mesajele sunt sigilate pentru destinatar și trec de la un telefon la altul prin Bluetooth. Activarea solicită permisiunile Bluetooth și pentru dispozitive din apropiere. Cu „Doar contacte”, telefonul dvs. se conectează doar cu telefoanele contactelor dvs., iar semnalul său Bluetooth nu poartă niciun marcaj fix al aplicației Zerion. Pentru aceasta, contactul are nevoie de Zerion 3.0.19 sau o versiune mai nouă, iar amândoi trebuie să fi fost online în același timp cel puțin o dată de la actualizare.</string>
+	<string name="mesh_info_message">Mesajele sunt sigilate pentru destinatar și trec de la un telefon la altul prin Bluetooth. Activarea solicită permisiunile Bluetooth și pentru dispozitive din apropiere. Cu „Doar contacte”, telefonul dvs. se conectează doar cu telefoanele contactelor dvs.; pentru oricine altcineva, semnalul său Bluetooth este un dispozitiv fără nume, cu un identificator schimbător pe care îl pot recunoaște doar contactele dvs. Pentru aceasta, contactul are nevoie de Zerion 3.0.19 sau o versiune mai nouă, iar amândoi trebuie să fi fost online în același timp cel puțin o dată de la actualizare.</string>
 	<string name="mesh_reach_title">Rețeaua mesh se conectează cu</string>
 	<string name="mesh_reach_contacts">Doar contacte</string>
 	<string name="mesh_reach_everyone">Orice telefon cu Zerion din apropiere</string>
@@ -815,6 +815,8 @@
 	<string name="vault_msg_invalid_document">ID de document invalid</string>
 	<string name="vault_msg_document_updated">Documentul a fost actualizat</string>
 	<string name="vault_msg_update_document_failed">Documentul nu a putut fi actualizat</string>
+	<string name="vault_msg_saved_earlier_version_kept">Modificările dvs. au fost salvate, dar versiunea anterioară nu a putut fi eliminată. O puteți șterge din listă.</string>
+	<string name="vault_doc_password_needed_to_save">Acest document este protejat cu o parolă. Introduceți acea parolă pentru a salva modificările.</string>
 	<string name="vault_msg_save_password_failed">Parola nu a putut fi salvată</string>
 	<string name="vault_msg_note_title_empty">Titlul notiței nu poate fi gol</string>
 	<string name="vault_msg_saved">Salvat</string>
@@ -926,6 +928,8 @@
 	<string name="browser_tor_get">Obțineți Tor Browser</string>
 	<string name="quick_reply_not_sent">Răspunsul nu a fost trimis. Deschideți conversația pentru a încerca din nou.</string>
 	<string name="link_unsupported">Link neacceptat</string>
+	<string name="link_host_other_alphabet">Adresa folosește litere dintr-un alt alfabet.</string>
+	<string name="link_host_other_alphabet_mark">(litere dintr-un alt alfabet)</string>
 	<string name="settings_support_summary">Ajutați ca Zerion să rămână gratuit și privat</string>
 	<string name="login_tagline">Mesagerie privată prin Tor</string>
 	<string name="setup_password_subtitle">Această parolă de criptare a contului este obligatorie. Ea protejează contul și baza de date locale criptate de pe acest dispozitiv. Alegeți o parolă puternică și unică.</string>
@@ -2404,10 +2408,17 @@
 	<string name="wallet_sp_enable_first">Activați mai întâi Silent Payments</string>
 	<string name="grouptr_reach_title">Cine vă primește postările</string>
 	<string name="grouptr_reach_explanation">Postările din grup circulă direct între membrii care sunt contacte unii ai altora, iar membrii nu transmit postările mai departe. Acești membri nu sunt contactele dvs., deci nu vă primesc postările și nici dvs. nu le primiți pe ale lor:\n\n%1$s\n\nAdăugați-i ca contacte pentru a ajunge la ei.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d membru nu este contactul dvs. Postările ajung la el prin telefonul proprietarului grupului dacă folosește versiunea 3.0.19 sau una mai nouă. Atingeți pentru detalii.</item>
+		<item quantity="few">%d membri nu sunt contactele dvs. Postările ajung la ei prin telefonul proprietarului grupului dacă folosesc versiunea 3.0.19 sau una mai nouă. Atingeți pentru detalii.</item>
+		<item quantity="other">%d de membri nu sunt contactele dvs. Postările ajung la ei prin telefonul proprietarului grupului dacă folosesc versiunea 3.0.19 sau una mai nouă. Atingeți pentru detalii.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Postările din grup circulă direct între membrii care sunt contacte unii ai altora. Acești membri nu sunt contactele dvs., deci telefonul proprietarului grupului le transmite postările dvs. și vă transmite postările lor, dacă folosesc versiunea 3.0.19 sau una mai nouă:\n\n%1$s\n\nPostările sosesc după ce telefonul proprietarului le-a transmis. Postările foarte mari circulă doar direct. Adăugați-i ca contacte pentru o cale directă.</string>
 	<string name="grouptr_ttl_set_by_creator">Mesaje care dispar în acest grup: %1$s. Doar proprietarul grupului poate modifica această setare.</string>
 	<string name="grouptr_sender_alias_format">%1$s (postează ca „%2$s”)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s” (nu este un nume cunoscut de dvs.)</string>
 	<string name="grouptr_member_out_of_reach">nu este contactul dvs., nu vă primește postările</string>
+	<string name="grouptr_member_out_of_reach_owner">nu este contactul dvs., accesibil prin proprietarul grupului cu versiunea 3.0.19 sau una mai nouă</string>
 	<string name="grouptr_member_invited">Invitat, se așteaptă un răspuns</string>
 	<string name="grouptr_confirm_revoke">Retrageți invitația trimisă către %1$s? Un eventual răspuns din partea acestei persoane va fi ignorat.</string>
 	<string name="grouptr_revoke_invite">Retrageți invitația</string>
@@ -2893,6 +2904,7 @@
 	<string name="requests_state_withdrawn">Anulată după livrare</string>
 	<string name="requests_state_cancelled_by_sender">Anulată de expeditor</string>
 	<string name="requests_state_contact_added">Contact adăugat</string>
+	<string name="requests_readd_needs_both_phones">Pentru a adăuga din nou pe %1$s, este nevoie de readăugare pe ambele telefoane. Rugați persoana să deschidă setările conversației cu dvs. și să aleagă „Adăugați din nou contactul pentru a repara conexiunea”, apoi încercați din nou.</string>
 	<string name="requests_open_chat">Deschideți conversația</string>
 	<string name="requests_state_no_answer_yet">Încă niciun răspuns</string>
 	<string name="requests_notification_accepted">Cererea ta de contact a fost acceptată</string>

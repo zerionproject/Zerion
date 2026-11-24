@@ -648,7 +648,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="i2p_toggle_summary">Encamina també a través de la xarxa I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Connectivitat</string>
-	<string name="mesh_info_message">Els missatges se segellen per al destinatari i passen de telèfon en telèfon per Bluetooth. Si actives aquesta opció, es demanen els permisos de Bluetooth i de dispositius propers. Amb «Només contactes», el teu telèfon es connecta només amb els telèfons dels teus contactes, i el seu senyal de Bluetooth no porta cap marca fixa de Zerion. Per a això, el contacte necessita Zerion 3.0.19 o posterior, i tots dos heu d\'haver estat en línia alhora almenys una vegada des de l\'actualització.</string>
+	<string name="mesh_info_message">Els missatges se segellen per al destinatari i passen de telèfon en telèfon per Bluetooth. Si actives aquesta opció, es demanen els permisos de Bluetooth i de dispositius propers. Amb «Només contactes», el teu telèfon es connecta només amb els telèfons dels teus contactes; per a qualsevol altra persona, el seu senyal de Bluetooth és un dispositiu sense nom amb un identificador canviant que només els teus contactes poden reconèixer. Per a això, el contacte necessita Zerion 3.0.19 o posterior, i tots dos heu d\'haver estat en línia alhora almenys una vegada des de l\'actualització.</string>
 	<string name="mesh_reach_title">La xarxa en malla es connecta amb</string>
 	<string name="mesh_reach_contacts">Només contactes</string>
 	<string name="mesh_reach_everyone">Tots els telèfons amb Zerion propers</string>
@@ -798,6 +798,8 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="browser_tor_get">Obtén el Tor Browser</string>
 	<string name="quick_reply_not_sent">No s\'ha enviat la resposta. Obre el xat per tornar-ho a provar.</string>
 	<string name="link_unsupported">Enllaç no compatible</string>
+	<string name="link_host_other_alphabet">L\'adreça fa servir lletres d\'un altre alfabet.</string>
+	<string name="link_host_other_alphabet_mark">(lletres d\'un altre alfabet)</string>
 	<string name="settings_support_summary">Ajuda a mantenir Zerion gratuït i privat</string>
 	<string name="login_tagline">Missatgeria privada a través de Tor</string>
 	<string name="setup_password_subtitle">Aquesta contrasenya de xifratge del compte és obligatòria. Protegeix el compte i la base de dades locals xifrats en aquest dispositiu. Tria\'n una de forta i única.</string>
@@ -2281,10 +2283,16 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="wallet_sp_enable_first">Primer activa Silent Payments</string>
 	<string name="grouptr_reach_title">A qui arriben les teves publicacions</string>
 	<string name="grouptr_reach_explanation">Les publicacions del grup viatgen directament entre membres que són contactes entre si, i els membres no les reenvien. Aquests membres no són contactes teus, així que no reben les teves publicacions i tu no reps les seves:\n\n%1$s\n\nAfegeix-los com a contactes per arribar-hi.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d membre no és contacte teu. Les publicacions li arriben a través del telèfon del propietari del grup si fa servir la versió 3.0.19 o posterior. Toca per veure\'n els detalls.</item>
+		<item quantity="other">%d membres no són contactes teus. Les publicacions els arriben a través del telèfon del propietari del grup si fan servir la versió 3.0.19 o posterior. Toca per veure\'n els detalls.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Les publicacions del grup viatgen directament entre membres que són contactes entre si. Aquests membres no són contactes teus, així que el telèfon del propietari del grup els passa les teves publicacions i et passa les seves, si fan servir la versió 3.0.19 o posterior:\n\n%1$s\n\nLes publicacions arriben quan el telèfon del propietari les ha passat. Les publicacions molt grans només viatgen directament. Afegeix-los com a contactes per tenir un camí directe.</string>
 	<string name="grouptr_ttl_set_by_creator">Missatges efímers en aquest grup: %1$s. Només el propietari del grup ho pot canviar.</string>
 	<string name="grouptr_sender_alias_format">%1$s (publica com a «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (no és un nom que coneguis)</string>
 	<string name="grouptr_member_out_of_reach">no és contacte teu, no rep les teves publicacions</string>
+	<string name="grouptr_member_out_of_reach_owner">no és contacte teu, s\'hi arriba a través del propietari del grup amb la versió 3.0.19 o posterior</string>
 	<string name="grouptr_member_invited">Convidat, a l\'espera de resposta</string>
 	<string name="grouptr_confirm_revoke">Vols retirar la invitació a %1$s? Si respon, s\'ignorarà la resposta.</string>
 	<string name="grouptr_revoke_invite">Retira la invitació</string>
@@ -2376,6 +2384,8 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="vault_msg_invalid_document">Identificador de document no vàlid</string>
 	<string name="vault_msg_document_updated">S\'ha actualitzat el document</string>
 	<string name="vault_msg_update_document_failed">No s\'ha pogut actualitzar el document</string>
+	<string name="vault_msg_saved_earlier_version_kept">Els canvis s\'han desat, però no s\'ha pogut eliminar la versió anterior. La pots suprimir de la llista.</string>
+	<string name="vault_doc_password_needed_to_save">Aquest document està protegit amb una contrasenya. Introdueix aquesta contrasenya per desar els canvis.</string>
 	<string name="vault_msg_save_password_failed">No s\'ha pogut desar la contrasenya</string>
 	<string name="vault_msg_note_title_empty">El títol de la nota no pot estar buit</string>
 	<string name="vault_msg_saved">S\'ha desat</string>
@@ -2849,6 +2859,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="requests_state_withdrawn">Cancel·lada després del lliurament</string>
 	<string name="requests_state_cancelled_by_sender">Cancel·lada pel remitent</string>
 	<string name="requests_state_contact_added">S\'ha afegit el contacte</string>
+	<string name="requests_readd_needs_both_phones">Per tornar a afegir %1$s cal fer-ho als dos telèfons. Demana-li que obri la configuració del teu xat i triï «Torna a afegir el contacte per reparar la connexió», i després torna-ho a provar.</string>
 	<string name="requests_open_chat">Obre el xat</string>
 	<string name="requests_state_no_answer_yet">Encara sense resposta</string>
 	<string name="requests_notification_accepted">S\'ha acceptat la teva sol·licitud de contacte</string>
