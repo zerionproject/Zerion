@@ -1,6 +1,7 @@
 package org.zerionproject.transport;
 
 import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.crypto.PrivateKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
@@ -92,6 +93,7 @@ public class RootKeyStore {
 			}
 			SecretKey pending = null;
 			SecretKey pendingConfirmKey = null;
+			SecretKey pendingIdKey = null;
 			boolean confirmed = false;
 			pen = db.getPcsMode2SessionState(txn, c,
 					PCS_SLOT_TRANSPORT_ROOT_PENDING);
@@ -103,10 +105,14 @@ public class RootKeyStore {
 				if ((flags & PENDING_FLAG_SEPARATED) != 0) {
 					pendingConfirmKey =
 							new SecretKey(pen.getChainKey().clone());
+					byte[] idKey = pen.getDhPrivateKey();
+					pendingIdKey = new SecretKey(idKey != null
+							&& idKey.length == SecretKey.LENGTH
+							? idKey.clone() : pen.getChainKey().clone());
 				}
 			}
 			return new ContactRootKeys(epoch, new SecretKey(current.clone()),
-					pending, pendingConfirmKey, confirmed);
+					pending, pendingConfirmKey, pendingIdKey, confirmed);
 		} finally {
 			wipe(base);
 			wipe(cur);
@@ -128,12 +134,24 @@ public class RootKeyStore {
 
 	public boolean storePending(ContactId c, long fromEpoch,
 			SecretKey pending, boolean confirmed) throws DbException {
-		return storePending(c, fromEpoch, pending, null, confirmed);
+		return storePending(c, fromEpoch, pending, null, null, confirmed);
 	}
 
+	/**
+	 * Stores a pending root. A version 3 root comes with its confirmation
+	 * key and its pending-id key, which are kept in the pending row (the
+	 * chain key and the private key columns, which no other reader of that
+	 * row uses) so that later connections can make and check the id and the
+	 * DONE without the material of the evolution. A version 2 root comes
+	 * with neither.
+	 */
 	public boolean storePending(ContactId c, long fromEpoch,
 			SecretKey pending, @Nullable SecretKey pendingConfirmKey,
-			boolean confirmed) throws DbException {
+			@Nullable SecretKey pendingIdKey, boolean confirmed)
+			throws DbException {
+		if ((pendingConfirmKey == null) != (pendingIdKey == null)) {
+			throw new IllegalArgumentException();
+		}
 		if (fromEpoch + 1 > Integer.MAX_VALUE) return false;
 		if (isSnapshotting()) return false;
 		boolean stored = db.transactionWithResult(false, txn -> {
@@ -147,7 +165,7 @@ public class RootKeyStore {
 						: 0);
 				writeSlot(txn, c, PCS_SLOT_TRANSPORT_ROOT_PENDING,
 						pendingConfirmKey != null ? pendingConfirmKey : pending,
-						pending, fromEpoch + 1, flags);
+						pending, pendingIdKey, fromEpoch + 1, flags);
 				return true;
 			} finally {
 				wipe(keys);
@@ -191,7 +209,7 @@ public class RootKeyStore {
 				SecretKey pending = keys.getPending();
 				if (pending == null) return false;
 				writeSlot(txn, c, PCS_SLOT_TRANSPORT_ROOT, pending, pending,
-						fromEpoch + 1, 0);
+						null, fromEpoch + 1, 0);
 				db.removePcsSessionState(txn, c,
 						PCS_SLOT_TRANSPORT_ROOT_PENDING);
 				return true;
@@ -393,18 +411,38 @@ public class RootKeyStore {
 	}
 
 	private void writeSlot(Transaction txn, ContactId c, int slot,
-			SecretKey chainKey, SecretKey root, long epoch, int flags)
-			throws DbException {
+			SecretKey chainKey, SecretKey root, @Nullable SecretKey idKey,
+			long epoch, int flags) throws DbException {
 		db.setPcsMode2SessionState(txn, c, slot, chainKey, (int) epoch,
-				flags, root, null, null, null, true, null);
+				flags, root, idKey == null ? null : new StoredKey(idKey),
+				null, null, true, null);
+	}
+
+	/**
+	 * Carries the pending-id key into the private key column of the pending
+	 * row. Only the bytes are stored; the type is not.
+	 */
+	private static final class StoredKey implements PrivateKey {
+
+		private final byte[] bytes;
+
+		private StoredKey(SecretKey key) {
+			this.bytes = key.getBytes();
+		}
+
+		@Override
+		public String getKeyType() {
+			return "org.zerionproject.transport/ROOT_PENDING_ID_KEY";
+		}
+
+		@Override
+		public byte[] getEncoded() {
+			return bytes;
+		}
 	}
 
 	private static void wipe(ContactRootKeys keys) {
-		keys.getCurrent().clear();
-		SecretKey pending = keys.getPending();
-		if (pending != null) pending.clear();
-		SecretKey pendingConfirmKey = keys.getPendingConfirmKey();
-		if (pendingConfirmKey != null) pendingConfirmKey.clear();
+		keys.clear();
 	}
 
 	void notifyChanged(ContactId c) {

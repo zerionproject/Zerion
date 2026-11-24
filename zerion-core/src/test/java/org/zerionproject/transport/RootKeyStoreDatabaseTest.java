@@ -128,7 +128,9 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 		RootKeyStore store = new RootKeyStore(db);
 		SecretKey root = getSecretKey();
 		SecretKey confirmKey = getSecretKey();
-		assertTrue(store.storePending(contact, 0, root, confirmKey, true));
+		SecretKey idKey = getSecretKey();
+		assertTrue(store.storePending(contact, 0, root, confirmKey, idKey,
+				true));
 		db.close();
 		db = HyperSqlDatabaseForTests.open(testDir, dbKey, new NoBus(),
 				messageFactory);
@@ -140,23 +142,43 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 		assertArrayEquals(root.getBytes(), keys.getPending().getBytes());
 		assertArrayEquals(confirmKey.getBytes(),
 				keys.getPendingConfirmKey().getBytes());
+		assertArrayEquals("the pending-id key survives a restart",
+				idKey.getBytes(), keys.getPendingIdKey().getBytes());
+		PcsSessionRow row = db.transactionWithResult(true, txn ->
+				db.getPcsMode2SessionState(txn, contact,
+						DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING));
+		assertArrayEquals(confirmKey.getBytes(), row.getChainKey());
+		assertArrayEquals(idKey.getBytes(), row.getDhPrivateKey());
 		assertTrue(store.promote(contact, 0));
 		keys = store.load(contact);
 		assertEquals(1, keys.getEpoch());
 		assertArrayEquals(root.getBytes(), keys.getCurrent().getBytes());
 		assertNull(keys.getPending());
 		assertNull(keys.getPendingConfirmKey());
+		assertNull(keys.getPendingIdKey());
+		row = db.transactionWithResult(true, txn ->
+				db.getPcsMode2SessionState(txn, contact,
+						DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT));
+		assertNull("the promoted root carries no id key", row.getDhPrivateKey());
 
 		SecretKey unproved = getSecretKey();
 		assertTrue(store.storePending(contact, 1, unproved, getSecretKey(),
-				false));
+				getSecretKey(), false));
 		keys = store.load(contact);
 		assertTrue(keys.isPendingSeparated());
+		assertNotNull(keys.getPendingIdKey());
 		assertFalse(keys.isPendingConfirmed());
 		assertTrue(store.storePending(contact, 1, getSecretKey(), false));
 		keys = store.load(contact);
 		assertFalse("a version 2 pending root replaces the confirm key",
 				keys.isPendingSeparated());
+		assertNull(keys.getPendingIdKey());
+		try {
+			store.storePending(contact, 1, getSecretKey(), getSecretKey(),
+					null, false);
+			org.junit.Assert.fail();
+		} catch (IllegalArgumentException expected) {
+		}
 	}
 
 	@Test
@@ -173,6 +195,7 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 			assertArrayEquals(pending.getBytes(), keys.getPending().getBytes());
 			assertFalse(keys.isPendingSeparated());
 			assertNull(keys.getPendingConfirmKey());
+			assertNull(keys.getPendingIdKey());
 			assertEquals(confirmed == 1, keys.isPendingConfirmed());
 		}
 	}
@@ -183,14 +206,22 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 		RootKeyStore store = new RootKeyStore(db);
 		SecretKey root = getSecretKey();
 		SecretKey confirmKey = getSecretKey();
+		SecretKey idKey = getSecretKey();
 		byte[] rootCopy = root.getBytes().clone();
 		byte[] confirmCopy = confirmKey.getBytes().clone();
-		assertTrue(store.storePending(contact, 0, root, confirmKey, true));
+		byte[] idCopy = idKey.getBytes().clone();
+		assertTrue(store.storePending(contact, 0, root, confirmKey, idKey,
+				true));
 		root.clear();
 		confirmKey.clear();
+		idKey.clear();
 		ContactRootKeys keys = store.load(contact);
 		assertArrayEquals(rootCopy, keys.getPending().getBytes());
 		assertArrayEquals(confirmCopy, keys.getPendingConfirmKey().getBytes());
+		assertArrayEquals(idCopy, keys.getPendingIdKey().getBytes());
+		keys.clear();
+		keys = store.load(contact);
+		assertArrayEquals(idCopy, keys.getPendingIdKey().getBytes());
 		keys.getPending().clear();
 		keys.getCurrent().clear();
 		assertTrue(store.promote(contact, 0));

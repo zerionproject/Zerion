@@ -4,7 +4,6 @@ import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.connection.InterruptibleConnection;
 import org.zerionproject.core.api.contact.ContactId;
-import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.sync.Priority;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -338,11 +337,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	}
 
 	private static void wipe(ContactRootKeys keys) {
-		keys.getCurrent().clear();
-		SecretKey pending = keys.getPending();
-		if (pending != null) pending.clear();
-		SecretKey pendingConfirmKey = keys.getPendingConfirmKey();
-		if (pendingConfirmKey != null) pendingConfirmKey.clear();
+		keys.clear();
 	}
 
 	private static byte[] peekTag(BufferedInputStream in) throws IOException {

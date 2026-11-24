@@ -243,11 +243,7 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 				tagKeys.put(e, sessionFactory.deriveRecvTagKey(root, e, alice));
 			}
 		}
-		keys.getCurrent().clear();
-		SecretKey pending = keys.getPending();
-		if (pending != null) pending.clear();
-		SecretKey pendingConfirmKey = keys.getPendingConfirmKey();
-		if (pendingConfirmKey != null) pendingConfirmKey.clear();
+		keys.clear();
 		long recvHighWater = counter.currentRecvHighWater(cid.getInt());
 		recogniser.register(cid.getInt(), tagKeys, recvHighWater);
 	}

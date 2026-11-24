@@ -109,6 +109,7 @@ final class RootEvolutionTestBed {
 		private final Map<Integer, byte[]> pending = new HashMap<>();
 		private final Map<Integer, byte[]> pendingConfirmKeys =
 				new HashMap<>();
+		private final Map<Integer, byte[]> pendingIdKeys = new HashMap<>();
 		private final Map<Integer, Boolean> confirmed = new HashMap<>();
 		volatile boolean paused = false;
 		final AtomicInteger pendingStores = new AtomicInteger();
@@ -127,6 +128,9 @@ final class RootEvolutionTestBed {
 			SecretKey pc = keys.getPendingConfirmKey();
 			if (pc == null) pendingConfirmKeys.remove(c.getInt());
 			else pendingConfirmKeys.put(c.getInt(), pc.getBytes().clone());
+			SecretKey pi = keys.getPendingIdKey();
+			if (pi == null) pendingIdKeys.remove(c.getInt());
+			else pendingIdKeys.put(c.getInt(), pi.getBytes().clone());
 			confirmed.put(c.getInt(), keys.isPendingConfirmed());
 		}
 
@@ -137,16 +141,22 @@ final class RootEvolutionTestBed {
 			if (e == null) return null;
 			byte[] p = pending.get(c.getInt());
 			byte[] pc = p == null ? null : pendingConfirmKeys.get(c.getInt());
+			byte[] pi = p == null ? null : pendingIdKeys.get(c.getInt());
 			return new ContactRootKeys(e[0],
 					new SecretKey(current.get(c.getInt()).clone()),
 					p == null ? null : new SecretKey(p.clone()),
 					pc == null ? null : new SecretKey(pc.clone()),
+					pi == null ? null : new SecretKey(pi.clone()),
 					Boolean.TRUE.equals(confirmed.get(c.getInt())));
 		}
 
 		@Override
 		public boolean storePending(ContactId c, long fromEpoch,
-				SecretKey key, @Nullable SecretKey confirmKey, boolean conf) {
+				SecretKey key, @Nullable SecretKey confirmKey,
+				@Nullable SecretKey idKey, boolean conf) {
+			if ((confirmKey == null) != (idKey == null)) {
+				throw new IllegalArgumentException();
+			}
 			synchronized (this) {
 				long[] e = epochs.get(c.getInt());
 				if (e == null || e[0] != fromEpoch) return false;
@@ -154,6 +164,8 @@ final class RootEvolutionTestBed {
 				if (confirmKey == null) pendingConfirmKeys.remove(c.getInt());
 				else pendingConfirmKeys.put(c.getInt(),
 						confirmKey.getBytes().clone());
+				if (idKey == null) pendingIdKeys.remove(c.getInt());
+				else pendingIdKeys.put(c.getInt(), idKey.getBytes().clone());
 				confirmed.put(c.getInt(), conf);
 				pendingStores.incrementAndGet();
 			}
@@ -168,6 +180,7 @@ final class RootEvolutionTestBed {
 				if (e == null || e[0] != fromEpoch) return false;
 				if (pending.remove(c.getInt()) == null) return false;
 				pendingConfirmKeys.remove(c.getInt());
+				pendingIdKeys.remove(c.getInt());
 				confirmed.put(c.getInt(), false);
 			}
 			notifyChanged(c);
@@ -182,6 +195,7 @@ final class RootEvolutionTestBed {
 				byte[] p = pending.remove(c.getInt());
 				if (p == null) return false;
 				pendingConfirmKeys.remove(c.getInt());
+				pendingIdKeys.remove(c.getInt());
 				e[0] = fromEpoch + 1;
 				current.put(c.getInt(), p);
 				confirmed.put(c.getInt(), false);
