@@ -21,8 +21,12 @@ case "$ABI" in
 esac
 IMAGE="${2:-zerion-monero-build:v0.18.5.4}"
 
-cd "$(dirname "$0")"
+CDPATH= cd -- "$(dirname -- "$0")"
 mkdir -p out
+
+# Git Bash on Windows would rewrite the mount argument as a path list.
+MSYS_NO_PATHCONV=1
+export MSYS_NO_PATHCONV
 
 exec docker run --rm --cap-drop=ALL --security-opt=no-new-privileges \
   -e "ABI=$ABI" -v "$PWD/out:/build/out" "$IMAGE"
