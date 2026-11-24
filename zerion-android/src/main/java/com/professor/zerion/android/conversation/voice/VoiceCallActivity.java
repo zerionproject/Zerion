@@ -708,7 +708,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private void endCall() {
 		if (isBound && voiceCallService != null) {
 			try {
-				voiceCallService.endCall();
+				voiceCallService.hangUp();
 			} catch (Exception e) {
 			}
 		}
@@ -1433,7 +1433,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 				voiceCallService.acceptVideoOffer(generation);
 			} else {
-				voiceCallService.rejectVideoOffer(generation);
+				voiceCallService.refuseVideoOfferWithoutCamera(generation);
 			}
 		}
 	}

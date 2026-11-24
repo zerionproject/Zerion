@@ -4,6 +4,7 @@ import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.client.ContactGroupFactory;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.PrivateKey;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
@@ -27,12 +28,17 @@ import org.zerionproject.app.api.autodelete.AutoDeleteManager;
 import org.zerionproject.app.api.client.MessageTracker;
 import org.zerionproject.app.api.client.SessionId;
 import org.zerionproject.app.api.conversation.ConversationManager;
+import org.zerionproject.app.api.identity.AuthorInfo;
 import org.zerionproject.app.api.identity.AuthorManager;
 import org.jmock.Expectations;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
+
+import javax.annotation.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -50,10 +56,17 @@ import static org.zerionproject.core.test.TestUtils.getRandomId;
 import static org.zerionproject.core.test.TestUtils.getSecretKey;
 import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 import static org.zerionproject.app.introduction.IntroduceeState.AWAIT_ACTIVATE;
+import static org.zerionproject.app.api.introduction.IntroductionManager.CLIENT_ID;
+import static org.zerionproject.app.api.introduction.IntroductionManager.MAJOR_VERSION;
 import static org.zerionproject.app.introduction.IntroduceeState.AWAIT_AUTH;
+import static org.zerionproject.app.introduction.IntroduceeState.AWAIT_RESPONSES;
+import static org.zerionproject.app.introduction.IntroduceeState.LOCAL_DECLINED;
+import static org.zerionproject.app.introduction.IntroduceeState.REMOTE_ACCEPTED;
 import static org.zerionproject.app.introduction.IntroduceeState.START;
 import static org.zerionproject.app.introduction.MessageType.ABORT;
+import static org.zerionproject.app.introduction.MessageType.ACCEPT;
 import static org.zerionproject.app.introduction.MessageType.ACTIVATE;
+import static org.zerionproject.app.introduction.MessageType.DECLINE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -124,13 +137,15 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 	private final SecretKey peerMacKey = getSecretKey();
 	private final SecretKey finalMasterKey = getSecretKey();
 
+	private final List<MessageId> marked = new ArrayList<>();
+
 	private final IntroduceeProtocolEngine engine =
 			new IntroduceeProtocolEngine(db, clientHelper, contactManager,
 					contactGroupFactory, messageTracker, identityManager,
 					authorManager, messageParser, messageEncoder, crypto,
 					keyManager, transportPropertyManager,
 					clientVersioningManager, autoDeleteManager,
-					conversationManager, clock);
+					conversationManager, clock, marked::add);
 
 	@Test
 	public void testDoesNotAbortSessionIfTimestampIsMaxAge() throws Exception {
@@ -327,6 +342,142 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 				engine.onAuthMessage(txn, session, classical);
 		assertEquals(START, after.getState());
 		assertNull(after.getMasterKey());
+	}
+
+	@Test
+	public void aDeclineTheUserChoosesIsMarked() throws Exception {
+		Transaction txn = new Transaction(null, false);
+		Message decline = getMessage(contactGroupId, 123, now);
+		expectAnswerSetUp(txn, 1);
+		expectDecline(txn, decline, false);
+
+		IntroduceeSession after = engine.onDeclineAction(txn,
+				answerableSession(AWAIT_RESPONSES, null), false);
+
+		assertEquals(LOCAL_DECLINED, after.getState());
+		assertEquals(Collections.singletonList(decline.getId()), marked);
+	}
+
+	@Test
+	public void anAutomaticDeclineIsNotMarked() throws Exception {
+		Transaction txn = new Transaction(null, false);
+		Message decline = getMessage(contactGroupId, 123, now);
+		expectAnswerSetUp(txn, 1);
+		expectDecline(txn, decline, true);
+		context.checking(new Expectations() {{
+			oneOf(authorManager).getAuthorInfo(txn, remoteIntroducee.getId());
+			will(returnValue(new AuthorInfo(AuthorInfo.Status.UNKNOWN)));
+		}});
+
+		IntroduceeSession after = engine.onDeclineAction(txn,
+				answerableSession(AWAIT_RESPONSES, null), true);
+
+		assertEquals(LOCAL_DECLINED, after.getState());
+		assertEquals(decline.getId(), after.getLocal().lastMessageId);
+		assertEquals(Collections.emptyList(), marked);
+	}
+
+	@Test
+	public void anAcceptTheUserChoosesIsMarkedButNotTheStepThatFollows()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		Message accept = getMessage(contactGroupId, 123, now);
+		Message abort = getMessage(contactGroupId, 123, now + 1);
+		BdfDictionary acceptMeta = new BdfDictionary();
+		BdfDictionary abortMeta = new BdfDictionary();
+		byte[] localMlDsa = getRandomBytes(32);
+		byte[] localMlKemPub = getRandomBytes(32);
+		expectAnswerSetUp(txn, 2);
+		context.checking(new Expectations() {{
+			oneOf(crypto).generateAgreementKeyPair();
+			will(returnValue(new KeyPair(localPublicKey, localPrivateKey)));
+			oneOf(crypto).generateMlKemEphemeralKeyPair();
+			will(returnValue(new byte[][] {localMlKemPriv, localMlKemPub}));
+			oneOf(transportPropertyManager).getLocalProperties(txn);
+			will(returnValue(emptyMap()));
+			oneOf(identityManager).getLocalMlDsaSigPublicKey(txn);
+			will(returnValue(localMlDsa));
+			oneOf(messageEncoder).encodeAcceptMessage(contactGroupId, now,
+					null, sessionId, localPublicKey, now, emptyMap(),
+					NO_AUTO_DELETE_TIMER, localMlDsa, localMlKemPub);
+			will(returnValue(accept));
+			oneOf(messageEncoder).encodeMetadata(ACCEPT, sessionId, now,
+					true, true, true, NO_AUTO_DELETE_TIMER, false);
+			will(returnValue(acceptMeta));
+			oneOf(clientHelper).addLocalMessage(txn, accept, acceptMeta,
+					true, false);
+			oneOf(conversationManager).trackOutgoingMessage(txn, accept);
+			oneOf(clock).currentTimeMillis();
+			will(returnValue(now));
+			oneOf(messageEncoder).encodeAbortMessage(contactGroupId, now + 1,
+					accept.getId(), sessionId);
+			will(returnValue(abort));
+			oneOf(messageEncoder).encodeMetadata(ABORT, sessionId, now + 1,
+					true, true, false, NO_AUTO_DELETE_TIMER, false);
+			will(returnValue(abortMeta));
+			oneOf(clientHelper).addLocalMessage(txn, abort, abortMeta, true,
+					false);
+		}});
+
+		IntroduceeSession after = engine.onAcceptAction(txn,
+				answerableSession(REMOTE_ACCEPTED, remotePublicKey));
+
+		assertEquals(START, after.getState());
+		assertEquals("the step the app adds by itself is the last one sent",
+				abort.getId(), after.getLocal().lastMessageId);
+		assertEquals(Collections.singletonList(accept.getId()), marked);
+	}
+
+	private void expectAnswerSetUp(Transaction txn, int requestScans)
+			throws Exception {
+		BdfDictionary query = new BdfDictionary();
+		context.checking(new Expectations() {{
+			exactly(requestScans).of(messageParser)
+					.getRequestsAvailableToAnswerQuery(sessionId);
+			will(returnValue(query));
+			exactly(requestScans).of(clientHelper).getMessageIds(txn,
+					contactGroupId, query);
+			will(returnValue(emptyList()));
+			allowing(clientHelper).getContactId(txn, contactGroupId);
+			will(returnValue(contactId));
+			oneOf(conversationManager).getTimestampForOutgoingMessage(txn,
+					contactId);
+			will(returnValue(now));
+			oneOf(clientVersioningManager).getClientMinorVersion(txn,
+					contactId, CLIENT_ID, MAJOR_VERSION);
+			will(returnValue(1));
+			oneOf(autoDeleteManager).getAutoDeleteTimer(txn, contactId, now);
+			will(returnValue(NO_AUTO_DELETE_TIMER));
+		}});
+	}
+
+	private void expectDecline(Transaction txn, Message decline,
+			boolean automatic) throws Exception {
+		BdfDictionary declineMeta = new BdfDictionary();
+		context.checking(new Expectations() {{
+			oneOf(messageEncoder).encodeDeclineMessage(contactGroupId, now,
+					null, sessionId, NO_AUTO_DELETE_TIMER);
+			will(returnValue(decline));
+			oneOf(messageEncoder).encodeMetadata(DECLINE, sessionId, now,
+					true, true, true, NO_AUTO_DELETE_TIMER, automatic);
+			will(returnValue(declineMeta));
+			oneOf(clientHelper).addLocalMessage(txn, decline, declineMeta,
+					true, false);
+			oneOf(conversationManager).trackOutgoingMessage(txn, decline);
+		}});
+	}
+
+	private IntroduceeSession answerableSession(IntroduceeState state,
+			@Nullable PublicKey remoteEphemeralKey) {
+		IntroduceeSession.Local local = new IntroduceeSession.Local(alice,
+				null, -1, null, null, null, -1, null, null);
+		IntroduceeSession.Remote remote = new IntroduceeSession.Remote(!alice,
+				remoteIntroducee, lastRemoteMessageId, remoteEphemeralKey,
+				remoteEphemeralKey == null ? null : emptyMap(),
+				remoteEphemeralKey == null ? -1 : requestTimestamp + 1, null,
+				null);
+		return new IntroduceeSession(sessionId, state, requestTimestamp,
+				contactGroupId, introducer, local, remote, null, null);
 	}
 
 	private IntroduceeSession createAwaitAuthSession(

@@ -89,6 +89,19 @@ final class GroupTrTestNode {
 		}
 	}
 
+	private static final class Timer {
+
+		private final Runnable task;
+		private final long delay;
+		private final long dueAt;
+
+		private Timer(Runnable task, long delay, long dueAt) {
+			this.task = task;
+			this.delay = delay;
+			this.dueAt = dueAt;
+		}
+	}
+
 	private interface Handler {
 		@Nullable
 		Object handle(String name, Object[] args) throws Exception;
@@ -132,7 +145,7 @@ final class GroupTrTestNode {
 	private final Set<MessageId> acknowledgedCopies = new HashSet<>();
 	boolean failBroadcasts = false;
 	boolean deferTimers = false;
-	private final List<Runnable> timers = new ArrayList<>();
+	private final List<Timer> timers = new ArrayList<>();
 	private final boolean deferIo;
 	private int txnDepth = 0;
 	private boolean writeTxn = false;
@@ -183,8 +196,14 @@ final class GroupTrTestNode {
 				fake(Clock.class, (name, args) -> now),
 				fake(org.zerionproject.core.api.system.TaskScheduler.class,
 						(name, args) -> {
-							if (deferTimers) timers.add((Runnable) args[0]);
-							else ((Runnable) args[0]).run();
+							if (deferTimers) {
+								long delay = ((java.util.concurrent.TimeUnit)
+										args[3]).toMillis((Long) args[2]);
+								timers.add(new Timer((Runnable) args[0],
+										delay, now + delay));
+							} else {
+								((Runnable) args[0]).run();
+							}
 							return null;
 						}),
 				userMessages::add);
@@ -242,9 +261,24 @@ final class GroupTrTestNode {
 	}
 
 	void runTimers() {
-		List<Runnable> run = new ArrayList<>(timers);
+		List<Timer> run = new ArrayList<>(timers);
 		timers.clear();
-		for (Runnable r : run) r.run();
+		for (Timer t : run) t.task.run();
+	}
+
+	void runDueTimers() {
+		List<Timer> due = new ArrayList<>();
+		for (Timer t : timers) {
+			if (t.dueAt <= now) due.add(t);
+		}
+		timers.removeAll(due);
+		for (Timer t : due) t.task.run();
+	}
+
+	List<Long> waitingTimerDelays() {
+		List<Long> delays = new ArrayList<>();
+		for (Timer t : timers) delays.add(t.delay);
+		return delays;
 	}
 
 	void runDeferred() {

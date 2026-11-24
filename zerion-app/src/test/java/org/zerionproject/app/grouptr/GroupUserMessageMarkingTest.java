@@ -51,11 +51,14 @@ public class GroupUserMessageMarkingTest {
 	public void aPostIsMarkedButTheSettingHandedOnIsNot()
 			throws Exception {
 		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
 		ContactId fromCreator = node.addContact(creatorKey);
 		ContactId a = node.addContact(aKey);
 		int before = node.copiesTo(a).size();
 		node.userMessages.clear();
 		settings(node, fromCreator, DAY, 10L, SIG);
+		node.now += GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS;
+		node.runDueTimers();
 
 		node.manager.sendGroupPost(groupId, "one".getBytes("UTF-8"), 0L);
 
@@ -81,6 +84,38 @@ public class GroupUserMessageMarkingTest {
 	}
 
 	@Test
+	public void noHandOverOfTheSettingIsMarked() throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		node.announceMinorVersion(b, 15);
+		node.manager.getRecentPosts(groupId);
+
+		settings(node, fromCreator, DAY, 10L, SIG);
+		connected(node, a);
+		assertEquals("handed over at the connection", 1,
+				settingsTo(node, a));
+		node.versionUpdated(b, 16);
+		assertEquals("handed over at the update", 1, settingsTo(node, b));
+
+		settings(node, fromCreator, DAY / 2, 20L, SIG);
+		node.now += GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS;
+		node.runDueTimers();
+		assertEquals("handed on by the pass after receipt", 2,
+				settingsTo(node, a));
+		assertEquals(2, settingsTo(node, b));
+
+		node.receive(a, groupId, aKey, EPOCH, "one".getBytes("UTF-8"),
+				node.now, 0L, SIG);
+		assertEquals("sent in answer to a post without the timer", 3,
+				settingsTo(node, a));
+
+		assertTrue(node.userMessages.isEmpty());
+	}
+
+	@Test
 	public void answeringAMemberWhoIsBehindMarksNothing() throws Exception {
 		GroupTrTestNode node = ownerDevice();
 		ContactId a = node.addContact(aKey);
@@ -98,6 +133,20 @@ public class GroupUserMessageMarkingTest {
 		assertEquals(SETTINGS, (long) recordsTo(node, a).get(0).body
 				.getLong(0));
 		assertTrue(node.userMessages.isEmpty());
+	}
+
+	private static void connected(GroupTrTestNode node, ContactId c) {
+		node.manager.eventOccurred(new org.zerionproject.core.api.plugin
+				.event.ContactConnectedEvent(c));
+	}
+
+	private static int settingsTo(GroupTrTestNode node, ContactId to)
+			throws Exception {
+		int count = 0;
+		for (GroupTrTestNode.Sent s : recordsTo(node, to)) {
+			if (s.body.getLong(0) == SETTINGS) count++;
+		}
+		return count;
 	}
 
 	private void settings(GroupTrTestNode node, ContactId from, long timer,

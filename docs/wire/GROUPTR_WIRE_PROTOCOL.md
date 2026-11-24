@@ -106,9 +106,10 @@ the creator for nothing. See "Who receives a post".
 
 Minor version 16 (Android 3.0.19, `GROUP_SETTINGS_RELAY_MIN_VERSION`) changes
 no record format: a member on it takes the creator's settings record (46)
-also from another member and hands it on to each fellow member once, as soon
-as it holds it, without waiting for a post (see msgType 46). The same version
-adds the mesh link keys record to one-to-one chats (type 16, "Contacts only
+also from another member and hands it on to each fellow member once, a short
+random delay after it took it, without waiting for a post (see msgType 46).
+The same version adds the mesh link keys record to one-to-one chats (type 16,
+"Contacts only
 mode" in [MESH-TRANSPORT.md](../protocol/MESH-TRANSPORT.md)). Minor version 15
 adds pinned messages (msgType 59 and the one-to-one pin record).
 
@@ -674,19 +675,37 @@ copy the creator sends:
 
 - A member keeps the creator's signature with the setting (settings key
   `settingsSig`) and passes the record on unchanged, once per setting and
-  fellow member, without waiting for a post: as soon as it takes the record,
-  to every fellow member it reaches as a contact; to a fellow member it
-  could not send it to then (not yet a contact, or on an earlier version)
-  the next time that contact connects or reaches version 16; and with its
-  next post to anyone still missing. It notes per group which contacts were
-  sent the setting in force (settings key `settingsSentTo`: the setting's
-  timestamp followed by the contact ids; ids of contacts that are no longer
-  members drop out whenever the note is written, and a newer setting starts
-  it afresh, so it never holds more ids than the group has members). The
-  contact the record came from counts as sent. The record is also sent,
-  regardless of that note, to a member whose post arrives signed with a
-  timer other than the group's. The creator answers such a post the same
-  way with a record it signs again over the same timestamp. A device that
+  fellow member, without waiting for a post, on four occasions:
+  - A short random delay after it took the record, 30 to 120 seconds, it
+    sends the record to every fellow member it reaches as a contact and
+    has not sent it to yet. There is at most one such pass per group per
+    ten minutes: a pass already waiting for the group is not planned a
+    second time, a record that arrives less than ten minutes after the
+    group's previous pass waits until those ten minutes are over, and a
+    pass hands on the record the device holds when it runs, so of several
+    records that arrived in the meantime only the newest is sent. The
+    delay spreads the copies of the members of a group over time, and the
+    ten minutes bound what a creator who changes the timer again and
+    again can make every member send. The plan is kept in memory only;
+    after a restart the next occasion covers the members still missing.
+  - To a fellow member it has not sent the record to (not yet a contact
+    or not yet a member at the time of the pass, or the app was closed
+    before the pass ran) the next time that contact connects.
+  - To a fellow member on an earlier version when that contact reaches
+    version 16.
+  - In answer to a post that arrives signed with a timer other than the
+    group's, regardless of the note below.
+
+  It notes per group which contacts were sent the setting in force
+  (settings key `settingsSentTo`: the setting's timestamp followed by the
+  contact ids; ids of contacts that are no longer members drop out
+  whenever a pass or a hand-over writes the note, and a newer setting
+  starts it afresh, so it never holds more ids than the group has
+  members). The contact the record came from counts as sent and is noted
+  together with the record. A connection of a contact that is already
+  noted costs one read of the group's settings and no write. Sending a
+  post hands nothing on. The creator answers a post without the timer the
+  same way with a record it signs again over the same timestamp. A device that
   is handed a record older than the one it holds answers with the one it
   holds. The answers to a post and to an older record are limited to one
   per ten minutes per member and setting (the limit is kept in memory and
