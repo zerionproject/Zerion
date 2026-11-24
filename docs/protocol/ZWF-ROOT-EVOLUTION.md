@@ -46,12 +46,13 @@ epoch above 0 and the pending root are kept in rows of their own
 
 Every change checks, in the same transaction, the epoch it starts from, so two
 connections to the same contact never interleave two changes. A version 3 pending root is stored with
-its confirmation key (in the `chainKey` column of the pending row, with bit 1
-of `previousChainLength` set; bit 0 is the proved flag, as before), so that a
-later connection can still make and check its pending-root id and its DONE.
-A row written by an earlier release has neither bit 1 nor a separate key and
-reads as version 2. The confirmation key is deleted with the pending row when
-the root is promoted or dropped. Bob's pending
+its confirmation key and its pending-id key (in the `chainKey` and the
+`dhPrivateKey` columns of the pending row, which nothing else reads for that
+row, with bit 1 of `previousChainLength` set; bit 0 is the proved flag, as
+before), so that a later connection can still make and check its pending-root
+id and its DONE. A row written by an earlier release has neither bit 1 nor
+separate keys and reads as version 2. Both keys are deleted with the pending
+row when the root is promoted or dropped. Bob's pending
 root is always unproved by Alice (he stores it before Alice has seen it);
 Alice's pending root is always proved by Bob (she stores it only after
 checking his proof). While a copy of the database is being written
@@ -74,37 +75,47 @@ dh            = H("org.zerionproject.transport/ROOT_EVOLVE_DH_V1",
 root(e + 1)   = KDF("org.zerionproject.transport/ROOT_EVOLVE_V1", chain(e),
                   u64(e + 1), ss, dh, transcript)
 confirm(e+1)  = KDF("org.zerionproject.transport/ROOT_EVOLVE_CONFIRM_KEY_V1", root(e + 1))      version 2
+idkey(e+1)    = confirm(e + 1)                                                             version 2
 confirm(e+1)  = KDF("org.zerionproject.transport/ROOT_EVOLVE_CONFIRM_KEY_V3", chain(e),
+                  u64(e + 1), ss, dh, transcript)                                          version 3
+idkey(e+1)    = KDF("org.zerionproject.transport/ROOT_PENDING_ID_KEY_V3", chain(e),
                   u64(e + 1), ss, dh, transcript)                                          version 3
 ```
 
 The transcript's first input is the record version byte of the evolution
 (`0x02` or `0x03`), so the two versions never produce the same root from the
-same exchange. In version 3 `root(e + 1)` and `confirm(e + 1)` are two
-outputs of the same keyed KDF over the same material under distinct labels:
-holding one gives nothing about the other, and `root(e + 1)` is not an input
-of any MAC sent in the evolution records. `ss` is the
+same exchange. In version 3 `root(e + 1)`, `confirm(e + 1)` and
+`idkey(e + 1)` are three outputs of the same keyed KDF over the same material
+under distinct labels: holding one gives nothing about the others, and
+`root(e + 1)` is not an input of any MAC sent in the evolution records. The
+confirmation key is used only inside the evolution that produces the root
+(RESP, CONFIRM, DONE); the pending-id key is used on every later connection
+while the root is pending (HELLO, INIT), so the two have keys of their own
+and neither of them is used across both. In version 2 the id is a MAC under
+the confirmation key, as in earlier releases. `ss` is the
 ML-KEM-768 shared secret Bob encapsulates to Alice's ephemeral encapsulation
 key `ek_A`; `ct` is its ciphertext. `x25519_A` and `x25519_B` are ephemeral
 X25519 public keys. The new root therefore depends on the previous root and on
 fresh classical and post-quantum secrets that a party holding only the
 previous root cannot compute.
 
-The proofs are MACs of `u64(e + 1)` under `confirm(e + 1)`:
+The proofs are MACs of `u64(e + 1)` under `confirm(e + 1)`, the pending-root
+id a MAC of `u64(e + 1)` under `idkey(e + 1)`:
 
-| Proof | Label |
-| --- | --- |
-| Bob's confirmation (RESP) | `org.zerionproject.transport/ROOT_EVOLVE_RESPONDER_CONFIRM_V1` |
-| Alice's confirmation (CONFIRM) | `org.zerionproject.transport/ROOT_EVOLVE_INITIATOR_CONFIRM_V1` |
-| Bob's completion (DONE) | `org.zerionproject.transport/ROOT_EVOLVE_RESPONDER_DONE_V1` |
-| Pending-root id (HELLO, INIT) | `org.zerionproject.transport/ROOT_PENDING_ID_V1` |
+| Proof | Key | Label |
+| --- | --- | --- |
+| Bob's confirmation (RESP) | `confirm(e + 1)` | `org.zerionproject.transport/ROOT_EVOLVE_RESPONDER_CONFIRM_V1` |
+| Alice's confirmation (CONFIRM) | `confirm(e + 1)` | `org.zerionproject.transport/ROOT_EVOLVE_INITIATOR_CONFIRM_V1` |
+| Bob's completion (DONE) | `confirm(e + 1)` | `org.zerionproject.transport/ROOT_EVOLVE_RESPONDER_DONE_V1` |
+| Pending-root id (HELLO, INIT) | `idkey(e + 1)` | `org.zerionproject.transport/ROOT_PENDING_ID_V1` |
 
 **Domain separation.** The root of an epoch above 0 is never used directly as
 a MAC or KDF key for two purposes: the transport keys come from
-`transport(e)`, the next root from `chain(e)`, and the proofs from
-`confirm(e + 1)`. In version 2 `confirm(e + 1)` is a subkey of the new root,
-so the new root is an input of the proofs of its own evolution; version 3
-removes that. The ZWF direction keys of epoch `e` are
+`transport(e)`, the next root from `chain(e)`, the proofs from
+`confirm(e + 1)` and the pending-root id from `idkey(e + 1)`. In version 2
+`confirm(e + 1)` is a subkey of the new root, so the new root is an input of
+the proofs of its own evolution, and the pending-root id is under the same
+subkey; version 3 removes both. The ZWF direction keys of epoch `e` are
 `KDF(DIR_{A,B}_{ROOT,TAG,HEADER}, transport(e))`. Epoch 0 keeps the direction
 keys from the pairing root itself, which is what peers without root evolution
 use; the pairing root's other uses are one-shot pairing MACs under labels of
@@ -235,7 +246,12 @@ cannot change its flags.
   arrived `EVOLUTION_DEADLINE_MS` (30 seconds) after the connection
   started. Records are not even taken from the store
   before that, so nothing is marked as sent that never left. A party that
-  holds back one direction from the first frame therefore stops both.
+  holds back one direction from the first frame therefore stops both. Such a
+  connection, if the peer's stream authenticated on it, counts as a stalled
+  connection (see "Renewal that does not complete") whether or not the peer
+  ever sent flag `0x04`: the greeting was owed, and without it the connection
+  says nothing about the peer's keys, so it does not clear the out-of-sync
+  mark either. A HELLO without the flag releases the hold and is no stall.
 - **Due.** An evolution with a contact is due when
   `MIN_EVOLUTION_INTERVAL_MS` (ten minutes) or more have passed since this
   side last made a new root current with that contact, when it never did, or
@@ -380,7 +396,14 @@ Bob having removed the contact while his old address still answers, which
 shows the same mark (the in-app notice names both causes), or six
 connections in a row lost to the network at that point, which shows it until
 an evolution completes or a connection on which no evolution was due
-authenticates (see "Renewal that does not complete"). A new link
+authenticates (see "Renewal that does not complete"). Beside this mark each
+side keeps a run of connections on which the peer authenticated but no due
+renewal completed, or on which the peer's HELLO never arrived while records
+were held for it; the run raises the not-renewing notice after six such
+connections in a row, after three of them with an hour or more between the
+first and now, or after two of them with a day or more between the first and
+now, and a connection of that run never clears the out-of-sync mark. The
+rules are in "Renewal that does not complete". A new link
 exchange between the two re-keys the existing contact in place
 (`ContactManagerImpl.rekeyContact`): the pairing root and the evolved roots
 are replaced by the new root and the contact, its history and its
@@ -433,58 +456,87 @@ table beside the other evolution state (`RootKeyStore`, keys `stalls.`,
 
 - how many connections in a row ended with an evolution outstanding. A
   connection counts when the peer's stream, or a record from it, had
-  authenticated on it; this side was still waiting for the peer's HELLO or
-  for a due evolution to complete when the connection ended; no other
-  connection to the contact was open; and the peer is one that waits for
-  evolutions (it once sent flag `0x04`). The dialler counts it when its
-  connection ends, the responder when its own does, so both sides count.
+  authenticated on it; no other connection to the contact was open; and
+  either this side was still waiting for a due evolution to complete when
+  the connection ended and the peer is one that waits for evolutions (it
+  once sent flag `0x04`), or this side was still holding its records for
+  the peer's HELLO, which never arrived. The second case counts whatever the
+  peer promised: records are held for a HELLO only from a contact that is
+  known to greet (its root has evolved, or it sent a HELLO before), so the
+  greeting was owed, and a party that lets the connection authenticate and
+  holds back the greeting must not be able to keep such a contact silent
+  with nothing shown. A peer that greeted without the flag (an earlier
+  release) releases the hold and is not counted, as before. The dialler
+  counts it when its connection ends, the responder when its own does, so
+  both sides count.
 - when the first connection of the current run ended.
 
-When the run reaches `NOT_RENEWING_AFTER_CONNECTIONS` (6), or it holds at
-least `NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS` (3) connections and the latest
-is counted `NOT_RENEWING_AFTER_MS` (one hour) or more after the first one of
-the run, the contact is marked as not renewing (`ContactKeyRenewalEvent`). The
-conversation and the contact's details then say that the connection keys are
-not being renewed, that a poor network can cause it, and offer to re-add the
-contact. The run and the mark are cleared only by a completed evolution with
-the contact (`RootKeyStore.renewed`, which also clears the out-of-sync mark,
-since a completed evolution proves that the peer holds the root), by
-re-keying the contact or by removing it. A connection on which nothing from
-the peer authenticated is not counted; the six-dial rule above covers it on
-the dialling side. A connection that ends with an evolution outstanding
-while another connection to the contact is open is noted and counted once
-when the last of those connections ends, whatever its own state, so a group
-of overlapping connections counts at most once; a connection closed twice
-counts once. If the stored run cannot be read the connection is not counted.
-A clock that jumps forward by an hour between two stalled connections of a
-run of three brings the notice forward; a clock that went back starts the
-run again.
+The contact is marked as not renewing (`ContactKeyRenewalEvent`) by any of
+three rules:
+
+1. the run reaches `NOT_RENEWING_AFTER_CONNECTIONS` (6) connections;
+2. the run holds at least `NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS` (3)
+   connections and `NOT_RENEWING_AFTER_MS` (one hour) or more has passed
+   since the first one of the run ended;
+3. the run holds at least `NOT_RENEWING_AFTER_LONG_MS_MIN_CONNECTIONS` (2)
+   connections and `NOT_RENEWING_AFTER_LONG_MS` (24 hours) or more has
+   passed since the first one of the run ended.
+
+One stalled connection can be a dropped network; two stalled connections a
+day apart with no renewal between them are a pattern, since a pair that is
+online together renews within seconds, so the third rule covers a contact
+that connects rarely and is cut each time. The rules are checked when a
+stalled connection is counted and again when a connection to the contact
+starts and records are held for its HELLO (`RootEvolutionManager.holdStarted`),
+so a notice that is due by time appears at the next connection without
+waiting for yet another stalled one; the start of a connection counts
+nothing. The conversation and the contact's details then say that the
+connection keys are not being renewed, that a poor network can cause it, and
+offer to re-add the contact. The run and the mark are cleared only by a
+completed evolution with the contact (`RootKeyStore.renewed`, which also
+clears the out-of-sync mark, since a completed evolution proves that the peer
+holds the root), by re-keying the contact or by removing it, so a contact
+whose renewals complete never reaches any of the rules. A connection on
+which nothing from the peer authenticated is not counted; the six-dial rule
+above covers it on the dialling side. A connection that ends with an
+evolution outstanding while another connection to the contact is open is
+noted and counted once when the last of those connections ends, whatever its
+own state, so a group of overlapping connections counts at most once; a
+connection closed twice counts once. If the stored run cannot be read the
+connection is not counted. A clock that jumps forward between two stalled
+connections brings the notice forward; a clock that went back starts the run
+again, and raises nothing at the start of a connection.
 
 The out-of-sync mark is no longer cleared by a dial that merely
 authenticated. It clears when an evolution completes, or when a connection on
-which the peer authenticated ends with no evolution outstanding: the peer
-does not wait for evolutions (an earlier release, iOS), either side has said
-in its HELLO that it is paused, or this side made a new root current less
-than ten minutes ago. In every other case an authenticated connection leaves
-the mark as it is. Ordinary records, which between two 3.0.19 sides do not
+which the peer authenticated ends with no evolution outstanding and with the
+peer's HELLO received: the peer does not wait for evolutions (an earlier
+release, iOS), either side has said in its HELLO that it is paused, or this
+side made a new root current less than ten minutes ago. In every other case,
+a connection whose HELLO never arrived included, an authenticated connection
+leaves the mark as it is. Ordinary records, which between two 3.0.19 sides do not
 flow before a due evolution anyway, can therefore not paper over a stalled
 rotation on either side. The run of failed dials that raises the mark is
 still ended by a dial that authenticates, so the mark is not raised by
 failures spread over authenticated connections; the run of stalled
 connections covers those.
 
-What this does not give: six connections, or an hour, of a network that cuts
-every connection between the HELLO and the DONE show the notice too; the
-notice names that cause and goes away at the next completed evolution. With
-a peer on 3.0.15 to 3.0.18, which cannot say that it is paused, no run is
-kept and an authenticated connection still clears the out-of-sync mark, as
-before, so the notice needs both sides on 3.0.19. A party holding the root
-and active on the connection can run the evolution with each side, as
-before, and causes no notice. `RootEvolutionStallWarningTest` runs the
-stalled connections against the real connection code on both sides, the
-hour bound, a paused and a not-due connection, an earlier release and the
-unauthenticated and parallel cases; `RootEvolutionManagerTest` and
-`RootKeyStoreDatabaseTest` cover the counting and the stored state.
+What this does not give: six connections, or three within an hour, or two a
+day apart, of a network that cuts every connection between the HELLO and the
+DONE show the notice too; the notice names that cause and goes away at the
+next completed evolution. With a peer on 3.0.15 to 3.0.18, which cannot say
+that it is paused, no run is kept for a due evolution that did not complete
+and an authenticated connection on which its HELLO arrived still clears the
+out-of-sync mark, as before, so that part of the notice needs both sides on
+3.0.19; only a connection on which such a peer's HELLO never arrived is
+counted. A party holding the root and active on the connection can run the
+evolution with each side, as before, and causes no notice.
+`RootEvolutionStallWarningTest` runs the stalled connections against the
+real connection code on both sides, the hour and the day bounds, the notice
+raised at the start of a connection, a paused and a not-due connection, an
+earlier release, a withheld greeting and the unauthenticated and parallel
+cases; `RootEvolutionManagerTest` and `RootKeyStoreDatabaseTest` cover the
+counting and the stored state.
 
 ## Compatibility
 
@@ -574,9 +626,11 @@ and import screens say what a late restore means.
 - A path on which one direction takes longer than a few seconds can miss
   the 30 second limits and is then retried, where 3.0.18 delivered slowly.
 - A pair whose connections authenticate but never complete a due evolution
-  is shown as not renewing after six such connections in a row, or after
-  three of them spread over an hour or more, not before; until then, and
-  toward earlier releases always, the only sign is that records do not flow.
+  is shown as not renewing after six such connections in a row, after three
+  of them with an hour or more between the first and now, or after two of
+  them with a day or more between the first and now, not before; until then,
+  and toward earlier releases whose greeting arrives, the only sign is that
+  records do not flow.
 - A paused side keeps its roots for 24 hours after a copy of the account is
   made, and each new copy starts that time again. Someone who can make a
   backup on the device already holds everything on it.

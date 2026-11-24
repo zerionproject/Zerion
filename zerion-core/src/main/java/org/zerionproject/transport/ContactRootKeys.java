@@ -16,24 +16,37 @@ public final class ContactRootKeys {
 	private final SecretKey pending;
 	@Nullable
 	private final SecretKey pendingConfirmKey;
+	@Nullable
+	private final SecretKey pendingIdKey;
 	private final boolean pendingConfirmed;
 
 	public ContactRootKeys(long epoch, SecretKey current,
 			@Nullable SecretKey pending, boolean pendingConfirmed) {
-		this(epoch, current, pending, null, pendingConfirmed);
+		this(epoch, current, pending, null, null, pendingConfirmed);
 	}
 
+	/**
+	 * A version 3 pending root carries both a confirmation key and a
+	 * pending-id key of its own; a version 2 pending root carries neither
+	 * and derives both from the pending root as earlier releases do. A
+	 * pending root with only one of the two keys is not a form either
+	 * version produces and is refused.
+	 */
 	public ContactRootKeys(long epoch, SecretKey current,
 			@Nullable SecretKey pending, @Nullable SecretKey pendingConfirmKey,
-			boolean pendingConfirmed) {
+			@Nullable SecretKey pendingIdKey, boolean pendingConfirmed) {
 		if (epoch < 0) throw new IllegalArgumentException();
 		if (pending == null && pendingConfirmKey != null) {
+			throw new IllegalArgumentException();
+		}
+		if ((pendingConfirmKey == null) != (pendingIdKey == null)) {
 			throw new IllegalArgumentException();
 		}
 		this.epoch = epoch;
 		this.current = current;
 		this.pending = pending;
 		this.pendingConfirmKey = pendingConfirmKey;
+		this.pendingIdKey = pendingIdKey;
 		this.pendingConfirmed = pending != null && pendingConfirmed;
 	}
 
@@ -59,6 +72,11 @@ public final class ContactRootKeys {
 		return pendingConfirmKey;
 	}
 
+	@Nullable
+	public SecretKey getPendingIdKey() {
+		return pendingIdKey;
+	}
+
 	public boolean isPendingSeparated() {
 		return pendingConfirmKey != null;
 	}
@@ -80,5 +98,16 @@ public final class ContactRootKeys {
 		if (e == epoch) return current;
 		if (pending != null && e == epoch + 1) return pending;
 		return null;
+	}
+
+	/**
+	 * Zeroises every key this object holds. The store hands out copies, so
+	 * clearing them leaves the stored keys intact.
+	 */
+	public void clear() {
+		current.clear();
+		if (pending != null) pending.clear();
+		if (pendingConfirmKey != null) pendingConfirmKey.clear();
+		if (pendingIdKey != null) pendingIdKey.clear();
 	}
 }

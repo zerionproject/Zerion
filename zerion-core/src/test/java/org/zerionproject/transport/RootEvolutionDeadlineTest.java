@@ -238,13 +238,14 @@ public class RootEvolutionDeadlineTest {
 			throws Exception {
 		SecretKey root = bed.randomKey();
 		Device a = bed.new Device("alice", ALICE_SEES_BOB, true,
-				new ContactRootKeys(3, copy(root), null, null, false), true);
+				new ContactRootKeys(3, copy(root), null, false), true);
 		Device b = bed.new Device("bob", BOB_SEES_ALICE, false,
-				new ContactRootKeys(3, copy(root), null, null, false), true);
+				new ContactRootKeys(3, copy(root), null, false), true);
 		manager(a).setTimings(SHORT_MS, LONG_MS);
 		manager(b).setTimings(SHORT_MS, LONG_MS);
 		assertFalse(a.store.peerEnforces(BOB));
 		assertFalse(a.store.peerEvolves(BOB));
+		a.store.markOutOfSync(BOB, true);
 		for (int round = 0; round < 2; round++) {
 			b.withheld = KIND_HELLO;
 			Live live = bed.new Live(a, b);
@@ -255,12 +256,20 @@ public class RootEvolutionDeadlineTest {
 			assertEquals(0, a.received.size());
 			assertEquals(0, a.connections.get());
 			assertEquals(3, a.keys().getEpoch());
+			assertEquals("a connection that authenticated but never greeted"
+					+ " was not counted", round + 1, a.store.stalls(BOB)[0]);
+			assertTrue("a connection without a greeting cleared the out of"
+					+ " sync mark", a.store.isOutOfSync(BOB));
+			assertFalse("alice holds a peer that never promised to it",
+					a.store.peerEnforces(BOB));
 		}
 		manager(a).setTimings(PATIENT_MS, LONG_MS);
 		manager(b).setTimings(PATIENT_MS, LONG_MS);
 		assertTrue(bed.exchange(a, b));
 		assertEquals(4, a.keys().getEpoch());
 		assertTrue(RootEvolutionTestBed.sameRoot(a, b));
+		assertEquals(0, a.store.stalls(BOB)[0]);
+		assertFalse(a.store.isOutOfSync(BOB));
 	}
 
 	@Test(timeout = 120_000)

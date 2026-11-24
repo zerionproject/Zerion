@@ -112,6 +112,7 @@ public class RootEvolution implements ZwfControlHandler {
 					awaitingHello = true;
 					holding = true;
 					armDeadline();
+					manager.holdStarted(contactId);
 				}
 				scheduleLive(manager.isDue(contactId)
 						? manager.liveIntervalMs()
@@ -382,6 +383,18 @@ public class RootEvolution implements ZwfControlHandler {
 		}
 	}
 
+	/**
+	 * Ends this connection's part and reports it to the manager. A due
+	 * evolution that did not complete counts as a stall only against a peer
+	 * that promised to wait for evolutions, since a peer of an earlier
+	 * release is not held to it. A connection that authenticated while
+	 * records were held for the peer's HELLO and never got one counts
+	 * whether or not the peer ever made that promise: the hold began because
+	 * the contact is known to greet, so the greeting was owed, and without it
+	 * the connection proves nothing about the peer's keys and must not clear
+	 * the out-of-sync mark either. A HELLO without the promise releases the
+	 * hold before this point and is not a stall.
+	 */
 	@Override
 	public void close() {
 		ReentrantLock lock = manager.lock(contactId);
@@ -393,7 +406,8 @@ public class RootEvolution implements ZwfControlHandler {
 			boolean alone = !manager.hasOtherConnection(contactId, this);
 			if (waiting && alone) manager.stalled(contactId);
 			if (first) {
-				boolean stalled = peerAuthenticated && waiting && peerEnforces;
+				boolean stalled = peerAuthenticated
+						&& (awaitingHello || (expected && peerEnforces));
 				if (alone) {
 					manager.connectionEnded(contactId, peerAuthenticated,
 							stalled);
@@ -578,7 +592,8 @@ public class RootEvolution implements ZwfControlHandler {
 			next = evolutionCrypto.evolve(version, keys.getCurrent(), e,
 					enc.getSharedSecret(), dh, transcript);
 			if (!store.storePending(contactId, e, next.root,
-					next.isSeparated() ? next.confirmKey : null, false)) {
+					next.isSeparated() ? next.confirmKey : null,
+					next.isSeparated() ? next.pendingIdKey : null, false)) {
 				return;
 			}
 			send(RootEvolutionRecord.resp(version, e, responderX25519,
@@ -629,7 +644,8 @@ public class RootEvolution implements ZwfControlHandler {
 				return;
 			}
 			if (!store.storePending(contactId, e, next.root,
-					next.isSeparated() ? next.confirmKey : null, true)) {
+					next.isSeparated() ? next.confirmKey : null,
+					next.isSeparated() ? next.pendingIdKey : null, true)) {
 				return;
 			}
 			manager.proved(contactId);
@@ -704,22 +720,22 @@ public class RootEvolution implements ZwfControlHandler {
 	}
 
 	private byte[] pendingId(ContactRootKeys keys) {
-		SecretKey confirmKey = evolutionCrypto.pendingConfirmKey(keys);
+		SecretKey idKey = evolutionCrypto.pendingIdKey(keys);
 		try {
-			return evolutionCrypto.pendingIdWith(confirmKey,
+			return evolutionCrypto.pendingIdWith(idKey,
 					keys.getPendingEpoch());
 		} finally {
-			confirmKey.clear();
+			idKey.clear();
 		}
 	}
 
 	private boolean verifyPendingId(ContactRootKeys keys, byte[] id) {
-		SecretKey confirmKey = evolutionCrypto.pendingConfirmKey(keys);
+		SecretKey idKey = evolutionCrypto.pendingIdKey(keys);
 		try {
-			return evolutionCrypto.verifyPendingIdWith(id, confirmKey,
+			return evolutionCrypto.verifyPendingIdWith(id, idKey,
 					keys.getPendingEpoch());
 		} finally {
-			confirmKey.clear();
+			idKey.clear();
 		}
 	}
 
@@ -746,11 +762,7 @@ public class RootEvolution implements ZwfControlHandler {
 	}
 
 	private static void wipe(ContactRootKeys keys) {
-		keys.getCurrent().clear();
-		SecretKey pending = keys.getPending();
-		if (pending != null) pending.clear();
-		SecretKey pendingConfirmKey = keys.getPendingConfirmKey();
-		if (pendingConfirmKey != null) pendingConfirmKey.clear();
+		keys.clear();
 	}
 
 	private void send(byte[] payload) {

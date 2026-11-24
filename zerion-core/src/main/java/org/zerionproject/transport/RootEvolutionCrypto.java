@@ -29,6 +29,15 @@ public class RootEvolutionCrypto {
 			"org.zerionproject.transport/ROOT_EVOLVE_CONFIRM_KEY_V1";
 	static final String LABEL_SEPARATED_CONFIRM_KEY =
 			"org.zerionproject.transport/ROOT_EVOLVE_CONFIRM_KEY_V3";
+	/**
+	 * Version 3 derives the key of the pending-root id beside the new root
+	 * and the confirmation key, from the same chain and inputs. The id is
+	 * shown in HELLO and INIT on later connections, so its key is held for
+	 * as long as the root is pending; a key of its own means that neither
+	 * the confirmation key nor the new root is used across those connections.
+	 */
+	static final String LABEL_SEPARATED_PENDING_ID_KEY =
+			"org.zerionproject.transport/ROOT_PENDING_ID_KEY_V3";
 	static final String LABEL_RESPONDER_CONFIRM =
 			"org.zerionproject.transport/ROOT_EVOLVE_RESPONDER_CONFIRM_V1";
 	static final String LABEL_INITIATOR_CONFIRM =
@@ -45,11 +54,20 @@ public class RootEvolutionCrypto {
 		final byte version;
 		final SecretKey root;
 		final SecretKey confirmKey;
+		/**
+		 * The key of the pending-root id. In version 3 a third key derived
+		 * beside the other two; in version 2 the id is a MAC under the
+		 * confirmation key, so this holds a copy of that key and the id is
+		 * computed the same way for both versions.
+		 */
+		final SecretKey pendingIdKey;
 
-		EvolvedKeys(byte version, SecretKey root, SecretKey confirmKey) {
+		EvolvedKeys(byte version, SecretKey root, SecretKey confirmKey,
+				SecretKey pendingIdKey) {
 			this.version = version;
 			this.root = root;
 			this.confirmKey = confirmKey;
+			this.pendingIdKey = pendingIdKey;
 		}
 
 		boolean isSeparated() {
@@ -59,6 +77,7 @@ public class RootEvolutionCrypto {
 		void clear() {
 			root.clear();
 			confirmKey.clear();
+			pendingIdKey.clear();
 		}
 	}
 
@@ -98,14 +117,19 @@ public class RootEvolutionCrypto {
 			SecretKey next = crypto.deriveKey(LABEL_ROOT, chain,
 					u64(epoch + 1), kemSecret, dh.getBytes(), transcriptHash);
 			SecretKey confirmKey;
+			SecretKey pendingIdKey;
 			if (version == RootEvolutionRecord.VERSION_SEPARATED) {
 				confirmKey = crypto.deriveKey(LABEL_SEPARATED_CONFIRM_KEY,
 						chain, u64(epoch + 1), kemSecret, dh.getBytes(),
 						transcriptHash);
+				pendingIdKey = crypto.deriveKey(LABEL_SEPARATED_PENDING_ID_KEY,
+						chain, u64(epoch + 1), kemSecret, dh.getBytes(),
+						transcriptHash);
 			} else {
 				confirmKey = legacyConfirmKey(next);
+				pendingIdKey = legacyConfirmKey(next);
 			}
-			return new EvolvedKeys(version, next, confirmKey);
+			return new EvolvedKeys(version, next, confirmKey, pendingIdKey);
 		} finally {
 			chain.clear();
 		}
@@ -119,6 +143,21 @@ public class RootEvolutionCrypto {
 		SecretKey pending = keys.getPending();
 		if (pending == null) throw new IllegalStateException();
 		SecretKey stored = keys.getPendingConfirmKey();
+		if (stored != null) return new SecretKey(stored.getBytes().clone());
+		return legacyConfirmKey(pending);
+	}
+
+	/**
+	 * The key under which the id of the pending root is computed and
+	 * checked. A version 3 pending root is stored with the key derived for
+	 * it; a version 2 pending root, including one stored by an earlier
+	 * release, uses its confirmation key as before. The caller clears the
+	 * returned key.
+	 */
+	SecretKey pendingIdKey(ContactRootKeys keys) {
+		SecretKey pending = keys.getPending();
+		if (pending == null) throw new IllegalStateException();
+		SecretKey stored = keys.getPendingIdKey();
 		if (stored != null) return new SecretKey(stored.getBytes().clone());
 		return legacyConfirmKey(pending);
 	}
@@ -141,8 +180,8 @@ public class RootEvolutionCrypto {
 		return crypto.mac(LABEL_RESPONDER_DONE, confirmKey, u64(nextEpoch));
 	}
 
-	byte[] pendingIdWith(SecretKey confirmKey, long pendingEpoch) {
-		return crypto.mac(LABEL_PENDING_ID, confirmKey, u64(pendingEpoch));
+	byte[] pendingIdWith(SecretKey pendingIdKey, long pendingEpoch) {
+		return crypto.mac(LABEL_PENDING_ID, pendingIdKey, u64(pendingEpoch));
 	}
 
 	boolean verifyResponderConfirmWith(byte[] mac, SecretKey confirmKey,
@@ -163,9 +202,9 @@ public class RootEvolutionCrypto {
 				u64(nextEpoch));
 	}
 
-	boolean verifyPendingIdWith(byte[] id, SecretKey confirmKey,
+	boolean verifyPendingIdWith(byte[] id, SecretKey pendingIdKey,
 			long pendingEpoch) {
-		return crypto.verifyMac(id, LABEL_PENDING_ID, confirmKey,
+		return crypto.verifyMac(id, LABEL_PENDING_ID, pendingIdKey,
 				u64(pendingEpoch));
 	}
 

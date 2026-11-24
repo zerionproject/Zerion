@@ -12,6 +12,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.zerionproject.transport.RootEvolutionManager.NOT_RENEWING_AFTER_CONNECTIONS;
+import static org.zerionproject.transport.RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS;
 import static org.zerionproject.transport.RootEvolutionManager.NOT_RENEWING_AFTER_MS;
 import static org.zerionproject.transport.RootEvolutionRecord.KIND_HELLO;
 import static org.zerionproject.transport.RootEvolutionRecord.KIND_RESP;
@@ -220,6 +221,116 @@ public class RootEvolutionStallWarningTest {
 		assertEquals("counted once, also when closed twice", 1,
 				alice.store.stalls(BOB)[0]);
 		assertTrue(alice.store.isOutOfSync(BOB));
+	}
+
+	@Test
+	public void anAuthenticatedConnectionWithoutAGreetingIsCountedWhateverThePeerPromised() {
+		RootEvolutionManager m = manager(alice);
+		m.evolved(BOB);
+		alice.store.setPeerEvolves(BOB);
+		assertFalse(alice.store.peerEnforces(BOB));
+		bed.passTime();
+		alice.store.markOutOfSync(BOB, true);
+		RootEvolution silent = new RootEvolution(m, BOB, true);
+		silent.start(ZwfControlHandler.eager(p -> {
+		}));
+		assertTrue(silent.holdsUserRecords());
+		silent.onPeerStreamAuthenticated(1);
+		silent.close();
+		assertEquals("a connection that authenticated but never greeted", 1,
+				alice.store.stalls(BOB)[0]);
+		assertTrue("the out of sync mark was cleared without a greeting",
+				alice.store.isOutOfSync(BOB));
+		assertTrue(m.recentlyStalled(ALICE_SEES_BOB));
+		assertFalse(alice.store.peerEnforces(BOB));
+
+		RootEvolution greeted = new RootEvolution(m, BOB, true);
+		greeted.start(ZwfControlHandler.eager(p -> {
+		}));
+		assertTrue(greeted.holdsUserRecords());
+		greeted.onRecord(RootEvolutionRecord.hello(1,
+				new byte[RootEvolutionRecord.MAC_LENGTH], (byte) 0));
+		assertFalse("a greeting without the promise releases the hold",
+				greeted.holdsUserRecords());
+		greeted.close();
+		assertEquals("a peer of an earlier release that greeted is not"
+				+ " counted", 1, alice.store.stalls(BOB)[0]);
+		assertFalse("such a connection is in sync as before",
+				alice.store.isOutOfSync(BOB));
+		assertFalse(alice.store.peerEnforces(BOB));
+	}
+
+	@Test(timeout = 120_000)
+	public void aConnectionWhoseGreetingNeverArrivesIsCountedByTheDeadline()
+			throws Exception {
+		meetOnce();
+		manager(alice).setTimings(1_500, LONG_MS);
+		manager(bob).setTimings(1_500, LONG_MS);
+		bed.passTime();
+		alice.store.markOutOfSync(BOB, true);
+		bob.withheld = KIND_HELLO;
+		Live live = bed.new Live(alice, bob);
+		long opened = System.currentTimeMillis();
+		while (live.isOpen()
+				&& System.currentTimeMillis() - opened < 30_000) {
+			Thread.sleep(20);
+		}
+		assertFalse("the connection was not closed", live.isOpen());
+		live.close();
+		bob.withheld = 0;
+		assertEquals(1, alice.store.stalls(BOB)[0]);
+		assertTrue(alice.store.isOutOfSync(BOB));
+		assertEquals("bob waited for an evolution that never came", 1,
+				bob.store.stalls(ALICE)[0]);
+	}
+
+	@Test(timeout = 180_000)
+	public void aRenewalOutstandingForADayIsNoticedWhenTheNextConnectionStarts()
+			throws Exception {
+		meetOnce();
+		bed.passTime();
+		droppedBeforeTheAnswerArrives();
+		bed.clock.addAndGet(60_000);
+		droppedBeforeTheAnswerArrives();
+		assertEquals(2, alice.store.stalls(BOB)[0]);
+		assertEquals(2, bob.store.stalls(ALICE)[0]);
+		assertFalse(alice.store.isNotRenewing(BOB));
+		assertFalse(bob.store.isNotRenewing(ALICE));
+		bed.clock.addAndGet(NOT_RENEWING_AFTER_LONG_MS - 60_000);
+		bob.withheld = KIND_RESP;
+		Live live = bed.new Live(alice, bob);
+		assertTrue("the notice appears when the connection starts, before"
+				+ " it ends", live.await(() -> alice.store.isNotRenewing(BOB)
+				&& bob.store.isNotRenewing(ALICE), 20_000));
+		assertTrue(live.isOpen());
+		assertEquals("the start of a connection counts nothing", 2,
+				alice.store.stalls(BOB)[0]);
+		live.close();
+		bob.withheld = 0;
+		bed.passTime();
+		assertTrue(bed.exchange(alice, bob));
+		assertEquals(2, alice.keys().getEpoch());
+		assertFalse(alice.store.isNotRenewing(BOB));
+		assertFalse(bob.store.isNotRenewing(ALICE));
+		assertEquals(0, alice.store.stalls(BOB)[0]);
+	}
+
+	@Test(timeout = 180_000)
+	public void renewalsThatCompleteNeverRaiseTheNoticeHoweverFarApart()
+			throws Exception {
+		meetOnce();
+		for (int day = 0; day < 3; day++) {
+			bed.clock.addAndGet(NOT_RENEWING_AFTER_LONG_MS);
+			droppedBeforeTheAnswerArrives();
+			assertEquals(1, alice.store.stalls(BOB)[0]);
+			assertFalse(alice.store.isNotRenewing(BOB));
+			assertTrue(bed.exchange(alice, bob));
+			assertEquals(0, alice.store.stalls(BOB)[0]);
+			assertEquals(0, bob.store.stalls(ALICE)[0]);
+			assertFalse(alice.store.isNotRenewing(BOB));
+			assertFalse(bob.store.isNotRenewing(ALICE));
+		}
+		assertEquals(4, alice.keys().getEpoch());
 	}
 
 	private static SecretKey copy(SecretKey k) {

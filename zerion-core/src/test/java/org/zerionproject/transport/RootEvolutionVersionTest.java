@@ -141,6 +141,18 @@ public class RootEvolutionVersionTest {
 		assertFalse(Arrays.equals(
 				crypto.legacyConfirmKey(a.getPending()).getBytes(),
 				a.getPendingConfirmKey().getBytes()));
+		assertNotNull(a.getPendingIdKey());
+		assertNotNull(b.getPendingIdKey());
+		assertTrue("both sides hold the same pending-id key",
+				Arrays.equals(a.getPendingIdKey().getBytes(),
+						b.getPendingIdKey().getBytes()));
+		assertFalse(Arrays.equals(a.getPendingIdKey().getBytes(),
+				a.getPendingConfirmKey().getBytes()));
+		assertFalse(Arrays.equals(a.getPendingIdKey().getBytes(),
+				a.getPending().getBytes()));
+		assertFalse(Arrays.equals(
+				crypto.legacyConfirmKey(a.getPending()).getBytes(),
+				a.getPendingIdKey().getBytes()));
 		settle(alice, bob, "after the cut");
 	}
 

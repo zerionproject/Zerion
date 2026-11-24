@@ -49,6 +49,22 @@ public class RootEvolutionManager {
 
 	public static final int NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS = 3;
 
+	/**
+	 * A renewal that has been outstanding for a day is noticed with fewer
+	 * connections than the hour rule needs. One stalled connection can be a
+	 * dropped network; two stalled connections a day apart with no renewal
+	 * between them are a pattern, since a pair that is online together
+	 * renews within seconds. The two rules above stay as they are; this one
+	 * covers a contact that connects rarely and is cut each time. It is
+	 * checked when a stalled connection ends and when a connection starts
+	 * and the hold begins, so the notice appears by time without waiting for
+	 * yet another stall. A completed evolution clears the run, so a contact
+	 * whose renewals complete never reaches it.
+	 */
+	public static final long NOT_RENEWING_AFTER_LONG_MS = 24 * 60 * 60_000L;
+
+	public static final int NOT_RENEWING_AFTER_LONG_MS_MIN_CONNECTIONS = 2;
+
 	public interface PeerIdentity {
 
 		boolean knowsPeerKey(ContactId c);
@@ -279,11 +295,37 @@ public class RootEvolutionManager {
 		}
 		if (count < Integer.MAX_VALUE) count++;
 		store.setStalls(c, (int) count, since);
-		if (count >= NOT_RENEWING_AFTER_CONNECTIONS
+		if (notRenewing(count, since, now)) store.markNotRenewing(c, true);
+	}
+
+	/**
+	 * Called when a connection to the contact starts and user records are
+	 * held for its HELLO. The run of stalled connections is read again so a
+	 * renewal that has been outstanding long enough is noticed now, not only
+	 * when yet another connection ends stalled. Nothing is counted here.
+	 */
+	void holdStarted(ContactId c) {
+		long[] stalls = store.stalls(c);
+		if (stalls == null) return;
+		long count = stalls[0];
+		long since = stalls[1];
+		long now = now();
+		if (count <= 0 || since <= 0 || since > now) return;
+		if (notRenewing(count, since, now)) store.markNotRenewing(c, true);
+	}
+
+	/**
+	 * The three rules for the notice: six stalled connections in a row;
+	 * three with an hour or more between the first and now; two with a day
+	 * or more between the first and now.
+	 */
+	private static boolean notRenewing(long count, long since, long now) {
+		long elapsed = now - since;
+		return count >= NOT_RENEWING_AFTER_CONNECTIONS
 				|| (count >= NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS
-				&& now - since >= NOT_RENEWING_AFTER_MS)) {
-			store.markNotRenewing(c, true);
-		}
+				&& elapsed >= NOT_RENEWING_AFTER_MS)
+				|| (count >= NOT_RENEWING_AFTER_LONG_MS_MIN_CONNECTIONS
+				&& elapsed >= NOT_RENEWING_AFTER_LONG_MS);
 	}
 
 	RootKeyStore getStore() {
