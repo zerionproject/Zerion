@@ -188,13 +188,6 @@ public final class ExternalHandoff {
 		});
 	}
 
-	/**
-	 * The type under which the bytes may leave the app: the one their content
-	 * checks as, which is never a type the system installs or imports, never
-	 * an installable package or program whatever type was declared, and never
-	 * active content under a media type. Every hand-off passes through here
-	 * before a copy is written, whether or not the caller checked already.
-	 */
 	static String checkedType(String declared, byte[] content)
 			throws IOException {
 		String type = ExternalViewerTypes.typeForContent(declared, content);

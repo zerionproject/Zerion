@@ -173,11 +173,6 @@ public class ContactRequestSender implements Service, EventListener {
 		}
 	}
 
-	/**
-	 * The pairing of a delivered request ran, but the receiver is already a
-	 * contact and the add was refused: the request ends as "Already a
-	 * contact" and keeps no keys.
-	 */
 	void alreadyContact(Transaction txn, PendingContactId p)
 			throws DbException {
 		for (OutgoingRequest r : db.getOutgoingRequests(txn)) {

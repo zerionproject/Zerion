@@ -144,34 +144,12 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		return now >= keepaliveSlot(lastSentAt, periodMs);
 	}
 
-	/**
-	 * Whether a frame that has just arrived from the peer should be answered
-	 * with a frame of our own at once. The arriving packet is what woke a
-	 * sleeping device, and the device may be asleep again before the sender
-	 * thread's next wait expires, so the answer is sent while the device is
-	 * known to be awake. Only when at least half a keepalive period has
-	 * passed since our last frame, so two phones settle on one exchange per
-	 * period instead of answering each other without end. Used for peers
-	 * that tolerate the sparse cadence only: a peer on the legacy cadence
-	 * closes after 20 s of silence, which no answer to its frames can
-	 * prevent once this device has slept that long, and answering its dense
-	 * frames would cost a wake lock hold every few seconds.
-	 */
 	static boolean echoWanted(long lastSentAt, long now, long periodMs) {
 		if (lastSentAt == NEVER) return false;
 		if (now < lastSentAt) return true;
 		return now - lastSentAt >= periodMs / 2;
 	}
 
-	/**
-	 * The sender's decision for one sparse tick. The echo flag set by the
-	 * reader is advisory: the reader judged it against the last send time it
-	 * could see, and a frame may have gone out since, so the sender judges
-	 * again against its own last send time, which is never older than what
-	 * the reader saw. An echo is therefore never lost (an unchanged send time
-	 * gives the reader's answer) and never doubled (a newer send time means
-	 * a frame has just gone out).
-	 */
 	static boolean sparseSendDue(long lastSentAt, int receivedSinceSend,
 			long now, long periodMs, boolean echo) {
 		if (sparseFrameDue(lastSentAt, receivedSinceSend, now, periodMs)) {
@@ -559,13 +537,6 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			}
 		}
 
-		/**
-		 * Waits until the deadline on the injected clock, re-reading it at
-		 * least every {@link #SPARSE_WAIT_CHUNK_MS}: the monitor wait itself
-		 * counts only time the device is awake, while the clock keeps going
-		 * through a sleep, so after a sleep the keepalive goes out as soon
-		 * as the thread runs again instead of a full period later.
-		 */
 		void awaitSparse(AtomicBoolean running, long deadline)
 				throws InterruptedException {
 			synchronized (lock) {

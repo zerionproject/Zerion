@@ -19,10 +19,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
-/**
- * The first sheet that opens for a tapped link names a host written in
- * another alphabet the way the preview card and the browser dialog do.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class LinkDialogNoteTest {

@@ -17,26 +17,6 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * Decides when the Tor wake lock is held. The lock is held while Tor starts,
- * bootstraps or stops, while an onion service descriptor is being published,
- * for a short time after every Tor control event or piece of connection
- * activity, while a call runs, while the app is in the foreground and while
- * the "Stay awake for Tor" setting is on. Otherwise it is released so the
- * device can suspend, and a heartbeat takes it briefly every ten minutes so
- * the timers inside Tor get to run.
- * <p>
- * Clock contract: the injected clock returns milliseconds and must keep
- * advancing while the device is suspended (on Android
- * {@code SystemClock.elapsedRealtime()}), otherwise a window that started
- * before a sleep would outlive it. The default clock, based on
- * {@code System.nanoTime()}, is for tests and for platforms that do not
- * suspend.
- * <p>
- * Every call into the wake lock and the task scheduler is guarded, so an
- * exception there (for example after shutdown) never reaches the caller,
- * which may be the Tor control connection's parse thread.
- */
 @ThreadSafe
 @NotNullByDefault
 public class TorWakePolicy implements TorActivitySink {
@@ -137,12 +117,6 @@ public class TorWakePolicy implements TorActivitySink {
 		this.clock = clock;
 	}
 
-	/**
-	 * Hands the policy the wake lock it drives, replacing any earlier one.
-	 * If the policy currently holds the lock, the earlier lock is released
-	 * and the new one acquired. Until a lock is attached the policy only
-	 * keeps its bookkeeping.
-	 */
 	public void attachLock(Lock wakeLock) {
 		synchronized (lock) {
 			Lock old = this.wakeLock;
@@ -169,16 +143,6 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 	}
 
-	/**
-	 * True while nothing a person is doing asks for the device to stay
-	 * awake: the network is enabled, Tor is neither starting nor stopping,
-	 * the app is not in the foreground, no call runs, the "Stay awake for
-	 * Tor" setting is off and no connection has carried or queued a record
-	 * in the last {@link #CONNECTION_HOLD_MS}. A dial in progress, Tor's
-	 * own control events and a keepalive echo do not count, so a dial that
-	 * fails does not make the device look busy to the poller that decides
-	 * how soon to retry.
-	 */
 	public boolean isQuiet() {
 		synchronized (lock) {
 			return networkEnabled && !starting && !stopping && !foreground
@@ -202,9 +166,6 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 	}
 
-	/**
-	 * @return true if this call changed the network from disabled to enabled
-	 */
 	public boolean onNetworkEnabled(boolean enabled) {
 		synchronized (lock) {
 			boolean changed = false;
@@ -242,11 +203,6 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 	}
 
-	/**
-	 * A relay connection event arrived over the control connection: Tor is
-	 * opening or has opened a connection to a guard or bridge, which takes
-	 * several round trips that Tor drives from its own timers.
-	 */
 	public void onTorEvent() {
 		synchronized (lock) {
 			torEventUntil = clock.getAsLong() + TOR_EVENT_HOLD_MS;
@@ -254,16 +210,6 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 	}
 
-	/**
-	 * A circuit, stream or descriptor event arrived over the control
-	 * connection. The steps that follow such an event are replies to packets
-	 * that have just woken the device, so the hold only has to bridge the
-	 * gap to the next step: a few seconds. Tor's own timer-driven retries
-	 * wait for the next wakeup or the heartbeat. Tor builds spare circuits
-	 * for itself about once a minute while it is in use, and every dial of
-	 * the app produces stream and descriptor events of its own, so a longer
-	 * hold here kept the processor awake about half the time.
-	 */
 	public void onBriefTorEvent() {
 		synchronized (lock) {
 			briefEventUntil = clock.getAsLong() + BRIEF_EVENT_HOLD_MS;
@@ -271,19 +217,6 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 	}
 
-	/**
-	 * Tor has started uploading a descriptor of the given onion service to a
-	 * directory. The lock is held for the uploads of an onion until the first
-	 * burst of them in which one succeeded has finished since the network was
-	 * enabled: until then nobody can reach the service, and the device may
-	 * have gone to sleep right after publishing it. Tor refreshes every
-	 * published descriptor about once an hour and whenever an introduction
-	 * point changes, and each invite-link inbox is an onion of its own, so
-	 * later uploads count only as the brief descriptor events they are: the
-	 * old descriptor stays valid, and Tor finishes a refresh within seconds
-	 * while the device is awake. A directory that never answers would
-	 * otherwise hold the lock for the whole publish cap on every refresh.
-	 */
 	public void onDescriptorUpload(String onion) {
 		synchronized (lock) {
 			if (confirmedOnions.contains(onion)
@@ -380,12 +313,6 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 	}
 
-	/**
-	 * Runs a scheduled check. A check that was cancelled after it had
-	 * already been handed to its executor still runs; it must not clear the
-	 * reference to a newer check, so the reference is cleared only by the
-	 * generation that set it.
-	 */
 	private void check(long generation) {
 		synchronized (lock) {
 			if (generation == checkGeneration) checkTask = null;

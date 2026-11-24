@@ -36,11 +36,6 @@ import static org.zerionproject.core.test.TestUtils.getRandomBytes;
 import static org.zerionproject.core.test.TestUtils.getSecretKey;
 import static org.zerionproject.core.test.TestUtils.getTestDirectory;
 
-/**
- * Only a private message the user chose to send is marked as a user message
- * for the cover traffic scheduler. Records this side creates while taking in
- * what a contact sent are not.
- */
 @NotNullByDefault
 public class UserMessageMarkingTest extends BrambleTestCase {
 

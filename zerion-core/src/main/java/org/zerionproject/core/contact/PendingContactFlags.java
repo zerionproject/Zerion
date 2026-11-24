@@ -8,14 +8,6 @@ import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.util.StringUtils;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Marks that belong to one pending contact for the time it exists: that its
- * code was scanned in person, and that the user started the add as a re-add
- * of a contact they already have. A mark is keyed on the pending contact's id
- * and its creation time, so a pending contact created later under the same
- * id (the id is derived from the link) never inherits it, and it is consumed
- * when the pending contact becomes a contact or is removed.
- */
 @NotNullByDefault
 public class PendingContactFlags {
 

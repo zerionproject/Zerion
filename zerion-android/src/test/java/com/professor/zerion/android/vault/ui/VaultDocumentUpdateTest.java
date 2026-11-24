@@ -33,11 +33,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.robolectric.Shadows.shadowOf;
 
-/**
- * Editing a vault document stores the new text first and removes the old
- * item only once the new one is in the vault, so a refused or failed save
- * never loses the document that was there.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class VaultDocumentUpdateTest {

@@ -397,11 +397,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		recordWriter.flush();
 	}
 
-	/**
-	 * Reads the peer's REPLACE_KEYS record, which follows its CONTACT_INFO.
-	 * Returns null when the peer ended its stream without one, which an
-	 * earlier release does.
-	 */
 	@Nullable
 	private Boolean receiveReplaceKeys(RecordReader recordReader)
 			throws IOException {
@@ -449,13 +444,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 				hybridSignature);
 	}
 
-	/**
-	 * Adds the contact. A peer that negotiated key separation runs 3.0.19 or
-	 * later and therefore insists on root evolution; that is recorded from
-	 * the pairing on, so a connection whose first greeting never arrives
-	 * counts as a renewal that did not happen from the very first connection,
-	 * instead of only after a greeting has once been seen.
-	 */
 	private Contact addContact(@Nullable PendingContactId pendingContactId,
 			Author remoteAuthor, LocalAuthor localAuthor, SecretKey rootKey,
 			long timestamp, boolean alice, boolean verified,

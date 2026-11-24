@@ -28,10 +28,6 @@ public final class OutgoingRequestInfo {
 		this(r, inboxBusy, false);
 	}
 
-	/**
-	 * reconnect says that the request was sent from Re-add contact and asks
-	 * the receiver to replace the keys of an existing contact.
-	 */
 	public OutgoingRequestInfo(OutgoingRequest r, boolean inboxBusy,
 			boolean reconnect) {
 		this.inboxBusy = inboxBusy;

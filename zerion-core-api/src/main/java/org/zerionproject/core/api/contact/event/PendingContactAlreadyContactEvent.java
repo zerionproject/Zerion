@@ -19,10 +19,6 @@ public class PendingContactAlreadyContactEvent extends Event {
 		this(id, null);
 	}
 
-	/**
-	 * @param alias the name the user gave the pending contact, so that a
-	 * request whose add was refused can still be shown under it.
-	 */
 	public PendingContactAlreadyContactEvent(PendingContactId id,
 			@Nullable String alias) {
 		this.id = id;

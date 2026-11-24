@@ -636,42 +636,18 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		}
 	}
 
-	/**
-	 * Called on the control connection thread when Tor launches or has
-	 * opened a connection to a relay.
-	 */
 	protected void onTorControlActivity() {
 	}
 
-	/**
-	 * Called on the control connection thread for every circuit, stream and
-	 * descriptor event that shows Tor is doing work. Kept apart from the
-	 * relay connection events because these are frequent: Tor builds spare
-	 * circuits for itself about once a minute while it is in use, and every
-	 * dial produces stream and descriptor events.
-	 */
 	protected void onTorBriefActivity() {
 	}
 
-	/**
-	 * Called on the control connection thread when Tor reports bootstrap
-	 * progress, and once after the control connection opens.
-	 */
 	protected void onBootstrapProgress(int percentage) {
 	}
 
-	/**
-	 * Called on the control connection thread when Tor starts uploading a
-	 * descriptor of the given onion service to a directory.
-	 */
 	protected void onHsDescriptorUpload(String onion) {
 	}
 
-	/**
-	 * Called on the control connection thread when an upload of the given
-	 * onion service's descriptor to a directory has finished; {@code uploaded}
-	 * is true if the directory accepted it.
-	 */
 	protected void onHsDescriptorUploadFinished(String onion,
 			boolean uploaded) {
 	}

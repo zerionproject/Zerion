@@ -27,10 +27,6 @@ public final class IncomingRequestInfo {
 		this(r, linkKind, linkLabel, false);
 	}
 
-	/**
-	 * reconnect says that the request asks to replace the keys of someone
-	 * who is already a contact.
-	 */
 	public IncomingRequestInfo(IncomingRequest r, int linkKind,
 			@Nullable String linkLabel, boolean reconnect) {
 		this.reconnect = reconnect;

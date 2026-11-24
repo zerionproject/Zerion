@@ -14,11 +14,6 @@ public final class IncomingRequest {
 	public static final int STATE_OPENED = 1;
 	public static final int STATE_ACCEPTED = 2;
 	public static final int STATE_WITHDRAWN = 3;
-	/**
-	 * The request was accepted and the pairing ran, but the sender turned
-	 * out to be someone who is already a contact and the add was refused;
-	 * that contact's keys were left as they were.
-	 */
 	public static final int STATE_ALREADY_CONTACT = 4;
 
 	private final byte[] requestId, linkId, oneTimeLink, senderTag;
@@ -109,10 +104,6 @@ public final class IncomingRequest {
 				senderTag, senderTimestamp, receivedAt, STATE_ACCEPTED, at, p);
 	}
 
-	/**
-	 * @param alias the name the user gave the contact when accepting, kept
-	 * so the refused request can still be recognised; the note stays deleted.
-	 */
 	public IncomingRequest alreadyContact(@Nullable String alias) {
 		return new IncomingRequest(requestId, linkId, oneTimeLink, alias, null,
 				senderTag, senderTimestamp, receivedAt, STATE_ALREADY_CONTACT,

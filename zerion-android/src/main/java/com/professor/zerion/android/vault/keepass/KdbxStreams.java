@@ -321,12 +321,6 @@ final class KdbxStreams {
 		private int blockEnd = 0;
 		private boolean finished = false;
 
-		/**
-		 * The first failure of this stream. A reader above it can swallow the
-		 * exception, as the gzip reader does when it probes for a second
-		 * member after the compressed data, so every later read throws the
-		 * same failure again and the drain after parsing still sees it.
-		 */
 		@Nullable
 		private IOException failure = null;
 
@@ -413,12 +407,6 @@ final class KdbxStreams {
 		private int blockPos = 0;
 		private boolean finished = false;
 
-		/**
-		 * The first failure of this stream. A reader above it can swallow the
-		 * exception, as the gzip reader does when it probes for a second
-		 * member after the compressed data, so every later read throws the
-		 * same failure again and the drain after parsing still sees it.
-		 */
 		@Nullable
 		private IOException failure = null;
 

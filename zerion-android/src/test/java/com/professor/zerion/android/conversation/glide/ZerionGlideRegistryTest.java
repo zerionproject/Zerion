@@ -34,16 +34,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
 
-/**
- * Pins how attachments reach Glide. The registry the app runs with offers
- * an {@link AttachmentHeader} to exactly the two loaders of
- * {@link ZerionGlideModule}: the still-image loader, whose fetcher hands
- * Glide a decoded {@link Bitmap}, and for declared GIFs the loader whose
- * fetcher hands Glide a {@link CheckedGif}. No loader turns an attachment
- * into an {@link InputStream}, {@link ByteBuffer}, file or descriptor, so
- * the bytes of a received attachment never reach Glide's own decoders and
- * every decode goes through the image gate of those two fetchers.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class ZerionGlideRegistryTest {

@@ -383,18 +383,6 @@ public class RootEvolution implements ZwfControlHandler {
 		}
 	}
 
-	/**
-	 * Ends this connection's part and reports it to the manager. A due
-	 * evolution that did not complete counts as a stall only against a peer
-	 * that promised to wait for evolutions, since a peer of an earlier
-	 * release is not held to it. A connection that authenticated while
-	 * records were held for the peer's HELLO and never got one counts
-	 * whether or not the peer ever made that promise: the hold began because
-	 * the contact is known to greet, so the greeting was owed, and without it
-	 * the connection proves nothing about the peer's keys and must not clear
-	 * the out-of-sync mark either. A HELLO without the promise releases the
-	 * hold before this point and is not a stall.
-	 */
 	@Override
 	public void close() {
 		ReentrantLock lock = manager.lock(contactId);

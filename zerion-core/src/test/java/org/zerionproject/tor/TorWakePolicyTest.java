@@ -52,10 +52,6 @@ public class TorWakePolicyTest {
 		scheduler.advanceTo(now.get() + ms);
 	}
 
-	/**
-	 * Brings the policy to the released steady state: network enabled,
-	 * bootstrapped, every window expired.
-	 */
 	private void settle() {
 		policy.onStarting();
 		policy.onStartFinished();

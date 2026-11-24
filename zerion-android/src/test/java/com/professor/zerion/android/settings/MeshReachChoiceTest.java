@@ -10,14 +10,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The mesh links with contacts only unless the user chooses otherwise, and
- * the choice to link with every phone nearby passes through a confirmation.
- * The settings screen is built by dependency injection, so this pins the
- * flow in its source: the only call that opens the mesh sits in the
- * confirmation dialog's positive button, and the mesh manager starts in the
- * contacts-only mode whenever the stored preference is absent.
- */
 public class MeshReachChoiceTest {
 
 	private static final String FRAGMENT =
