@@ -373,7 +373,9 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 							scheduler.lastRealFrameOpenedWindow(), sentAt);
 					noteMarkedSend(gate, realSent,
 							scheduler.lastRealFrameWasUserOriginated());
-					boolean active = pace.next(scheduler.getUserDepth(),
+					boolean active = pace.next(scheduler.lastFrameWasUsers(),
+							scheduler.lastFrameWasControl(),
+							scheduler.getUserDepth(),
 							scheduler.getControlDepth(), clock.lastRealMs,
 							sentAt, pacing.idleAfterMs());
 					long activeDelay = computeInterval(pacing.activeIntervalMs(),
@@ -443,11 +445,24 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	static final class DensePace {
 
 		private boolean sustained = false;
+		private int sinceUserFrame = Integer.MAX_VALUE;
 
-		boolean next(int userDepth, int controlDepth, long lastRealMs,
-				long now, long idleAfterMs) {
+		boolean next(boolean userFrameSent, int userDepth, int controlDepth,
+				long lastRealMs, long now, long idleAfterMs) {
+			return next(userFrameSent, false, userDepth, controlDepth,
+					lastRealMs, now, idleAfterMs);
+		}
+
+		boolean next(boolean userFrameSent, boolean controlFrame,
+				int userDepth, int controlDepth, long lastRealMs, long now,
+				long idleAfterMs) {
+			if (userFrameSent) sinceUserFrame = 0;
+			else if (!controlFrame && sinceUserFrame < Integer.MAX_VALUE) {
+				sinceUserFrame++;
+			}
 			boolean inWindow = isActive(0, lastRealMs, now, idleAfterMs);
-			sustained = inWindow || (sustained && userDepth > 0);
+			sustained = inWindow || (sustained && userDepth > 0
+					&& sinceUserFrame <= 1);
 			return sustained || controlDepth > 0;
 		}
 	}

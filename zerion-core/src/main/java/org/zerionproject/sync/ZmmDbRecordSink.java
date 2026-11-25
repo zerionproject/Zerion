@@ -23,10 +23,18 @@ public class ZmmDbRecordSink implements ZppRecordSink {
 	private final ZmmSyncCodec codec;
 	private final ZmmReassembler reassembler = new ZmmReassembler();
 
-	@Inject
+	private final LocalMessageLog localMessages;
+
 	public ZmmDbRecordSink(DatabaseComponent db, ZmmSyncCodec codec) {
+		this(db, codec, new LocalMessageLog());
+	}
+
+	@Inject
+	public ZmmDbRecordSink(DatabaseComponent db, ZmmSyncCodec codec,
+			LocalMessageLog localMessages) {
 		this.db = db;
 		this.codec = codec;
+		this.localMessages = localMessages;
 	}
 
 	@Override
@@ -52,6 +60,7 @@ public class ZmmDbRecordSink implements ZppRecordSink {
 		if (reader.hasAck()) {
 			Ack a = reader.readAck();
 			db.transaction(false, txn -> db.receiveAck(txn, c, a));
+			localMessages.noteAcked(a.getMessageIds());
 		} else if (reader.hasMessage()) {
 			Message m = reader.readMessage();
 			db.transaction(false, txn -> db.receiveMessage(txn, c, m));

@@ -28,7 +28,7 @@ public class LocalMessageLog implements UserMessageMarker {
 	private final LongSupplier clock;
 	private final Map<MessageId, Long> added = new LinkedHashMap<>();
 	private final Set<MessageId> unannounced = new HashSet<>();
-	private final Map<MessageId, Long> traffic = new LinkedHashMap<>();
+	private final Map<MessageId, long[]> traffic = new LinkedHashMap<>();
 
 	@Inject
 	public LocalMessageLog() {
@@ -63,7 +63,7 @@ public class LocalMessageLog implements UserMessageMarker {
 
 	private void noteTraffic(MessageId id, long now) {
 		traffic.remove(id);
-		traffic.put(id, now);
+		traffic.put(id, new long[] {now, 0, -1});
 		if (traffic.size() > MAX_TRAFFIC_ENTRIES) {
 			Iterator<MessageId> it = traffic.keySet().iterator();
 			it.next();
@@ -71,9 +71,27 @@ public class LocalMessageLog implements UserMessageMarker {
 		}
 	}
 
-	public synchronized boolean takeUserTraffic(MessageId id) {
+	public synchronized boolean isUserTraffic(MessageId id) {
 		expire(clock.getAsLong());
-		return traffic.remove(id) != null;
+		long[] part = traffic.get(id);
+		return part != null && (part[2] < 0 || part[1] < part[2]);
+	}
+
+	public synchronized int userFramesLeft(MessageId id, int frames) {
+		expire(clock.getAsLong());
+		long[] part = traffic.get(id);
+		if (part == null) return 0;
+		part[2] = frames;
+		return (int) Math.max(0, frames - part[1]);
+	}
+
+	public synchronized void noteUserFrameSent(MessageId id) {
+		long[] part = traffic.get(id);
+		if (part != null) part[1]++;
+	}
+
+	public synchronized void noteAcked(Collection<MessageId> acked) {
+		for (MessageId id : acked) traffic.remove(id);
 	}
 
 	public synchronized boolean isUnannounced(MessageId id) {
@@ -120,9 +138,9 @@ public class LocalMessageLog implements UserMessageMarker {
 			unannounced.remove(e.getKey());
 			it.remove();
 		}
-		Iterator<Long> parts = traffic.values().iterator();
+		Iterator<long[]> parts = traffic.values().iterator();
 		while (parts.hasNext()) {
-			if (now - parts.next() <= FRESH_MESSAGE_MS) break;
+			if (now - parts.next()[0] <= FRESH_MESSAGE_MS) break;
 			parts.remove();
 		}
 	}
