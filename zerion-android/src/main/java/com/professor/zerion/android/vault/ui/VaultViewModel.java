@@ -3323,10 +3323,19 @@ public class VaultViewModel extends AndroidViewModel {
 			callback.onExportError(text(R.string.vault_msg_unlock_first));
 			return;
 		}
+		if (!VaultManager.acceptsNewPassword(exportPassword)) {
+			Arrays.fill(exportPassword, '\0');
+			callback.onExportError(text(R.string.vault_password_rule));
+			return;
+		}
 		dbExecutor.execute(() -> {
 			try {
 				byte[] exportData = vaultManager.exportVault(exportPassword);
 				callback.onExportSuccess(exportData);
+			} catch (IllegalArgumentException e) {
+				callback.onExportError(text(NewPassword.refuses(e)
+						? R.string.vault_password_rule
+						: R.string.vault_document_export_generic_failed));
 			} catch (Exception e) {
 				callback.onExportError(text(R.string.vault_document_export_generic_failed));
 			} finally {

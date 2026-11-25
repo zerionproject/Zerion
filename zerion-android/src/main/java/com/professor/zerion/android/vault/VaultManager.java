@@ -1878,7 +1878,7 @@ public class VaultManager
 		dos.write(exportSalt);
 
 		char[] normalExportPassword =
-				NewPassword.normalForm(exportPassword, 1);
+				NewPassword.normalForm(exportPassword, MIN_PASSWORD_LENGTH);
 		DerivedKey derived;
 		try {
 			derived = derivePortable(normalExportPassword, exportSalt);
