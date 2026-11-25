@@ -133,6 +133,8 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 
 		textScrollView = view.findViewById(R.id.text_scroll_view);
 		textContentView = view.findViewById(R.id.text_content);
+		com.professor.zerion.android.util.UiUtils
+				.keepLinkActionsInApp(textContentView);
 		textTypeface = textContentView.getTypeface();
 
 		unsupportedLayout = view.findViewById(R.id.unsupported_layout);

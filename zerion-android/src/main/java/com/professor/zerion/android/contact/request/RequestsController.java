@@ -344,10 +344,7 @@ public class RequestsController {
 				.setText(formatDate(activity, r.getReceivedAt()));
 		TextView note = v.findViewById(R.id.requestDetailNote);
 		String text = r.getNote();
-		if (android.os.Build.VERSION.SDK_INT >= 26) {
-			note.setTextClassifier(
-					android.view.textclassifier.TextClassifier.NO_OP);
-		}
+		com.professor.zerion.android.util.UiUtils.keepLinkActionsInApp(note);
 		if (text != null && !text.isEmpty()) {
 			note.setText(text);
 			note.setVisibility(View.VISIBLE);

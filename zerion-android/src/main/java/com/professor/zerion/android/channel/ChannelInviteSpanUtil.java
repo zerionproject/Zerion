@@ -84,6 +84,8 @@ public final class ChannelInviteSpanUtil {
 
 		textView.setText(sb);
 		textView.setMovementMethod(LinkMovementMethod.getInstance());
+		com.professor.zerion.android.util.UiUtils
+				.keepLinkActionsInApp(textView);
 		return true;
 	}
 
