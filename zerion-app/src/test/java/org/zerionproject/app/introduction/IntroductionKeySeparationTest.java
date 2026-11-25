@@ -2,7 +2,9 @@ package org.zerionproject.app.introduction;
 
 import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.SecretKey;
+import org.zerionproject.core.api.crypto.pcs.MlKemKeyPair;
 import org.zerionproject.core.api.crypto.pcs.MlKemProvider;
 import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.MetadataEncoder;
@@ -15,6 +17,7 @@ import org.zerionproject.app.introduction.IntroductionTestNet.Call;
 import org.zerionproject.app.introduction.IntroductionTestNet.Party;
 import org.zerionproject.app.introduction.IntroductionTestNet.Recorder;
 import org.zerionproject.app.introduction.IntroductionTestNet.Sent;
+import org.zerionproject.app.introduction.IntroductionTestNet.Transition;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -49,6 +52,7 @@ import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_SHARED_SECRET_V2;
 import static org.zerionproject.app.introduction.IntroduceeState.AWAIT_ACTIVATE;
 import static org.zerionproject.app.introduction.IntroduceeState.AWAIT_AUTH;
+import static org.zerionproject.app.introduction.IntroduceeState.LOCAL_ACCEPTED;
 import static org.zerionproject.app.introduction.IntroduceeState.REMOTE_ACCEPTED;
 import static org.zerionproject.app.introduction.IntroduceeState.START;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_MASTER_KEY;
@@ -756,5 +760,211 @@ public class IntroductionKeySeparationTest extends BrambleTestCase {
 				assertFalse(checks.contains(Boolean.TRUE));
 			}
 		}
+	}
+
+	private static List<Transition> abortsOf(Party p) {
+		List<Transition> found = new ArrayList<>();
+		for (Transition t : p.transitions) {
+			if (t.output.getState() == START && !t.inputSecrets.isEmpty()) {
+				found.add(t);
+			}
+		}
+		return found;
+	}
+
+	private static void assertWiped(List<byte[]> secrets) {
+		assertFalse(secrets.isEmpty());
+		for (byte[] secret : secrets) assertTrue(allZero(secret));
+	}
+
+	private static void assertDerivedWiped(Party p, String label) {
+		List<Call> derived = p.recorder.derivations(label);
+		assertFalse(label, derived.isEmpty());
+		for (Call c : derived) {
+			assertNotNull(c.result);
+			assertNotNull(c.derived);
+			assertFalse(label, allZero(c.result));
+			assertTrue(label, allZero(c.derived.getBytes()));
+		}
+	}
+
+	private static IntroduceeSession requireSession(Party p)
+			throws Exception {
+		IntroduceeSession s = p.session();
+		assertNotNull(s);
+		return s;
+	}
+
+	@Test
+	public void anAbortLeavesEverySecretOfTheSessionAtZero()
+			throws Exception {
+		for (int scenario = 0; scenario < 5; scenario++) {
+			boolean earlierAlice = scenario == 3 || scenario == 4;
+			boolean earlierBob = scenario == 4;
+			IntroductionTestNet net = net(
+					earlierAlice ? EARLIER_VERSION : CURRENT_VERSION,
+					earlierBob ? EARLIER_VERSION : CURRENT_VERSION);
+			Party alice = net.alice();
+			Party bob = net.bob();
+			int s = scenario;
+			net.setRewrite((to, properties) -> {
+				if (s == 0 && to == alice) {
+					return KeySchedule.withoutAnnouncement(properties);
+				}
+				if (s == 1 && to == bob) {
+					return KeySchedule.withoutAnnouncement(properties);
+				}
+				if (s == 2 || (s == 3 && to == alice)) {
+					return KeySchedule.withoutAnnouncement(properties);
+				}
+				if (s == 4 && to == bob) {
+					return KeySchedule.announce(properties, SEPARATED_VERSION);
+				}
+				return properties;
+			});
+			net.introduceAndAccept(alice);
+			assertFailedWithoutAContact(net);
+			for (Party p : net.parties()) {
+				Transition t = only(abortsOf(p));
+				assertEquals(AWAIT_AUTH, t.input.getState());
+				assertTrue(t.inputSecrets.size() >= 3);
+				assertWiped(t.inputSecrets);
+				assertWiped(IntroductionTestNet.secrets(t.input));
+				assertTrue(IntroductionTestNet.secrets(t.output).isEmpty());
+			}
+		}
+	}
+
+	@Test
+	public void anAbortAfterTheKeysAreDerivedWipesTheRootAndTheActivateKeys()
+			throws Exception {
+		for (int version : new int[] {CURRENT_VERSION, EARLIER_VERSION}) {
+			IntroductionTestNet net = net(version, version);
+			net.setTime(1_000_000L);
+			net.introduceAndAccept(net.alice());
+			for (Party p : net.parties()) {
+				boolean alice = p == net.alice();
+				assertTrue(p.contactRoots.isEmpty());
+				assertTrue(p.rotationRoots.isEmpty());
+				assertTrue(p.sent(ACTIVATE).isEmpty());
+				assertFalse(p.sent(ABORT).isEmpty());
+				Transition t = only(abortsOf(p));
+				assertEquals(AWAIT_AUTH, t.input.getState());
+				assertWiped(t.inputSecrets);
+				if (version == CURRENT_VERSION) {
+					assertDerivedWiped(p, LABEL_ROOT_KEY_V2);
+					assertDerivedWiped(p, LABEL_ALICE_ACTIVATE_KEY_V2);
+					assertDerivedWiped(p, LABEL_BOB_ACTIVATE_KEY_V2);
+				} else {
+					Call root = only(p.recorder.calls("deriveKey",
+							LABEL_MASTER_KEY));
+					assertNotNull(root.derived);
+					assertTrue(allZero(root.derived.getBytes()));
+					assertDerivedWiped(p, LABEL_ALICE_ACTIVATE_KEY);
+					assertDerivedWiped(p, LABEL_BOB_ACTIVATE_KEY);
+					List<Call> preMasters =
+							p.recorder.derivations(LABEL_PRE_MASTER_KEY);
+					Call peerPreMaster = preMasters.get(preMasters.size() - 1);
+					assertNotNull(peerPreMaster.derived);
+					assertTrue(allZero(peerPreMaster.derived.getBytes()));
+					List<Call> peerMacKeys = p.recorder.derivations(
+							alice ? LABEL_BOB_MAC_KEY : LABEL_ALICE_MAC_KEY);
+					Call peerMacKey = peerMacKeys.get(peerMacKeys.size() - 1);
+					assertNotNull(peerMacKey.derived);
+					assertTrue(allZero(peerMacKey.derived.getBytes()));
+				}
+			}
+		}
+	}
+
+	@Test
+	public void aDeclineWipesTheKeysOfTheSideThatAccepted() throws Exception {
+		for (int version : new int[] {CURRENT_VERSION, EARLIER_VERSION}) {
+			IntroductionTestNet net = net(version, version);
+			net.introduce();
+			net.alice().accept();
+			net.run();
+			net.bob().decline();
+			net.run();
+			Transition t = only(abortsOf(net.alice()));
+			assertEquals(LOCAL_ACCEPTED, t.input.getState());
+			assertEquals(2, t.inputSecrets.size());
+			assertWiped(t.inputSecrets);
+			assertTrue(net.alice().contactRoots.isEmpty());
+		}
+	}
+
+	@Test
+	public void keysMadeForAnAcceptAfterTheOtherDeclinedAreWiped()
+			throws Exception {
+		for (int version : new int[] {CURRENT_VERSION, EARLIER_VERSION}) {
+			IntroductionTestNet net = net(version, version);
+			net.introduce();
+			net.bob().decline();
+			net.run();
+			net.alice().accept();
+			net.run();
+			List<Object> made = net.alice().recorder.returned;
+			assertEquals(2, made.size());
+			boolean agreement = false;
+			boolean mlKem = false;
+			for (Object o : made) {
+				byte[] secret;
+				if (o instanceof KeyPair) {
+					secret = ((KeyPair) o).getPrivate().getEncoded();
+					agreement = true;
+				} else {
+					secret = ((MlKemKeyPair) o).getDecapsulationKey();
+					mlKem = true;
+				}
+				assertTrue(allZero(secret));
+			}
+			assertTrue(agreement && mlKem);
+			assertEquals(START, requireSession(net.alice()).getState());
+			assertTrue(net.alice().contactRoots.isEmpty());
+		}
+	}
+
+	@Test
+	public void theRootHandedToTheContactAndKeyManagersOutlivesTheWipe()
+			throws Exception {
+		for (int version : new int[] {CURRENT_VERSION, EARLIER_VERSION}) {
+			IntroductionTestNet net = net(version, version);
+			net.introduceAndAccept(net.bob());
+			assertCompleted(net);
+			for (Party p : net.parties()) {
+				byte[] root = p.contactRoots.get(0);
+				assertFalse(allZero(root));
+				byte[] handedToContacts = only(p.contactRootKeys).getBytes();
+				byte[] handedToKeys = only(p.rotationRootKeys).getBytes();
+				assertArrayEquals(root, handedToContacts);
+				assertArrayEquals(root, handedToKeys);
+				assertFalse(handedToContacts == handedToKeys);
+				Transition last =
+						p.transitions.get(p.transitions.size() - 1);
+				assertEquals(AWAIT_ACTIVATE, last.input.getState());
+				assertEquals(2, last.inputSecrets.size());
+				assertWiped(last.inputSecrets);
+			}
+		}
+	}
+
+	@Test
+	public void wipingASessionZeroesEachOfItsSecrets() throws Exception {
+		IntroductionTestNet net = net(EARLIER_VERSION, EARLIER_VERSION);
+		int[] checked = {0};
+		net.setHook((to, type) -> {
+			if (to == null || type != AUTH) return;
+			IntroduceeSession s = requireSession(to);
+			List<byte[]> secrets = IntroductionTestNet.secrets(s);
+			assertEquals(6, secrets.size());
+			for (byte[] secret : secrets) assertFalse(allZero(secret));
+			IntroduceeSession.wipeSecrets(s);
+			assertWiped(secrets);
+			checked[0]++;
+		});
+		net.introduceAndAccept(net.alice());
+		assertEquals(2, checked[0]);
+		assertCompleted(net);
 	}
 }

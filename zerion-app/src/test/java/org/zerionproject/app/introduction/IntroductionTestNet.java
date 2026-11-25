@@ -109,8 +109,22 @@ final class IntroductionTestNet {
 		}
 	}
 
+	static final class Transition {
+		final IntroduceeSession input;
+		final List<byte[]> inputSecrets;
+		final IntroduceeSession output;
+
+		Transition(IntroduceeSession input, List<byte[]> inputSecrets,
+				IntroduceeSession output) {
+			this.input = input;
+			this.inputSecrets = inputSecrets;
+			this.output = output;
+		}
+	}
+
 	static final class Recorder {
 		final List<Call> calls = new ArrayList<>();
+		final List<Object> returned = new ArrayList<>();
 
 		List<Call> derivations(String label) {
 			List<Call> found = new ArrayList<>();
@@ -193,6 +207,9 @@ final class IntroductionTestNet {
 		final Recorder recorder = new Recorder();
 		final List<byte[]> contactRoots = new ArrayList<>();
 		final List<byte[]> rotationRoots = new ArrayList<>();
+		final List<SecretKey> contactRootKeys = new ArrayList<>();
+		final List<SecretKey> rotationRootKeys = new ArrayList<>();
+		final List<Transition> transitions = new ArrayList<>();
 		final List<Map<TransportId, TransportProperties>> remoteProperties =
 				new ArrayList<>();
 		int activations = 0;
@@ -216,7 +233,7 @@ final class IntroductionTestNet {
 			group = groupObject.getId();
 			introducerContact = new ContactId(contactId);
 			crypto = new IntroductionCryptoImpl(recording(recorder),
-					clientHelper, mlKemProvider);
+					clientHelper, recordingMlKem(recorder));
 			engine = engine(keyScheduleVersion);
 		}
 
@@ -237,7 +254,31 @@ final class IntroductionTestNet {
 
 		void accept() throws Exception {
 			Transaction txn = new Transaction(null, false);
-			store(engine.onAcceptAction(txn, session()));
+			IntroduceeSession in = session();
+			List<byte[]> secrets = secrets(in);
+			store(checked(in, secrets, engine.onAcceptAction(txn, in)));
+		}
+
+		void decline() throws Exception {
+			Transaction txn = new Transaction(null, false);
+			IntroduceeSession in = session();
+			List<byte[]> secrets = secrets(in);
+			store(checked(in, secrets,
+					engine.onDeclineAction(txn, in, false)));
+		}
+
+		private IntroduceeSession checked(@Nullable IntroduceeSession in,
+				List<byte[]> inputSecrets, IntroduceeSession out) {
+			List<byte[]> kept = secrets(out);
+			for (byte[] secret : inputSecrets) {
+				boolean stillHeld = false;
+				for (byte[] k : kept) if (k == secret) stillHeld = true;
+				if (!stillHeld && !allZero(secret)) {
+					throw new AssertionError("dropped and not wiped");
+				}
+			}
+			if (in != null) transitions.add(new Transition(in, inputSecrets, out));
+			return out;
 		}
 
 		List<Sent> sent(MessageType type) {
@@ -264,6 +305,8 @@ final class IntroductionTestNet {
 				throws Exception {
 			Transaction txn = new Transaction(null, false);
 			IntroduceeSession s = session();
+			IntroduceeSession in = s;
+			List<byte[]> inputSecrets = secrets(s);
 			if (s == null) {
 				Author remote =
 						messageParser.parseRequestMessage(m, body).getAuthor();
@@ -301,7 +344,7 @@ final class IntroductionTestNet {
 				default:
 					throw new AssertionError();
 			}
-			store(s);
+			store(checked(in, inputSecrets, s));
 		}
 
 		private IntroduceeProtocolEngine engine(int keyScheduleVersion) {
@@ -313,6 +356,7 @@ final class IntroductionTestNet {
 									author.getId(), null, null, true);
 						}
 						if (name.equals("addContact")) {
+							contactRootKeys.add((SecretKey) args[3]);
 							contactRoots.add(
 									((SecretKey) args[3]).getBytes().clone());
 							return new ContactId(1000 + contactRoots.size());
@@ -333,6 +377,7 @@ final class IntroductionTestNet {
 			KeyManager keyManager = stub(KeyManager.class,
 					(name, method, args) -> {
 						if (name.equals("addRotationKeys")) {
+							rotationRootKeys.add((SecretKey) args[2]);
 							rotationRoots.add(((SecretKey) args[2]).getBytes()
 									.clone());
 							return Collections.singletonMap(
@@ -459,6 +504,33 @@ final class IntroductionTestNet {
 
 	void setHook(DeliveryHook hook) {
 		this.hook = hook;
+	}
+
+	void setTime(long time) {
+		now = time;
+	}
+
+	static List<byte[]> secrets(@Nullable IntroduceeSession s) {
+		List<byte[]> secrets = new ArrayList<>();
+		if (s == null) return secrets;
+		add(secrets, s.getMasterKey());
+		if (s.getLocal().ephemeralPrivateKey != null) {
+			add(secrets, s.getLocal().ephemeralPrivateKey.getEncoded());
+		}
+		add(secrets, s.getLocal().mlKemEphemeralPrivateKey);
+		add(secrets, s.getLocal().ownKemSecret);
+		add(secrets, s.getLocal().macKey);
+		add(secrets, s.getRemote().macKey);
+		return secrets;
+	}
+
+	private static void add(List<byte[]> secrets, @Nullable byte[] secret) {
+		if (secret != null) secrets.add(secret);
+	}
+
+	static boolean allZero(byte[] b) {
+		for (byte x : b) if (x != 0) return false;
+		return true;
 	}
 
 	IntroducerSession introducerSession() throws Exception {
@@ -648,6 +720,14 @@ final class IntroductionTestNet {
 		});
 	}
 
+	private MlKemProvider recordingMlKem(Recorder recorder) {
+		return stub(MlKemProvider.class, (name, method, args) -> {
+			Object result = invoke(mlKemProvider, method, args);
+			if (name.equals("generateKeyPair")) recorder.returned.add(result);
+			return result;
+		});
+	}
+
 	private CryptoComponent recording(Recorder recorder) {
 		return stub(CryptoComponent.class, (name, method, args) -> {
 			String label = null;
@@ -665,6 +745,7 @@ final class IntroductionTestNet {
 				}
 			}
 			Object result = invoke(cryptoComponent, method, args);
+			if (result instanceof KeyPair) recorder.returned.add(result);
 			byte[] bytes = null;
 			SecretKey derived = null;
 			if (result instanceof SecretKey) {

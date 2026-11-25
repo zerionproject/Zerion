@@ -309,6 +309,9 @@ class IntroductionManagerImpl extends ConversationClientImpl
 		} catch (FormatException e) {
 			throw new AssertionError();
 		}
+		if (session.getRole() == INTRODUCEE) {
+			IntroduceeSession.wipeSecrets((IntroduceeSession) session);
+		}
 	}
 
 	@Override
