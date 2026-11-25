@@ -3,6 +3,7 @@ package com.professor.zerion.android.mesh;
 import org.junit.Before;
 import org.junit.Test;
 import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.app.api.messaging.event.MeshLinkKeysReceivedEvent;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
@@ -67,6 +68,7 @@ public class MeshSenderFormTest {
 	private AsyncPrekeyBundle contactBundle;
 	private AsyncMeshDelivery contactWithoutLinkKey;
 	private AsyncMeshDelivery contactWithLinkKey;
+	private UnsignedFormsMemory memory;
 	private MeshLinkKeys keys;
 	private int announced;
 	private byte[] ourPair;
@@ -178,8 +180,9 @@ public class MeshSenderFormTest {
 	}
 
 	private MeshLinkKeys start() {
-		return new MeshLinkKeys(mock(EventBus.class), db, settings, contacts,
-				messaging, Runnable::run);
+		memory = new UnsignedFormsMemory(db, settings, contacts, messaging);
+		return new MeshLinkKeys(mock(EventBus.class), settings, contacts,
+				messaging, memory, Runnable::run);
 	}
 
 	private void exchangeLinkKeys() {
@@ -195,9 +198,11 @@ public class MeshSenderFormTest {
 
 	private void announce(int minor) {
 		announced = minor;
-		keys.eventOccurred(new ClientVersionUpdatedEvent(contactId,
+		ClientVersionUpdatedEvent e = new ClientVersionUpdatedEvent(contactId,
 				new ClientVersion(MessagingManager.CLIENT_ID,
-						MessagingManager.MAJOR_VERSION, minor)));
+						MessagingManager.MAJOR_VERSION, minor));
+		memory.eventOccurred(e);
+		keys.eventOccurred(e);
 	}
 
 	private byte[] send(String text) throws Exception {

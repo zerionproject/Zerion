@@ -2,6 +2,7 @@ package org.zerionproject.app.grouptr;
 
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.messaging.MessageTypes;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.contact.Contact;
@@ -13,6 +14,7 @@ import org.zerionproject.core.api.crypto.PostQuantumConstants;
 import org.zerionproject.core.api.crypto.PrivateKey;
 import org.zerionproject.core.api.crypto.SignaturePublicKey;
 import org.zerionproject.core.api.data.BdfList;
+import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.settings.SettingsManager;
@@ -352,6 +354,193 @@ public class GroupBindingV2Test {
 		assertEquals("a binding signed by the member key for the contact it"
 				+ " came from is taken", dave.contactIdOf(alice),
 				dave.manager.getMemberContacts(g).get(toHexString(k)));
+	}
+
+	@Test
+	public void aContactThatOnceAnnouncedVersion17GetsNoSignedBindingLater()
+			throws Exception {
+		InviteTestNet net = new InviteTestNet();
+		InviteTestNet.Node carol = net.node("Carol", 1);
+		InviteTestNet.Node olga = net.node("Olga", 2);
+		net.connect(carol, olga);
+		int older = MessagingManager.GROUP_BINDING_V2_MIN_VERSION - 1;
+		carol.versionUpdated(olga, UnsignedFormsMemory.MIN_VERSION);
+		carol.versionUpdated(olga, older);
+		olga.versionUpdated(carol, UnsignedFormsMemory.MIN_VERSION);
+		olga.versionUpdated(carol, older);
+		byte[] g = carol.manager.createGroup("Club").getGroupId();
+
+		carol.manager.inviteContactToGroup(g, carol.contactIdOf(olga),
+				olga.pub, olga.name);
+		net.pump();
+		BdfList offer = sentOfType(carol, MessageTypes.GROUPTR_INVITE_OFFER)
+				.get(0).body;
+		assertEquals(0, identitySigLength(offer.getList(8)));
+		olga.manager.acceptInvite(g);
+		net.pump();
+		BdfList accept = sentOfType(olga, MessageTypes.GROUPTR_INVITE_ACCEPT)
+				.get(0).body;
+		assertEquals(0, identitySigLength(accept.getList(4)));
+		assertTrue(carol.manager.isMember(g, key(olga, g)));
+		assertEquals(olga.contactIdOf(carol), olga.manager
+				.getMemberContacts(g).get(toHexString(key(carol, g))));
+	}
+
+	@Test
+	public void memberInvitesAndProbesKeepTheUnsignedBindingAfterADowngrade()
+			throws Exception {
+		InviteTestNet net = new InviteTestNet();
+		InviteTestNet.Node carol = net.node("Carol", 1);
+		InviteTestNet.Node mia = net.node("Mia", 2);
+		InviteTestNet.Node xavi = net.node("Xavi", 3);
+		InviteTestNet.Node olga = net.node("Olga", 4);
+		net.connect(carol, mia);
+		net.connect(mia, olga);
+		net.connect(mia, xavi);
+		int older = MessagingManager.GROUP_BINDING_V2_MIN_VERSION - 1;
+		mia.versionUpdated(olga, UnsignedFormsMemory.MIN_VERSION);
+		mia.versionUpdated(olga, older);
+		olga.versionUpdated(mia, UnsignedFormsMemory.MIN_VERSION);
+		olga.versionUpdated(mia, older);
+		byte[] g = carol.manager.createGroup("Club").getGroupId();
+		join(net, carol, g, mia);
+		carol.manager.setMembersMayInvite(g, true);
+		net.pump();
+
+		mia.manager.inviteContactAsMember(g, mia.contactIdOf(olga));
+		net.pump();
+		BdfList offer = sentOfType(mia,
+				MessageTypes.GROUPTR_MEMBER_INVITE_OFFER).get(0).body;
+		assertEquals(0, identitySigLength(offer.getList(13)));
+		olga.manager.acceptMemberInvite(g, olga.contactIdOf(mia));
+		net.pump();
+		BdfList accept = sentOfType(olga,
+				MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT).get(0).body;
+		assertEquals(0, identitySigLength(accept.getList(5)));
+		assertTrue(carol.manager.isMember(g, key(olga, g)));
+
+		mia.manager.inviteContactAsMember(g, mia.contactIdOf(xavi));
+		net.pump();
+		xavi.manager.acceptMemberInvite(g, xavi.contactIdOf(mia));
+		net.pump();
+		net.connect(xavi, olga);
+		olga.versionUpdated(xavi, UnsignedFormsMemory.MIN_VERSION);
+		olga.versionUpdated(xavi, older);
+		xavi.versionUpdated(olga, UnsignedFormsMemory.MIN_VERSION);
+		xavi.versionUpdated(olga, older);
+		net.pump();
+		BdfList probe = sentOfType(xavi, MessageTypes.GROUP_KEY_PROBE).get(0)
+				.body;
+		for (int i = 0; i < probe.getList(1).size(); i++) {
+			assertEquals(GroupTrKeys.SEALED_BINDING_V2_BYTES,
+					probe.getList(1).getList(i).getRaw(2).length);
+		}
+		BdfList answer = sentOfType(olga, MessageTypes.GROUP_KEY_BINDING)
+				.get(0).body;
+		assertEquals(0, identitySigLength(answer.getList(2)));
+		assertEquals(xavi.contactIdOf(olga), xavi.manager
+				.getMemberContacts(g).get(toHexString(key(olga, g))));
+	}
+
+	@Test
+	public void aContactThatNeverAnnouncedVersion17StillGetsTheSignedBinding()
+			throws Exception {
+		InviteTestNet net = new InviteTestNet();
+		InviteTestNet.Node carol = net.node("Carol", 1);
+		InviteTestNet.Node olga = net.node("Olga", 2);
+		net.connect(carol, olga);
+		int older = MessagingManager.GROUP_BINDING_V2_MIN_VERSION - 1;
+		carol.versionUpdated(olga,
+				MessagingManager.GROUP_MEMBER_KEYS_MIN_VERSION);
+		carol.versionUpdated(olga, older);
+		olga.setVersion(carol, older);
+		carol = net.restore(carol);
+		carol.memory.onDatabaseOpened(new Transaction(null, false));
+		byte[] g = carol.manager.createGroup("Club").getGroupId();
+
+		carol.manager.inviteContactToGroup(g, carol.contactIdOf(olga),
+				olga.pub, olga.name);
+		net.pump();
+		BdfList offer = sentOfType(carol, MessageTypes.GROUPTR_INVITE_OFFER)
+				.get(0).body;
+		assertEquals(SIG, identitySigLength(offer.getList(8)));
+		olga.manager.acceptInvite(g);
+		net.pump();
+		assertTrue(carol.manager.isMember(g, key(olga, g)));
+	}
+
+	@Test
+	public void removingAContactForgetsThatItAnnouncedVersion17()
+			throws Exception {
+		InviteTestNet net = new InviteTestNet();
+		InviteTestNet.Node carol = net.node("Carol", 1);
+		InviteTestNet.Node olga = net.node("Olga", 2);
+		net.connect(carol, olga);
+		int older = MessagingManager.GROUP_BINDING_V2_MIN_VERSION - 1;
+		ContactId id = carol.contactIdOf(olga);
+		carol.versionUpdated(olga, UnsignedFormsMemory.MIN_VERSION);
+		carol.versionUpdated(olga, older);
+		olga.setVersion(carol, older);
+		assertTrue(held(carol, id));
+
+		Contact removed = null;
+		for (Contact c : carol.contactList()) {
+			if (c.getId().equals(id)) removed = c;
+		}
+		assertNotNull(removed);
+		carol.memory.removingContact(new Transaction(null, false), removed);
+
+		assertFalse(held(carol, id));
+		byte[] g = carol.manager.createGroup("Club").getGroupId();
+		carol.manager.inviteContactToGroup(g, id, olga.pub, olga.name);
+		net.pump();
+		BdfList offer = sentOfType(carol, MessageTypes.GROUPTR_INVITE_OFFER)
+				.get(0).body;
+		assertEquals(SIG, identitySigLength(offer.getList(8)));
+	}
+
+	@Test
+	public void whatAContactAnnouncedIsKeptAcrossARestart() throws Exception {
+		InviteTestNet net = new InviteTestNet();
+		InviteTestNet.Node carol = net.node("Carol", 1);
+		InviteTestNet.Node olga = net.node("Olga", 2);
+		InviteTestNet.Node mia = net.node("Mia", 3);
+		net.connect(carol, olga);
+		net.connect(carol, mia);
+		int older = MessagingManager.GROUP_BINDING_V2_MIN_VERSION - 1;
+		carol.versionUpdated(olga, UnsignedFormsMemory.MIN_VERSION);
+		carol.setVersion(mia, UnsignedFormsMemory.MIN_VERSION);
+		carol = net.restore(carol);
+		carol.memory.onDatabaseOpened(new Transaction(null, false));
+		carol.versionUpdated(olga, older);
+		carol.versionUpdated(mia, older);
+		carol = net.restore(carol);
+		olga.setVersion(carol, older);
+		mia.setVersion(carol, older);
+		byte[] g = carol.manager.createGroup("Club").getGroupId();
+
+		carol.manager.inviteContactToGroup(g, carol.contactIdOf(olga),
+				olga.pub, olga.name);
+		carol.manager.inviteContactToGroup(g, carol.contactIdOf(mia),
+				mia.pub, mia.name);
+		net.pump();
+		List<InviteTestNet.Packet> offers =
+				sentOfType(carol, MessageTypes.GROUPTR_INVITE_OFFER);
+		assertEquals(2, offers.size());
+		for (InviteTestNet.Packet p : offers) {
+			assertEquals(0, identitySigLength(p.body.getList(8)));
+		}
+	}
+
+	@Test
+	public void theMemoryCoversTheBindingVersion() {
+		assertEquals(MessagingManager.GROUP_BINDING_V2_MIN_VERSION,
+				UnsignedFormsMemory.MIN_VERSION);
+	}
+
+	private static boolean held(InviteTestNet.Node node, ContactId id) {
+		return node.namespace(UnsignedFormsMemory.NAMESPACE).getBoolean(
+				UnsignedFormsMemory.UNSIGNED_ONLY + id.getInt(), false);
 	}
 
 	private static void deliver(InviteTestNet net, InviteTestNet.Node from,

@@ -154,6 +154,8 @@ class GroupTrManagerImpl
 	private static final int MAX_SETTINGS_OFFERS_REMEMBERED = 1024;
 	private final TaskScheduler taskScheduler;
 	private final UserMessageMarker userMessages;
+	private final org.zerionproject.app.messaging.UnsignedFormsMemory
+			unsignedForms;
 	private final java.util.Map<String, Long> settingsOffered =
 			Collections.synchronizedMap(
 					new java.util.LinkedHashMap<String, Long>(16, 0.75f,
@@ -289,7 +291,9 @@ class GroupTrManagerImpl
 			CryptoComponent crypto, IdentityManager identityManager,
 			ContactManager contactManager, MessagingManager messagingManager,
 			EventBus eventBus, Clock clock, TaskScheduler taskScheduler,
-			UserMessageMarker userMessages) {
+			UserMessageMarker userMessages,
+			org.zerionproject.app.messaging.UnsignedFormsMemory
+					unsignedForms) {
 		this.db = db;
 		this.ioExecutor = ioExecutor;
 		this.taskScheduler = taskScheduler;
@@ -302,6 +306,7 @@ class GroupTrManagerImpl
 		this.eventBus = eventBus;
 		this.clock = clock;
 		this.userMessages = userMessages;
+		this.unsignedForms = unsignedForms;
 		this.random = new SecureRandom();
 		this.keys = new GroupTrKeys(settingsManager, crypto, clientHelper);
 		this.removals = new GroupTrPostRemovals(db, settingsManager,
@@ -310,11 +315,12 @@ class GroupTrManagerImpl
 		this.replies = new GroupTrReplies(messagingManager);
 		this.memberInvites = new GroupTrMemberInvites(db, settingsManager,
 				clientHelper, crypto, identityManager, contactManager,
-				messagingManager, eventBus, clock, new MemberInvitesHost());
+				messagingManager, unsignedForms, eventBus, clock,
+				new MemberInvitesHost());
 		this.order = new GroupTrReceiveOrder(settingsManager);
 		this.keyExchange = new GroupTrKeyExchange(db, contactManager,
-				messagingManager, keys, clock, taskScheduler, ioExecutor,
-				random, clientHelper, new KeyExchangeHost());
+				messagingManager, unsignedForms, keys, clock, taskScheduler,
+				ioExecutor, random, clientHelper, new KeyExchangeHost());
 	}
 
 	@Override
@@ -1189,16 +1195,16 @@ class GroupTrManagerImpl
 		}
 	}
 
-	static boolean bindingIdentitySigned(int contactMinorVersion) {
-		return contactMinorVersion
-				< MessagingManager.GROUP_BINDING_V2_MIN_VERSION;
+	static boolean bindingIdentitySigned(
+			org.zerionproject.app.messaging.UnsignedFormsMemory unsignedForms,
+			Transaction txn, ContactId contactId) throws DbException {
+		return !unsignedForms.unsignedOnly(txn, contactId);
 	}
 
 	private boolean bindingIdentitySignedFor(ContactId contactId)
 			throws DbException {
-		int minor = db.transactionWithResult(true, txn ->
-				messagingManager.getContactClientMinorVersion(txn, contactId));
-		return bindingIdentitySigned(minor);
+		return db.transactionWithResult(true, txn ->
+				bindingIdentitySigned(unsignedForms, txn, contactId));
 	}
 
 	@Nullable
@@ -2702,7 +2708,7 @@ class GroupTrManagerImpl
 		byte[] sig;
 		try {
 			binding = bindAs(groupId, own, timestamp,
-					bindingIdentitySigned(minor));
+					bindingIdentitySignedFor(contactId));
 			byte[] signed = offerSignedInputBound(groupId, own.pub,
 					NO_INVITEE, timestamp, s.getName(), s.getSalt(),
 					s.getCreatorName());

@@ -242,8 +242,12 @@ public class MeshBundlePrivacyTest {
 			ContactManager contactManager = mock(ContactManager.class);
 			new MeshBundleManager(eventBus, mock(MeshBundleStore.class), crypto,
 					contactManager, meshManager, messagingManager,
-					new MeshLinkKeys(mock(EventBus.class), db, settings,
-							contactManager, messagingManager, Runnable::run),
+					new MeshLinkKeys(mock(EventBus.class), settings,
+							contactManager, messagingManager,
+							new org.zerionproject.app.messaging
+									.UnsignedFormsMemory(db, settings,
+									contactManager, messagingManager),
+							Runnable::run),
 					Runnable::run);
 			ArgumentCaptor<EventListener> listener =
 					ArgumentCaptor.forClass(EventListener.class);

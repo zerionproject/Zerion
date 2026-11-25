@@ -22,6 +22,7 @@ import org.zerionproject.core.crypto.async.AsyncPrekeyBundle;
 import org.zerionproject.core.crypto.async.MeshBundleStore;
 import org.zerionproject.core.test.TestUtils;
 import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.app.api.messaging.event.PrekeyBundleReceivedEvent;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +60,7 @@ public class MeshBundleManagerTest {
 
 	private CryptoComponent crypto;
 	private KeyPair contactIdentity;
+	private UnsignedFormsMemory memory;
 	private MeshLinkKeys linkKeys;
 	private EventListener listener;
 
@@ -82,8 +84,10 @@ public class MeshBundleManagerTest {
 	}
 
 	private MeshLinkKeys linkKeys() {
-		return new MeshLinkKeys(mock(EventBus.class), db, settings,
-				contactManager, messagingManager, Runnable::run);
+		memory = new UnsignedFormsMemory(db, settings, contactManager,
+				messagingManager);
+		return new MeshLinkKeys(mock(EventBus.class), settings,
+				contactManager, messagingManager, memory, Runnable::run);
 	}
 
 	private EventListener bundleManager(EventBus bus, MeshLinkKeys keys) {
@@ -209,6 +213,8 @@ public class MeshBundleManagerTest {
 
 		linkKeys.removingContact(new Transaction(null, false),
 				contact(contactId, contactIdentity));
+		memory.removingContact(new Transaction(null, false),
+				contact(contactId, contactIdentity));
 		listener.eventOccurred(new ContactConnectedEvent(contactId));
 
 		assertTrue(sentBundle().isSigned());
@@ -217,9 +223,11 @@ public class MeshBundleManagerTest {
 	private void announce(int minor) throws Exception {
 		when(messagingManager.getContactClientMinorVersion(any(),
 				eq(contactId))).thenReturn(minor);
-		linkKeys.eventOccurred(new ClientVersionUpdatedEvent(contactId,
+		ClientVersionUpdatedEvent e = new ClientVersionUpdatedEvent(contactId,
 				new ClientVersion(MessagingManager.CLIENT_ID,
-						MessagingManager.MAJOR_VERSION, minor)));
+						MessagingManager.MAJOR_VERSION, minor));
+		memory.eventOccurred(e);
+		linkKeys.eventOccurred(e);
 	}
 
 	private void publishEitherForm() throws Exception {

@@ -178,14 +178,18 @@ final class GroupTrTestNode {
 	private GroupTrManagerImpl newManager() {
 		java.util.concurrent.Executor io = deferIo
 				? deferred::add : Runnable::run;
-		return new GroupTrManagerImpl(
-				fake(DatabaseComponent.class, this::db), io,
-				fake(SettingsManager.class, this::settings),
+		DatabaseComponent db = fake(DatabaseComponent.class, this::db);
+		SettingsManager settingsManager =
+				fake(SettingsManager.class, this::settings);
+		ContactManager contactManager =
+				fake(ContactManager.class, this::contacts);
+		MessagingManager messagingManager =
+				fake(MessagingManager.class, this::messaging);
+		return new GroupTrManagerImpl(db, io, settingsManager,
 				fake(ClientHelper.class, this::client),
 				fake(CryptoComponent.class, this::crypto),
 				fake(IdentityManager.class, this::identity),
-				fake(ContactManager.class, this::contacts),
-				fake(MessagingManager.class, this::messaging),
+				contactManager, messagingManager,
 				fake(EventBus.class, (name, args) -> {
 					if (name.equals("broadcast")) {
 						if (failBroadcasts) throw new IllegalStateException();
@@ -206,7 +210,9 @@ final class GroupTrTestNode {
 							}
 							return null;
 						}),
-				userMessages::add);
+				userMessages::add,
+				new org.zerionproject.app.messaging.UnsignedFormsMemory(db,
+						settingsManager, contactManager, messagingManager));
 	}
 
 	void restart() throws Exception {

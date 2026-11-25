@@ -3,24 +3,22 @@ package com.professor.zerion.android.mesh;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.event.MeshLinkKeysReceivedEvent;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
-import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
-import org.zerionproject.core.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
 import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
-import org.zerionproject.core.api.versioning.ClientVersion;
 import org.zerionproject.core.api.versioning.event.ClientVersionUpdatedEvent;
 import org.zerionproject.core.crypto.async.AsyncMeshDelivery;
 
@@ -47,7 +45,7 @@ import static org.zerionproject.core.util.StringUtils.toHexString;
 @NotNullByDefault
 public class MeshLinkKeys implements EventListener,
 		ContactManager.ContactHook, BleMeshTransport.PrivatePeers,
-		AsyncMeshDelivery.SenderLinkKeys, OpenDatabaseHook {
+		AsyncMeshDelivery.SenderLinkKeys {
 
 	static final String NAMESPACE = "org.zerionproject.mesh/linkKeys";
 	static final String KEY_ADVERT = "advert";
@@ -57,14 +55,13 @@ public class MeshLinkKeys implements EventListener,
 	static final String OUR_PAIR = "ourPair.";
 	static final String SENT_GENERATION = "sentGeneration.";
 	static final String SENT_AT = "sentAt.";
-	static final String UNSIGNED_ONLY = "unsignedOnly.";
 	static final long RESEND_INTERVAL_MS = 24L * 60L * 60L * 1000L;
 	static final long REPLY_INTERVAL_MS = 10L * 60L * 1000L;
 
-	private final DatabaseComponent db;
 	private final SettingsManager settingsManager;
 	private final ContactManager contactManager;
 	private final MessagingManager messagingManager;
+	private final UnsignedFormsMemory unsignedForms;
 	private final Executor ioExecutor;
 	private final SecureRandom random = new SecureRandom();
 	private final Object lock = new Object();
@@ -76,14 +73,14 @@ public class MeshLinkKeys implements EventListener,
 	private volatile byte[] ownAdvertKey;
 
 	@Inject
-	MeshLinkKeys(EventBus eventBus, DatabaseComponent db,
-			SettingsManager settingsManager, ContactManager contactManager,
-			MessagingManager messagingManager,
+	MeshLinkKeys(EventBus eventBus, SettingsManager settingsManager,
+			ContactManager contactManager, MessagingManager messagingManager,
+			UnsignedFormsMemory unsignedForms,
 			@IoExecutor Executor ioExecutor) {
-		this.db = db;
 		this.settingsManager = settingsManager;
 		this.contactManager = contactManager;
 		this.messagingManager = messagingManager;
+		this.unsignedForms = unsignedForms;
 		this.ioExecutor = ioExecutor;
 		eventBus.addListener(this);
 		contactManager.registerContactHook(this);
@@ -115,28 +112,7 @@ public class MeshLinkKeys implements EventListener,
 		update.put(OUR_PAIR + id, "");
 		update.put(SENT_GENERATION + id, "");
 		update.put(SENT_AT + id, "");
-		update.put(UNSIGNED_ONLY + id, "");
 		return update;
-	}
-
-	@Override
-	public void onDatabaseOpened(Transaction txn) throws DbException {
-		Settings held = settingsManager.getSettings(txn, NAMESPACE);
-		Settings update = new Settings();
-		for (Contact contact : contactManager.getContacts(txn)) {
-			ContactId c = contact.getId();
-			String name = UNSIGNED_ONLY + c.getInt();
-			if (held.getBoolean(name, false)) continue;
-			try {
-				if (announcesUnsignedForms(txn, c)) {
-					update.putBoolean(name, true);
-				}
-			} catch (DbException e) {
-			}
-		}
-		if (!update.isEmpty()) {
-			settingsManager.mergeSettings(txn, update, NAMESPACE);
-		}
 	}
 
 	@Override
@@ -150,16 +126,9 @@ public class MeshLinkKeys implements EventListener,
 			ioExecutor.execute(() -> sendIfDue(c, false));
 		} else if (e instanceof ClientVersionUpdatedEvent) {
 			ClientVersionUpdatedEvent v = (ClientVersionUpdatedEvent) e;
-			ClientVersion version = v.getClientVersion();
-			if (version.getClientId().equals(MessagingManager.CLIENT_ID)) {
-				boolean unsigned = version.getMajorVersion()
-						== MessagingManager.MAJOR_VERSION
-						&& version.getMinorVersion()
-						>= MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION;
-				ioExecutor.execute(() -> {
-					if (unsigned) rememberQuietly(v.getContactId());
-					sendIfDue(v.getContactId(), false);
-				});
+			if (v.getClientVersion().getClientId()
+					.equals(MessagingManager.CLIENT_ID)) {
+				ioExecutor.execute(() -> sendIfDue(v.getContactId(), false));
 			}
 		} else if (e instanceof ContactRemovedEvent) {
 			ContactId c = ((ContactRemovedEvent) e).getContactId();
@@ -209,37 +178,7 @@ public class MeshLinkKeys implements EventListener,
 	}
 
 	boolean unsignedOnly(ContactId c) throws DbException {
-		String name = UNSIGNED_ONLY + c.getInt();
-		boolean[] held = new boolean[1];
-		boolean unsigned = db.transactionWithResult(true, txn -> {
-			held[0] = settingsManager.getSettings(txn, NAMESPACE)
-					.getBoolean(name, false);
-			return held[0] || announcesUnsignedForms(txn, c);
-		});
-		if (unsigned && !held[0]) remember(c);
-		return unsigned;
-	}
-
-	private boolean announcesUnsignedForms(Transaction txn, ContactId c)
-			throws DbException {
-		return messagingManager.getContactClientMinorVersion(txn, c)
-				>= MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION;
-	}
-
-	private void remember(ContactId c) throws DbException {
-		db.transaction(false, txn -> {
-			contactManager.getContact(txn, c);
-			Settings update = new Settings();
-			update.putBoolean(UNSIGNED_ONLY + c.getInt(), true);
-			settingsManager.mergeSettings(txn, update, NAMESPACE);
-		});
-	}
-
-	private void rememberQuietly(ContactId c) {
-		try {
-			remember(c);
-		} catch (DbException | RuntimeException e) {
-		}
+		return unsignedForms.unsignedOnly(c);
 	}
 
 	@Nullable

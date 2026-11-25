@@ -5,6 +5,7 @@ import org.zerionproject.app.api.grouptr.GroupTrState;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.event.GroupMemberListSnapshotEvent;
 import org.zerionproject.app.messaging.MessageTypes;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.contact.Contact;
@@ -90,6 +91,7 @@ final class GroupTrKeyExchange {
 	private final DatabaseComponent db;
 	private final ContactManager contactManager;
 	private final MessagingManager messagingManager;
+	private final UnsignedFormsMemory unsignedForms;
 	private final GroupTrKeys keys;
 	private final Clock clock;
 	private final TaskScheduler scheduler;
@@ -99,13 +101,15 @@ final class GroupTrKeyExchange {
 	private final ClientHelper clientHelper;
 
 	GroupTrKeyExchange(DatabaseComponent db, ContactManager contactManager,
-			MessagingManager messagingManager, GroupTrKeys keys, Clock clock,
+			MessagingManager messagingManager,
+			UnsignedFormsMemory unsignedForms, GroupTrKeys keys, Clock clock,
 			TaskScheduler scheduler, Executor ioExecutor, SecureRandom random,
 			ClientHelper clientHelper, Host host) {
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.contactManager = contactManager;
 		this.messagingManager = messagingManager;
+		this.unsignedForms = unsignedForms;
 		this.keys = keys;
 		this.clock = clock;
 		this.scheduler = scheduler;
@@ -529,8 +533,8 @@ final class GroupTrKeyExchange {
 
 	private boolean identitySigned(Transaction txn, ContactId contactId)
 			throws DbException {
-		return GroupTrManagerImpl.bindingIdentitySigned(messagingManager
-				.getContactClientMinorVersion(txn, contactId));
+		return GroupTrManagerImpl.bindingIdentitySigned(unsignedForms, txn,
+				contactId);
 	}
 
 	private byte[] bytes(int n) {
