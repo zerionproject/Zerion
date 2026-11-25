@@ -36,6 +36,8 @@ public class AttachmentReaderImpl implements AttachmentReader {
 	private static final String MSG_KEY_MSG_TYPE = "messageType";
 	private static final String MSG_KEY_CHUNK_COUNT = "chunkCount";
 	private static final String MSG_KEY_ROOT_HASH = "rootHash";
+	private static final String MSG_KEY_TOTAL_SIZE = "totalSize";
+	private static final long MAX_STORED_SIZE = 10L * 1024 * 1024;
 
 	private final TransactionManager db;
 	private final ClientHelper clientHelper;
@@ -87,6 +89,29 @@ public class AttachmentReaderImpl implements AttachmentReader {
 		}
 	}
 
+	@Override
+	public long getStoredSize(AttachmentHeader h) throws DbException {
+		return db.transactionWithResult(true, txn -> {
+			try {
+				BdfDictionary meta = clientHelper
+						.getMessageMetadataAsDictionary(txn, h.getMessageId());
+				if (meta.isEmpty()) return -1L;
+				if (!h.getContentType().equals(
+						meta.getOptionalString(MSG_KEY_CONTENT_TYPE))) {
+					return -1L;
+				}
+				if (meta.getInt(MSG_KEY_MSG_TYPE, ATTACHMENT)
+						!= ATTACHMENT_MANIFEST) {
+					return -1L;
+				}
+				long size = meta.getLong(MSG_KEY_TOTAL_SIZE, -1L);
+				return size > 0L && size <= MAX_STORED_SIZE ? size : -1L;
+			} catch (FormatException e) {
+				return -1L;
+			}
+		});
+	}
+
 	private Attachment readLegacyAttachment(AttachmentHeader h, Message message,
 			BdfDictionary meta) throws FormatException {
 		byte[] body = message.getBody();
@@ -110,8 +135,8 @@ public class AttachmentReaderImpl implements AttachmentReader {
 			throw new NoSuchMessageException();
 		}
 
-		long totalSize = manifestMeta.getLong("totalSize", -1L);
-		if (totalSize <= 0L || totalSize > 10L * 1024 * 1024) {
+		long totalSize = manifestMeta.getLong(MSG_KEY_TOTAL_SIZE, -1L);
+		if (totalSize <= 0L || totalSize > MAX_STORED_SIZE) {
 			throw new NoSuchMessageException();
 		}
 		List<byte[]> chunkHashes = new ArrayList<>(chunkCount);

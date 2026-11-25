@@ -429,8 +429,7 @@ public class AllMediaActivity extends ZerionActivity {
 			intent.putExtra(ImageActivity.ITEM_ID, item.messageId.getBytes());
 			startActivity(intent);
 		} else if (item.isVideo) {
-			ImageViewHolder.videoOpened(item.messageId,
-					item.header.getMessageId());
+			ImageViewHolder.videoOpened(item.messageId, item.attachmentItem);
 			Intent intent = new Intent(this, VideoPlayerActivity.class);
 			intent.putExtra(VideoPlayerActivity.ATTACHMENT, item.attachmentItem);
 			intent.putExtra(VideoPlayerActivity.ITEM_ID, item.messageId.getBytes());

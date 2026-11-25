@@ -18,6 +18,11 @@ public final class AttachmentItemsForTests {
 		return new AttachmentItemResult(uri, item);
 	}
 
+	public static AttachmentItem loading(AttachmentHeader header) {
+		return new AttachmentItem(header, 640, 360,
+				AttachmentItem.State.LOADING);
+	}
+
 	public static AttachmentItem missing(AttachmentHeader header) {
 		return new AttachmentItem(header, 640, 360,
 				AttachmentItem.State.MISSING);
