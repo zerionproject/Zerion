@@ -192,10 +192,23 @@ public class SecureNoteSaveTest {
 	}
 
 	private static void protect(SecureNoteFragment screen, String password) {
+		protect(screen, password, password);
+	}
+
+	private static void protect(SecureNoteFragment screen, String password,
+			String confirmation) {
 		((SwitchMaterial) screen.requireView()
 				.findViewById(R.id.lock_note_switch)).setChecked(true);
 		((EditText) screen.requireView()
 				.findViewById(R.id.note_password_input)).setText(password);
+		((EditText) screen.requireView()
+				.findViewById(R.id.note_password_confirm_input))
+				.setText(confirmation);
+	}
+
+	private static TextInputLayout confirmation(SecureNoteFragment screen) {
+		return screen.requireView()
+				.findViewById(R.id.note_password_confirm_layout);
 	}
 
 	private static void save(SecureNoteFragment screen) {
@@ -627,6 +640,85 @@ public class SecureNoteSaveTest {
 		VaultItem now = rig.vault.named(PROTECTED_TITLE);
 		assertNotNull(now);
 		assertNotEquals(old.id, now.id);
+		assertArrayEquals(bytes("second entry"), ProtectedNoteCodec.open(
+				rig.vault.raw(now.id), NOTE_PASSWORD.toCharArray()));
+	}
+
+	@Test
+	public void aNewNoteIsSealedOnlyWhenItsPasswordIsTypedTwiceAlike()
+			throws Exception {
+		SecureNoteFragment screen = newNote("Diary", "dear diary");
+		protect(screen, NOTE_PASSWORD, "open sesane");
+		assertEquals(View.VISIBLE, confirmation(screen).getVisibility());
+
+		save(screen);
+		pass(1000);
+
+		assertTrue("the note closed after a refused save", isOpen());
+		assertEquals(rig.app.getString(R.string.vault_password_mismatch),
+				String.valueOf(confirmation(screen).getError()));
+		verify(rig.vault.manager, never()).addItem(any(), anyString(),
+				any());
+		assertEquals(0, rig.vault.size());
+		assertTrue(saveButton(screen).isEnabled());
+
+		protect(screen, NOTE_PASSWORD, NOTE_PASSWORD);
+		assertNull(confirmation(screen).getError());
+		save(screen);
+		pass(1000);
+
+		assertFalse(isOpen());
+		VaultItem now = rig.vault.named(PROTECTED_TITLE);
+		assertNotNull(now);
+		assertArrayEquals(bytes("dear diary"), ProtectedNoteCodec.open(
+				rig.vault.raw(now.id), NOTE_PASSWORD.toCharArray()));
+	}
+
+	@Test
+	public void aPlainNoteGivenAPasswordAsksForItTwice() throws Exception {
+		VaultItem old = storedNote();
+		SecureNoteFragment screen = show(old.id);
+		assertEquals("milk", text(screen).getText().toString());
+		assertEquals(View.GONE, confirmation(screen).getVisibility());
+
+		protect(screen, NOTE_PASSWORD, "");
+		save(screen);
+		pass(1000);
+
+		assertTrue(isOpen());
+		assertEquals(rig.app.getString(R.string.vault_password_mismatch),
+				String.valueOf(confirmation(screen).getError()));
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertOnlyTheStoredNote(old, bytes("milk"));
+
+		protect(screen, NOTE_PASSWORD, NOTE_PASSWORD);
+		save(screen);
+		pass(1000);
+
+		assertFalse(isOpen());
+		VaultItem now = rig.vault.named(ProtectedNoteCodec.TITLE_PREFIX
+				+ "Groceries");
+		assertNotNull(now);
+		assertArrayEquals(bytes("milk"), ProtectedNoteCodec.open(
+				rig.vault.raw(now.id), NOTE_PASSWORD.toCharArray()));
+	}
+
+	@Test
+	public void aNoteOpenedWithItsPasswordAsksForItOnce() throws Exception {
+		VaultItem old = storedProtectedNote();
+		SecureNoteFragment screen = show(old.id);
+		answer(askedForThePassword(), NOTE_PASSWORD);
+		assertTrue(isLocked(screen));
+		assertEquals(View.GONE, confirmation(screen).getVisibility());
+
+		text(screen).setText("second entry");
+		protect(screen, NOTE_PASSWORD, "");
+		save(screen);
+		pass(1000);
+
+		assertFalse(isOpen());
+		VaultItem now = rig.vault.named(PROTECTED_TITLE);
+		assertNotNull(now);
 		assertArrayEquals(bytes("second entry"), ProtectedNoteCodec.open(
 				rig.vault.raw(now.id), NOTE_PASSWORD.toCharArray()));
 	}

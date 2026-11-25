@@ -123,6 +123,32 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/note_password_confirm_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            style="@style/Zerion.TextInput.Outlined"
+            android:hint="@string/vault_confirm_password_hint"
+            app:endIconMode="password_toggle"
+            android:visibility="gone">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/note_password_confirm_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:saveEnabled="false"
+                android:textColor="@color/zerion_text_primary"
+                android:imeOptions="flagNoPersonalizedLearning"
+                android:privateImeOptions="nm"
+                android:importantForAutofill="no"
+                android:maxLines="1" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="0dp"

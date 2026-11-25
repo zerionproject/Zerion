@@ -480,7 +480,7 @@ public class VaultNewPasswordTest {
 	}
 
 	@Test
-	public void anExportIsNotSealedUnderAPasswordThatIsNothingInItsNormalForm()
+	public void anExportIsSealedOnlyUnderAPasswordThatFollowsTheRule()
 			throws Exception {
 		VaultManager m = created();
 		m.addItem(VaultItem.ItemType.NOTE, "note", bytes("kept"));
@@ -491,6 +491,10 @@ public class VaultNewPasswordTest {
 				m.exportVault(ONLY_INVISIBLE.clone()));
 		assertThrows(IllegalArgumentException.class, () ->
 				m.exportVault(WIPED.clone()));
+		assertThrows(IllegalArgumentException.class, () ->
+				m.exportVault(FOUR_AND_PICTURES.clone()));
+		assertThrows(IllegalArgumentException.class, () ->
+				m.exportVault("Seven7&".toCharArray()));
 
 		VaultViewModel vm = screens(m);
 		String[] reported = new String[1];
@@ -509,9 +513,10 @@ public class VaultNewPasswordTest {
 				});
 
 		assertNull(written[0]);
-		assertEquals(app.getString(
-				R.string.vault_document_export_generic_failed), reported[0]);
-		assertNotNull(m.exportVault(FOUR_AND_PICTURES.clone()));
+		assertEquals(app.getString(R.string.vault_password_rule),
+				reported[0]);
+		assertNotNull(m.exportVault(EIGHT.clone()));
+		assertNotNull(m.exportVault(EIGHT_AND_PICTURES.clone()));
 	}
 
 	@Test

@@ -423,6 +423,14 @@ public class VaultSettingsFragment extends BaseFragment {
 						return;
 					}
 
+					if (!com.professor.zerion.android.vault.VaultManager
+							.acceptsNewPassword(password)) {
+						java.util.Arrays.fill(password, '\0');
+						java.util.Arrays.fill(confirm, '\0');
+						showToast(getString(R.string.vault_password_rule));
+						return;
+					}
+
 					java.util.Arrays.fill(confirm, '\0');
 					launchExportPicker(password);
 				})

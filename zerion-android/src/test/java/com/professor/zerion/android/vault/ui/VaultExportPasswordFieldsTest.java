@@ -113,6 +113,46 @@ public class VaultExportPasswordFieldsTest {
 		assertNull(pending());
 	}
 
+	private static String shownText(android.view.View view) {
+		if (view.getId() == com.google.android.material.R.id.snackbar_text
+				&& view instanceof android.widget.TextView) {
+			return ((android.widget.TextView) view).getText().toString();
+		}
+		if (view instanceof android.view.ViewGroup) {
+			android.view.ViewGroup group = (android.view.ViewGroup) view;
+			for (int i = 0; i < group.getChildCount(); i++) {
+				String found = shownText(group.getChildAt(i));
+				if (found != null) return found;
+			}
+		}
+		return null;
+	}
+
+	private void assertRefusedWithTheRule(String typed) throws Exception {
+		password.setText(typed);
+		confirm.setText(typed);
+
+		dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+		idle();
+
+		assertEquals(vault.getString(R.string.vault_password_rule),
+				shownText(vault.getWindow().getDecorView()));
+		assertNull("the picker was opened for " + typed, pending());
+		assertFieldsEmpty();
+	}
+
+	@Test
+	public void anExportPasswordTooShortIsRefusedWithTheRule()
+			throws Exception {
+		assertRefusedWithTheRule("Seven7&");
+	}
+
+	@Test
+	public void anExportPasswordShortWithoutItsEmojiIsRefusedWithTheRule()
+			throws Exception {
+		assertRefusedWithTheRule("pass\uD83D\uDE00\uD83D\uDE00");
+	}
+
 	@Test
 	public void theFieldsAreEmptiedWhenTheDialogIsCancelled()
 			throws Exception {

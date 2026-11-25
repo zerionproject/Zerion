@@ -306,6 +306,86 @@ public class VaultUnlockConfirmationTest {
 	}
 
 	@Test
+	public void aRecoveryPasswordAgainstTheRuleNamesTheRuleAndAsksNothing()
+			throws Exception {
+		when(rig.vault.manager.unlock(any(), anyLong()))
+				.thenReturn(UnlockResult.NEW_PASSWORD_REFUSED);
+
+		vm.unlockVault(TYPED.toCharArray());
+
+		assertEquals(message(R.string.vault_password_rule),
+				vm.getErrorMessage().getValue());
+		assertFalse(asksAgain());
+		assertNull(kept());
+	}
+
+	@Test
+	public void aSecondEntryAgainstTheRuleNamesTheRuleAndStartsAgain()
+			throws Exception {
+		afterConfirming = UnlockResult.NEW_PASSWORD_REFUSED;
+		vm.unlockVault(TYPED.toCharArray());
+		char[] first = kept();
+
+		vm.unlockVault(TYPED.toCharArray());
+
+		assertEquals(message(R.string.vault_password_rule),
+				vm.getErrorMessage().getValue());
+		assertFalse(asksAgain());
+		assertNull(kept());
+		assertWiped(first);
+		assertNotEquals(VaultViewModel.VaultState.UNLOCKED,
+				vm.getVaultState().getValue());
+	}
+
+	@Test
+	public void aConfirmationDiscardedBeforeItIsShownIsNeverShown()
+			throws Exception {
+		boolean[] discarded = {false};
+		vm.getErrorMessage().observeForever(m -> {
+			if (m == null && !discarded[0]) {
+				discarded[0] = true;
+				vm.discardUnlockConfirmation();
+			}
+		});
+
+		vm.unlockVault(TYPED.toCharArray());
+
+		assertTrue(discarded[0]);
+		assertFalse("a discarded confirmation was shown", asksAgain());
+		assertNull(kept());
+	}
+
+	@Test
+	public void aRefusedJobWipesBothEntriesAndEndsTheUnlock()
+			throws Exception {
+		boolean[] refuse = {false};
+		vm = new VaultViewModel(rig.app, rig.vault.manager, r -> {
+			if (refuse[0]) {
+				throw new java.util.concurrent.RejectedExecutionException();
+			}
+			r.run();
+		}, rig.store, rig.gate);
+		vm.unlockVault(TYPED.toCharArray());
+		char[] first = kept();
+		assertNotNull(first);
+		refuse[0] = true;
+		char[] second = TYPED.toCharArray();
+
+		vm.unlockVault(second);
+
+		assertWiped(first);
+		assertWiped(second);
+		assertNull(kept());
+		assertFalse(asksAgain());
+		assertEquals(Boolean.FALSE, vm.getIsLoading().getValue());
+		assertEquals(message(R.string.vault_msg_unlock_failed),
+				vm.getErrorMessage().getValue());
+		verify(rig.vault.manager).cancelUnlockPending();
+		verify(rig.vault.manager, never()).confirmAndUnlock(any(), any(),
+				anyLong());
+	}
+
+	@Test
 	public void aRefusedEntryIsStillAnInvalidPassword() throws Exception {
 		when(rig.vault.manager.unlock(any(), anyLong()))
 				.thenReturn(UnlockResult.REFUSED);
