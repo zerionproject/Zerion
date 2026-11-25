@@ -18,6 +18,7 @@ import org.zerionproject.core.api.sync.Group;
 import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.zerionproject.core.api.sync.validation.MessageState;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
 import org.zerionproject.core.test.BrambleTestCase;
@@ -1011,7 +1012,29 @@ public class ViewOnceTest extends BrambleTestCase {
 		}
 	}
 
+	@Test
+	public void theNoticeThatAViewOnceWasOpenedIsNotMarkedAsAUserMessage()
+			throws Exception {
+		AttachmentHeader photo = photo(me);
+		MessageId sent = send(me, seeing(me, 14), photo);
+		transfer(me, contact);
+		List<MessageId> marked = new ArrayList<>();
+
+		assertNotNull(seeing(contact, 14, marked::add)
+				.openViewOnce(contact.contactId, sent));
+
+		assertEquals("the notice was not stored", 1,
+				localControls(contact, VIEW_ONCE_OPENED).size());
+		assertEquals(new ArrayList<MessageId>(), marked);
+	}
+
 	private MessagingManagerImpl seeing(Device d, int minorVersion) {
+		return seeing(d, minorVersion, id -> {
+		});
+	}
+
+	private MessagingManagerImpl seeing(Device d, int minorVersion,
+			UserMessageMarker marker) {
 		ContactGroupScanTestComponent c = requireComponent(d);
 		ClientVersioningManager real = c.getClientVersioningManager();
 		ClientVersioningManager seen = (ClientVersioningManager)
@@ -1029,8 +1052,8 @@ public class ViewOnceTest extends BrambleTestCase {
 				c.getMetadataParser(), c.getConversationManager(),
 				c.getMessageTracker(), c.getContactGroupFactory(),
 				c.getAutoDeleteManager(), c.getStreamingAttachmentWriter(),
-				c.getIdentityManager(), d.validator, c.getCryptoComponent(), id -> {
-				});
+				c.getIdentityManager(), d.validator, c.getCryptoComponent(),
+				marker);
 	}
 
 	private static ContactGroupScanTestComponent requireComponent(Device d) {

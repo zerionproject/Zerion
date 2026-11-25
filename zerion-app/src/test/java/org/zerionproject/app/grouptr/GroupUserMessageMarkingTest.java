@@ -1,12 +1,19 @@
 package org.zerionproject.app.grouptr;
 
+import org.zerionproject.app.api.grouptr.GroupTrPost;
+import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.event.GroupSettingsChangedEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrInviteResponseReceivedEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrRelayRecordEvent;
+import org.zerionproject.app.messaging.MessageTypes;
+import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.sync.MessageId;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -133,6 +140,120 @@ public class GroupUserMessageMarkingTest {
 		assertEquals(SETTINGS, (long) recordsTo(node, a).get(0).body
 				.getLong(0));
 		assertTrue(node.userMessages.isEmpty());
+	}
+
+	@Test
+	public void aCopyTheOwnerRelaysForAMemberIsNotMarked() throws Exception {
+		GroupTrTestNode node = ownerDevice();
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		BdfList inner = BdfList.of(POST, groupId, EPOCH, aKey, "Name",
+				"hello".getBytes("UTF-8"), SIG);
+		BdfList keys = new BdfList();
+		keys.add(bKey);
+		BdfList record = BdfList.of((long) MessageTypes.GROUP_RELAY_REQUEST,
+				groupId, keys, inner);
+
+		node.manager.eventOccurred(new GroupTrRelayRecordEvent(a,
+				new MessageId(getRandomId()), MessageTypes.GROUP_RELAY_REQUEST,
+				record, node.now));
+
+		assertEquals("the copy was not relayed", 1, typeTo(node, b, POST));
+		assertTrue(node.userMessages.isEmpty());
+	}
+
+	@Test
+	public void theOwnersRecordsAfterAMemberLeftAreNotMarked()
+			throws Exception {
+		GroupTrTestNode node = ownerDevice();
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+
+		node.left(a, groupId, aKey, EPOCH + 1);
+
+		assertFalse(node.isMember(groupId, aKey));
+		assertEquals("the removal was not sent on", 1, typeTo(node, b, 34L));
+		assertEquals(1, typeTo(node, b, 37L));
+		assertTrue(node.userMessages.isEmpty());
+	}
+
+	@Test
+	public void addingAnInviteeThatAcceptedIsNotMarked() throws Exception {
+		byte[] inviteeKey = key((byte) 7);
+		GroupTrTestNode node = ownerDevice();
+		node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		ContactId invitee = node.addContact(inviteeKey);
+		node.manager.inviteContactToGroup(groupId, invitee, inviteeKey,
+				"Invitee");
+		assertEquals("the invite the owner sends is the user's", 1,
+				node.userMessages.size());
+		node.userMessages.clear();
+		node.sent.clear();
+
+		node.manager.eventOccurred(new GroupTrInviteResponseReceivedEvent(
+				invitee, groupId, node.now, SIG,
+				GroupTrInviteResponseReceivedEvent.Kind.ACCEPT));
+
+		assertTrue(node.isMember(groupId, inviteeKey));
+		assertTrue("the members were not told", recordsTo(node, b).size() > 0);
+		assertTrue(node.userMessages.isEmpty());
+	}
+
+	@Test
+	public void aDeleteSentAgainToAMemberThatUpdatedIsNotMarked()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		node.announceMinorVersion(a,
+				MessagingManager.GROUP_ACTIONS_MIN_VERSION - 1);
+		node.manager.sendGroupPost(groupId, "mine".getBytes("UTF-8"), 0L);
+		List<GroupTrPost> posts = node.manager.getRecentPosts(groupId);
+		assertEquals(1, posts.size());
+		node.manager.deletePostsForEveryone(groupId,
+				Collections.singletonList(posts.get(0).getPostId()));
+		assertFalse("the delete the user chose is marked",
+				node.userMessages.isEmpty());
+		node.userMessages.clear();
+		node.sent.clear();
+
+		node.versionUpdated(a, MessagingManager.GROUP_ACTIONS_MIN_VERSION);
+
+		assertEquals("the delete was not sent again", 1, typeTo(node, a,
+				(long) MessageTypes.GROUP_POST_DELETE));
+		assertTrue(node.userMessages.isEmpty());
+	}
+
+	@Test
+	public void leavingAGroupIsMarkedForEveryMember() throws Exception {
+		GroupTrTestNode node = memberDevice();
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		List<MessageId> before = new ArrayList<>();
+		for (ContactId c : Arrays.asList(fromCreator, a, b)) {
+			before.addAll(node.copiesTo(c));
+		}
+
+		node.manager.leaveGroup(groupId);
+
+		List<MessageId> copies = new ArrayList<>();
+		for (ContactId c : Arrays.asList(fromCreator, a, b)) {
+			copies.addAll(node.copiesTo(c));
+		}
+		copies.removeAll(before);
+		assertEquals(3, copies.size());
+		assertEquals(new HashSet<>(copies), new HashSet<>(node.userMessages));
+	}
+
+	private static int typeTo(GroupTrTestNode node, ContactId to, long type)
+			throws Exception {
+		int count = 0;
+		for (GroupTrTestNode.Sent s : recordsTo(node, to)) {
+			if (s.body.getLong(0) == type) count++;
+		}
+		return count;
 	}
 
 	private static void connected(GroupTrTestNode node, ContactId c) {
