@@ -11,6 +11,7 @@ import org.zerionproject.app.api.messaging.event.GroupMemberListSnapshotEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrLocalStateChangedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrMemberInviteRecordEvent;
 import org.zerionproject.app.messaging.MessageTypes;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.contact.Contact;
@@ -197,6 +198,7 @@ class GroupTrMemberInvites {
 	private final IdentityManager identityManager;
 	private final ContactManager contactManager;
 	private final MessagingManager messagingManager;
+	private final UnsignedFormsMemory unsignedForms;
 	private final EventBus eventBus;
 	private final Clock clock;
 	private final Host host;
@@ -206,7 +208,8 @@ class GroupTrMemberInvites {
 			SettingsManager settingsManager, ClientHelper clientHelper,
 			CryptoComponent crypto, IdentityManager identityManager,
 			ContactManager contactManager, MessagingManager messagingManager,
-			EventBus eventBus, Clock clock, Host host) {
+			UnsignedFormsMemory unsignedForms, EventBus eventBus, Clock clock,
+			Host host) {
 		this.db = db;
 		this.settingsManager = settingsManager;
 		this.clientHelper = clientHelper;
@@ -214,6 +217,7 @@ class GroupTrMemberInvites {
 		this.identityManager = identityManager;
 		this.contactManager = contactManager;
 		this.messagingManager = messagingManager;
+		this.unsignedForms = unsignedForms;
 		this.eventBus = eventBus;
 		this.clock = clock;
 		this.host = host;
@@ -916,8 +920,8 @@ class GroupTrMemberInvites {
 				GroupTrKeys.Own own = host.keys().own(groupId);
 				if (own == null) throw unavailable();
 				try {
-					offered = host.bind(groupId, own, now, GroupTrManagerImpl
-							.bindingIdentitySigned(inviteeMinor));
+					offered = host.bind(groupId, own, now,
+							identitySigned(contactId));
 				} finally {
 					own.clear();
 				}
@@ -1199,16 +1203,18 @@ class GroupTrMemberInvites {
 		}
 	}
 
+	private boolean identitySigned(ContactId contactId) throws DbException {
+		return db.transactionWithResult(true, txn -> GroupTrManagerImpl
+				.bindingIdentitySigned(unsignedForms, txn, contactId));
+	}
+
 	private void acceptKeyed(byte[] groupId, PendingOffer o, LocalAuthor la,
 			Contact inviter, @Nullable GroupTrState existing,
 			@Nullable String incognitoName, long now, byte[] inviterMlDsa,
 			byte[] inviterIdentity, GroupTrKeys.Own own) throws DbException {
 		GroupTrKeys keys = host.keys();
-		int inviterMinor = db.transactionWithResult(true, txn ->
-				messagingManager.getContactClientMinorVersion(txn,
-						inviter.getId()));
 		GroupTrKeys.Binding binding = host.bind(groupId, own, now,
-				GroupTrManagerImpl.bindingIdentitySigned(inviterMinor));
+				identitySigned(inviter.getId()));
 		byte[] tag = keys.removalTag(groupId, la.getPublicKey().getEncoded());
 		byte[] sig = keys.sign(own, LABEL_ACCEPT, responseSignedInput(groupId,
 				own.pub, o.inviterPubKey, o.creatorPubKey, now, own.mlDsa,

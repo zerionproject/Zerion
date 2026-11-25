@@ -11,6 +11,7 @@ import org.zerionproject.app.api.messaging.event.GroupTrInviteOfferReceivedEvent
 import org.zerionproject.app.api.messaging.event.GroupTrInviteResponseReceivedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrMemberInviteRecordEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrRelayRecordEvent;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.contact.Contact;
@@ -118,6 +119,7 @@ final class InviteTestNet {
 		final byte[] mlDsa;
 		final LocalAuthor local;
 		GroupTrManagerImpl manager;
+		UnsignedFormsMemory memory;
 		final List<Object> broadcasts = new ArrayList<>();
 		final Map<String, Settings> settings = new HashMap<>();
 		private final List<Event> pendingEvents = new ArrayList<>();
@@ -168,15 +170,20 @@ final class InviteTestNet {
 		}
 
 		private GroupTrManagerImpl newManager() {
-			return new GroupTrManagerImpl(
-					fake(DatabaseComponent.class, this::db),
-					Runnable::run,
-					fake(SettingsManager.class, this::settingsCall),
+			DatabaseComponent db = fake(DatabaseComponent.class, this::db);
+			SettingsManager settingsManager =
+					fake(SettingsManager.class, this::settingsCall);
+			ContactManager contactManager =
+					fake(ContactManager.class, this::contactsCall);
+			MessagingManager messagingManager =
+					fake(MessagingManager.class, this::messaging);
+			memory = new UnsignedFormsMemory(db, settingsManager,
+					contactManager, messagingManager);
+			return new GroupTrManagerImpl(db, Runnable::run, settingsManager,
 					fake(ClientHelper.class, this::client),
 					fake(CryptoComponent.class, this::crypto),
 					fake(IdentityManager.class, this::identity),
-					fake(ContactManager.class, this::contactsCall),
-					fake(MessagingManager.class, this::messaging),
+					contactManager, messagingManager,
 					fake(EventBus.class, (n, a) -> {
 						if (n.equals("broadcast")) {
 							broadcasts.add(a[0]);
@@ -199,7 +206,7 @@ final class InviteTestNet {
 								return null;
 							}),
 					id -> {
-				});
+				}, memory);
 		}
 
 		void runScheduled() {
@@ -247,11 +254,13 @@ final class InviteTestNet {
 		void versionUpdated(Node other, int minor) {
 			ContactId c = contactIdOf(other);
 			versions.put(c, minor);
-			manager.eventOccurred(new org.zerionproject.core.api.versioning
-					.event.ClientVersionUpdatedEvent(c,
+			Event e = new org.zerionproject.core.api.versioning.event
+					.ClientVersionUpdatedEvent(c,
 					new org.zerionproject.core.api.versioning.ClientVersion(
 							MessagingManager.CLIENT_ID,
-							MessagingManager.MAJOR_VERSION, minor)));
+							MessagingManager.MAJOR_VERSION, minor));
+			memory.eventOccurred(e);
+			manager.eventOccurred(e);
 		}
 
 		void forgetContact(Node other) {

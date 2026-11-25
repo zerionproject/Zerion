@@ -248,11 +248,6 @@ public class MeshManager {
 		return count;
 	}
 
-	public AsyncPrekeyBundle publishBundle(ContactId audience)
-			throws DbException, GeneralSecurityException {
-		return publishBundle(audience, true);
-	}
-
 	public AsyncPrekeyBundle publishBundle(ContactId audience, boolean signed)
 			throws DbException, GeneralSecurityException {
 		AsyncPrekeyStore prekeyStore = store;

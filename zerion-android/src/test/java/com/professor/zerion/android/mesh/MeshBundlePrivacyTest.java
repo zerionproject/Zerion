@@ -239,9 +239,16 @@ public class MeshBundlePrivacyTest {
 						}
 					}, new BluetoothNameGuard(settings, () -> null), null, null);
 			EventBus eventBus = mock(EventBus.class);
+			ContactManager contactManager = mock(ContactManager.class);
 			new MeshBundleManager(eventBus, mock(MeshBundleStore.class), crypto,
-					mock(ContactManager.class), meshManager, messagingManager,
-					db, Runnable::run);
+					contactManager, meshManager, messagingManager,
+					new MeshLinkKeys(mock(EventBus.class), settings,
+							contactManager, messagingManager,
+							new org.zerionproject.app.messaging
+									.UnsignedFormsMemory(db, settings,
+									contactManager, messagingManager),
+							Runnable::run),
+					Runnable::run);
 			ArgumentCaptor<EventListener> listener =
 					ArgumentCaptor.forClass(EventListener.class);
 			verify(eventBus).addListener(listener.capture());

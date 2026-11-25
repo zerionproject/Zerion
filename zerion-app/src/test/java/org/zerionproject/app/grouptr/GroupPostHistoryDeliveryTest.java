@@ -76,7 +76,8 @@ public class GroupPostHistoryDeliveryTest extends BrambleMockTestCase {
 			identityManager, contactManager, messagingManager, eventBus,
 			clock, context.mock(org.zerionproject.core.api.system
 					.TaskScheduler.class), id -> {
-				});
+				}, new org.zerionproject.app.messaging.UnsignedFormsMemory(db,
+						settingsManager, contactManager, messagingManager));
 
 	@Test
 	public void aMembersPostDeliveredByAStrangerStaysHidden()

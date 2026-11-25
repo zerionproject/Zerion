@@ -3,24 +3,34 @@ package com.professor.zerion.android.mesh;
 import org.junit.Before;
 import org.junit.Test;
 import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.app.api.messaging.event.MeshLinkKeysReceivedEvent;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.contact.event.ContactConnectionKeysEvent;
+import org.zerionproject.core.api.contact.event.ContactKeyRenewalEvent;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
 import org.zerionproject.core.api.crypto.PostQuantumConstants;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbCallable;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.DbRunnable;
 import org.zerionproject.core.api.db.NoSuchContactException;
 import org.zerionproject.core.api.db.Transaction;
+import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
 import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.sync.ClientId;
+import org.zerionproject.core.api.versioning.ClientVersion;
+import org.zerionproject.core.api.versioning.event.ClientVersionUpdatedEvent;
 
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,11 +44,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -69,6 +81,7 @@ public class MeshLinkKeysTest {
 	private final ContactId alice = new ContactId(1);
 	private final ContactId bob = new ContactId(2);
 	private boolean reachable = true;
+	private UnsignedFormsMemory memory;
 	private MeshLinkKeys keys;
 
 	@Before
@@ -107,9 +120,22 @@ public class MeshLinkKeysTest {
 					i.getArgument(2)));
 			return true;
 		});
+		when(contacts.getContacts(any(Transaction.class)))
+				.thenAnswer(i -> new ArrayList<>(known.values()));
+		when(contacts.getContact(any(Transaction.class),
+				any(ContactId.class))).thenAnswer(i -> {
+			Contact c = known.get((ContactId) i.getArgument(1));
+			if (c == null) throw new NoSuchContactException();
+			return c;
+		});
 		when(db.transactionWithResult(anyBoolean(), any()))
 				.thenAnswer(i -> ((DbCallable<?, ?>) i.getArgument(1))
 						.call(new Transaction(null, true)));
+		doAnswer(i -> {
+			((DbRunnable<?>) i.getArgument(1))
+					.run(new Transaction(null, false));
+			return null;
+		}).when(db).transaction(anyBoolean(), any());
 		when(messaging.getContactClientMinorVersion(any(Transaction.class),
 				any(ContactId.class))).thenAnswer(i -> {
 			Integer v = versions.get((ContactId) i.getArgument(1));
@@ -117,8 +143,13 @@ public class MeshLinkKeysTest {
 		});
 		add(alice);
 		add(bob);
-		keys = new MeshLinkKeys(mock(EventBus.class), db, settings, contacts,
-				messaging, Runnable::run);
+		keys = start();
+	}
+
+	private MeshLinkKeys start() {
+		memory = new UnsignedFormsMemory(db, settings, contacts, messaging);
+		return new MeshLinkKeys(mock(EventBus.class), settings, contacts,
+				messaging, memory, Runnable::run);
 	}
 
 	@Test
@@ -286,12 +317,9 @@ public class MeshLinkKeysTest {
 	}
 
 	@Test
-	public void aContactIsSentKeyedEnvelopesOnlyFromMessagingVersion17() {
-		byte[] theirPair = bytes();
-		keys.eventOccurred(new MeshLinkKeysReceivedEvent(alice, bytes(),
-				theirPair));
-		byte[] expected = MeshPrivateLink.linkKey(pairSentTo(alice),
-				theirPair);
+	public void aContactIsSentKeyedEnvelopesOnlyFromMessagingVersion17()
+			throws Exception {
+		byte[] expected = exchangeWith(alice);
 
 		versions.put(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
 		assertNull(keys.sendingLinkKeyFor(identities.get(alice)));
@@ -300,10 +328,221 @@ public class MeshLinkKeysTest {
 				MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
 		assertArrayEquals(expected,
 				keys.sendingLinkKeyFor(identities.get(alice)));
+	}
 
+	@Test
+	public void aContactOnVersion17WithoutALinkKeyIsSentNoSignedEnvelope() {
 		versions.put(bob, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
-		assertNull("no pair secret from this contact yet",
-				keys.sendingLinkKeyFor(identities.get(bob)));
+
+		assertRefused(identities.get(bob));
+	}
+
+	@Test
+	public void aContactThatAnnouncedVersion17StaysOnKeyedEnvelopes()
+			throws Exception {
+		byte[] expected = exchangeWith(alice);
+		announce(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+
+		announce(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+
+		assertTrue(keys.unsignedOnly(alice));
+		assertArrayEquals(expected,
+				keys.sendingLinkKeyFor(identities.get(alice)));
+		announce(alice, 0);
+		assertTrue(keys.unsignedOnly(alice));
+		assertArrayEquals(expected,
+				keys.sendingLinkKeyFor(identities.get(alice)));
+	}
+
+	@Test
+	public void aContactThatAnnouncedVersion17AndHoldsNoLinkKeyIsNotSentTo()
+			throws Exception {
+		announce(bob, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+
+		announce(bob, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+
+		assertTrue(keys.unsignedOnly(bob));
+		assertRefused(identities.get(bob));
+	}
+
+	@Test
+	public void aContactThatReturnsOurPairSecretIsSentNoSignedEnvelope()
+			throws Exception {
+		exchangeWith(alice);
+		announce(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		announce(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+
+		keys.eventOccurred(new MeshLinkKeysReceivedEvent(alice, bytes(),
+				pairSentTo(alice)));
+
+		assertNull(keys.linkKeyFor(alice));
+		assertRefused(identities.get(alice));
+	}
+
+	@Test
+	public void whatAContactAnnouncedIsStillKnownAfterARestart()
+			throws Exception {
+		byte[] expected = exchangeWith(alice);
+		announce(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		versions.put(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+
+		keys = start();
+
+		assertTrue(keys.unsignedOnly(alice));
+		assertArrayEquals(expected,
+				keys.sendingLinkKeyFor(identities.get(alice)));
+	}
+
+	@Test
+	public void removingAContactForgetsWhatItAnnounced() throws Exception {
+		exchangeWith(alice);
+		announce(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		assertTrue(stored.getBoolean(
+				UnsignedFormsMemory.UNSIGNED_ONLY + alice.getInt(), false));
+
+		keys.removingContact(new Transaction(null, false), known.get(alice));
+		memory.removingContact(new Transaction(null, false), known.get(alice));
+
+		assertFalse(stored.getBoolean(
+				UnsignedFormsMemory.UNSIGNED_ONLY + alice.getInt(), false));
+		versions.put(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+		assertFalse(keys.unsignedOnly(alice));
+		assertNull(keys.sendingLinkKeyFor(identities.get(alice)));
+	}
+
+	@Test
+	public void aNewContactInheritsNothingAnnouncedUnderItsNumber()
+			throws Exception {
+		announce(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		versions.put(alice, 0);
+
+		keys.addingContact(new Transaction(null, false), known.get(alice));
+		memory.addingContact(new Transaction(null, false), known.get(alice));
+
+		assertFalse(keys.unsignedOnly(alice));
+	}
+
+	@Test
+	public void newKeysForAContactKeepWhatItAnnounced() throws Exception {
+		byte[] expected = exchangeWith(alice);
+		announce(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+
+		for (Event e : new Event[] {new ContactConnectionKeysEvent(alice,
+				false), new ContactKeyRenewalEvent(alice, false)}) {
+			memory.eventOccurred(e);
+			keys.eventOccurred(e);
+		}
+		announce(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+
+		assertTrue(keys.unsignedOnly(alice));
+		assertArrayEquals(expected,
+				keys.sendingLinkKeyFor(identities.get(alice)));
+	}
+
+	@Test
+	public void theVersionHeldWhenTheDatabaseOpensIsRemembered()
+			throws Exception {
+		versions.put(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		versions.put(bob, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+
+		memory.onDatabaseOpened(new Transaction(null, false));
+
+		versions.put(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+		assertTrue(keys.unsignedOnly(alice));
+		assertFalse(keys.unsignedOnly(bob));
+	}
+
+	@Test
+	public void aVersionFirstSeenWhileSendingIsRemembered() throws Exception {
+		byte[] expected = exchangeWith(alice);
+		versions.put(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		assertArrayEquals(expected,
+				keys.sendingLinkKeyFor(identities.get(alice)));
+
+		versions.put(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+
+		assertArrayEquals(expected,
+				keys.sendingLinkKeyFor(identities.get(alice)));
+	}
+
+	@Test
+	public void aContactThatNeverAnnouncedVersion17IsSentTheSignedForm()
+			throws Exception {
+		exchangeWith(alice);
+		announce(alice, 13);
+		announce(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+		memory.onDatabaseOpened(new Transaction(null, false));
+
+		assertFalse(keys.unsignedOnly(alice));
+		assertNull(keys.sendingLinkKeyFor(identities.get(alice)));
+		assertNull(stored.get(
+				UnsignedFormsMemory.UNSIGNED_ONLY + alice.getInt()));
+	}
+
+	@Test
+	public void anotherClientOrMajorVersionDoesNotCount() throws Exception {
+		memory.eventOccurred(new ClientVersionUpdatedEvent(alice,
+				new ClientVersion(new ClientId("org.zerionproject.other"),
+						MessagingManager.MAJOR_VERSION,
+						MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION)));
+		memory.eventOccurred(new ClientVersionUpdatedEvent(alice,
+				new ClientVersion(MessagingManager.CLIENT_ID,
+						MessagingManager.MAJOR_VERSION + 1,
+						MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION)));
+
+		assertFalse(keys.unsignedOnly(alice));
+	}
+
+	@Test
+	public void anAnnouncementOfARemovedContactIsNotKept() {
+		known.remove(alice);
+
+		memory.eventOccurred(new ClientVersionUpdatedEvent(alice,
+				new ClientVersion(MessagingManager.CLIENT_ID,
+						MessagingManager.MAJOR_VERSION,
+						MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION)));
+
+		assertNull(stored.get(
+				UnsignedFormsMemory.UNSIGNED_ONLY + alice.getInt()));
+	}
+
+	@Test
+	public void aDatabaseFailureSendsNoSignedEnvelope() throws Exception {
+		exchangeWith(alice);
+		doThrow(new DbException()).when(db)
+				.transactionWithResult(anyBoolean(), any());
+
+		assertRefused(identities.get(alice));
+	}
+
+	@Test
+	public void anIdentityThatIsNoContactIsSentNoSignedEnvelope() {
+		assertRefused(bytes(
+				PostQuantumConstants.HYBRID_SIGNATURE_PUBLIC_KEY_BYTES));
+	}
+
+	private byte[] exchangeWith(ContactId c) {
+		byte[] theirPair = bytes();
+		keys.eventOccurred(new MeshLinkKeysReceivedEvent(c, bytes(),
+				theirPair));
+		return MeshPrivateLink.linkKey(pairSentTo(c), theirPair);
+	}
+
+	private void announce(ContactId c, int minor) {
+		versions.put(c, minor);
+		ClientVersionUpdatedEvent e = new ClientVersionUpdatedEvent(c,
+				new ClientVersion(MessagingManager.CLIENT_ID,
+						MessagingManager.MAJOR_VERSION, minor));
+		memory.eventOccurred(e);
+		keys.eventOccurred(e);
+	}
+
+	private void assertRefused(byte[] identity) {
+		try {
+			keys.sendingLinkKeyFor(identity);
+			fail("a signed envelope would be sent");
+		} catch (GeneralSecurityException expected) {
+		}
 	}
 
 	private byte[] pairSentTo(ContactId c) {

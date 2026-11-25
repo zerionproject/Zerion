@@ -245,6 +245,22 @@ public class TranscriptSimulatorTest {
 	}
 
 	@Test
+	public void commandLineWithoutAScenarioListsTheScenarios()
+			throws Exception {
+		for (String[] args : new String[][] {{}, {"help"}}) {
+			ByteArrayOutputStream buf = new ByteArrayOutputStream();
+			int code = TranscriptSimulator.run(args,
+					new PrintStream(buf, true, "UTF-8"));
+			String text = buf.toString("UTF-8");
+			assertEquals(text, 2, code);
+			for (String scenario : new String[] {"one-to-one", "mesh",
+					"pairing"}) {
+				assertTrue(text, text.contains("\n" + scenario + " "));
+			}
+		}
+	}
+
+	@Test
 	public void commandLineAcceptsKeysAsHex() throws Exception {
 		String root = "00112233445566778899aabbccddeeff"
 				+ "00112233445566778899aabbccddeeff";

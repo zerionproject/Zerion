@@ -9,6 +9,7 @@ import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DatabaseExecutor;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.sync.validation.ValidationManager;
 import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
@@ -38,6 +39,8 @@ public class MessagingModule {
 		MessagingManager messagingManager;
 		@Inject
 		PrivateMessageValidator privateMessageValidator;
+		@Inject
+		UnsignedFormsMemory unsignedFormsMemory;
 	}
 
 	@Provides
@@ -73,6 +76,20 @@ public class MessagingModule {
 			return Math.min(MINOR_VERSION, VIEW_ONCE_MIN_VERSION - 1);
 		}
 		return MINOR_VERSION;
+	}
+
+	@Provides
+	@Singleton
+	UnsignedFormsMemory provideUnsignedFormsMemory(
+			LifecycleManager lifecycleManager, ContactManager contactManager,
+			DatabaseComponent db, SettingsManager settingsManager,
+			EventBus eventBus, MessagingManager messagingManager) {
+		UnsignedFormsMemory memory = new UnsignedFormsMemory(db,
+				settingsManager, contactManager, messagingManager);
+		lifecycleManager.registerOpenDatabaseHook(memory);
+		contactManager.registerContactHook(memory);
+		eventBus.addListener(memory);
+		return memory;
 	}
 
 	@Provides

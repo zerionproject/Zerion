@@ -3,13 +3,13 @@ package com.professor.zerion.android.mesh;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.event.MeshLinkKeysReceivedEvent;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
-import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.event.Event;
@@ -22,6 +22,7 @@ import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.versioning.event.ClientVersionUpdatedEvent;
 import org.zerionproject.core.crypto.async.AsyncMeshDelivery;
 
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,10 +58,10 @@ public class MeshLinkKeys implements EventListener,
 	static final long RESEND_INTERVAL_MS = 24L * 60L * 60L * 1000L;
 	static final long REPLY_INTERVAL_MS = 10L * 60L * 1000L;
 
-	private final DatabaseComponent db;
 	private final SettingsManager settingsManager;
 	private final ContactManager contactManager;
 	private final MessagingManager messagingManager;
+	private final UnsignedFormsMemory unsignedForms;
 	private final Executor ioExecutor;
 	private final SecureRandom random = new SecureRandom();
 	private final Object lock = new Object();
@@ -72,14 +73,14 @@ public class MeshLinkKeys implements EventListener,
 	private volatile byte[] ownAdvertKey;
 
 	@Inject
-	MeshLinkKeys(EventBus eventBus, DatabaseComponent db,
-			SettingsManager settingsManager, ContactManager contactManager,
-			MessagingManager messagingManager,
+	MeshLinkKeys(EventBus eventBus, SettingsManager settingsManager,
+			ContactManager contactManager, MessagingManager messagingManager,
+			UnsignedFormsMemory unsignedForms,
 			@IoExecutor Executor ioExecutor) {
-		this.db = db;
 		this.settingsManager = settingsManager;
 		this.contactManager = contactManager;
 		this.messagingManager = messagingManager;
+		this.unsignedForms = unsignedForms;
 		this.ioExecutor = ioExecutor;
 		eventBus.addListener(this);
 		contactManager.registerContactHook(this);
@@ -162,21 +163,22 @@ public class MeshLinkKeys implements EventListener,
 
 	@Override
 	@Nullable
-	public byte[] sendingLinkKeyFor(byte[] peerIdentitySigPub) {
+	public byte[] sendingLinkKeyFor(byte[] peerIdentitySigPub)
+			throws GeneralSecurityException {
 		try {
 			ContactId c = resolveContact(peerIdentitySigPub);
-			if (c == null) return null;
+			if (c == null) throw new GeneralSecurityException();
+			if (!unsignedOnly(c)) return null;
 			byte[] linkKey = linkKeyFor(c);
-			if (linkKey == null) return null;
-			int minor = db.transactionWithResult(true, txn ->
-					messagingManager.getContactClientMinorVersion(txn, c));
-			if (minor < MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION) {
-				return null;
-			}
+			if (linkKey == null) throw new GeneralSecurityException();
 			return linkKey;
 		} catch (DbException e) {
-			return null;
+			throw new GeneralSecurityException(e);
 		}
+	}
+
+	boolean unsignedOnly(ContactId c) throws DbException {
+		return unsignedForms.unsignedOnly(c);
 	}
 
 	@Nullable
