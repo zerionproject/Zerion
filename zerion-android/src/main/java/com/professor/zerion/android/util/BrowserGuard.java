@@ -2,6 +2,8 @@ package com.professor.zerion.android.util;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.widget.Toast;
 
@@ -12,6 +14,7 @@ import com.professor.zerion.R;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.net.IDN;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -101,8 +104,18 @@ public final class BrowserGuard {
 
 	public static String shownWithNote(Context ctx, String url) {
 		String text = shown(url);
-		if (!hasOtherAlphabet(webHost(url))) return text;
+		if (!hostNeedsAlphabetNote(url)) return text;
 		return text + "\n" + ctx.getString(R.string.link_host_other_alphabet);
+	}
+
+	public static boolean hostNeedsAlphabetNote(String url) {
+		WebLink link = WebLink.parse(url);
+		if (link == null) return false;
+		if (hasOtherAlphabet(link.host)) return true;
+		for (int i = 0; i < link.writtenHost.length(); i++) {
+			if (link.writtenHost.charAt(i) > 0x7E) return true;
+		}
+		return !link.writtenHost.toLowerCase(Locale.ROOT).equals(link.host);
 	}
 
 	public static boolean hasOtherAlphabet(@Nullable String host) {
@@ -114,59 +127,117 @@ public final class BrowserGuard {
 	}
 
 	public static String shown(String url) {
-		String clean = DisplayNames.clean(url);
-		String host = webHost(url);
-		int start = url.indexOf("//");
-		if (host == null || host.startsWith("[") || start < 0) return clean;
-		start += 2;
-		int end = start;
-		while (end < url.length() && "/\\?#".indexOf(url.charAt(end)) < 0) {
-			end++;
-		}
-		int user = url.lastIndexOf('@', end - 1) + 1;
-		if (user < start) user = start;
-		int port = url.lastIndexOf(':', end - 1);
-		if (port < user) port = end;
-		if (user == start && url.substring(user, port).equalsIgnoreCase(host)) {
-			return clean;
-		}
-		return DisplayNames.clean(url.substring(0, start) + host
-				+ url.substring(port));
+		String opened = opened(url);
+		return opened == null ? DisplayNames.clean(url) : opened;
+	}
+
+	@Nullable
+	public static String opened(String url) {
+		WebLink link = WebLink.parse(url);
+		return link == null ? null : link.address;
 	}
 
 	@Nullable
 	public static String webHost(String url) {
-		Uri uri;
-		try {
-			uri = Uri.parse(url);
-		} catch (RuntimeException e) {
-			return null;
+		WebLink link = WebLink.parse(url);
+		return link == null ? null : link.host;
+	}
+
+	private static final class WebLink {
+
+		private static final String AUTHORITY_END = "/\\?#";
+		private static final int HIGHEST_PORT = 65_535;
+		private static final String HEX = "0123456789ABCDEF";
+
+		private final String writtenHost;
+		private final String host;
+		private final String address;
+
+		private WebLink(String writtenHost, String host, String address) {
+			this.writtenHost = writtenHost;
+			this.host = host;
+			this.address = address;
 		}
-		String scheme = uri.getScheme();
-		if (scheme == null) return null;
-		scheme = scheme.toLowerCase(Locale.ROOT);
-		if (!scheme.equals("http") && !scheme.equals("https")) return null;
-		String authority = uri.getEncodedAuthority();
-		if (authority == null) return null;
-		String host = authority.substring(authority.lastIndexOf('@') + 1);
-		if (host.startsWith("[")) {
-			int end = host.indexOf(']');
-			if (end < 2) return null;
-			String literal = host.substring(1, end);
-			if (!literal.matches("[0-9A-Fa-f:.]+")) return null;
-			return "[" + literal.toLowerCase(Locale.ROOT) + "]";
+
+		@Nullable
+		static WebLink parse(String url) {
+			int colon = url.indexOf(':');
+			if (colon < 0) return null;
+			String scheme = url.substring(0, colon).toLowerCase(Locale.ROOT);
+			if (!scheme.equals("http") && !scheme.equals("https")) return null;
+			if (!url.startsWith("//", colon + 1)) return null;
+			int start = colon + 3;
+			int end = start;
+			while (end < url.length()
+					&& AUTHORITY_END.indexOf(url.charAt(end)) < 0) {
+				end++;
+			}
+			String authority = url.substring(start, end);
+			String hostAndPort =
+					authority.substring(authority.lastIndexOf('@') + 1);
+			String writtenHost;
+			String host;
+			String port;
+			if (hostAndPort.startsWith("[")) {
+				int close = hostAndPort.indexOf(']');
+				if (close < 2) return null;
+				String literal = hostAndPort.substring(1, close);
+				if (!literal.matches("[0-9A-Fa-f:.]+")) return null;
+				writtenHost = hostAndPort.substring(0, close + 1);
+				host = "[" + literal.toLowerCase(Locale.ROOT) + "]";
+				port = hostAndPort.substring(close + 1);
+			} else {
+				int portStart = hostAndPort.lastIndexOf(':');
+				writtenHost = portStart < 0 ? hostAndPort
+						: hostAndPort.substring(0, portStart);
+				port = portStart < 0 ? "" : hostAndPort.substring(portStart);
+				if (writtenHost.isEmpty() || writtenHost.indexOf('%') >= 0) {
+					return null;
+				}
+				String ascii;
+				try {
+					ascii = IDN.toASCII(writtenHost);
+				} catch (IllegalArgumentException e) {
+					return null;
+				}
+				if (!ascii.matches("[A-Za-z0-9.-]+")) return null;
+				host = ascii.toLowerCase(Locale.ROOT);
+			}
+			if (!isPort(port)) return null;
+			return new WebLink(writtenHost, host, scheme + "://" + host + port
+					+ pathWithHiddenLettersEncoded(url.substring(end)));
 		}
-		int port = host.lastIndexOf(':');
-		if (port >= 0) host = host.substring(0, port);
-		if (host.isEmpty() || host.indexOf('%') >= 0) return null;
-		String ascii;
-		try {
-			ascii = IDN.toASCII(host);
-		} catch (IllegalArgumentException e) {
-			return null;
+
+		private static String pathWithHiddenLettersEncoded(String rest) {
+			StringBuilder out = new StringBuilder(rest.length());
+			int i = 0;
+			if (rest.startsWith("\\")) {
+				out.append('/');
+				i = 1;
+			}
+			while (i < rest.length()) {
+				int cp = rest.codePointAt(i);
+				i += Character.charCount(cp);
+				if (!DisplayNames.hidden(cp)) {
+					out.appendCodePoint(cp);
+					continue;
+				}
+				String letter = Character.getType(cp) == Character.SURROGATE
+						? "\uFFFD" : new String(Character.toChars(cp));
+				for (byte b : letter.getBytes(StandardCharsets.UTF_8)) {
+					out.append('%').append(HEX.charAt((b >> 4) & 0xF))
+							.append(HEX.charAt(b & 0xF));
+				}
+			}
+			return out.toString();
 		}
-		if (!ascii.matches("[A-Za-z0-9.-]+")) return null;
-		return ascii.toLowerCase(Locale.ROOT);
+
+		private static boolean isPort(String port) {
+			if (port.isEmpty()) return true;
+			if (!port.matches(":[0-9]{0,5}")) return false;
+			return port.length() == 1
+					|| Integer.parseInt(port.substring(1)) <= HIGHEST_PORT;
+		}
 	}
 
 	@Nullable
@@ -177,6 +248,52 @@ public final class BrowserGuard {
 			if (handles(ctx, pkg, probe)) return pkg;
 		}
 		return null;
+	}
+
+	@Nullable
+	static String defaultBrowserPackage(Context ctx) {
+		ResolveInfo chosen;
+		try {
+			chosen = ctx.getPackageManager().resolveActivity(
+					anyWebLink("https"), PackageManager.MATCH_DEFAULT_ONLY);
+		} catch (RuntimeException e) {
+			return null;
+		}
+		if (chosen == null || chosen.activityInfo == null) return null;
+		String pkg = chosen.activityInfo.packageName;
+		return pkg != null && opensAnyWebLink(ctx, pkg) ? pkg : null;
+	}
+
+	private static Intent anyWebLink(String scheme) {
+		Intent any = new Intent(Intent.ACTION_VIEW,
+				Uri.parse(scheme + "://"));
+		any.addCategory(Intent.CATEGORY_BROWSABLE);
+		return any;
+	}
+
+	private static boolean opensAnyWebLink(Context ctx, String pkg) {
+		return handles(ctx, pkg, anyWebLink("http"))
+				&& handles(ctx, pkg, anyWebLink("https"));
+	}
+
+	private static boolean opensOnlyInBrowsers(Context ctx, Intent link) {
+		List<ResolveInfo> handlers;
+		try {
+			handlers = ctx.getPackageManager().queryIntentActivities(link,
+					PackageManager.MATCH_DEFAULT_ONLY);
+		} catch (RuntimeException e) {
+			return false;
+		}
+		if (handlers.isEmpty()) return false;
+		for (ResolveInfo handler : handlers) {
+			if (handler.activityInfo == null
+					|| handler.activityInfo.packageName == null
+					|| !opensAnyWebLink(ctx,
+					handler.activityInfo.packageName)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static boolean handles(Context ctx, String pkg, Intent intent) {
@@ -232,15 +349,15 @@ public final class BrowserGuard {
 
 	private static void launchSystemBrowser(Context ctx, String url,
 			@Nullable String promised) {
-		if (webHost(url) == null) {
+		String address = opened(url);
+		if (address == null) {
 			Toast.makeText(ctx, R.string.link_unsupported,
 					Toast.LENGTH_SHORT).show();
 			return;
 		}
 		Intent i;
 		try {
-			i = new Intent(Intent.ACTION_VIEW,
-					Uri.parse(url).normalizeScheme());
+			i = new Intent(Intent.ACTION_VIEW, Uri.parse(address));
 		} catch (RuntimeException e) {
 			Toast.makeText(ctx, R.string.link_unsupported,
 					Toast.LENGTH_SHORT).show();
@@ -253,8 +370,15 @@ public final class BrowserGuard {
 			showDialog(ctx, url, true);
 			return;
 		}
-		String tor = promised != null ? promised : torBrowserPackage(ctx);
-		if (tor != null) i.setPackage(tor);
+		String browser = promised != null ? promised : torBrowserPackage(ctx);
+		if (browser == null) browser = defaultBrowserPackage(ctx);
+		if (browser != null) {
+			i.setPackage(browser);
+		} else if (!opensOnlyInBrowsers(ctx, i)) {
+			Toast.makeText(ctx, R.string.updates_no_browser,
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
 		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		try {
 			ctx.startActivity(i);
@@ -265,7 +389,8 @@ public final class BrowserGuard {
 	}
 
 	private static void copyToClipboard(Context ctx, String url) {
-		SecureClipboard.copy(ctx, "link", url);
+		String address = opened(url);
+		SecureClipboard.copy(ctx, "link", address == null ? url : address);
 		Toast.makeText(ctx, R.string.browser_warning_link_copied,
 				Toast.LENGTH_SHORT).show();
 	}

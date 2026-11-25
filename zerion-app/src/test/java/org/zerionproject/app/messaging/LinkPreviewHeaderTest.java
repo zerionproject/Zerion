@@ -41,6 +41,8 @@ import static org.zerionproject.app.messaging.MessageTypes.LINK_PREVIEW_MESSAGE;
 import static org.zerionproject.app.messaging.MessageTypes.PRIVATE_MESSAGE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MSG_TYPE;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW_DESCRIPTION;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW_TITLE;
 import static org.zerionproject.core.test.TestUtils.deleteTestDirectory;
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
 import static org.zerionproject.core.test.TestUtils.getSecretKey;
@@ -141,6 +143,61 @@ public class LinkPreviewHeaderTest extends BrambleTestCase {
 		assertEquals(2, shown.size());
 		assertTrue(shown.containsKey(text));
 		assertLinkPreview(shown.get(preview), sentAt, true, true);
+	}
+
+	@Test
+	public void aPreviewStoredWithHiddenCharactersIsCleanedWhenItIsRead()
+			throws Exception {
+		MessageId spoofed = storeAsAnEarlierVersionDid(
+				"pay\u202Epal\u200B.com\u0007\tnews\uE000",
+				"line one\u2028line\u202E two\r\n\u0085");
+		MessageId hiddenOnly = storeAsAnEarlierVersionDid(
+				"\u202E\u200B\u2066", "\u200F\u0007 ");
+		MessageId withoutDescription = storeAsAnEarlierVersionDid(
+				" A plain page ", null);
+		MessageId current = receive(BdfList.of(LINK_PREVIEW_MESSAGE, null,
+				"https://example.org/c", "A\u202E page", "About\u200B it"));
+
+		Map<MessageId, LinkPreview> shown =
+				messagingManager.getLinkPreviews(contact);
+
+		assertEquals(4, shown.size());
+		assertEquals("paypal.com news", shown.get(spoofed).getTitle());
+		assertEquals("line one\nline two",
+				shown.get(spoofed).getDescription());
+		assertEquals("https://example.org/", shown.get(spoofed).getUrl());
+		assertEquals("", shown.get(hiddenOnly).getTitle());
+		assertNull(shown.get(hiddenOnly).getDescription());
+		assertEquals("A plain page",
+				shown.get(withoutDescription).getTitle());
+		assertNull(shown.get(withoutDescription).getDescription());
+		assertEquals("A page", shown.get(current).getTitle());
+		assertEquals("About it", shown.get(current).getDescription());
+	}
+
+	@Test
+	public void aPreviewIsShownWithItsPictureAndCleanedText() {
+		byte[] picture = getRandomBytes(40);
+		LinkPreview shown = MessagingManagerImpl.shownPreview(
+				"https://example.org/", "Tit\u200Ele\u0000",
+				"\u2067About\nit", picture);
+		assertEquals(new LinkPreview("https://example.org/", "Title",
+				"About\nit", picture), shown);
+	}
+
+	private MessageId storeAsAnEarlierVersionDid(String title,
+			@Nullable String description) throws Exception {
+		Message m = clientHelper.createMessage(group.getId(), clock++,
+				clientHelper.toByteArray(BdfList.of(LINK_PREVIEW_MESSAGE,
+						null, "https://example.org/", "A page", "About it")));
+		BdfDictionary meta = validator.validateToBdf(m, group)
+				.getDictionary();
+		meta.put(MSG_KEY_PREVIEW_TITLE, title);
+		if (description == null) meta.remove(MSG_KEY_PREVIEW_DESCRIPTION);
+		else meta.put(MSG_KEY_PREVIEW_DESCRIPTION, description);
+		db.transaction(false, txn ->
+				clientHelper.addLocalMessage(txn, m, meta, false, false));
+		return m.getId();
 	}
 
 	private void assertLinkPreview(@Nullable PrivateMessageHeader h,

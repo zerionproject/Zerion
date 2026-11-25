@@ -91,6 +91,13 @@ public class ExternalViewerTypesTest {
 				"application/vnd.wfa.wsc", "application/vnd.oma.drm.message",
 				"application/x-android-drm-fl",
 				"application/x-apple-aspen-config",
+				"application/x-openvpn-profile", "application/ovpn",
+				"Application/X-OpenVPN-Profile; charset=utf-8",
+				"application/x-wireguard-profile",
+				"application/vnd.strongswan.profile",
+				"application/pgp-keys", "application/x-pgp-key",
+				"application/x-gnupg-keyring", "application/x-jar",
+				"application/jar", "application/x-passpoint-profile",
 				"vnd.android.cursor.item/contact",
 				"vnd.android.cursor.dir/person", "x-scheme-handler/http",
 				"inode/directory", "x-world/x-vrml"}) {
@@ -103,6 +110,14 @@ public class ExternalViewerTypesTest {
 				"application/x-webbundle"}) {
 			assertEquals(t, ExternalViewerTypes.TEXT,
 					ExternalViewerTypes.typeForContent(t, plain));
+		}
+		for (String t : new String[] {"application/pgp-encrypted",
+				"application/pgp-signature", "application/zip",
+				"application/pdf", "application/msword",
+				"application/vnd.oasis.opendocument.text",
+				"application/vnd.openxmlformats-officedocument"
+						+ ".spreadsheetml.sheet"}) {
+			assertEquals(t, t, ExternalViewerTypes.typeForContent(t, plain));
 		}
 	}
 

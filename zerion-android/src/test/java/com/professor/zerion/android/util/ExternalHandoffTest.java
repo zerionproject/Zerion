@@ -342,6 +342,29 @@ public class ExternalHandoffTest {
 	}
 
 	@Test
+	public void anArchiveThatCarriesPackagesOrProgramCodeNeverLeaves()
+			throws Exception {
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
+		byte[] bundle = zip("icon.png", "base.apk", "split_config.en.APK");
+		byte[] code = zip("META-INF/MANIFEST.MF", "classes.dex");
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		assertNull(openAndConfirm(s, bundle, "application/zip"));
+		assertNull(openAndConfirm(s, code, "application/zip"));
+		assertNull(openAndConfirm(s, bundle, ExternalViewerTypes.OPAQUE));
+		assertNull(open(s, code, "image/jpeg"));
+		assertEquals(Arrays.asList("application/zip", "application/zip",
+				ExternalViewerTypes.OPAQUE, "image/jpeg"), failures);
+		assertNull(ExternalHandoff.current());
+		String[] left = dir().list();
+		assertTrue("a copy was left: " + Arrays.toString(left),
+				left == null || left.length == 0);
+		failures.clear();
+		assertNotNull(openAndConfirm(s, zip("readme.txt", "data.csv"),
+				"application/zip"));
+		assertTrue(failures.isEmpty());
+	}
+
+	@Test
 	public void checkedPicturesAndDocumentsStillOpen() throws Exception {
 		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
 		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();

@@ -3769,14 +3769,26 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 						}
 					}
 					previews.put(entry.getKey(),
-							new LinkPreview(url, title, description,
-									imageData));
+							shownPreview(url, title, description, imageData));
 				}
 				return previews;
 			} catch (FormatException e) {
 				throw new DbException(e);
 			}
 		});
+	}
+
+	static LinkPreview shownPreview(String url, String title,
+			@javax.annotation.Nullable String description,
+			@javax.annotation.Nullable byte[] imageData) {
+		String shownDescription = description == null ? null
+				: PrivateMessageValidator.displayText(description, true);
+		if (shownDescription != null && shownDescription.isEmpty()) {
+			shownDescription = null;
+		}
+		return new LinkPreview(url,
+				PrivateMessageValidator.displayText(title, false),
+				shownDescription, imageData);
 	}
 
 	@Override

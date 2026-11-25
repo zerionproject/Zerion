@@ -36,6 +36,11 @@ public class BrowserGuardTorBrowserTest {
 
 	private static final String FDROID = "org.fdroid.fdroid";
 	private static final String DROIDIFY = "com.looker.droidify";
+	private static final String BROWSER = "com.example.browser";
+	private static final String OTHER_BROWSER = "com.example.otherbrowser";
+	private static final String BANK_APP = "com.example.bank";
+	private static final String BANK_HOST = "bank.example";
+	private static final String BANK_LINK = "https://bank.example/login";
 
 	private static FragmentActivity host() {
 		FragmentActivity a = Robolectric.buildActivity(FragmentActivity.class)
@@ -47,18 +52,52 @@ public class BrowserGuardTorBrowserTest {
 
 	private static void installViewer(FragmentActivity a, String pkg,
 			String... schemes) {
+		installViewerOfHost(a, pkg, null, schemes);
+	}
+
+	private static void installViewerOfHost(FragmentActivity a, String pkg,
+			@Nullable String onlyHost, String... schemes) {
 		ShadowPackageManager pm = shadowOf(a.getPackageManager());
 		ComponentName c = new ComponentName(pkg, pkg + ".Main");
 		pm.addActivityIfNotPresent(c);
-		IntentFilter f = new IntentFilter(Intent.ACTION_VIEW);
-		f.addCategory(Intent.CATEGORY_DEFAULT);
-		f.addCategory(Intent.CATEGORY_BROWSABLE);
-		for (String s : schemes) f.addDataScheme(s);
+		IntentFilter f = webFilter(schemes);
+		if (onlyHost != null) f.addDataAuthority(onlyHost, null);
 		try {
 			pm.addIntentFilterForActivity(c, f);
 		} catch (android.content.pm.PackageManager.NameNotFoundException e) {
 			throw new AssertionError(e);
 		}
+	}
+
+	private static IntentFilter webFilter(String... schemes) {
+		IntentFilter f = new IntentFilter(Intent.ACTION_VIEW);
+		f.addCategory(Intent.CATEGORY_DEFAULT);
+		f.addCategory(Intent.CATEGORY_BROWSABLE);
+		for (String s : schemes) f.addDataScheme(s);
+		return f;
+	}
+
+	private static void installBankApp(FragmentActivity a) {
+		installViewerOfHost(a, BANK_APP, BANK_HOST, "http", "https");
+	}
+
+	private static void noBrowserIsTheDefault(FragmentActivity a) {
+		shadowOf(a.getPackageManager()).setShouldShowActivityChooser(true);
+	}
+
+	private static void makeDefaultBrowser(FragmentActivity a, String pkg,
+			String... installed) {
+		ComponentName[] all = new ComponentName[installed.length];
+		for (int i = 0; i < installed.length; i++) {
+			all[i] = new ComponentName(installed[i], installed[i] + ".Main");
+		}
+		a.getPackageManager().addPreferredActivity(webFilter("http", "https"),
+				IntentFilter.MATCH_CATEGORY_SCHEME, all,
+				new ComponentName(pkg, pkg + ".Main"));
+	}
+
+	private static String toast() {
+		return org.robolectric.shadows.ShadowToast.getTextOfLatestToast();
 	}
 
 	private static void installTorBrowser(FragmentActivity a, String pkg) {
@@ -96,7 +135,96 @@ public class BrowserGuardTorBrowserTest {
 	}
 
 	@Test
-	public void withoutTorBrowserNoPackageIsNamed() {
+	public void anAppThatClaimsOneDomainDoesNotReceiveTheLink() {
+		FragmentActivity a = host();
+		installBankApp(a);
+		installViewer(a, BROWSER, "http", "https");
+		assertEquals(BROWSER, BrowserGuard.defaultBrowserPackage(a));
+		Intent i = click(a, dialog(a, BANK_LINK),
+				DialogInterface.BUTTON_POSITIVE);
+		assertNotNull(i);
+		assertEquals(BROWSER, i.getPackage());
+		assertNull(i.getComponent());
+		assertEquals(BANK_LINK, i.getDataString());
+	}
+
+	@Test
+	public void theDefaultBrowserReceivesTheLinkAmongSeveralBrowsers() {
+		FragmentActivity a = host();
+		installViewer(a, BROWSER, "http", "https");
+		installBankApp(a);
+		installViewer(a, OTHER_BROWSER, "http", "https");
+		noBrowserIsTheDefault(a);
+		makeDefaultBrowser(a, OTHER_BROWSER, BROWSER, OTHER_BROWSER);
+		assertEquals(OTHER_BROWSER, BrowserGuard.defaultBrowserPackage(a));
+		for (String url : new String[] {BANK_LINK,
+				"http://example.org/page"}) {
+			Intent i = click(a, dialog(a, url),
+					DialogInterface.BUTTON_POSITIVE);
+			assertNotNull(url, i);
+			assertEquals(url, OTHER_BROWSER, i.getPackage());
+			assertEquals(url, i.getDataString());
+		}
+	}
+
+	@Test
+	public void torBrowserReceivesTheLinkBeforeAnyOtherApp() {
+		FragmentActivity a = host();
+		installBankApp(a);
+		installViewer(a, BROWSER, "http", "https");
+		installTorBrowser(a, BrowserGuard.TOR_BROWSER);
+		Intent i = click(a, dialog(a, BANK_LINK),
+				DialogInterface.BUTTON_POSITIVE);
+		assertNotNull(i);
+		assertEquals(BrowserGuard.TOR_BROWSER, i.getPackage());
+		assertEquals(BANK_LINK, i.getDataString());
+	}
+
+	@Test
+	public void anAppThatClaimsOneDomainIsNeverTakenForABrowser() {
+		FragmentActivity a = host();
+		installBankApp(a);
+		assertNull(BrowserGuard.defaultBrowserPackage(a));
+		assertNull(click(a, dialog(a, BANK_LINK),
+				DialogInterface.BUTTON_POSITIVE));
+		assertEquals(a.getString(R.string.updates_no_browser), toast());
+	}
+
+	@Test
+	public void anAppThatOpensOnlySecureLinksIsNotTakenForABrowser() {
+		FragmentActivity a = host();
+		installViewer(a, BANK_APP, "https");
+		assertNull(BrowserGuard.defaultBrowserPackage(a));
+		assertNull(click(a, dialog(a, BANK_LINK),
+				DialogInterface.BUTTON_POSITIVE));
+		assertEquals(a.getString(R.string.updates_no_browser), toast());
+	}
+
+	@Test
+	public void withoutADefaultTheSystemAsksOnlyWhenEveryChoiceIsABrowser() {
+		FragmentActivity a = host();
+		installViewer(a, BROWSER, "http", "https");
+		installViewer(a, OTHER_BROWSER, "http", "https");
+		noBrowserIsTheDefault(a);
+		assertNull(BrowserGuard.defaultBrowserPackage(a));
+		Intent i = click(a, dialog(a, BANK_LINK),
+				DialogInterface.BUTTON_POSITIVE);
+		assertNotNull(i);
+		assertNull(i.getPackage());
+		assertNull(i.getComponent());
+		assertEquals(BANK_LINK, i.getDataString());
+		installBankApp(a);
+		assertNull(click(a, dialog(a, BANK_LINK),
+				DialogInterface.BUTTON_POSITIVE));
+		assertEquals(a.getString(R.string.updates_no_browser), toast());
+		Intent elsewhere = click(a, dialog(a, "https://example.org/page"),
+				DialogInterface.BUTTON_POSITIVE);
+		assertNotNull(elsewhere);
+		assertNull(elsewhere.getPackage());
+	}
+
+	@Test
+	public void withoutTorBrowserTheDefaultBrowserIsNamed() {
 		FragmentActivity a = host();
 		installViewer(a, "com.example.browser", "http", "https");
 		assertNull(BrowserGuard.torBrowserPackage(a));
@@ -114,7 +242,7 @@ public class BrowserGuardTorBrowserTest {
 		assertTrue(text, text.endsWith("https://example.org/page"));
 		Intent i = click(a, d, DialogInterface.BUTTON_POSITIVE);
 		assertNotNull(i);
-		assertNull(i.getPackage());
+		assertEquals(BROWSER, i.getPackage());
 		assertNull(i.getSelector());
 		assertNull(i.getComponent());
 		assertEquals("https://example.org/page", i.getDataString());
@@ -178,7 +306,7 @@ public class BrowserGuardTorBrowserTest {
 				button(warning, DialogInterface.BUTTON_NEGATIVE));
 		Intent i = click(a, warning, DialogInterface.BUTTON_POSITIVE);
 		assertNotNull(i);
-		assertNull(i.getPackage());
+		assertEquals(BROWSER, i.getPackage());
 		assertEquals("https://example.org/page", i.getDataString());
 	}
 
@@ -242,7 +370,7 @@ public class BrowserGuardTorBrowserTest {
 				button(second, DialogInterface.BUTTON_NEGATIVE));
 		Intent i = click(a, second, DialogInterface.BUTTON_POSITIVE);
 		assertNotNull(i);
-		assertNull(i.getPackage());
+		assertEquals(BROWSER, i.getPackage());
 		assertEquals(BrowserGuard.TOR_BROWSER_PLAY_WEB, i.getDataString());
 	}
 
@@ -289,7 +417,7 @@ public class BrowserGuardTorBrowserTest {
 		assertTrue(message(second).endsWith(BrowserGuard.GUARDIAN_PAGE));
 		Intent i = click(a, second, DialogInterface.BUTTON_POSITIVE);
 		assertNotNull(i);
-		assertNull(i.getPackage());
+		assertEquals(BROWSER, i.getPackage());
 		assertEquals(BrowserGuard.GUARDIAN_PAGE, i.getDataString());
 	}
 
@@ -311,7 +439,7 @@ public class BrowserGuardTorBrowserTest {
 					button(second, DialogInterface.BUTTON_NEGATIVE));
 			Intent i = click(a, second, DialogInterface.BUTTON_POSITIVE);
 			assertNotNull(i);
-			assertNull(i.getPackage());
+			assertEquals(BROWSER, i.getPackage());
 			assertEquals(BrowserGuard.TOR_BROWSER_DOWNLOAD, i.getDataString());
 		}
 	}

@@ -27,10 +27,32 @@ import static org.robolectric.Shadows.shadowOf;
 @Config(sdk = 29)
 public class BrowserGuardSchemeTest {
 
-	private static FragmentActivity host() {
+	private static final String BROWSER = "com.example.browser";
+
+	private static FragmentActivity hostWithoutABrowser() {
 		FragmentActivity a = Robolectric.buildActivity(FragmentActivity.class)
 				.setup().get();
 		a.setTheme(R.style.ZerionTheme_NoActionBar);
+		return a;
+	}
+
+	private static FragmentActivity host() {
+		FragmentActivity a = hostWithoutABrowser();
+		android.content.ComponentName browser =
+				new android.content.ComponentName(BROWSER, BROWSER + ".Main");
+		android.content.IntentFilter web =
+				new android.content.IntentFilter(Intent.ACTION_VIEW);
+		web.addCategory(Intent.CATEGORY_DEFAULT);
+		web.addCategory(Intent.CATEGORY_BROWSABLE);
+		web.addDataScheme("http");
+		web.addDataScheme("https");
+		shadowOf(a.getPackageManager()).addActivityIfNotPresent(browser);
+		try {
+			shadowOf(a.getPackageManager()).addIntentFilterForActivity(
+					browser, web);
+		} catch (android.content.pm.PackageManager.NameNotFoundException e) {
+			throw new AssertionError(e);
+		}
 		return a;
 	}
 
@@ -51,6 +73,7 @@ public class BrowserGuardSchemeTest {
 		assertNotNull(i);
 		assertEquals(Intent.ACTION_VIEW, i.getAction());
 		assertEquals("https://example.org/page", i.getDataString());
+		assertEquals(BROWSER, i.getPackage());
 		assertTrue(i.hasCategory(Intent.CATEGORY_BROWSABLE));
 		assertNull(i.getSelector());
 		assertNull(i.getComponent());
@@ -105,7 +128,8 @@ public class BrowserGuardSchemeTest {
 		android.widget.TextView message =
 				d.findViewById(android.R.id.message);
 		String text = message.getText().toString();
-		assertTrue(text, text.endsWith("https://example.org/txt.exe"));
+		assertTrue(text, text.endsWith("https://example.org/%E2%80%AEtxt.exe"));
+		assertFalse(text, text.contains("\u202E"));
 	}
 
 	@Test
@@ -117,7 +141,7 @@ public class BrowserGuardSchemeTest {
 						"https://user@\u0440\u0430ypal.com:8443/a?b=\u00E9#c"));
 		assertEquals("https://example.org/caf\u00E9",
 				BrowserGuard.shown("https://example.org/caf\u00E9"));
-		assertEquals("HTTPS://Example.org/Page",
+		assertEquals("https://example.org/Page",
 				BrowserGuard.shown("HTTPS://Example.org/Page"));
 		assertEquals("https://[2001:db8::1]:443/",
 				BrowserGuard.shown("https://[2001:db8::1]:443/"));
@@ -138,7 +162,153 @@ public class BrowserGuardSchemeTest {
 				+ a.getString(R.string.link_host_other_alphabet)));
 		Intent i = openAndConfirm(a, "https://\u0440\u0430ypal.com/login");
 		assertNotNull(i);
-		assertEquals("https://\u0440\u0430ypal.com/login", i.getDataString());
+		assertEquals("https://xn--ypal-43d9g.com/login", i.getDataString());
+	}
+
+	private static String warningText(FragmentActivity a, String url) {
+		BrowserGuard.openUrl(a, url);
+		shadowOf(Looper.getMainLooper()).idle();
+		AlertDialog d = (AlertDialog) ShadowDialog.getLatestDialog();
+		android.widget.TextView message =
+				d.findViewById(android.R.id.message);
+		String text = message.getText().toString();
+		d.dismiss();
+		return text;
+	}
+
+	private static void assertShownThenOpened(String url, String address,
+			boolean noted) {
+		FragmentActivity a = host();
+		String note = a.getString(R.string.link_host_other_alphabet);
+		assertEquals(url, address, BrowserGuard.shown(url));
+		assertEquals(url, address, BrowserGuard.opened(url));
+		assertEquals(url, noted, BrowserGuard.hostNeedsAlphabetNote(url));
+		String text = warningText(a, url);
+		assertTrue(text, text.endsWith(noted ? address + "\n" + note
+				: address));
+		assertEquals(text, noted, text.contains(note));
+		Intent i = openAndConfirm(a, url);
+		assertNotNull(url, i);
+		assertEquals(url, address, i.getDataString());
+	}
+
+	@Test
+	public void aSharpSHostOpensAsTheDoubleSHostThatWasShown() {
+		assertShownThenOpened("https://sparka\u00dfe.de/login",
+				"https://sparkasse.de/login", true);
+	}
+
+	@Test
+	public void aFinalSigmaHostOpensAsTheHostThatWasShown() {
+		String mapped = java.net.IDN.toASCII("\u03bf\u03b4\u03cc\u03c3.gr");
+		assertTrue(mapped, mapped.startsWith("xn--"));
+		assertShownThenOpened("https://\u03bf\u03b4\u03cc\u03c2.gr",
+				"https://" + mapped, true);
+	}
+
+	@Test
+	public void aJoinerHiddenInAHostIsGoneFromWhatIsShownAndOpened() {
+		assertShownThenOpened("https://exam\u200dple.org/a",
+				"https://example.org/a", true);
+		assertShownThenOpened("https://exam\u200cple.org/a",
+				"https://example.org/a", true);
+	}
+
+	@Test
+	public void aCyrillicHostOpensInTheSpellingThatWasShown() {
+		assertShownThenOpened("https://\u0440\u0430ypal.com/login",
+				"https://xn--ypal-43d9g.com/login", true);
+		assertShownThenOpened("https://xn--ypal-43d9g.com/login",
+				"https://xn--ypal-43d9g.com/login", true);
+	}
+
+	@Test
+	public void aWideLetterHostIsNotedAndOpensInPlainLetters() {
+		assertShownThenOpened("https://\uff45xample.org/",
+				"https://example.org/", true);
+	}
+
+	@Test
+	public void aPlainHostOpensUnchanged() {
+		String plain = "https://example.org:8443/a/b.html?c=d&e=%20f#g-h";
+		assertShownThenOpened(plain, plain, false);
+		assertShownThenOpened("http://example.org", "http://example.org",
+				false);
+		assertShownThenOpened("https://example.org/caf\u00e9?q=\u00df",
+				"https://example.org/caf\u00e9?q=\u00df", false);
+	}
+
+	@Test
+	public void userInfoInFrontOfTheHostIsNeitherShownNorOpened() {
+		assertShownThenOpened(
+				"https://user:pw@example.org:8443/a/b.html?c=d#e",
+				"https://example.org:8443/a/b.html?c=d#e", false);
+		assertShownThenOpened("https://accounts.example.com@evil.example/x",
+				"https://evil.example/x", false);
+		assertShownThenOpened("https://a@b@evil.example/x@y",
+				"https://evil.example/x@y", false);
+	}
+
+	@Test
+	public void userInfoInFrontOfABracketedAddressIsNeitherShownNorOpened() {
+		assertShownThenOpened(
+				"https://accounts.example.com@[2001:db8::1]/login",
+				"https://[2001:db8::1]/login", false);
+		assertShownThenOpened(
+				"https://accounts.example.com:pw@[2001:DB8::1]:8443/login",
+				"https://[2001:db8::1]:8443/login", false);
+		assertShownThenOpened("https://[2001:db8::1]:443/",
+				"https://[2001:db8::1]:443/", false);
+	}
+
+	@Test
+	public void hiddenLettersAfterTheHostAreShownAndOpenedAsTheSameCodes() {
+		assertShownThenOpened(
+				"https://example.org/a\u202Eb?c=\u200Bd#e\u0007\u2066",
+				"https://example.org/a%E2%80%AEb?c=%E2%80%8Bd#e%07%E2%81%A6",
+				false);
+		assertShownThenOpened("https://example.org/\uDB40\uDC41x\uD800",
+				"https://example.org/%F3%A0%81%81x%EF%BF%BD", false);
+	}
+
+	@Test
+	public void aBackslashAfterTheHostOpensAsTheSlashBrowsersReadItAs() {
+		String url = "https://example.org\\@evil.example/x";
+		assertEquals("example.org", BrowserGuard.webHost(url));
+		assertShownThenOpened(url, "https://example.org/@evil.example/x",
+				false);
+		Intent i = openAndConfirm(host(), url);
+		assertNotNull(i);
+		assertEquals("example.org", i.getData().getHost());
+	}
+
+	@Test
+	public void aLinkWhoseHostEndsInSomethingElseThanAPortIsNotOpened() {
+		for (String url : new String[] {"https://example.org:80x/",
+				"https://example.org:123456/", "https://example.org:70000/",
+				"https://[2001:db8::1]evil.example/",
+				"https://[2001:db8::1]:x/"}) {
+			assertNull(url, BrowserGuard.webHost(url));
+			assertNull(url, BrowserGuard.opened(url));
+			assertNull(url, openAndConfirm(host(), url));
+		}
+		assertEquals("https://example.org:/",
+				BrowserGuard.opened("https://example.org:/"));
+	}
+
+	@Test
+	public void theCopiedLinkIsTheLinkThatWasShown() {
+		FragmentActivity a = host();
+		BrowserGuard.openUrl(a, "https://bank.example@sparka\u00dfe.de/x");
+		shadowOf(Looper.getMainLooper()).idle();
+		AlertDialog d = (AlertDialog) ShadowDialog.getLatestDialog();
+		d.getButton(DialogInterface.BUTTON_NEUTRAL).performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+		android.content.ClipboardManager clipboard =
+				(android.content.ClipboardManager) a.getSystemService(
+						android.content.Context.CLIPBOARD_SERVICE);
+		assertEquals("https://sparkasse.de/x", clipboard.getPrimaryClip()
+				.getItemAt(0).getText().toString());
 	}
 
 	@Test
@@ -152,9 +322,9 @@ public class BrowserGuardSchemeTest {
 
 	@Test
 	public void aLinkNothingCanOpenSaysSo() {
-		FragmentActivity a = host();
+		FragmentActivity a = hostWithoutABrowser();
 		shadowOf(a.getApplication()).checkActivities(true);
-		openAndConfirm(a, "https://example.org/");
+		assertNull(openAndConfirm(a, "https://example.org/"));
 		assertEquals(a.getString(R.string.updates_no_browser),
 				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
 	}

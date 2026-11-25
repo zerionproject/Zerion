@@ -73,13 +73,18 @@ public class CleanShareCacheTest {
 			throws Exception {
 		Context ctx = RuntimeEnvironment.getApplication();
 		File dir = new File(ctx.getCacheDir(), CacheSweeper.CLEAN_SHARE_DIR);
-		long start = System.currentTimeMillis();
+		long now = System.currentTimeMillis();
+		long start = now - 120_000L;
 		File old = touch(dir, "old.pdf");
 		assertTrue(old.setLastModified(start - 60_000L));
 		File fresh = touch(dir, "fresh.pdf");
 		assertTrue(fresh.setLastModified(start + 60_000L));
+		File ahead = touch(dir, "ahead.pdf");
+		assertTrue(ahead.setLastModified(now + 3_600_000L));
 		CacheSweeper.sweepLeftovers(ctx, start);
 		assertFalse("a copy from before this process is swept", old.exists());
+		assertFalse("a copy dated ahead of the clock is swept",
+				ahead.exists());
 		assertTrue("a copy this process wrote is kept for its reader",
 				fresh.exists());
 	}
