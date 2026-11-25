@@ -131,6 +131,43 @@ public class RootEvolutionManagerTest {
 	}
 
 	@Test
+	public void aGreetingFromOneContactLeavesAnotherContactsPauseAlone() {
+		ContactId other = new ContactId(8);
+		for (boolean otherPaused : new boolean[] {false, true}) {
+			manager.peerGreeted(contact, true);
+			clock.addAndGet(1);
+			assertTrue(manager.peerPauseRemembered(contact));
+			clock.addAndGet(-1);
+			manager.peerGreeted(other, otherPaused);
+			clock.addAndGet(1);
+			assertTrue("a greeting from another contact, read off the clock a"
+							+ " millisecond earlier, ended the pause",
+					manager.peerPauseRemembered(contact));
+			clock.addAndGet(-10_000);
+			manager.peerGreeted(other, otherPaused);
+			clock.addAndGet(10_000);
+			assertTrue("a greeting from another contact after the clock"
+							+ " stepped back ended the pause",
+					manager.peerPauseRemembered(contact));
+			manager.peerGreeted(other, false);
+		}
+		clock.addAndGet(-1);
+		assertFalse("a clock that went back for the contact itself kept its"
+				+ " pause", manager.peerPauseRemembered(contact));
+		assertEquals(0, manager.peerPausesRemembered());
+
+		manager.peerGreeted(contact, true);
+		clock.addAndGet(RootEvolutionManager.PEER_PAUSE_MEMORY_MS - 1);
+		manager.peerGreeted(other, false);
+		assertEquals("a pause that is not over was dropped", 1,
+				manager.peerPausesRemembered());
+		clock.addAndGet(1);
+		manager.peerGreeted(other, false);
+		assertEquals("a pause that is over stayed in memory", 0,
+				manager.peerPausesRemembered());
+	}
+
+	@Test
 	public void connectionsWithARenewalOutstandingAreCountedUntilOneCompletes() {
 		for (int i = 1; i < RootEvolutionManager
 				.NOT_RENEWING_AFTER_CONNECTIONS; i++) {
