@@ -74,7 +74,7 @@ public class CacheSweeperTest {
 			throws Exception {
 		Context ctx = RuntimeEnvironment.getApplication();
 		File cache = ctx.getCacheDir();
-		long start = System.currentTimeMillis();
+		long start = System.currentTimeMillis() - 10_000L;
 		long before = start - 60_000L;
 		File[] gone = {
 				modifiedAt(touch(cache, "voice_attachment_1.m4a"), before),
@@ -130,6 +130,71 @@ public class CacheSweeperTest {
 		assertTrue("a directory another app may still write into stays",
 				new File(cache, "camera_photos").isDirectory());
 		assertTrue(new File(ctx.getFilesDir(), "camera").isDirectory());
+	}
+
+	@Test
+	public void atStartALeftoverDatedAheadOfTheClockIsSwept()
+			throws Exception {
+		Context ctx = RuntimeEnvironment.getApplication();
+		File cache = ctx.getCacheDir();
+		long now = System.currentTimeMillis();
+		long start = now - 10_000L;
+		long ahead = now + 3_600_000L;
+		File[] gone = {
+				modifiedAt(touch(cache, "voice_attachment_ahead.m4a"), ahead),
+				modifiedAt(touch(cache, "zerion_video_ahead.mp4"),
+						now + 60_000L),
+				modifiedAt(touch(new File(cache, ExternalHandoff.DIR),
+						"ahead.pdf"), ahead),
+				modifiedAt(touch(new File(cache, "camera_photos"),
+						"ahead.jpg"), ahead),
+				modifiedAt(touch(new File(cache, "vault_share"), "ahead.pdf"),
+						ahead),
+				modifiedAt(touch(new File(cache, "zenc_share"), "ahead.zenc"),
+						ahead),
+				modifiedAt(touch(new File(cache, CacheSweeper.CLEAN_SHARE_DIR),
+						"ahead.docx"), ahead),
+				modifiedAt(touch(new File(ctx.getFilesDir(), "camera"),
+						"ahead.mp4"), ahead),
+				modifiedAt(touch(new File(ctx.getFilesDir(), "camera_photos"),
+						"ahead.jpg"), now + 60_000L),
+		};
+		File claimed = CacheSweeper.claim(
+				modifiedAt(touch(cache, "zbk-ahead.tmp"), ahead));
+		File[] stay = {
+				touch(cache, "voice_attachment_now.m4a"),
+				touch(new File(cache, ExternalHandoff.DIR), "now.pdf"),
+				touch(new File(cache, "camera_photos"), "now.jpg"),
+				touch(new File(ctx.getFilesDir(), "camera"), "now.mp4"),
+				modifiedAt(touch(new File(cache, ExternalHandoff.DIR),
+						"at-start.pdf"), start),
+				modifiedAt(touch(cache, "unrelated-ahead.bin"), ahead),
+				claimed,
+		};
+		try {
+			CacheSweeper.sweepLeftovers(ctx, start);
+			for (File f : gone) assertFalse(f.getPath(), f.exists());
+			for (File f : stay) assertTrue(f.getPath(), f.exists());
+		} finally {
+			CacheSweeper.release(claimed);
+		}
+	}
+
+	@Test
+	public void aFileIsALeftoverOnlyOutsideTheLifeOfThisProcess()
+			throws Exception {
+		Context ctx = RuntimeEnvironment.getApplication();
+		File f = touch(ctx.getCacheDir(), "vview-window.tmp");
+		long written = f.lastModified();
+		assertFalse(CacheSweeper.isLeftover(f, written));
+		assertFalse(CacheSweeper.isLeftover(f, written - 5_000L));
+		assertTrue(CacheSweeper.isLeftover(f, written + 1L));
+		long now = System.currentTimeMillis();
+		modifiedAt(f, now + 60_000L);
+		assertTrue(CacheSweeper.isLeftover(f, now - 5_000L));
+		modifiedAt(f, now - 1_000L);
+		assertFalse(CacheSweeper.isLeftover(f, now - 5_000L));
+		assertTrue(f.delete());
 	}
 
 	@Test

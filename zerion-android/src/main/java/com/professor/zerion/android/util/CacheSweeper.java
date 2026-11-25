@@ -145,7 +145,7 @@ public final class CacheSweeper {
 				if (files != null) {
 					for (File f : files) {
 						if (f.isFile() && hasTempPrefix(f.getName())
-								&& f.lastModified() < processStartedAt
+								&& isLeftover(f, processStartedAt)
 								&& !inUse(f)) {
 							SecureMemory.secureDeleteFile(f, 0L, false);
 						}
@@ -157,19 +157,26 @@ public final class CacheSweeper {
 				SecureMemory.secureDeleteDir(new File(cache, dir), 0L);
 			}
 			for (String dir : HANDOFF_CACHE_DIRS) {
-				sweepOlderThan(new File(cache, dir), processStartedAt);
+				sweepLeftoversIn(new File(cache, dir), processStartedAt);
 			}
 		}
 		File files = ctx.getFilesDir();
 		if (files != null) {
 			for (String dir : FILES_DIRS) {
-				sweepOlderThan(new File(files, dir), processStartedAt);
+				sweepLeftoversIn(new File(files, dir), processStartedAt);
 			}
 		}
 		sweepNoBackupDirs(ctx);
 	}
 
-	private static void sweepOlderThan(File dir, long processStartedAt) {
+	static boolean isLeftover(File f, long processStartedAt) {
+		long modified = f.lastModified();
+		long readAfterTheFileTime = System.currentTimeMillis();
+		return modified < processStartedAt
+				|| modified > readAfterTheFileTime;
+	}
+
+	private static void sweepLeftoversIn(File dir, long processStartedAt) {
 		File[] files;
 		try {
 			files = dir.listFiles();
@@ -180,7 +187,24 @@ public final class CacheSweeper {
 		for (File f : files) {
 			if (f.isDirectory()) {
 				SecureMemory.secureDeleteDir(f, 0L);
-			} else if (f.lastModified() < processStartedAt && !inUse(f)) {
+			} else if (isLeftover(f, processStartedAt) && !inUse(f)) {
+				SecureMemory.secureDeleteFile(f, 0L, false);
+			}
+		}
+	}
+
+	private static void sweepOlderThan(File dir, long before) {
+		File[] files;
+		try {
+			files = dir.listFiles();
+		} catch (SecurityException e) {
+			return;
+		}
+		if (files == null) return;
+		for (File f : files) {
+			if (f.isDirectory()) {
+				SecureMemory.secureDeleteDir(f, 0L);
+			} else if (f.lastModified() < before && !inUse(f)) {
 				SecureMemory.secureDeleteFile(f, 0L, false);
 			}
 		}

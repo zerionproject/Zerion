@@ -36,10 +36,14 @@ public class ProcessStartSweepTest {
 		File cache = app.getCacheDir();
 		long now = System.currentTimeMillis();
 		File left = write(cache, "voice_attachment_1.m4a", now - 3_600_000L);
-		File live = write(cache, "voice_attachment_2.m4a", now + 1_000L);
+		File live = write(cache, "voice_attachment_2.m4a", now);
+		File ahead = write(cache, "voice_attachment_3.m4a",
+				now + 3_600_000L);
 		app.sweepFilesOfAnEarlierProcess();
 		assertFalse("a recording left by a killed process stays in the cache",
 				left.exists());
+		assertFalse("a recording dated ahead of the clock stays in the cache",
+				ahead.exists());
 		assertTrue("a recording of this process was swept", live.exists());
 	}
 }
