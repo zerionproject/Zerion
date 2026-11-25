@@ -4080,8 +4080,8 @@ class GroupTrManagerImpl
 					}
 					if (!fromCreator && isHeldSettingsSignature(current,
 							e.getRecordSig())) {
-						noteSettingsHeldBy(s, current, held,
-								e.getContactId());
+						noteSettingsHeldByLater(s.getGroupId(), held,
+								e.getRecordSig(), e.getContactId());
 					}
 					return;
 				}
@@ -4432,7 +4432,10 @@ class GroupTrManagerImpl
 					others++;
 				}
 			}
-			if (only == null && sent.size() >= others) return;
+			if (only == null && sent.size() >= others
+					&& membersNoted(s, sent) >= others) {
+				return;
+			}
 			BdfList record = heldSettingsRecord(s);
 			if (record == null) return;
 			long now = clock.currentTimeMillis();
@@ -4481,6 +4484,44 @@ class GroupTrManagerImpl
 			return false;
 		}
 		return java.security.MessageDigest.isEqual(stored, received);
+	}
+
+	private int membersNoted(GroupTrState s, java.util.Set<Integer> sent)
+			throws DbException {
+		return db.transactionWithResult(true, txn -> {
+			Reach reach = reach(txn, s);
+			int noted = 0;
+			for (GroupTrMember m : s.getMembers()) {
+				if (Arrays.equals(m.getPubKey(), s.getCreatorPubKey())) {
+					continue;
+				}
+				Contact c = reach.contact(m.getPubKey());
+				if (c != null && sent.contains(c.getId().getInt())) noted++;
+			}
+			return noted;
+		});
+	}
+
+	private void noteSettingsHeldByLater(byte[] groupId, long held,
+			byte[] recordSig, ContactId holder) {
+		ioExecutor.execute(() -> {
+			java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+			lock.lock();
+			try {
+				GroupTrState s = getGroup(groupId);
+				if (s == null || s.isDissolved()) return;
+				Settings current = settingsManager.getSettings(nsOf(groupId));
+				if (current.getLong(S_SETTINGS_TIMESTAMP, Long.MIN_VALUE)
+						!= held) {
+					return;
+				}
+				if (!isHeldSettingsSignature(current, recordSig)) return;
+				noteSettingsHeldBy(s, current, held, holder);
+			} catch (DbException | RuntimeException ex) {
+			} finally {
+				lock.unlock();
+			}
+		});
 	}
 
 	private void noteSettingsHeldBy(GroupTrState s, Settings current,

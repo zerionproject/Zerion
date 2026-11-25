@@ -946,6 +946,167 @@ public class GroupSettingsPassOnTest {
 		assertEquals("10", sentToNote(node));
 	}
 
+	@Test
+	public void theNoteOfAMemberThatHoldsTheSettingIsWrittenOffTheEventThread()
+			throws Exception {
+		GroupTrTestNode node = memberDeviceWithQueuedIo();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		node.runDeferred();
+		int writes = node.writeTxns();
+
+		settings(node, a, DAY, 10L, SIG.clone());
+
+		assertEquals("the event thread wrote the note", writes,
+				node.writeTxns());
+		assertEquals("10", sentToNote(node));
+		node.runDeferred();
+		assertEquals("10:" + a.getInt(), sentToNote(node));
+
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+		assertEquals("a member noted as holding the setting was sent it", 0,
+				recordsTo(node, a, 46L).size());
+		assertEquals(1, recordsTo(node, b, 46L).size());
+	}
+
+	@Test
+	public void aMemberNotedOnlyAfterThePassGetsOneCopyAndNobodyIsSkipped()
+			throws Exception {
+		GroupTrTestNode node = memberDeviceWithQueuedIo();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		settings(node, a, DAY, 10L, SIG.clone());
+
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+
+		assertEquals("the pass ran before the note and sent one copy", 1,
+				recordsTo(node, a, 46L).size());
+		assertEquals(1, recordsTo(node, b, 46L).size());
+		String noted = "10:" + a.getInt() + "," + b.getInt();
+		assertEquals(noted, sentToNote(node));
+		int writes = node.writeTxns();
+
+		node.runDeferred();
+
+		assertEquals("the late note changed nothing", noted,
+				sentToNote(node));
+		assertEquals(writes, node.writeTxns());
+		later(node, DAY);
+		assertEquals(1, recordsTo(node, a, 46L).size());
+		assertEquals(1, recordsTo(node, b, 46L).size());
+	}
+
+	@Test
+	public void aNoteForASettingReplacedInTheMeantimeIsDropped()
+			throws Exception {
+		GroupTrTestNode node = memberDeviceWithQueuedIo();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		settings(node, a, DAY, 10L, SIG.clone());
+		settings(node, fromCreator, HOUR, 20L, SIG);
+
+		node.runDeferred();
+
+		assertEquals("a note for the earlier setting was written", "20",
+				sentToNote(node));
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+		for (ContactId c : Arrays.asList(a, b)) {
+			List<BdfList> passed = recordsTo(node, c, 46L);
+			assertEquals(1, passed.size());
+			assertEquals(20L, (long) passed.get(0).getLong(3));
+		}
+	}
+
+	@Test
+	public void aNoteIsDroppedWhenTheHeldSignatureChangedInTheMeantime()
+			throws Exception {
+		GroupTrTestNode node = memberDeviceWithQueuedIo();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		node.addContact(bKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		settings(node, a, DAY, 10L, SIG.clone());
+		byte[] another = SIG.clone();
+		another[another.length - 1] ^= 1;
+		node.putSetting(GroupTrConstants.SETTINGS_NS_PREFIX
+				+ org.zerionproject.core.util.StringUtils.toHexString(groupId),
+				GroupTrConstants.S_SETTINGS_SIG,
+				org.zerionproject.core.util.StringUtils.toHexString(another));
+
+		node.runDeferred();
+
+		assertEquals("10", sentToNote(node));
+	}
+
+	@Test
+	public void aMemberAddedAfterANotedOneWasRemovedIsNotSkippedByThePass()
+			throws Exception {
+		byte[] cKey = key((byte) 5);
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		ContactId c = node.addContact(cKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		settings(node, a, DAY, 10L, SIG.clone());
+		settings(node, b, DAY, 10L, SIG.clone());
+		assertEquals("10:" + a.getInt() + "," + b.getInt(),
+				sentToNote(node));
+
+		node.removed(fromCreator, groupId, bKey, EPOCH);
+		node.commit(fromCreator, groupId, EPOCH);
+		node.added(fromCreator, groupId, cKey, EPOCH + 2);
+		assertTrue(node.isMember(groupId, cKey));
+		assertTrue(!node.isMember(groupId, bKey));
+		int before = recordsTo(node, c, 46L).size();
+
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+
+		assertEquals("the new member was skipped by the pass", before + 1,
+				recordsTo(node, c, 46L).size());
+		assertEquals(0, recordsTo(node, a, 46L).size());
+		assertEquals(0, recordsTo(node, b, 46L).size());
+		assertEquals("10:" + a.getInt() + "," + c.getInt(),
+				sentToNote(node));
+	}
+
+	@Test
+	public void aPassWithEveryMemberNotedSendsAndWritesNothing()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		settings(node, a, DAY, 10L, SIG.clone());
+		settings(node, b, DAY, 10L, SIG.clone());
+		int writes = node.writeTxns();
+
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+
+		assertEquals(0, settingsSent(node));
+		assertEquals(writes, node.writeTxns());
+	}
+
+	private GroupTrTestNode memberDeviceWithQueuedIo() {
+		GroupTrTestNode node = new GroupTrTestNode(localKey, true);
+		node.putGroup(groupId, creatorKey, EPOCH, creator(creatorKey),
+				member(localKey, 1L), member(aKey, 1L), member(bKey, 1L));
+		return node;
+	}
+
 	private static void later(GroupTrTestNode node, long ms) {
 		node.now += ms;
 		node.runDueTimers();
