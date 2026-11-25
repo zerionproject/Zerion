@@ -56,6 +56,8 @@ import static org.zerionproject.app.introduction.IntroduceeState.LOCAL_DECLINED;
 import static org.zerionproject.app.introduction.IntroduceeState.REMOTE_ACCEPTED;
 import static org.zerionproject.app.introduction.IntroduceeState.REMOTE_DECLINED;
 import static org.zerionproject.app.introduction.IntroduceeState.START;
+import static org.zerionproject.app.introduction.KeySchedule.CURRENT_VERSION;
+import static org.zerionproject.app.introduction.KeySchedule.EARLIER_VERSION;
 import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @Immutable
@@ -66,6 +68,7 @@ class IntroduceeProtocolEngine
 	private final KeyManager keyManager;
 	private final TransportPropertyManager transportPropertyManager;
 	private final UserMessageMarker userMessages;
+	private final int keyScheduleVersion;
 
 	@Inject
 	IntroduceeProtocolEngine(
@@ -86,10 +89,41 @@ class IntroduceeProtocolEngine
 			ConversationManager conversationManager,
 			Clock clock,
 			UserMessageMarker userMessages) {
+		this(db, clientHelper, contactManager, contactGroupFactory,
+				messageTracker, identityManager, authorManager, messageParser,
+				messageEncoder, crypto, keyManager, transportPropertyManager,
+				clientVersioningManager, autoDeleteManager,
+				conversationManager, clock, userMessages, CURRENT_VERSION);
+	}
+
+	IntroduceeProtocolEngine(
+			DatabaseComponent db,
+			ClientHelper clientHelper,
+			ContactManager contactManager,
+			ContactGroupFactory contactGroupFactory,
+			MessageTracker messageTracker,
+			IdentityManager identityManager,
+			AuthorManager authorManager,
+			MessageParser messageParser,
+			MessageEncoder messageEncoder,
+			IntroductionCrypto crypto,
+			KeyManager keyManager,
+			TransportPropertyManager transportPropertyManager,
+			ClientVersioningManager clientVersioningManager,
+			AutoDeleteManager autoDeleteManager,
+			ConversationManager conversationManager,
+			Clock clock,
+			UserMessageMarker userMessages,
+			int keyScheduleVersion) {
 		super(db, clientHelper, contactManager, contactGroupFactory,
 				messageTracker, identityManager, authorManager, messageParser,
 				messageEncoder, clientVersioningManager, autoDeleteManager,
 				conversationManager, clock);
+		if (keyScheduleVersion < EARLIER_VERSION
+				|| keyScheduleVersion > CURRENT_VERSION) {
+			throw new IllegalArgumentException();
+		}
+		this.keyScheduleVersion = keyScheduleVersion;
 		this.crypto = crypto;
 		this.keyManager = keyManager;
 		this.transportPropertyManager = transportPropertyManager;
@@ -283,7 +317,9 @@ class IntroduceeProtocolEngine
 			mlKemPub = mlKemKp[1];
 		}
 		Map<TransportId, TransportProperties> transportProperties =
-				transportPropertyManager.getLocalProperties(txn);
+				KeySchedule.announce(
+						transportPropertyManager.getLocalProperties(txn),
+						keyScheduleVersion);
 		long localTimestamp = getTimestampForVisibleMessage(txn, s);
 		byte[] localMlDsaPubKey =
 				identityManager.getLocalMlDsaSigPublicKey(txn);
@@ -381,6 +417,13 @@ class IntroduceeProtocolEngine
 				&& s.getRemote().mlKemEphemeralPublicKey != null
 				&& s.getLocal().mlKemEphemeralPrivateKey != null;
 		if (!hybrid) return abort(txn, s, s.getLastRemoteMessageId());
+		boolean separated;
+		try {
+			separated = KeySchedule.separated(s);
+		} catch (FormatException e) {
+			return abort(txn, s, s.getLastRemoteMessageId());
+		}
+		if (separated) return onLocalAuthSeparated(txn, s);
 		try {
 			if (hybrid) {
 				byte[][] encap = crypto.encapsulateMlKem(
@@ -417,6 +460,54 @@ class IntroduceeProtocolEngine
 				aliceMacKey, bobMacKey, ownKemSecret);
 	}
 
+	@SuppressWarnings("ConstantConditions")
+	private IntroduceeSession onLocalAuthSeparated(Transaction txn,
+			IntroduceeSession s) throws DbException {
+		byte[] mac;
+		byte[] signature;
+		byte[] kemCiphertext;
+		byte[] ownKemSecret = null;
+		boolean sent = false;
+		try {
+			byte[][] encap = crypto.encapsulateMlKem(
+					s.getRemote().mlKemEphemeralPublicKey);
+			kemCiphertext = encap[0];
+			ownKemSecret = encap[1];
+			SeparatedAuthKeys keys = crypto.deriveSeparatedAuthKeys(s,
+					ownKemSecret, s.getLocal().alice);
+			try {
+				LocalAuthor localAuthor = identityManager.getLocalAuthor(txn);
+				mac = crypto.authMac(keys.getMacKey(), s, localAuthor.getId());
+				byte[] localMlDsaPriv =
+						identityManager.getLocalMlDsaSigPrivateKey(txn);
+				try {
+					signature = crypto.sign(keys.getNonceKey(),
+							localAuthor.getPrivateKey(), localMlDsaPriv,
+							s.getRemote().mlDsaPubKey);
+				} finally {
+					if (localMlDsaPriv != null) {
+						java.util.Arrays.fill(localMlDsaPriv, (byte) 0);
+					}
+				}
+			} finally {
+				keys.clear();
+			}
+			if (s.getState() != AWAIT_AUTH) throw new AssertionError();
+			long localTimestamp = getTimestampForInvisibleMessage(s);
+			Message message = sendAuthMessage(txn, s, localTimestamp, mac,
+					signature, kemCiphertext);
+			sent = true;
+			return IntroduceeSession.addLocalAuthSeparated(s, AWAIT_AUTH,
+					message, ownKemSecret);
+		} catch (GeneralSecurityException e) {
+			return abort(txn, s, s.getLastRemoteMessageId());
+		} finally {
+			if (!sent && ownKemSecret != null) {
+				java.util.Arrays.fill(ownKemSecret, (byte) 0);
+			}
+		}
+	}
+
 	private IntroduceeSession onRemoteAuth(Transaction txn,
 			IntroduceeSession s, AuthMessage m) throws DbException {
 		if (isInvalidDependency(s, m.getPreviousMessageId()))
@@ -428,8 +519,16 @@ class IntroduceeProtocolEngine
 				&& s.getLocal().mlKemEphemeralPrivateKey != null
 				&& s.getLocal().ownKemSecret != null;
 		if (!hybrid) return abort(txn, s, m.getMessageId());
+		boolean separated;
 		try {
-			if (hybrid) {
+			separated = KeySchedule.separated(s);
+		} catch (FormatException e) {
+			return abort(txn, s, m.getMessageId());
+		}
+		try {
+			if (separated) {
+				s = onRemoteAuthSeparated(s, m, localAuthor);
+			} else if (hybrid) {
 				byte[] peerKemSecret = crypto.decapsulateMlKem(
 						s.getLocal().mlKemEphemeralPrivateKey,
 						m.getKemCiphertext());
@@ -471,13 +570,44 @@ class IntroduceeProtocolEngine
 					new SecretKey(s.getMasterKey()), timestamp,
 					s.getLocal().alice, false);
 			transportPropertyManager.addRemoteProperties(txn, contactId,
-					requireNonNull(s.getRemote().transportProperties));
+					KeySchedule.withoutAnnouncement(requireNonNull(
+							s.getRemote().transportProperties)));
 		} catch (ContactExistsException e) {
 		}
 		byte[] mac = crypto.activateMac(s);
 		long localTimestamp = getTimestampForInvisibleMessage(s);
 		Message sent = sendActivateMessage(txn, s, localTimestamp, mac);
 		return IntroduceeSession.awaitActivate(s, m, sent, keys);
+	}
+
+	@SuppressWarnings("ConstantConditions")
+	private IntroduceeSession onRemoteAuthSeparated(IntroduceeSession s,
+			AuthMessage m, LocalAuthor localAuthor)
+			throws GeneralSecurityException {
+		boolean alice = s.getLocal().alice;
+		byte[] peerKemSecret = crypto.decapsulateMlKem(
+				s.getLocal().mlKemEphemeralPrivateKey, m.getKemCiphertext());
+		try {
+			SeparatedAuthKeys peerKeys = crypto.deriveSeparatedAuthKeys(s,
+					peerKemSecret, !alice);
+			try {
+				crypto.verifyAuthMacWithKey(m.getMac(), s,
+						localAuthor.getId(), peerKeys.getMacKey());
+				crypto.verifySignatureWithKey(m.getSignature(), s,
+						peerKeys.getNonceKey());
+			} finally {
+				peerKeys.clear();
+			}
+			byte[] ownKemSecret = s.getLocal().ownKemSecret;
+			SeparatedSessionKeys keys = crypto.deriveSeparatedSessionKeys(s,
+					alice ? ownKemSecret : peerKemSecret,
+					alice ? peerKemSecret : ownKemSecret);
+			return IntroduceeSession.withFinalKeys(s,
+					keys.getRootKey().getBytes(), keys.getAliceActivateKey(),
+					keys.getBobActivateKey());
+		} finally {
+			java.util.Arrays.fill(peerKemSecret, (byte) 0);
+		}
 	}
 
 	static IntroduceeSession withFinalKeys(IntroductionCrypto crypto,

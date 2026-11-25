@@ -398,7 +398,9 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 			oneOf(identityManager).getLocalMlDsaSigPublicKey(txn);
 			will(returnValue(localMlDsa));
 			oneOf(messageEncoder).encodeAcceptMessage(contactGroupId, now,
-					null, sessionId, localPublicKey, now, emptyMap(),
+					null, sessionId, localPublicKey, now,
+					KeySchedule.announce(emptyMap(),
+							KeySchedule.CURRENT_VERSION),
 					NO_AUTO_DELETE_TIMER, localMlDsa, localMlKemPub);
 			will(returnValue(accept));
 			oneOf(messageEncoder).encodeMetadata(ACCEPT, sessionId, now,

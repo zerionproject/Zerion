@@ -31,6 +31,36 @@ public interface IntroductionConstants {
 	String LABEL_BOB_ACTIVATE_KEY =
 			"org.zerionproject.app.introduction/BOB_ACTIVATE_KEY";
 
+	String LABEL_SHARED_SECRET_V2 =
+			"org.zerionproject.app.introduction/SHARED_SECRET_V2";
+
+	String LABEL_AUTH_SECRET_V2 =
+			"org.zerionproject.app.introduction/AUTH_SECRET_V2";
+
+	String LABEL_ALICE_AUTH_MAC_KEY_V2 =
+			"org.zerionproject.app.introduction/ALICE_AUTH_MAC_KEY_V2";
+
+	String LABEL_BOB_AUTH_MAC_KEY_V2 =
+			"org.zerionproject.app.introduction/BOB_AUTH_MAC_KEY_V2";
+
+	String LABEL_ALICE_AUTH_NONCE_KEY_V2 =
+			"org.zerionproject.app.introduction/ALICE_AUTH_NONCE_KEY_V2";
+
+	String LABEL_BOB_AUTH_NONCE_KEY_V2 =
+			"org.zerionproject.app.introduction/BOB_AUTH_NONCE_KEY_V2";
+
+	String LABEL_FINAL_SECRET_V2 =
+			"org.zerionproject.app.introduction/FINAL_SECRET_V2";
+
+	String LABEL_ALICE_ACTIVATE_KEY_V2 =
+			"org.zerionproject.app.introduction/ALICE_ACTIVATE_KEY_V2";
+
+	String LABEL_BOB_ACTIVATE_KEY_V2 =
+			"org.zerionproject.app.introduction/BOB_ACTIVATE_KEY_V2";
+
+	String LABEL_ROOT_KEY_V2 =
+			"org.zerionproject.app.introduction/ROOT_KEY_V2";
+
 	boolean INTRODUCTION_HYBRID_KEM_ENABLED = true;
 
 	String LABEL_PRE_MASTER_KEY =

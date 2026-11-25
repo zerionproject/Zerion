@@ -26,18 +26,36 @@ import org.zerionproject.app.introduction.IntroduceeSession.Remote;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
+import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import static org.zerionproject.core.api.identity.Author.FORMAT_VERSION;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ALICE_ACTIVATE_KEY_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ALICE_AUTH_MAC_KEY_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ALICE_AUTH_NONCE_KEY_V2;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_AUTH_NONCE;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_AUTH_SECRET_V2;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_AUTH_SIGN;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_BOB_ACTIVATE_KEY_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_BOB_AUTH_MAC_KEY_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_BOB_AUTH_NONCE_KEY_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_FINAL_SECRET_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ROOT_KEY_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_SHARED_SECRET_V2;
+import static org.zerionproject.app.api.introduction.IntroductionManager.MAJOR_VERSION;
 import static org.zerionproject.app.introduction.IntroduceeState.AWAIT_AUTH;
+import static org.zerionproject.app.introduction.KeySchedule.SEPARATED_VERSION;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class IntroductionVectorTest extends BrambleTestCase {
 
@@ -78,6 +96,41 @@ public class IntroductionVectorTest extends BrambleTestCase {
 			"d10b00c9eb3e8f902fd4804544bd29e8c6be75c4941f8f807be6d251eaefac31";
 	private static final String EARLIER_BOB_ACTIVATE_MAC =
 			"9599231ba48b228b116e0c23eb3a356d8295645c7a6cf9bb09799e209c2b6717";
+
+	private static final String SEPARATED_SHARED_SECRET =
+			"72e0ea5f6d0d11a576f662b9dbbf269f9629fca6c3d748cfbec6835788ef93f8";
+	private static final String SEPARATED_ALICE_AUTH_SECRET =
+			"5e74a6e7df3077c30612903f9d94b40082123ee68acb78d311350278c5b8adfd";
+	private static final String SEPARATED_BOB_AUTH_SECRET =
+			"2a433878a50d23a621f9243b91e38180b8b7c877ad8d55d115865e49952a9ad2";
+	private static final String SEPARATED_ALICE_AUTH_MAC_KEY =
+			"e4d982266dd56552583fdf06dc8f807114e0711456b709153dbd2ce1e97d8bf1";
+	private static final String SEPARATED_ALICE_AUTH_NONCE_KEY =
+			"cfe7e8f4f4cd17fccd1c20b947bac2acf0463344272fccf6e1d393ab4e02c7b1";
+	private static final String SEPARATED_BOB_AUTH_MAC_KEY =
+			"a5242507a721eba51df0e739d2242bc0fcfb3bd91df95c5219c16d8dac58929a";
+	private static final String SEPARATED_BOB_AUTH_NONCE_KEY =
+			"79f979aa556e2fbc1214f816e452aa7e5fb874b981514890b7729f7558578489";
+	private static final String SEPARATED_ALICE_AUTH_MAC =
+			"b67de80c597e878e7da8624a84b06e8e62f2e624ff98cec5cf092289174c1cf1";
+	private static final String SEPARATED_BOB_AUTH_MAC =
+			"b26fc26f461cebdf7c4a4102b083d40612f5fe26da5b6b3db6b1867449e97b7b";
+	private static final String SEPARATED_ALICE_NONCE =
+			"5a4d791816c65a3ef9af90c079a84e3ed996dc4ba0529237e13321e230fbf2e2";
+	private static final String SEPARATED_BOB_NONCE =
+			"e0d23bce724cbd316d1d46f856383c2601d32dd7dcb5423f6f66e64742c495a5";
+	private static final String SEPARATED_FINAL_SECRET =
+			"76d84d64c3f9a9397981cbc6fa5bfc784dc12b4cb07b693e38921294d8d2b509";
+	private static final String SEPARATED_ROOT =
+			"058eedff38104d21fb45d4fa0b26fba820750ada68a88eadc6c8a2c30fb75f7a";
+	private static final String SEPARATED_ALICE_ACTIVATE_KEY =
+			"0534fde7bb44109e731c99f97304a8f0307d87b4373a2dc37c9b98688a17f84f";
+	private static final String SEPARATED_BOB_ACTIVATE_KEY =
+			"bf1157fa00e6e3c460336257d4bbe0c6496118b392e3f9e62d6b78fa5b7c96fa";
+	private static final String SEPARATED_ALICE_ACTIVATE_MAC =
+			"925ec6dfe7fe5d5e117c2941c8cee91573d0812f6b46ec2371d7db0646ab9fd6";
+	private static final String SEPARATED_BOB_ACTIVATE_MAC =
+			"5428e181cc289e589d7726c328f549aa7b1daf3812c991a3ff7f03a839ee5589";
 
 	private final CryptoComponent cryptoComponent;
 	private final IntroductionCryptoImpl crypto;
@@ -128,6 +181,16 @@ public class IntroductionVectorTest extends BrambleTestCase {
 		scalar[31] &= 127;
 		scalar[31] |= 64;
 		return scalar;
+	}
+
+	private static PublicKey publicKey(boolean alice) throws Exception {
+		return new AgreementPublicKey(
+				bytes(alice ? ALICE_PUBLIC : BOB_PUBLIC));
+	}
+
+	private static PrivateKey privateKey(boolean alice) throws Exception {
+		return new AgreementPrivateKey(
+				clamped(bytes(alice ? ALICE_PRIVATE : BOB_PRIVATE)));
 	}
 
 	private static String hex(byte[] b) {
@@ -271,5 +334,276 @@ public class IntroductionVectorTest extends BrambleTestCase {
 				hex(crypto.activateMac(bobFinal)));
 		crypto.verifyActivateMac(crypto.activateMac(aliceFinal), bobFinal);
 		crypto.verifyActivateMac(crypto.activateMac(bobFinal), aliceFinal);
+	}
+
+	private Map<TransportId, TransportProperties> announced(String onion,
+			int version) {
+		return KeySchedule.announce(properties(onion), version);
+	}
+
+	private SecretKey separatedSharedSecret(boolean alice, int aliceVersion,
+			int bobVersion) throws Exception {
+		return crypto.deriveSeparatedSharedSecret(publicKey(alice),
+				privateKey(alice), publicKey(!alice), alice, aliceVersion,
+				bobVersion);
+	}
+
+	@Test
+	public void theSeparatedDerivationIsPinned() throws Exception {
+		IntroduceeSession alice = session(true,
+				announced("alice", SEPARATED_VERSION),
+				announced("bob", SEPARATED_VERSION));
+		IntroduceeSession bob = session(false,
+				announced("alice", SEPARATED_VERSION),
+				announced("bob", SEPARATED_VERSION));
+
+		SecretKey shared = separatedSharedSecret(true, SEPARATED_VERSION,
+				SEPARATED_VERSION);
+		assertArrayEquals(shared.getBytes(), separatedSharedSecret(false,
+				SEPARATED_VERSION, SEPARATED_VERSION).getBytes());
+		assertEquals(SEPARATED_SHARED_SECRET, hex(shared.getBytes()));
+		KeyPair aliceEphemeral =
+				new KeyPair(publicKey(true), privateKey(true));
+		assertEquals(SEPARATED_SHARED_SECRET, hex(
+				cryptoComponent.deriveSharedSecret(LABEL_SHARED_SECRET_V2,
+						publicKey(false),
+						aliceEphemeral, new byte[] {MAJOR_VERSION},
+						bytes(ALICE_PUBLIC), bytes(BOB_PUBLIC),
+						new byte[] {SEPARATED_VERSION},
+						new byte[] {SEPARATED_VERSION}).getBytes()));
+
+		SecretKey aliceAuthSecret = cryptoComponent.deriveKey(
+				LABEL_AUTH_SECRET_V2, shared, aliceKemSecret);
+		SecretKey bobAuthSecret = cryptoComponent.deriveKey(
+				LABEL_AUTH_SECRET_V2, shared, bobKemSecret);
+		assertEquals(SEPARATED_ALICE_AUTH_SECRET,
+				hex(aliceAuthSecret.getBytes()));
+		assertEquals(SEPARATED_BOB_AUTH_SECRET,
+				hex(bobAuthSecret.getBytes()));
+
+		SeparatedAuthKeys aliceKeys = crypto.deriveSeparatedAuthKeys(alice,
+				aliceKemSecret, true);
+		SeparatedAuthKeys bobKeys = crypto.deriveSeparatedAuthKeys(bob,
+				bobKemSecret, false);
+		assertEquals(SEPARATED_ALICE_AUTH_MAC_KEY,
+				hex(aliceKeys.getMacKey().getBytes()));
+		assertEquals(SEPARATED_ALICE_AUTH_NONCE_KEY,
+				hex(aliceKeys.getNonceKey().getBytes()));
+		assertEquals(SEPARATED_BOB_AUTH_MAC_KEY,
+				hex(bobKeys.getMacKey().getBytes()));
+		assertEquals(SEPARATED_BOB_AUTH_NONCE_KEY,
+				hex(bobKeys.getNonceKey().getBytes()));
+		assertEquals(SEPARATED_ALICE_AUTH_MAC_KEY, hex(cryptoComponent
+				.deriveKey(LABEL_ALICE_AUTH_MAC_KEY_V2, aliceAuthSecret)
+				.getBytes()));
+		assertEquals(SEPARATED_ALICE_AUTH_NONCE_KEY, hex(cryptoComponent
+				.deriveKey(LABEL_ALICE_AUTH_NONCE_KEY_V2, aliceAuthSecret)
+				.getBytes()));
+		assertEquals(SEPARATED_BOB_AUTH_MAC_KEY, hex(cryptoComponent
+				.deriveKey(LABEL_BOB_AUTH_MAC_KEY_V2, bobAuthSecret)
+				.getBytes()));
+		assertEquals(SEPARATED_BOB_AUTH_NONCE_KEY, hex(cryptoComponent
+				.deriveKey(LABEL_BOB_AUTH_NONCE_KEY_V2, bobAuthSecret)
+				.getBytes()));
+		SeparatedAuthKeys aliceKeysAtBob = crypto.deriveSeparatedAuthKeys(bob,
+				aliceKemSecret, true);
+		assertArrayEquals(aliceKeys.getMacKey().getBytes(),
+				aliceKeysAtBob.getMacKey().getBytes());
+		assertArrayEquals(aliceKeys.getNonceKey().getBytes(),
+				aliceKeysAtBob.getNonceKey().getBytes());
+
+		byte[] aliceAuthMac = authMac(alice, aliceKeys.getMacKey());
+		byte[] bobAuthMac = authMac(bob, bobKeys.getMacKey());
+		assertEquals(SEPARATED_ALICE_AUTH_MAC, hex(aliceAuthMac));
+		assertEquals(SEPARATED_BOB_AUTH_MAC, hex(bobAuthMac));
+		crypto.verifyAuthMacWithKey(aliceAuthMac, bob, bobAuthor.getId(),
+				aliceKeysAtBob.getMacKey());
+		crypto.verifyAuthMacWithKey(bobAuthMac, alice, aliceAuthor.getId(),
+				bobKeys.getMacKey());
+
+		assertEquals(SEPARATED_ALICE_NONCE, hex(cryptoComponent.mac(
+				LABEL_AUTH_NONCE, aliceKeys.getNonceKey())));
+		assertEquals(SEPARATED_BOB_NONCE, hex(cryptoComponent.mac(
+				LABEL_AUTH_NONCE, bobKeys.getNonceKey())));
+		assertSignsNonce(aliceKeys.getNonceKey(), SEPARATED_ALICE_NONCE);
+		assertSignsNonce(bobKeys.getNonceKey(), SEPARATED_BOB_NONCE);
+
+		SecretKey finalSecret = cryptoComponent.deriveKey(
+				LABEL_FINAL_SECRET_V2, shared, aliceKemSecret, bobKemSecret);
+		assertEquals(SEPARATED_FINAL_SECRET, hex(finalSecret.getBytes()));
+
+		SeparatedSessionKeys keys = crypto.deriveSeparatedSessionKeys(alice,
+				aliceKemSecret, bobKemSecret);
+		SeparatedSessionKeys keysAtBob = crypto.deriveSeparatedSessionKeys(
+				bob, aliceKemSecret, bobKemSecret);
+		assertArrayEquals(keys.getRootKey().getBytes(),
+				keysAtBob.getRootKey().getBytes());
+		assertArrayEquals(keys.getAliceActivateKey().getBytes(),
+				keysAtBob.getAliceActivateKey().getBytes());
+		assertArrayEquals(keys.getBobActivateKey().getBytes(),
+				keysAtBob.getBobActivateKey().getBytes());
+		assertEquals(SEPARATED_ROOT, hex(keys.getRootKey().getBytes()));
+		assertEquals(SEPARATED_ALICE_ACTIVATE_KEY,
+				hex(keys.getAliceActivateKey().getBytes()));
+		assertEquals(SEPARATED_BOB_ACTIVATE_KEY,
+				hex(keys.getBobActivateKey().getBytes()));
+		assertEquals(SEPARATED_ROOT, hex(cryptoComponent.deriveKey(
+				LABEL_ROOT_KEY_V2, finalSecret).getBytes()));
+		assertEquals(SEPARATED_ALICE_ACTIVATE_KEY, hex(cryptoComponent
+				.deriveKey(LABEL_ALICE_ACTIVATE_KEY_V2, finalSecret)
+				.getBytes()));
+		assertEquals(SEPARATED_BOB_ACTIVATE_KEY, hex(cryptoComponent
+				.deriveKey(LABEL_BOB_ACTIVATE_KEY_V2, finalSecret)
+				.getBytes()));
+		assertEquals(SEPARATED_ALICE_ACTIVATE_MAC,
+				hex(crypto.activateMac(keys.getAliceActivateKey())));
+		assertEquals(SEPARATED_BOB_ACTIVATE_MAC,
+				hex(crypto.activateMac(keys.getBobActivateKey())));
+
+		IntroduceeSession aliceFinal = IntroduceeSession.withFinalKeys(alice,
+				keys.getRootKey().getBytes(), keys.getAliceActivateKey(),
+				keys.getBobActivateKey());
+		IntroduceeSession bobFinal = IntroduceeSession.withFinalKeys(bob,
+				keysAtBob.getRootKey().getBytes(),
+				keysAtBob.getAliceActivateKey(),
+				keysAtBob.getBobActivateKey());
+		assertEquals(SEPARATED_ALICE_ACTIVATE_MAC,
+				hex(crypto.activateMac(aliceFinal)));
+		assertEquals(SEPARATED_BOB_ACTIVATE_MAC,
+				hex(crypto.activateMac(bobFinal)));
+		crypto.verifyActivateMac(crypto.activateMac(aliceFinal), bobFinal);
+		crypto.verifyActivateMac(crypto.activateMac(bobFinal), aliceFinal);
+	}
+
+	@Test
+	public void noSeparatedValueEqualsAnotherOrAnEarlierOne() {
+		String[] values = {
+				EARLIER_SHARED_SECRET, EARLIER_ALICE_PRE_MASTER,
+				EARLIER_BOB_PRE_MASTER, EARLIER_ALICE_MAC_KEY,
+				EARLIER_BOB_MAC_KEY, EARLIER_ALICE_AUTH_MAC,
+				EARLIER_BOB_AUTH_MAC, EARLIER_ALICE_NONCE, EARLIER_BOB_NONCE,
+				EARLIER_ROOT, EARLIER_ALICE_ACTIVATE_KEY,
+				EARLIER_BOB_ACTIVATE_KEY, EARLIER_ALICE_ACTIVATE_MAC,
+				EARLIER_BOB_ACTIVATE_MAC, SEPARATED_SHARED_SECRET,
+				SEPARATED_ALICE_AUTH_SECRET, SEPARATED_BOB_AUTH_SECRET,
+				SEPARATED_ALICE_AUTH_MAC_KEY, SEPARATED_ALICE_AUTH_NONCE_KEY,
+				SEPARATED_BOB_AUTH_MAC_KEY, SEPARATED_BOB_AUTH_NONCE_KEY,
+				SEPARATED_ALICE_AUTH_MAC, SEPARATED_BOB_AUTH_MAC,
+				SEPARATED_ALICE_NONCE, SEPARATED_BOB_NONCE,
+				SEPARATED_FINAL_SECRET, SEPARATED_ROOT,
+				SEPARATED_ALICE_ACTIVATE_KEY, SEPARATED_BOB_ACTIVATE_KEY,
+				SEPARATED_ALICE_ACTIVATE_MAC, SEPARATED_BOB_ACTIVATE_MAC
+		};
+		Set<String> distinct = new HashSet<>(Arrays.asList(values));
+		assertEquals(values.length, distinct.size());
+		for (String value : values) assertEquals(64, value.length());
+	}
+
+	@Test
+	public void bothAnnouncedVersionsAreInputsOfEverySeparatedKey()
+			throws Exception {
+		int later = SEPARATED_VERSION + 1;
+		SecretKey both = separatedSharedSecret(true, SEPARATED_VERSION,
+				SEPARATED_VERSION);
+		SecretKey aliceLater =
+				separatedSharedSecret(true, later, SEPARATED_VERSION);
+		SecretKey bobLater =
+				separatedSharedSecret(true, SEPARATED_VERSION, later);
+		assertFalse(Arrays.equals(both.getBytes(), aliceLater.getBytes()));
+		assertFalse(Arrays.equals(both.getBytes(), bobLater.getBytes()));
+		assertFalse(Arrays.equals(aliceLater.getBytes(),
+				bobLater.getBytes()));
+		assertArrayEquals(aliceLater.getBytes(), separatedSharedSecret(false,
+				later, SEPARATED_VERSION).getBytes());
+
+		IntroduceeSession alice = session(true,
+				announced("alice", SEPARATED_VERSION),
+				announced("bob", SEPARATED_VERSION));
+		IntroduceeSession bobSeesAliceLater = session(false,
+				announced("alice", later),
+				announced("bob", SEPARATED_VERSION));
+		SeparatedAuthKeys sent = crypto.deriveSeparatedAuthKeys(alice,
+				aliceKemSecret, true);
+		SeparatedAuthKeys expected = crypto.deriveSeparatedAuthKeys(
+				bobSeesAliceLater, aliceKemSecret, true);
+		assertFalse(Arrays.equals(sent.getMacKey().getBytes(),
+				expected.getMacKey().getBytes()));
+		assertFalse(Arrays.equals(sent.getNonceKey().getBytes(),
+				expected.getNonceKey().getBytes()));
+		SeparatedSessionKeys aliceKeys = crypto.deriveSeparatedSessionKeys(
+				alice, aliceKemSecret, bobKemSecret);
+		SeparatedSessionKeys bobKeys = crypto.deriveSeparatedSessionKeys(
+				bobSeesAliceLater, aliceKemSecret, bobKemSecret);
+		assertFalse(Arrays.equals(aliceKeys.getRootKey().getBytes(),
+				bobKeys.getRootKey().getBytes()));
+		assertFalse(Arrays.equals(aliceKeys.getAliceActivateKey().getBytes(),
+				bobKeys.getAliceActivateKey().getBytes()));
+		assertFalse(Arrays.equals(aliceKeys.getBobActivateKey().getBytes(),
+				bobKeys.getBobActivateKey().getBytes()));
+	}
+
+	@Test
+	public void theSeparatedDerivationNeedsBothAnnouncements()
+			throws Exception {
+		IntroduceeSession[] sessions = {
+				session(true, announced("alice", SEPARATED_VERSION),
+						properties("bob")),
+				session(true, properties("alice"),
+						announced("bob", SEPARATED_VERSION)),
+				session(true, properties("alice"), properties("bob"))
+		};
+		for (IntroduceeSession s : sessions) {
+			try {
+				crypto.deriveSeparatedAuthKeys(s, aliceKemSecret, true);
+				fail();
+			} catch (GeneralSecurityException expected) {
+			}
+			try {
+				crypto.deriveSeparatedSessionKeys(s, aliceKemSecret,
+						bobKemSecret);
+				fail();
+			} catch (GeneralSecurityException expected) {
+			}
+		}
+		try {
+			separatedSharedSecret(true, SEPARATED_VERSION,
+					KeySchedule.EARLIER_VERSION);
+			fail();
+		} catch (GeneralSecurityException expected) {
+		}
+	}
+
+	@Test
+	public void theEarlierAuthMacCoversTheAnnouncementAsItWasSent()
+			throws Exception {
+		SecretKey aliceMacKey = new SecretKey(bytes(EARLIER_ALICE_MAC_KEY));
+		IntroduceeSession alice = session(true,
+				announced("alice", SEPARATED_VERSION), properties("bob"));
+		byte[] mac = authMac(alice, aliceMacKey);
+		assertFalse(Arrays.equals(bytes(EARLIER_ALICE_AUTH_MAC), mac));
+
+		IntroduceeSession bobSawIt = session(false,
+				announced("alice", SEPARATED_VERSION), properties("bob"));
+		crypto.verifyAuthMacWithKey(mac, bobSawIt, bobAuthor.getId(),
+				aliceMacKey);
+
+		IntroduceeSession bobSawItStripped =
+				session(false, properties("alice"), properties("bob"));
+		try {
+			crypto.verifyAuthMacWithKey(mac, bobSawItStripped,
+					bobAuthor.getId(), aliceMacKey);
+			fail();
+		} catch (GeneralSecurityException expected) {
+		}
+
+		IntroduceeSession bobAnnounced = session(false,
+				announced("alice", SEPARATED_VERSION),
+				announced("bob", SEPARATED_VERSION));
+		try {
+			crypto.verifyAuthMacWithKey(mac, bobAnnounced, bobAuthor.getId(),
+					aliceMacKey);
+			fail();
+		} catch (GeneralSecurityException expected) {
+		}
 	}
 }

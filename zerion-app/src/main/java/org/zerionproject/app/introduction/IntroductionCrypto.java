@@ -42,6 +42,13 @@ interface IntroductionCrypto {
 
 	SecretKey deriveActivateKey(SecretKey finalMasterKey, boolean alice);
 
+	SeparatedAuthKeys deriveSeparatedAuthKeys(IntroduceeSession s,
+			byte[] kemSecret, boolean alice) throws GeneralSecurityException;
+
+	SeparatedSessionKeys deriveSeparatedSessionKeys(IntroduceeSession s,
+			byte[] aliceKemSecret, byte[] bobKemSecret)
+			throws GeneralSecurityException;
+
 	byte[] authMac(SecretKey macKey, IntroduceeSession s,
 			AuthorId localAuthorId);
 
