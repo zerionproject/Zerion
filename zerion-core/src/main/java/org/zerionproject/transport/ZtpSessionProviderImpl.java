@@ -182,9 +182,15 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 		long generation = counter.generation(contactId);
 		ContactRootKeys keys = loadRootKeys(cid);
 		if (keys == null) return null;
-		Boolean alice = computeAlice(cid);
-		if (alice == null) return null;
-		return new StoredContactSession(keys, alice, generation);
+		StoredContactSession stored = null;
+		try {
+			Boolean alice = computeAlice(cid);
+			if (alice == null) return null;
+			stored = new StoredContactSession(keys, alice, generation);
+			return stored;
+		} finally {
+			if (stored == null) keys.clear();
+		}
 	}
 
 	@Nullable

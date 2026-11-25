@@ -26,6 +26,9 @@ import javax.annotation.Nullable;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.zerionproject.core.test.TestUtils.getContact;
 import static org.zerionproject.wire.ZwfConstants.REPLAY_WINDOW_SIZE;
@@ -136,6 +139,39 @@ public class ZtpSessionProviderContactStateTest {
 		p.rootKeysChanged(contact);
 		assertCleared(loaded);
 		assertFalse(p.peerDials.contains(contact.getInt()));
+	}
+
+	@Test
+	public void rootKeysLoadedForASessionWithAContactWhoseRolesCannotBeReadAreCleared() {
+		SecretKey[] loaded = fourKeys();
+		ZtpSessionProviderImpl p = registering(loaded, null);
+		assertNull(p.getStoredSession(contact.getInt()));
+		assertCleared(loaded);
+	}
+
+	@Test
+	public void rootKeysOfAStoredSessionAreHandedOverAsLoaded() {
+		SecretKey[] loaded = fourKeys();
+		byte[][] copies = new byte[loaded.length][];
+		for (int i = 0; i < loaded.length; i++) {
+			copies[i] = loaded[i].getBytes().clone();
+		}
+		Contact known = getContact();
+		boolean dials = Bytes.compare(known.getLocalAuthorId().getBytes(),
+				known.getAuthor().getId().getBytes()) < 0;
+		ZtpSessionProviderImpl p = registering(loaded, known);
+		StoredContactSession stored = p.getStoredSession(contact.getInt());
+		assertNotNull(stored);
+		assertEquals(dials, stored.isAlice());
+		ContactRootKeys keys = stored.getRootKeys();
+		assertSame(loaded[0], keys.getCurrent());
+		assertSame(loaded[1], keys.getPending());
+		assertSame(loaded[2], keys.getPendingConfirmKey());
+		assertSame(loaded[3], keys.getPendingIdKey());
+		for (int i = 0; i < loaded.length; i++) {
+			assertArrayEquals("key " + i + " was cleared before the session"
+					+ " used it", copies[i], loaded[i].getBytes());
+		}
 	}
 
 	@Test
