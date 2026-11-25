@@ -197,6 +197,68 @@ public class CallSignalUserActionTest {
 		assertStored("createVideoReject" + BY_APP);
 	}
 
+	@Test
+	public void theVideoRequestAVideoCallSendsByItselfIsNotAUserAction()
+			throws Exception {
+		VoiceCallService s = connected();
+		CallRig.set(s, "isVideoCall", true);
+		((VideoConsentGate) CallRig.get(s, "consentGate"))
+				.onLocalVideoCallPlaced();
+
+		CallRig.call(s, "autoStartVideoIfNeeded");
+
+		assertStored("createVideoOffer" + BY_APP);
+		assertEquals(Arrays.asList("createVideoOffer" + BY_APP),
+				new ArrayList<>(stored));
+	}
+
+	@Test
+	public void theAcceptanceAnAnsweredVideoCallGivesByItselfIsNotAUserAction()
+			throws Exception {
+		VoiceCallService s = connected();
+		((VideoAutoAccept) CallRig.get(s, "videoAutoAccept"))
+				.callStarted(true);
+
+		rig.peerSends(s, VoiceSignalType.VIDEO_OFFER,
+				"REQUEST:00112233445566778899aabbccddeeff");
+
+		assertStored("createVideoAccept" + BY_APP);
+		assertEquals(Arrays.asList("createVideoAccept" + BY_APP),
+				new ArrayList<>(stored));
+	}
+
+	@Test
+	public void aVideoRequestThatTimedOutIsRefusedByTheApp()
+			throws Exception {
+		VoiceCallService s = connected();
+		rig.peerSends(s, VoiceSignalType.VIDEO_OFFER,
+				"REQUEST:00112233445566778899aabbccddeeff");
+		Runnable timeout =
+				(Runnable) CallRig.get(s, "remoteOfferTimeoutRunnable");
+		assertTrue("no timeout was set for the request", timeout != null);
+		assertTrue(stored.isEmpty());
+
+		timeout.run();
+
+		assertStored("createVideoReject" + BY_APP);
+		assertEquals(Arrays.asList("createVideoReject" + BY_APP),
+				new ArrayList<>(stored));
+	}
+
+	@Test
+	public void theEndOfACallNobodyAnsweredIsNotAUserAction()
+			throws Exception {
+		VoiceCallService s = rig.ringingOutgoing();
+		record(s);
+
+		CallRig.call(s, "handleSetupTimeout");
+		CallRig.idle();
+
+		assertStored("createCallEnd" + BY_APP);
+		assertEquals(Arrays.asList("createCallEnd" + BY_APP),
+				new ArrayList<>(stored));
+	}
+
 	private VoiceCallService connected() throws Exception {
 		VoiceCallService s = rig.ringingOutgoing();
 		CallRig.set(s, "voiceCallKey", callKey());

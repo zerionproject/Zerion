@@ -1320,6 +1320,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			db.setMessageShared(txn, chunkId);
 			db.setMessagePermanent(txn, chunkId);
 			db.stopCleanupTimer(txn, chunkId);
+			userMessages.noteUserPart(chunkId);
 		}
 	}
 

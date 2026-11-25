@@ -5,6 +5,7 @@ import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.sync.Ack;
 import org.zerionproject.core.api.sync.Message;
+import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.core.api.sync.Offer;
 import org.zerionproject.core.api.sync.Request;
 import org.zerionproject.core.api.sync.SyncRecordReader;
@@ -13,6 +14,9 @@ import org.zerionproject.message.ZmmReassembler;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -23,10 +27,18 @@ public class ZmmDbRecordSink implements ZppRecordSink {
 	private final ZmmSyncCodec codec;
 	private final ZmmReassembler reassembler = new ZmmReassembler();
 
-	@Inject
+	private final LocalMessageLog localMessages;
+
 	public ZmmDbRecordSink(DatabaseComponent db, ZmmSyncCodec codec) {
+		this(db, codec, new LocalMessageLog());
+	}
+
+	@Inject
+	public ZmmDbRecordSink(DatabaseComponent db, ZmmSyncCodec codec,
+			LocalMessageLog localMessages) {
 		this.db = db;
 		this.codec = codec;
+		this.localMessages = localMessages;
 	}
 
 	@Override
@@ -52,6 +64,7 @@ public class ZmmDbRecordSink implements ZppRecordSink {
 		if (reader.hasAck()) {
 			Ack a = reader.readAck();
 			db.transaction(false, txn -> db.receiveAck(txn, c, a));
+			localMessages.noteAcked(a.getMessageIds());
 		} else if (reader.hasMessage()) {
 			Message m = reader.readMessage();
 			db.transaction(false, txn -> db.receiveMessage(txn, c, m));
@@ -60,7 +73,23 @@ public class ZmmDbRecordSink implements ZppRecordSink {
 			db.transaction(false, txn -> db.receiveOffer(txn, c, o));
 		} else if (reader.hasRequest()) {
 			Request r = reader.readRequest();
+			localMessages.noteRequested(c, unseenUserTraffic(c, r));
 			db.transaction(false, txn -> db.receiveRequest(txn, c, r));
 		}
+	}
+
+	private List<MessageId> unseenUserTraffic(ContactId c, Request r) {
+		List<MessageId> unseen = new ArrayList<>();
+		for (MessageId id : r.getMessageIds()) {
+			if (!localMessages.isUserTraffic(id)) continue;
+			try {
+				if (!db.transactionWithResult(true, txn ->
+						db.getMessageStatus(txn, c, id)).isSeen()) {
+					unseen.add(id);
+				}
+			} catch (DbException | RuntimeException e) {
+			}
+		}
+		return unseen;
 	}
 }

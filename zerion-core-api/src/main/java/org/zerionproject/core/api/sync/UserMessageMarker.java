@@ -6,4 +6,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 public interface UserMessageMarker {
 
 	void noteUserMessage(MessageId id);
+
+	default void noteLaterPart(MessageId id) {
+	}
+
+	default void noteUserPart(MessageId id) {
+	}
 }

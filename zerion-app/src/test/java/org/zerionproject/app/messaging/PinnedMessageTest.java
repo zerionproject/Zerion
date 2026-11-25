@@ -18,6 +18,7 @@ import org.zerionproject.core.api.sync.Group;
 import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.zerionproject.core.api.sync.validation.MessageState;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
 import org.zerionproject.core.test.BrambleTestCase;
@@ -653,7 +654,35 @@ public class PinnedMessageTest extends BrambleTestCase {
 		}
 	}
 
+	@Test
+	public void aPinAndAnUnpinAreMarkedAsMessagesTheUserChoseToSend()
+			throws Exception {
+		MessageId text = sendText(me, "hello");
+		transfer(me, contact);
+		List<MessageId> marked = new ArrayList<>();
+
+		assertEquals(PinResult.PINNED, seeing(me, 15, marked::add)
+				.pinMessage(me.contactId, text));
+
+		Collection<MessageId> pins = localControls(me, MESSAGE_PIN);
+		assertEquals(1, pins.size());
+		assertEquals(new ArrayList<>(pins), marked);
+
+		assertTrue(seeing(me, 15, marked::add).unpinMessage(me.contactId));
+
+		assertEquals(2, marked.size());
+		Collection<MessageId> records = localControls(me, MESSAGE_PIN);
+		assertTrue(records.contains(marked.get(1)));
+		assertTrue(!marked.get(1).equals(marked.get(0)));
+	}
+
 	private MessagingManagerImpl seeing(Device d, int minorVersion) {
+		return seeing(d, minorVersion, id -> {
+		});
+	}
+
+	private MessagingManagerImpl seeing(Device d, int minorVersion,
+			UserMessageMarker marker) {
 		ContactGroupScanTestComponent c = requireComponent(d);
 		ClientVersioningManager real = c.getClientVersioningManager();
 		ClientVersioningManager seen = (ClientVersioningManager)
@@ -671,8 +700,8 @@ public class PinnedMessageTest extends BrambleTestCase {
 				c.getMetadataParser(), c.getConversationManager(),
 				c.getMessageTracker(), c.getContactGroupFactory(),
 				c.getAutoDeleteManager(), c.getStreamingAttachmentWriter(),
-				c.getIdentityManager(), d.validator, c.getCryptoComponent(), id -> {
-				});
+				c.getIdentityManager(), d.validator, c.getCryptoComponent(),
+				marker);
 	}
 
 	private static ContactGroupScanTestComponent requireComponent(Device d) {

@@ -104,6 +104,7 @@ public class BackgroundIncomingCallTest {
 	private Application app;
 	private NotificationManager system;
 	private AndroidNotificationManagerImpl notifications;
+	private MessagingManager messaging;
 
 	@Before
 	public void setUp() throws Exception {
@@ -114,7 +115,7 @@ public class BackgroundIncomingCallTest {
 		when(clock.currentTimeMillis()).thenReturn(NOW);
 		ContactManager contacts = mock(ContactManager.class);
 		when(contacts.getContact(any())).thenReturn(mock(Contact.class));
-		MessagingManager messaging = mock(MessagingManager.class);
+		messaging = mock(MessagingManager.class);
 		when(messaging.getContactGroup(any())).thenReturn(mock(Group.class));
 		notifications = new AndroidNotificationManagerImpl(
 				mock(SettingsManager.class), INLINE, app, clock,
@@ -318,6 +319,17 @@ public class BackgroundIncomingCallTest {
 
 		verify(signals, never()).createCallReject(any(), anyLong(), any(),
 				any());
+	}
+
+	@Test
+	public void theBusyAnswerIsNotStoredAsAUserAction() throws Exception {
+		notifications.callServiceStarted(new ContactId(8), "busy");
+
+		signal(VoiceSignalType.CALL_OFFER, "call-1", KEY_HEX);
+
+		verify(signals).createCallBusy(any(), anyLong(), eq("call-1"));
+		verify(messaging).addLocalVoiceSignal(any(), eq(false));
+		verify(messaging, never()).addLocalVoiceSignal(any(), eq(true));
 	}
 
 	@Test

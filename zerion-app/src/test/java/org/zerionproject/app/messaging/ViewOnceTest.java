@@ -18,6 +18,7 @@ import org.zerionproject.core.api.sync.Group;
 import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.zerionproject.core.api.sync.validation.MessageState;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
 import org.zerionproject.core.test.BrambleTestCase;
@@ -43,6 +44,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -1011,7 +1013,66 @@ public class ViewOnceTest extends BrambleTestCase {
 		}
 	}
 
+	@Test
+	public void theNoticeThatAViewOnceWasOpenedIsNotMarkedAsAUserMessage()
+			throws Exception {
+		AttachmentHeader photo = photo(me);
+		MessageId sent = send(me, seeing(me, 14), photo);
+		transfer(me, contact);
+		List<MessageId> marked = new ArrayList<>();
+
+		assertNotNull(seeing(contact, 14, marked::add)
+				.openViewOnce(contact.contactId, sent));
+
+		assertEquals("the notice was not stored", 1,
+				localControls(contact, VIEW_ONCE_OPENED).size());
+		assertEquals(new ArrayList<MessageId>(), marked);
+	}
+
+	@Test
+	public void thePartsOfAnAttachmentTheUserSendsAreNotedAsUserParts()
+			throws Exception {
+		byte[] video = videoBytes();
+		AttachmentHeader clip = me.messagingManager.addLocalAttachmentStreaming(
+				me.group, now - HOUR, "video/mp4",
+				new ByteArrayInputStream(video), video.length, null);
+		List<MessageId> marked = new ArrayList<>();
+		List<MessageId> parts = new ArrayList<>();
+		UserMessageMarker marker = new UserMessageMarker() {
+			@Override
+			public void noteUserMessage(MessageId id) {
+				marked.add(id);
+			}
+
+			@Override
+			public void noteUserPart(MessageId id) {
+				parts.add(id);
+			}
+		};
+
+		MessageId sent = send(me, seeing(me, 14, marker), clip);
+
+		BdfDictionary query = BdfDictionary.of(
+				new BdfEntry("messageType", ATTACHMENT_CHUNK));
+		Collection<MessageId> chunks = me.db.transactionWithResult(true,
+				txn -> me.clientHelper.getMessageIds(txn, me.group, query));
+		assertTrue(chunks.size() > 1);
+		assertEquals(new java.util.HashSet<>(chunks),
+				new java.util.HashSet<>(parts));
+		assertEquals(chunks.size(), parts.size());
+		assertTrue(marked.contains(sent));
+		assertTrue(marked.contains(clip.getMessageId()));
+		assertTrue("a part is no message of its own",
+				Collections.disjoint(marked, parts));
+	}
+
 	private MessagingManagerImpl seeing(Device d, int minorVersion) {
+		return seeing(d, minorVersion, id -> {
+		});
+	}
+
+	private MessagingManagerImpl seeing(Device d, int minorVersion,
+			UserMessageMarker marker) {
 		ContactGroupScanTestComponent c = requireComponent(d);
 		ClientVersioningManager real = c.getClientVersioningManager();
 		ClientVersioningManager seen = (ClientVersioningManager)
@@ -1029,8 +1090,8 @@ public class ViewOnceTest extends BrambleTestCase {
 				c.getMetadataParser(), c.getConversationManager(),
 				c.getMessageTracker(), c.getContactGroupFactory(),
 				c.getAutoDeleteManager(), c.getStreamingAttachmentWriter(),
-				c.getIdentityManager(), d.validator, c.getCryptoComponent(), id -> {
-				});
+				c.getIdentityManager(), d.validator, c.getCryptoComponent(),
+				marker);
 	}
 
 	private static ContactGroupScanTestComponent requireComponent(Device d) {

@@ -77,6 +77,46 @@ public class ZppOpeningWindowTest {
 	}
 
 	@Test
+	public void theOpeningAndTheReceiptsOfAContactShareOneRation() {
+		assertTrue("the opening takes the ration",
+				runner.grantsOpeningWindow(1, now.get()));
+		now.addAndGet(60_000L);
+		assertFalse("a receipt after the opening finds it used",
+				runner.rationFor(1).admitReceipt());
+		now.addAndGet(OPENING_WINDOW_INTERVAL_MS - 60_000L);
+		assertTrue("ten minutes later a receipt takes it",
+				runner.rationFor(1).admitReceipt());
+		now.addAndGet(60_000L);
+		assertFalse("and a new connection finds it used",
+				runner.grantsOpeningWindow(1, now.get()));
+		assertFalse(runner.rationFor(1).admitReceipt());
+
+		assertTrue("a receipt takes the ration of another contact",
+				runner.rationFor(2).admitReceipt());
+		assertFalse(runner.grantsOpeningWindow(2, now.get()));
+		now.addAndGet(OPENING_WINDOW_INTERVAL_MS);
+		assertTrue(runner.grantsOpeningWindow(2, now.get()));
+		assertFalse(runner.rationFor(2).admitReceipt());
+	}
+
+	@Test
+	public void aReceiptAfterThisSidesOwnSendTakesNothingFromTheRation() {
+		ZppConnectionRunnerImpl.ReceiveActivityGate ration =
+				runner.rationFor(1);
+		ZppConnectionRunnerImpl.SlotClock clock =
+				new ZppConnectionRunnerImpl.SlotClock(now::get, NEVER);
+		ZppConnectionRunnerImpl.afterFrame(clock, ration, true, true,
+				now.get());
+		now.addAndGet(60_000L);
+		assertTrue(ration.admitReceipt());
+		assertTrue(ration.admitReceipt());
+		assertTrue("the ration is still there for the next connection",
+				runner.grantsOpeningWindow(1, now.get()));
+		assertNotSame("a link without cover traffic keeps its own gate",
+				ration, runner.gateFor(1));
+	}
+
+	@Test
 	public void aControlRecordShortensTheWaitWithoutOpeningTheWindow()
 			throws Exception {
 		ZppConnectionRunnerImpl.SlotClock clock =
