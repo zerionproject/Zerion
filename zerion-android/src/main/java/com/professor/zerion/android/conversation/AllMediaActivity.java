@@ -321,16 +321,18 @@ public class AllMediaActivity extends ZerionActivity {
 					documentOverlay.setVisibility(View.GONE);
 					thumbnail.setVisibility(View.VISIBLE);
 
-					if (item.isVideo) {
-						thumbnail.setImageResource(R.drawable.ic_video);
-					} else {
-						thumbnail.setImageResource(R.drawable.ic_image);
-					}
 					itemView.setContentDescription(itemView.getContext()
 							.getString(item.isVideo ? R.string.video
 									: R.string.image));
 
-					loadThumbnail(item, thumbnail);
+					if (item.isVideo) {
+						Glide.with(thumbnail).clear(thumbnail);
+						thumbnail.setImageResource(R.drawable.ic_video);
+						prepare(item);
+					} else {
+						thumbnail.setImageResource(R.drawable.ic_image);
+						loadThumbnail(item, thumbnail);
+					}
 
 				} else {
 					thumbnail.setVisibility(View.GONE);
@@ -358,7 +360,10 @@ public class AllMediaActivity extends ZerionActivity {
 						.error(R.drawable.ic_image)
 						.centerCrop()
 						.into(imageView);
+				prepare(item);
+			}
 
+			private void prepare(MediaItem item) {
 				dbExecutor.execute(() -> {
 					try {
 						attachmentRetriever.cacheAttachmentItemWithSize(
@@ -424,6 +429,8 @@ public class AllMediaActivity extends ZerionActivity {
 			intent.putExtra(ImageActivity.ITEM_ID, item.messageId.getBytes());
 			startActivity(intent);
 		} else if (item.isVideo) {
+			ImageViewHolder.videoOpened(item.messageId,
+					item.header.getMessageId());
 			Intent intent = new Intent(this, VideoPlayerActivity.class);
 			intent.putExtra(VideoPlayerActivity.ATTACHMENT, item.attachmentItem);
 			intent.putExtra(VideoPlayerActivity.ITEM_ID, item.messageId.getBytes());

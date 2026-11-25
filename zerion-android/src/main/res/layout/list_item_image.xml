@@ -28,4 +28,20 @@
 		tools:ignore="ContentDescription"
 		app:tint="?attr/zerionColorOnScrim" />
 
+	<TextView
+		android:id="@+id/videoSize"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_gravity="bottom|start"
+		android:layout_marginStart="6dp"
+		android:layout_marginBottom="6dp"
+		android:background="?attr/zerionColorScrim"
+		android:importantForAccessibility="no"
+		android:paddingHorizontal="6dp"
+		android:paddingVertical="2dp"
+		android:textAppearance="@style/TextAppearance.Zerion.Meta"
+		android:textColor="?attr/zerionColorOnScrim"
+		android:visibility="gone"
+		tools:text="3.2 MB" />
+
 </FrameLayout>

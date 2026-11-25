@@ -48,6 +48,9 @@ public class VoiceMessageViewHolder {
 	private int duration = 0;
 	private int loadingState = STATE_LOADING;
 	private volatile boolean released = false;
+	@Nullable
+	private AttachmentItem waitingForTap;
+	private boolean startWhenPrepared = false;
 
 	private final com.professor.zerion.android.conversation.voice.VoiceMemoKeys
 			voiceMemoKeys;
@@ -89,10 +92,30 @@ public class VoiceMessageViewHolder {
 		});
 	}
 
+	public void bindReceived(AttachmentItem item) {
+		released = false;
+		stop();
+		isPlaying = false;
+		startWhenPrepared = false;
+		waitingForTap = item;
+		loadingState = STATE_READY;
+		playPauseButton.setEnabled(true);
+		playPauseButton.setIconResource(R.drawable.ic_play_arrow_24dp);
+		progressBar.setProgress(0);
+		progressBar.setEnabled(false);
+		durationText.setText("");
+	}
+
 	public void bind(AttachmentItem item) {
 		released = false;
 		stop();
 		isPlaying = false;
+		waitingForTap = null;
+		startWhenPrepared = false;
+		load(item);
+	}
+
+	private void load(AttachmentItem item) {
 		showLoadingState();
 
 		dbExecutor.execute(() -> {
@@ -205,6 +228,10 @@ public class VoiceMessageViewHolder {
 						duration = mp.getDuration();
 						updateDurationText(duration);
 						showReadyState();
+						if (startWhenPrepared) {
+							startWhenPrepared = false;
+							play();
+						}
 					});
 					mediaPlayer.prepareAsync();
 
@@ -235,6 +262,13 @@ public class VoiceMessageViewHolder {
 	}
 
 	private void togglePlayPause() {
+		AttachmentItem unopened = waitingForTap;
+		if (mediaPlayer == null && unopened != null) {
+			waitingForTap = null;
+			startWhenPrepared = true;
+			load(unopened);
+			return;
+		}
 		if (mediaPlayer == null) {
 			return;
 		}
@@ -367,6 +401,8 @@ public class VoiceMessageViewHolder {
 
 	public void onRecycled() {
 		released = true;
+		waitingForTap = null;
+		startWhenPrepared = false;
 		uiHandler.removeCallbacksAndMessages(null);
 		stop();
 	}

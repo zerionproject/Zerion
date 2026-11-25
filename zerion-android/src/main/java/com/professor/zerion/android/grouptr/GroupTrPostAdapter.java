@@ -1,6 +1,7 @@
 package com.professor.zerion.android.grouptr;
 
 import android.graphics.Bitmap;
+import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -169,6 +170,9 @@ class GroupTrPostAdapter
 				return t;
 			});
 
+	@VisibleForTesting
+	static java.util.concurrent.Executor decoder = DECODE_EXECUTOR;
+
 	private final com.professor.zerion.android.settings.MessageStyle.Source messageStyle =
 			new com.professor.zerion.android.settings.MessageStyle.Source();
 
@@ -329,6 +333,12 @@ class GroupTrPostAdapter
 			notifyItemRangeChanged(current.size() - pending, pending,
 					PAYLOAD_STATE);
 		}
+	}
+
+	void videoOpened(GroupTrPost p) {
+		if (!GroupTrMediaCache.videoOpened(p)) return;
+		int position = positionOf(GroupPostRow.key(p));
+		if (position >= 0) notifyItemChanged(position);
 	}
 
 	void removePost(GroupTrPost p) {
@@ -600,6 +610,8 @@ class GroupTrPostAdapter
 		@Nullable
 		private final TextView videoTime;
 		@Nullable
+		private final TextView videoSize;
+		@Nullable
 		private final View quoteBlock;
 		@Nullable
 		private final TextView quoteAuthor;
@@ -630,6 +642,7 @@ class GroupTrPostAdapter
 			videoThumb = v.findViewById(R.id.videoThumb);
 			videoDuration = v.findViewById(R.id.videoDuration);
 			videoTime = v.findViewById(R.id.videoTime);
+			videoSize = v.findViewById(R.id.videoSize);
 			quoteBlock = v.findViewById(R.id.quoteBlock);
 			quoteAuthor = v.findViewById(R.id.quoteAuthor);
 			quoteText = v.findViewById(R.id.quoteText);
@@ -906,7 +919,7 @@ class GroupTrPostAdapter
 			img.setImageDrawable(null);
 			Object token = new Object();
 			imageToken = token;
-			DECODE_EXECUTOR.execute(() -> {
+			decoder.execute(() -> {
 				Bitmap bmp = ReceivedImageGate.decode(bytes, 1024);
 				if (bmp == null) return;
 				GroupTrMediaCache.put(cacheKey, bmp);
@@ -930,16 +943,31 @@ class GroupTrPostAdapter
 			}
 			byte[] bytes = parsed.payload;
 			String mime = parsed.mime;
+			boolean waitsForTheFirstTap = viewType == VIDEO_IN
+					&& !GroupTrMediaCache.isVideoOpened(p);
+			if (videoSize != null) {
+				boolean sized = waitsForTheFirstTap && bytes != null
+						&& bytes.length > 0;
+				if (sized) {
+					videoSize.setText(Formatter.formatShortFileSize(
+							videoSize.getContext(), bytes.length));
+				}
+				videoSize.setVisibility(sized ? View.VISIBLE : View.GONE);
+			}
 			String cacheKey = GroupTrMediaCache.key(p,
 					GroupTrMediaCache.VIDEO);
-			Bitmap cachedThumb = GroupTrMediaCache.get(cacheKey);
+			Bitmap cachedThumb = waitsForTheFirstTap ? null
+					: GroupTrMediaCache.get(cacheKey);
 			if (cachedThumb != null && !cachedThumb.isRecycled()) {
 				thumb.setImageBitmap(cachedThumb);
+			} else if (waitsForTheFirstTap) {
+				imageToken = null;
+				thumb.setImageDrawable(null);
 			} else {
 				thumb.setImageDrawable(null);
 				Object token = new Object();
 				imageToken = token;
-				DECODE_EXECUTOR.execute(() -> {
+				decoder.execute(() -> {
 					Bitmap thumbBmp = cb.videoThumb(bytes);
 					if (thumbBmp == null) return;
 					GroupTrMediaCache.put(cacheKey, thumbBmp);

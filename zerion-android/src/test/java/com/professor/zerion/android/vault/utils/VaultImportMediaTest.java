@@ -113,6 +113,9 @@ public class VaultImportMediaTest {
 						+ ".wordprocessingml.document"},
 				{textWithNul, "text/plain"},
 				{"<html></html>".getBytes(StandardCharsets.UTF_8), "text/html"},
+				{"<!-- by Someone --><gpx creator=\"Someone\"></gpx>"
+						.getBytes(StandardCharsets.UTF_8), "text/plain"},
+				{"<3 notes".getBytes(StandardCharsets.UTF_8), "text/plain"},
 				{"notes".getBytes(StandardCharsets.UTF_8), "text/plain"}};
 		for (Object[] c : cases) {
 			byte[] data = (byte[]) c[0];
@@ -124,7 +127,7 @@ public class VaultImportMediaTest {
 			}
 		}
 		assertEquals(Arrays.asList("refused", "refused", "refused", "refused",
-				"kept"), outcome);
+				"refused", "kept", "kept"), outcome);
 	}
 
 	@Test

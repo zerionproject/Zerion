@@ -82,6 +82,22 @@
 			android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 		<TextView
+			android:id="@+id/videoSize"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="6dp"
+			android:layout_marginBottom="4dp"
+			android:background="?attr/zerionColorScrim"
+			android:paddingHorizontal="6dp"
+			android:paddingVertical="2dp"
+			android:textColor="?attr/zerionColorOnScrim"
+			android:visibility="gone"
+			app:layout_constraintBottom_toBottomOf="@+id/videoThumb"
+			app:layout_constraintStart_toStartOf="@+id/videoThumb"
+			tools:text="3.2 MB"
+			android:textAppearance="@style/TextAppearance.Zerion.Meta" />
+
+		<TextView
 			android:id="@+id/videoTime"
 			style="@style/TextMessage.Timestamp.Scrim"
 			android:layout_width="wrap_content"

@@ -2870,6 +2870,14 @@ public class ConversationActivity extends ZerionActivity
 				DocumentOpener.open(this, dbExecutor, attachmentRetriever,
 						attachmentItem.getHeader());
 			} else if (attachmentItem.isVideo()) {
+				if (messageItem.isIncoming() && ImageViewHolder.videoOpened(
+						messageItem.getId(), attachmentItem.getMessageId())) {
+					int position = adapter.getPositionOfMessage(
+							messageItem.getId());
+					if (position != RecyclerView.NO_POSITION) {
+						adapter.notifyItemChanged(position);
+					}
+				}
 				Intent intent = new Intent(this, VideoPlayerActivity.class);
 				intent.putExtra(VideoPlayerActivity.ATTACHMENT, attachmentItem);
 				intent.putExtra(VideoPlayerActivity.ITEM_ID, messageItem.getId().getBytes());

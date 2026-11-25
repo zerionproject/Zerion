@@ -44,8 +44,7 @@ public final class AttachmentDocuments {
 		return null;
 	}
 
-	private static final String[] STRUCTURED_STARTS = {"%!ps", "{\\rtf",
-			"<?xml", "<svg", "<!doctype", "<html", "<head", "<body"};
+	private static final String[] STRUCTURED_STARTS = {"%!ps", "{\\rtf"};
 
 	public static boolean isPdf(byte[] data) {
 		return contentMatches(PDF, data);
@@ -73,7 +72,14 @@ public final class AttachmentDocuments {
 		for (String start : STRUCTURED_STARTS) {
 			if (startsWithIgnoringCase(data, i, start)) return false;
 		}
-		return true;
+		return !startsMarkup(data, i);
+	}
+
+	private static boolean startsMarkup(byte[] data, int at) {
+		if (data.length - at < 2 || data[at] != '<') return false;
+		int c = data[at + 1] & 0xFF;
+		return c == '?' || c == '!' || (c >= 'a' && c <= 'z')
+				|| (c >= 'A' && c <= 'Z');
 	}
 
 	private static boolean startsWithIgnoringCase(byte[] data, int at,
