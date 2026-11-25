@@ -1338,6 +1338,7 @@
 	<string name="grouptr_error_save">לא ניתן היה לשמור את ההגדרה.</string>
 	<string name="grouptr_error_respond">לא ניתן היה להגיב להזמנה.</string>
 	<string name="grouptr_post_too_long">ההודעה ארוכה מדי.</string>
+	<string name="grouptr_post_too_large">זה גדול מדי לשליחה לקבוצה. המגבלה היא בערך 1 MB.</string>
 	<string name="settings_save_failed">לא ניתן היה לשמור את ההגדרה.</string>
 	<string name="grouptr_open">פתיחה</string>
 	<string name="grouptr_input_hint">הודעה</string>
@@ -1398,7 +1399,6 @@
 	<string name="grouptr_voice_play_failed">לא ניתן היה להשמיע את ההודעה הקולית.</string>
 	<string name="grouptr_attach_picker_failed">לא ניתן היה לפתוח את הבורר.</string>
 	<string name="grouptr_attach_read_failed">לא ניתן היה לקרוא את התמונה.</string>
-	<string name="grouptr_attach_video_too_large">הסרטון גדול מדי (מקסימום 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">סוג הקובץ אינו נתמך.</string>
 	<string name="grouptr_video">סרטון</string>
 	<string name="grouptr_image">תמונה</string>

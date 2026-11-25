@@ -1233,4 +1233,5 @@
 	<string name="vault_unlock_entries_differ">Las dos entradas no son iguales. Empieza de nuevo.</string>
 	<string name="vault_unlock_not_confirmed">Zerion no pudo confirmar el baúl en el almacenamiento. Inténtalo de nuevo.</string>
 	<string name="vault_password_rule">Usa al menos 8 letras, cifras o símbolos. Los emojis no cuentan.</string>
+	<string name="grouptr_post_too_large">Esto es demasiado grande para enviarlo a un grupo. El límite es de aproximadamente 1 MB.</string>
 </resources>

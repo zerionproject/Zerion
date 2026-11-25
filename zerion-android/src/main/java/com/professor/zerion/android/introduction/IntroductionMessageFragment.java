@@ -38,7 +38,7 @@ import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
 import static com.professor.zerion.android.view.AuthorView.setAvatar;
 import static com.professor.zerion.android.view.TextSendController.SendState;
 import static com.professor.zerion.android.view.TextSendController.SendState.SENT;
-import static org.zerionproject.app.api.introduction.IntroductionConstants.MAX_INTRODUCTION_TEXT_LENGTH;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.MAX_DELIVERABLE_INTRODUCTION_TEXT_LENGTH;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
@@ -75,7 +75,7 @@ public class IntroductionMessageFragment extends BaseFragment
 		TextSendController sendController =
 				new TextSendController(ui.message, this, true);
 		ui.message.setSendController(sendController);
-		ui.message.setMaxTextLength(MAX_INTRODUCTION_TEXT_LENGTH);
+		ui.message.setMaxTextLength(MAX_DELIVERABLE_INTRODUCTION_TEXT_LENGTH);
 		ui.message.setReady(false);
 
 		viewModel.getIntroductionInfo().observe(getViewLifecycleOwner(), ii -> {

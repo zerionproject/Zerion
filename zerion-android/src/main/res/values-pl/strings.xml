@@ -1395,6 +1395,7 @@
 	<string name="grouptr_error_save">Nie udało się zapisać ustawienia.</string>
 	<string name="grouptr_error_respond">Nie udało się odpowiedzieć na zaproszenie.</string>
 	<string name="grouptr_post_too_long">Wiadomość jest za długa.</string>
+	<string name="grouptr_post_too_large">To jest za duże, aby wysłać to do grupy. Limit wynosi około 1 MB.</string>
 	<string name="settings_save_failed">Nie udało się zapisać ustawienia.</string>
 	<string name="grouptr_open">Otwórz</string>
 	<string name="grouptr_input_hint">Wiadomość</string>
@@ -1456,7 +1457,6 @@
 	<string name="grouptr_voice_play_failed">Nie udało się odtworzyć wiadomości głosowej.</string>
 	<string name="grouptr_attach_picker_failed">Nie udało się otworzyć okna wyboru.</string>
 	<string name="grouptr_attach_read_failed">Nie udało się odczytać obrazu.</string>
-	<string name="grouptr_attach_video_too_large">Wideo jest za duże (maks. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Nieobsługiwany typ pliku.</string>
 	<string name="grouptr_video">Wideo</string>
 	<string name="grouptr_image">Obraz</string>

@@ -1037,6 +1037,7 @@
 	<string name="grouptr_error_save">无法保存设置。</string>
 	<string name="grouptr_error_respond">无法回应邀请。</string>
 	<string name="grouptr_post_too_long">消息太长。</string>
+	<string name="grouptr_post_too_large">内容太大，无法发送到群组。上限约为 1 MB。</string>
 	<string name="settings_save_failed">无法保存设置。</string>
 	<string name="grouptr_open">打开</string>
 	<string name="grouptr_input_hint">消息</string>
@@ -1091,7 +1092,6 @@
 	<string name="grouptr_voice_play_failed">无法播放语音备忘。</string>
 	<string name="grouptr_attach_picker_failed">无法打开选择器。</string>
 	<string name="grouptr_attach_read_failed">无法读取图片。</string>
-	<string name="grouptr_attach_video_too_large">视频过大（最大 8 MB）。</string>
 	<string name="grouptr_attach_unknown_type">不支持的文件类型。</string>
 	<string name="grouptr_video">视频</string>
 	<string name="grouptr_image">图片</string>

@@ -1302,6 +1302,7 @@ Umepoteza nenosiri.</string>
 	<string name="grouptr_error_save">Imeshindwa kuhifadhi mpangilio.</string>
 	<string name="grouptr_error_respond">Imeshindwa kujibu mwaliko.</string>
 	<string name="grouptr_post_too_long">Ujumbe ni mrefu mno.</string>
+	<string name="grouptr_post_too_large">Hiki ni kikubwa mno kutumwa kwa kikundi. Kikomo ni takriban MB 1.</string>
 	<string name="settings_save_failed">Imeshindwa kuhifadhi mpangilio.</string>
 	<string name="grouptr_open">Fungua</string>
 	<string name="grouptr_input_hint">Ujumbe</string>
@@ -1361,7 +1362,6 @@ Umepoteza nenosiri.</string>
 	<string name="grouptr_voice_play_failed">Imeshindwa kucheza ujumbe wa sauti.</string>
 	<string name="grouptr_attach_picker_failed">Imeshindwa kufungua kichaguzi.</string>
 	<string name="grouptr_attach_read_failed">Imeshindwa kusoma picha.</string>
-	<string name="grouptr_attach_video_too_large">Video ni kubwa mno (kiwango cha juu 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Aina ya faili haitumiki.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Picha</string>

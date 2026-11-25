@@ -1251,6 +1251,7 @@
 	<string name="grouptr_error_save">ذخیره تنظیم ممکن نشد.</string>
 	<string name="grouptr_error_respond">پاسخ به دعوت ممکن نشد.</string>
 	<string name="grouptr_post_too_long">پیام بیش از حد طولانی است.</string>
+	<string name="grouptr_post_too_large">این برای ارسال به گروه بیش از حد بزرگ است. محدودیت حدود ۱ مگابایت است.</string>
 	<string name="settings_save_failed">ذخیره تنظیم ممکن نشد.</string>
 	<string name="grouptr_open">باز کردن</string>
 	<string name="grouptr_input_hint">پیام</string>
@@ -1310,7 +1311,6 @@
 	<string name="grouptr_voice_play_failed">پخش پیام صوتی ممکن نشد.</string>
 	<string name="grouptr_attach_picker_failed">باز کردن انتخابگر ممکن نشد.</string>
 	<string name="grouptr_attach_read_failed">خواندن تصویر ممکن نشد.</string>
-	<string name="grouptr_attach_video_too_large">ویدیو بیش از حد بزرگ است (حداکثر ۸ MB).</string>
 	<string name="grouptr_attach_unknown_type">نوع فایل پشتیبانی نمی‌شود.</string>
 	<string name="grouptr_video">ویدیو</string>
 	<string name="grouptr_image">تصویر</string>

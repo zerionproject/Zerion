@@ -976,6 +976,7 @@
 	<string name="grouptr_error_save">설정을 저장할 수 없습니다.</string>
 	<string name="grouptr_error_respond">초대에 응답할 수 없습니다.</string>
 	<string name="grouptr_post_too_long">메시지가 너무 깁니다.</string>
+	<string name="grouptr_post_too_large">그룹에 보내기에는 너무 큽니다. 한도는 약 1 MB입니다.</string>
 	<string name="settings_save_failed">설정을 저장할 수 없습니다.</string>
 	<string name="grouptr_open">열기</string>
 	<string name="grouptr_input_hint">메시지</string>
@@ -1030,7 +1031,6 @@
 	<string name="grouptr_voice_play_failed">음성 메모를 재생할 수 없습니다.</string>
 	<string name="grouptr_attach_picker_failed">선택기를 열 수 없습니다.</string>
 	<string name="grouptr_attach_read_failed">이미지를 읽을 수 없습니다.</string>
-	<string name="grouptr_attach_video_too_large">동영상이 너무 큽니다 (최대 8MB).</string>
 	<string name="grouptr_attach_unknown_type">지원되지 않는 파일 형식입니다.</string>
 	<string name="grouptr_video">동영상</string>
 	<string name="grouptr_image">이미지</string>

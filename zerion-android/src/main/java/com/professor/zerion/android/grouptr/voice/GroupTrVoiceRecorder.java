@@ -29,6 +29,9 @@ public class GroupTrVoiceRecorder {
 	private static final int SAMPLE_RATE = 16_000;
 	private static final int BITRATE = 24_000;
 	public static final long MAX_DURATION_MS = 5L * 60L * 1000L;
+	public static final long MAX_FILE_BYTES =
+			org.zerionproject.app.api.grouptr.GroupTrManager
+					.MAX_POST_BODY_LENGTH - 64L * 1024L;
 
 	private final Context context;
 	private MediaRecorder recorder;
@@ -56,11 +59,9 @@ public class GroupTrVoiceRecorder {
 			recorder.setAudioEncodingBitRate(BITRATE);
 			recorder.setAudioChannels(1);
 			recorder.setMaxDuration((int) MAX_DURATION_MS);
+			recorder.setMaxFileSize(MAX_FILE_BYTES);
 			recorder.setOnInfoListener((mr, what, extra) -> {
-				if (what == MediaRecorder
-						.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
-					maxDurationReached = true;
-				}
+				if (isLimit(what)) maxDurationReached = true;
 			});
 			recorder.setOutputFile(outputFile.getAbsolutePath());
 			recorder.prepare();
@@ -132,6 +133,16 @@ public class GroupTrVoiceRecorder {
 		}
 		releaseInternal();
 		deleteOutputFile();
+	}
+
+	public static boolean isLimit(int what) {
+		return what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED
+				|| what == MediaRecorder
+						.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED;
+	}
+
+	public boolean limitReached() {
+		return recording && maxDurationReached;
 	}
 
 	public boolean isRecording() {

@@ -34,7 +34,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.core.util.Consumer;
 
-import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.core.util.StringUtils.truncateUtf8;
 
 @NotNullByDefault
 public class TextForwarder {
@@ -70,8 +71,7 @@ public class TextForwarder {
 	}
 
 	static String limit(String text) {
-		return text.length() > MAX_PRIVATE_MESSAGE_TEXT_LENGTH
-				? text.substring(0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH) : text;
+		return truncateUtf8(text, MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH);
 	}
 
 	@UiThread

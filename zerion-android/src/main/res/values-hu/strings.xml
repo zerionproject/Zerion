@@ -1366,6 +1366,7 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="grouptr_error_save">Nem sikerült menteni a beállítást.</string>
 	<string name="grouptr_error_respond">Nem sikerült válaszolni a meghívásra.</string>
 	<string name="grouptr_post_too_long">Az üzenet túl hosszú.</string>
+	<string name="grouptr_post_too_large">Ez túl nagy ahhoz, hogy csoportba küldd. A korlát körülbelül 1 MB.</string>
 	<string name="settings_save_failed">Nem sikerült menteni a beállítást.</string>
 	<string name="grouptr_open">Megnyitás</string>
 	<string name="grouptr_input_hint">Üzenet</string>
@@ -1425,7 +1426,6 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="grouptr_voice_play_failed">Nem sikerült lejátszani a hangüzenetet.</string>
 	<string name="grouptr_attach_picker_failed">Nem sikerült megnyitni a fájlválasztót.</string>
 	<string name="grouptr_attach_read_failed">Nem sikerült beolvasni a képet.</string>
-	<string name="grouptr_attach_video_too_large">A videó túl nagy (max. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Nem támogatott fájltípus.</string>
 	<string name="grouptr_video">Videó</string>
 	<string name="grouptr_image">Kép</string>

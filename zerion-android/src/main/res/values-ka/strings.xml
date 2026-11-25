@@ -1227,6 +1227,7 @@
 	<string name="grouptr_error_save">პარამეტრის შენახვა ვერ მოხერხდა.</string>
 	<string name="grouptr_error_respond">მოწვევაზე პასუხის გაცემა ვერ მოხერხდა.</string>
 	<string name="grouptr_post_too_long">შეტყობინება ძალიან გრძელია.</string>
+	<string name="grouptr_post_too_large">ეს ძალიან დიდია ჯგუფში გასაგზავნად. ლიმიტი არის დაახლოებით 1 MB.</string>
 	<string name="settings_save_failed">პარამეტრის შენახვა ვერ მოხერხდა.</string>
 	<string name="grouptr_open">გახსნა</string>
 	<string name="grouptr_input_hint">შეტყობინება</string>
@@ -1286,7 +1287,6 @@
 	<string name="grouptr_voice_play_failed">ხმოვანი ჩანაწერის დაკვრა ვერ მოხერხდა.</string>
 	<string name="grouptr_attach_picker_failed">არჩევის ფანჯრის გახსნა ვერ მოხერხდა.</string>
 	<string name="grouptr_attach_read_failed">სურათის წაკითხვა ვერ მოხერხდა.</string>
-	<string name="grouptr_attach_video_too_large">ვიდეო ძალიან დიდია (მაქს. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">ფაილის ეს ტიპი არ არის მხარდაჭერილი.</string>
 	<string name="grouptr_video">ვიდეო</string>
 	<string name="grouptr_image">სურათი</string>

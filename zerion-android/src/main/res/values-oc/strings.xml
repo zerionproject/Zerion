@@ -1167,6 +1167,7 @@
 	<string name="grouptr_error_save">Impossible d’enregistrar lo paramètre.</string>
 	<string name="grouptr_error_respond">Impossible de respondre a la convidacion.</string>
 	<string name="grouptr_post_too_long">Lo messatge es tròp long.</string>
+	<string name="grouptr_post_too_large">Es tròp grand per èsser mandat a un grop. Lo limit es d\'environ 1 Mo.</string>
 	<string name="settings_save_failed">Impossible d’enregistrar lo paramètre.</string>
 	<string name="grouptr_open">Dobrir</string>
 	<string name="grouptr_input_hint">Messatge</string>
@@ -1226,7 +1227,6 @@
 	<string name="grouptr_voice_play_failed">Impossible de legir lo messatge vocal.</string>
 	<string name="grouptr_attach_picker_failed">Impossible de dobrir lo selector.</string>
 	<string name="grouptr_attach_read_failed">Impossible de legir l’imatge.</string>
-	<string name="grouptr_attach_video_too_large">Vidèo tròp pesuca (8 MB al maximum).</string>
 	<string name="grouptr_attach_unknown_type">Tipe de fichièr pas pres en carga.</string>
 	<string name="grouptr_video">Vidèo</string>
 	<string name="grouptr_image">Imatge</string>

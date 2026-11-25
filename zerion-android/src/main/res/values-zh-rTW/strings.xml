@@ -1001,6 +1001,7 @@
 	<string name="grouptr_error_save">無法儲存設定。</string>
 	<string name="grouptr_error_respond">無法回應邀請。</string>
 	<string name="grouptr_post_too_long">訊息太長。</string>
+	<string name="grouptr_post_too_large">內容太大，無法傳送到群組。上限約為 1 MB。</string>
 	<string name="settings_save_failed">無法儲存設定。</string>
 	<string name="grouptr_open">開啟</string>
 	<string name="grouptr_input_hint">訊息</string>
@@ -1055,7 +1056,6 @@
 	<string name="grouptr_voice_play_failed">無法播放語音留言。</string>
 	<string name="grouptr_attach_picker_failed">無法開啟選擇器。</string>
 	<string name="grouptr_attach_read_failed">無法讀取圖片。</string>
-	<string name="grouptr_attach_video_too_large">影片太大（上限 8 MB）。</string>
 	<string name="grouptr_attach_unknown_type">不支援的檔案類型。</string>
 	<string name="grouptr_video">影片</string>
 	<string name="grouptr_image">圖片</string>

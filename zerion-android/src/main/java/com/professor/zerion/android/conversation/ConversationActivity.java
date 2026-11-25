@@ -132,7 +132,7 @@ import static com.professor.zerion.android.util.UiUtils.launchActivityToOpenFile
 import static com.professor.zerion.android.util.UiUtils.observeOnce;
 import static com.professor.zerion.android.view.AuthorView.setAvatar;
 import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_ATTACHMENTS_PER_MESSAGE;
-import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH;
 import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_ONLY;
 
 @MethodsNotNullByDefault
@@ -396,7 +396,7 @@ public class ConversationActivity extends ZerionActivity
 			sendController = new TextSendController(textInputView, this, false);
 		}
 		textInputView.setSendController(sendController);
-		textInputView.setMaxTextLength(MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+		textInputView.setMaxTextLength(MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH);
 		textInputView.setReady(false);
 		textInputView.setOnKeyboardShownListener(this::scrollToBottom);
 
@@ -634,6 +634,11 @@ public class ConversationActivity extends ZerionActivity
 				String text = textInputView.getInputText();
 				if (text == null || text.isEmpty()) {
 					Toast.makeText(this, R.string.secret_note_hint,
+							Toast.LENGTH_SHORT).show();
+					return;
+				}
+				if (secretNoteTooLong(text)) {
+					Toast.makeText(this, R.string.text_too_long,
 							Toast.LENGTH_SHORT).show();
 					return;
 				}
@@ -2648,6 +2653,12 @@ public class ConversationActivity extends ZerionActivity
 	public void onSecretNoteOpened(MessageId messageId) {
 		textCache.remove(messageId);
 		viewModel.deleteMessages(java.util.Collections.singleton(messageId));
+	}
+
+	static boolean secretNoteTooLong(String text) {
+		return org.zerionproject.core.util.StringUtils.utf8IsTooLong(
+				ConversationSecretNoteItem.wrapContent(text, 43200),
+				MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH);
 	}
 
 	private void showSecretNoteTimerPicker(String text) {

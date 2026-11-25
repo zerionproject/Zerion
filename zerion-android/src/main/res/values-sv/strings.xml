@@ -1359,6 +1359,7 @@
 	<string name="grouptr_error_save">Det gick inte att spara inställningen.</string>
 	<string name="grouptr_error_respond">Det gick inte att svara på inbjudan.</string>
 	<string name="grouptr_post_too_long">Meddelandet är för långt.</string>
+	<string name="grouptr_post_too_large">Det här är för stort för att skickas till en grupp. Gränsen är ungefär 1 MB.</string>
 	<string name="settings_save_failed">Det gick inte att spara inställningen.</string>
 	<string name="grouptr_open">Öppna</string>
 	<string name="grouptr_input_hint">Meddelande</string>
@@ -1418,7 +1419,6 @@
 	<string name="grouptr_voice_play_failed">Det gick inte att spela upp röstmeddelandet.</string>
 	<string name="grouptr_attach_picker_failed">Det gick inte att öppna väljaren.</string>
 	<string name="grouptr_attach_read_failed">Det gick inte att läsa bilden.</string>
-	<string name="grouptr_attach_video_too_large">Videon är för stor (max 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Filtypen stöds inte.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Bild</string>

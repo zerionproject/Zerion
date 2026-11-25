@@ -1114,6 +1114,7 @@
 	<string name="grouptr_error_save">Nije moguće sačuvati postavku.</string>
 	<string name="grouptr_error_respond">Nije moguće odgovoriti na pozivnicu.</string>
 	<string name="grouptr_post_too_long">Poruka je preduga.</string>
+	<string name="grouptr_post_too_large">Ovo je preveliko za slanje grupi. Ograničenje je oko 1 MB.</string>
 	<string name="settings_save_failed">Nije moguće sačuvati postavku.</string>
 	<string name="grouptr_open">Otvori</string>
 	<string name="grouptr_input_hint">Poruka</string>
@@ -1174,7 +1175,6 @@
 	<string name="grouptr_voice_play_failed">Nije moguće reprodukovati glasovnu poruku.</string>
 	<string name="grouptr_attach_picker_failed">Nije moguće otvoriti birač.</string>
 	<string name="grouptr_attach_read_failed">Nije moguće pročitati sliku.</string>
-	<string name="grouptr_attach_video_too_large">Video je prevelik (najviše 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Nepodržana vrsta datoteke.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Slika</string>

@@ -1397,6 +1397,7 @@
 	<string name="grouptr_error_save">Не вдалося зберегти налаштування.</string>
 	<string name="grouptr_error_respond">Не вдалося відповісти на запрошення.</string>
 	<string name="grouptr_post_too_long">Повідомлення надто довге.</string>
+	<string name="grouptr_post_too_large">Це завелике для надсилання в групу. Обмеження приблизно 1 МБ.</string>
 	<string name="settings_save_failed">Не вдалося зберегти налаштування.</string>
 	<string name="grouptr_open">Відкрити</string>
 	<string name="grouptr_input_hint">Повідомлення</string>
@@ -1458,7 +1459,6 @@
 	<string name="grouptr_voice_play_failed">Не вдалося відтворити голосове повідомлення.</string>
 	<string name="grouptr_attach_picker_failed">Не вдалося відкрити вибір файлів.</string>
 	<string name="grouptr_attach_read_failed">Не вдалося прочитати зображення.</string>
-	<string name="grouptr_attach_video_too_large">Відео надто велике (макс. 8 МБ).</string>
 	<string name="grouptr_attach_unknown_type">Непідтримуваний тип файлу.</string>
 	<string name="grouptr_video">Відео</string>
 	<string name="grouptr_image">Зображення</string>

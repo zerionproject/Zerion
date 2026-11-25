@@ -1253,6 +1253,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="grouptr_error_save">No s\'ha pogut desar la configuració.</string>
 	<string name="grouptr_error_respond">No s\'ha pogut respondre a la invitació.</string>
 	<string name="grouptr_post_too_long">El missatge és massa llarg.</string>
+	<string name="grouptr_post_too_large">Això és massa gran per enviar a un grup. El límit és d\'aproximadament 1 MB.</string>
 	<string name="settings_save_failed">No s\'ha pogut desar la configuració.</string>
 	<string name="grouptr_open">Obre</string>
 	<string name="grouptr_input_hint">Missatge</string>
@@ -1312,7 +1313,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="grouptr_voice_play_failed">No s\'ha pogut reproduir la nota de veu.</string>
 	<string name="grouptr_attach_picker_failed">No s\'ha pogut obrir el selector.</string>
 	<string name="grouptr_attach_read_failed">No s\'ha pogut llegir la imatge.</string>
-	<string name="grouptr_attach_video_too_large">El vídeo és massa gran (màx. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Aquest tipus de fitxer no s\'admet.</string>
 	<string name="grouptr_video">Vídeo</string>
 	<string name="grouptr_image">Imatge</string>

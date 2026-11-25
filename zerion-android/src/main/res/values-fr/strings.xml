@@ -1017,6 +1017,7 @@ copies des messages que vous envoyez.
 	<string name="grouptr_error_save">Impossible d\'enregistrer le paramètre.</string>
 	<string name="grouptr_error_respond">Impossible de répondre à l\'invitation.</string>
 	<string name="grouptr_post_too_long">Le message est trop long.</string>
+	<string name="grouptr_post_too_large">C\'est trop volumineux pour être envoyé à un groupe. La limite est d\'environ 1 Mo.</string>
 	<string name="settings_save_failed">Impossible d\'enregistrer le paramètre.</string>
 	<string name="grouptr_open">Ouvrir</string>
 	<string name="grouptr_input_hint">Message</string>
@@ -1071,7 +1072,6 @@ copies des messages que vous envoyez.
 	<string name="grouptr_voice_play_failed">Impossible de lire le mémo vocal.</string>
 	<string name="grouptr_attach_picker_failed">Impossible d\'ouvrir le sélecteur.</string>
 	<string name="grouptr_attach_read_failed">Impossible de lire l\'image.</string>
-	<string name="grouptr_attach_video_too_large">Vidéo trop volumineuse (max. 8 Mo).</string>
 	<string name="grouptr_attach_unknown_type">Type de fichier non pris en charge.</string>
 	<string name="grouptr_video">Vidéo</string>
 	<string name="grouptr_image">Image</string>
