@@ -59,6 +59,7 @@ public class DeletedContentEvictor implements EventListener {
 			ConversationCache.getInstance().invalidate(c);
 			voiceAssembler.forgetContact(c);
 			ImageViewHolder.clearVideoThumbCache();
+			ImageViewHolder.forgetOpenedVideos();
 			ConversationItemViewHolder.clearPreviewImages();
 			clearImageMemory.run();
 		} else if (e instanceof GroupTrLocalStateChangedEvent) {

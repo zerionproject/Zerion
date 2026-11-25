@@ -1766,6 +1766,7 @@ public class ConversationViewModel extends DbViewModel
 		reactionsMap.postValue(new java.util.HashMap<>());
 		voiceAssembler.forgetContact(c);
 		ImageViewHolder.clearVideoThumbCache();
+		ImageViewHolder.forgetOpenedVideos();
 	}
 
 	boolean isDeleted(MessageId m) {

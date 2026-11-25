@@ -1708,6 +1708,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 				.expiresAt(p.getExpiryTime());
 		boolean shown = isVideo ? MediaViewer.playVideo(this, ioExecutor, item)
 				: MediaViewer.showImage(this, ioExecutor, item);
+		if (shown && isVideo && !isMine(p)) postAdapter.videoOpened(p);
 		if (!shown) {
 			toast(isVideo ? R.string.video_playback_error
 					: R.string.grouptr_attach_read_failed);

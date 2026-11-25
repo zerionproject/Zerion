@@ -5,6 +5,8 @@ import android.graphics.Bitmap;
 import androidx.annotation.Nullable;
 import androidx.collection.LruCache;
 
+import com.professor.zerion.android.conversation.OpenedVideos;
+
 import org.zerionproject.app.api.grouptr.GroupTrPost;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -66,9 +68,18 @@ public final class GroupTrMediaCache {
 		return CACHE.snapshot().size();
 	}
 
+	static boolean videoOpened(GroupTrPost p) {
+		return OpenedVideos.add(key(p, VIDEO));
+	}
+
+	static boolean isVideoOpened(GroupTrPost p) {
+		return OpenedVideos.contains(key(p, VIDEO));
+	}
+
 	static void evictPost(GroupTrPost p) {
 		CACHE.remove(key(p, IMAGE));
 		CACHE.remove(key(p, VIDEO));
+		OpenedVideos.remove(key(p, VIDEO));
 	}
 
 	public static void evictPosts(byte[] groupId, Collection<byte[]> postIds) {
@@ -76,6 +87,7 @@ public final class GroupTrMediaCache {
 		for (byte[] id : postIds) {
 			CACHE.remove(prefix + IMAGE + "_" + toHexString(id));
 			CACHE.remove(prefix + VIDEO + "_" + toHexString(id));
+			OpenedVideos.remove(prefix + VIDEO + "_" + toHexString(id));
 		}
 	}
 
@@ -84,6 +96,7 @@ public final class GroupTrMediaCache {
 		for (String key : CACHE.snapshot().keySet()) {
 			if (key.startsWith(prefix)) CACHE.remove(key);
 		}
+		OpenedVideos.removeIf(key -> key.startsWith(prefix));
 	}
 
 	public static void clear() {

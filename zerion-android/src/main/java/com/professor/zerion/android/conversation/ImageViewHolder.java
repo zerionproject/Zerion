@@ -5,10 +5,12 @@ import android.graphics.Bitmap;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
+import android.text.format.Formatter;
 import android.util.LruCache;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.Transformation;
@@ -73,11 +75,15 @@ public class ImageViewHolder extends ViewHolder {
 				}
 			};
 
+	private static final LruCache<String, Long> VIDEO_SIZES =
+			new LruCache<>(256);
+
 	private static final Executor THUMBNAIL_DECODE_EXECUTOR =
 			Executors.newSingleThreadExecutor();
 
 	public static void clearVideoThumbCache() {
 		VIDEO_THUMB_CACHE.evictAll();
+		VIDEO_SIZES.evictAll();
 	}
 
 	public static void evictVideoThumbs(Collection<MessageId> items) {
@@ -85,22 +91,44 @@ public class ImageViewHolder extends ViewHolder {
 		Set<String> prefixes = new HashSet<>();
 		for (MessageId item : items) prefixes.add(thumbPrefix(item));
 		for (String key : VIDEO_THUMB_CACHE.snapshot().keySet()) {
-			int split = key.indexOf(':');
-			if (split > 0 && prefixes.contains(key.substring(0, split + 1))) {
-				VIDEO_THUMB_CACHE.remove(key);
-			}
+			if (ofAny(prefixes, key)) VIDEO_THUMB_CACHE.remove(key);
 		}
+		for (String key : VIDEO_SIZES.snapshot().keySet()) {
+			if (ofAny(prefixes, key)) VIDEO_SIZES.remove(key);
+		}
+		OpenedVideos.removeIf(key -> ofAny(prefixes, key));
+	}
+
+	public static boolean videoOpened(MessageId item, MessageId attachment) {
+		return OpenedVideos.add(videoKey(item, attachment));
+	}
+
+	public static void forgetOpenedVideos() {
+		OpenedVideos.removeIf(key -> key.indexOf(':') > 0);
+	}
+
+	private static boolean ofAny(Set<String> prefixes, String key) {
+		int split = key.indexOf(':');
+		return split > 0 && prefixes.contains(key.substring(0, split + 1));
 	}
 
 	private static String thumbPrefix(MessageId item) {
 		return StringUtils.toHexString(item.getBytes()) + ":";
 	}
 
+	private static String videoKey(MessageId item, MessageId attachment) {
+		return thumbPrefix(item)
+				+ StringUtils.toHexString(attachment.getBytes());
+	}
+
 	protected final ImageView imageView;
 	@Nullable
 	protected final ImageView playOverlay;
+	@Nullable
+	private final TextView videoSize;
 	private final int imageSize;
 	private final MessageId conversationItemId;
+	private MessageId shownItemId;
 	@Nullable
 	private final AttachmentReader attachmentReader;
 	@Nullable
@@ -154,8 +182,10 @@ public class ImageViewHolder extends ViewHolder {
 		super(v);
 		imageView = v.findViewById(R.id.imageView);
 		playOverlay = v.findViewById(R.id.playOverlay);
+		videoSize = v.findViewById(R.id.videoSize);
 		this.imageSize = imageSize;
 		this.conversationItemId = conversationItemId;
+		this.shownItemId = conversationItemId;
 		this.attachmentReader = attachmentReader;
 		this.dbExecutor = dbExecutor;
 		this.previewExecutor = previewExecutor;
@@ -163,6 +193,10 @@ public class ImageViewHolder extends ViewHolder {
 
 	void inBubble(boolean incoming) {
 		this.incoming = incoming;
+	}
+
+	void ofMessage(MessageId item) {
+		this.shownItemId = item;
 	}
 
 	private void pictureTint() {
@@ -198,6 +232,7 @@ public class ImageViewHolder extends ViewHolder {
 	void bind(AttachmentItem attachment, Radii r, boolean single,
 			boolean needsStretch) {
 		bound = new Object();
+		if (videoSize != null) videoSize.setVisibility(View.GONE);
 		boolean isSticker = attachment.isSticker();
 		setViewDimensions(attachment, single, needsStretch, isSticker);
 
@@ -230,6 +265,8 @@ public class ImageViewHolder extends ViewHolder {
 			pictureTint();
 			loadStickerImage(attachment);
 			imageView.setScaleType(FIT_CENTER);
+		} else if (isVideo && waitsForTheFirstTap(attachment)) {
+			showUnopenedVideo(attachment);
 		} else if (isVideo) {
 			pictureTint();
 			loadVideoThumbnail(attachment, r);
@@ -302,6 +339,75 @@ public class ImageViewHolder extends ViewHolder {
 				.waitForLayout();
 	}
 
+	private boolean waitsForTheFirstTap(AttachmentItem a) {
+		return incoming && !OpenedVideos.contains(
+				videoKey(shownItemId, a.getMessageId()));
+	}
+
+	private void showUnopenedVideo(AttachmentItem a) {
+		Glide.with(imageView).clear(imageView);
+		iconTint(false);
+		imageView.setImageResource(R.drawable.ic_video);
+		imageView.setScaleType(FIT_CENTER);
+		showVideoSize(a, 0, bound);
+	}
+
+	private void showVideoSize(AttachmentItem a, int attemptNumber,
+			Object token) {
+		if (token != bound) return;
+		TextView label = videoSize;
+		AttachmentReader reader = attachmentReader;
+		if (label == null || reader == null) return;
+		String key = videoKey(shownItemId, a.getMessageId());
+		Long known = VIDEO_SIZES.get(key);
+		if (known != null) {
+			showVideoSize(label, a, known);
+			return;
+		}
+		previewExecutor.execute(() -> {
+			if (token != bound) return;
+			try {
+				long size;
+				Attachment attachment = reader.getAttachment(a.getHeader());
+				try (InputStream is = attachment.getStream()) {
+					size = countBytes(is);
+				}
+				if (size <= 0) return;
+				VIDEO_SIZES.put(key, size);
+				imageView.post(() -> {
+					if (token == bound) showVideoSize(label, a, size);
+				});
+			} catch (AttachmentNotYetAvailableException e) {
+				if (attemptNumber < MAX_THUMBNAIL_RETRY_ATTEMPTS) {
+					imageView.postDelayed(() -> showVideoSize(a,
+							attemptNumber + 1, token),
+							THUMBNAIL_RETRY_DELAY_MS);
+				}
+			} catch (Exception ignored) {
+			}
+		});
+	}
+
+	private void showVideoSize(TextView label, AttachmentItem a, long size) {
+		label.setText(Formatter.formatShortFileSize(label.getContext(),
+				size));
+		label.setVisibility(View.VISIBLE);
+		imageView.setContentDescription(AttachmentKinds.describe(
+				imageView.getContext(), a.getMimeType(), size));
+	}
+
+	static long countBytes(InputStream in) throws IOException {
+		byte[] buffer = new byte[8192];
+		long total = 0;
+		try {
+			int n;
+			while ((n = in.read(buffer)) != -1) total += n;
+			return total;
+		} finally {
+			Arrays.fill(buffer, (byte) 0);
+		}
+	}
+
 	private void loadVideoThumbnail(AttachmentItem a, Radii r) {
 		if (attachmentReader == null || dbExecutor == null) {
 			iconTint(false);
@@ -335,9 +441,7 @@ public class ImageViewHolder extends ViewHolder {
 		if (token != bound) return;
 		if (dbExecutor == null || attachmentReader == null) return;
 
-		final String thumbKey = thumbPrefix(conversationItemId)
-				+ StringUtils.toHexString(a.getHeader().getMessageId()
-						.getBytes());
+		final String thumbKey = videoKey(shownItemId, a.getMessageId());
 		Bitmap cached = VIDEO_THUMB_CACHE.get(thumbKey);
 		if (cached != null) {
 			renderVideoThumbnail(cached, r, token);
