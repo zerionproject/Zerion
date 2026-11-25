@@ -71,3 +71,68 @@ tasks.register('simulateTranscript', JavaExec) {
 	classpath = toolsOutput + sourceSets.main.runtimeClasspath
 	mainClass = 'org.zerionproject.tools.TranscriptSimulator'
 }
+
+def simulatorJar = tasks.register('transcriptSimulatorJar', Jar) {
+	group = 'tools'
+	description = 'Builds one runnable jar of the transcript simulator with the classes it needs inside; run it with java -jar; it is not part of any shipped artefact'
+	archiveBaseName = 'zerion-transcript-simulator'
+	archiveAppendix = ''
+	archiveVersion = ''
+	archiveClassifier = ''
+	destinationDirectory = layout.buildDirectory.dir('tools')
+	manifest {
+		attributes 'Main-Class': 'org.zerionproject.tools.TranscriptSimulator'
+	}
+	from toolsOutput
+	from {
+		sourceSets.main.runtimeClasspath.findAll { it.exists() }.collect {
+			it.isDirectory() ? it : zipTree(it)
+		}
+	}
+	exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA',
+			'META-INF/*.EC', 'META-INF/INDEX.LIST', 'META-INF/versions/**',
+			'module-info.class'
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	preserveFileTimestamps = false
+	reproducibleFileOrder = true
+}
+
+tasks.register('checkTranscriptSimulatorJar') {
+	group = 'tools'
+	description = 'Runs the transcript simulator jar on its own, without a class path: it must list its scenarios and verify one forged record of each'
+	dependsOn simulatorJar
+	doLast {
+		def jar = simulatorJar.get().archiveFile.get().asFile
+		def java = new File(System.getProperty('java.home'), 'bin/java')
+		def start = { List<String> arguments ->
+			def process = new ProcessBuilder(
+					[java.path, '-jar', jar.path] + arguments)
+					.directory(temporaryDir)
+					.redirectErrorStream(true)
+					.start()
+			process.outputStream.close()
+			def output = process.inputStream.getText('UTF-8')
+			[process.waitFor(), output]
+		}
+		def (listCode, list) = start([])
+		['one-to-one', 'mesh', 'pairing'].each { scenario ->
+			if (!list.readLines().any { it.startsWith(scenario + ' ') }) {
+				throw new GradleException(
+						"the jar did not list the scenario ${scenario}:\n${list}")
+			}
+		}
+		if (listCode != 2) {
+			throw new GradleException(
+					"the jar ended with ${listCode} after listing its scenarios")
+		}
+		[['one-to-one', '--verify', 'a:Hello', 'b:Hello'],
+				['mesh', '--verify', 'Hello'],
+				['pairing', '--verify']].each { arguments ->
+			def (code, output) = start(arguments)
+			if (code != 0 || !output.contains(': OK')) {
+				throw new GradleException(
+						"the jar failed ${arguments} with ${code}:\n${output}")
+			}
+		}
+	}
+}
