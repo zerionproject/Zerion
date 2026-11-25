@@ -185,7 +185,27 @@ public class ConversationDocumentsTest {
 				{"print.txt", "text/plain",
 						"%!PS-Adobe-3.0\n%%Creator: Someone\n"},
 				{"odd.txt", "text/plain", "escape \u001B[31m codes"},
-				{"odd.txt", "text/plain", "a bell \u0007 rings"}};
+				{"odd.txt", "text/plain", "a bell \u0007 rings"},
+				{"drawing.txt", "text/plain", "<!-- drawn by Someone -->\n"
+						+ "<svg><metadata>Someone</metadata></svg>"},
+				{"page.txt", "text/plain", "\n  <!--made with an editor-->"
+						+ "<html><head></head></html>"},
+				{"photo.txt", "text/plain", "<?xpacket begin=\"\" id=\"W5M0\"?>"
+						+ "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><dc:creator>"
+						+ "Someone</dc:creator></x:xmpmeta><?xpacket end=\"w\"?>"},
+				{"photo.txt", "text/plain", "<x:xmpmeta xmlns:x=\"adobe:ns:"
+						+ "meta/\"><dc:creator>Someone</dc:creator></x:xmpmeta>"},
+				{"route.txt", "text/plain", "<gpx version=\"1.1\" creator=\""
+						+ "Someone\"><wpt lat=\"52.1\" lon=\"4.3\"/></gpx>"},
+				{"places.txt", "text/plain", "﻿ \t\r\n<kml><Document>"
+						+ "<name>Home</name></Document></kml>"},
+				{"sheet.txt", "text/x-markdown", "<Workbook xmlns=\"urn:"
+						+ "schemas-microsoft-com:office:spreadsheet\"><Author>"
+						+ "Someone</Author></Workbook>"},
+				{"letter.txt", "text/plain", "<?mso-application progid=\""
+						+ "Word.Document\"?><w:wordDocument/>"},
+				{"entity.txt", "text/markdown",
+						"<!ENTITY author \"Someone\">"}};
 		for (String[] c : cases) {
 			sent = null;
 			org.mockito.Mockito.clearInvocations(creator);
@@ -207,7 +227,16 @@ public class ConversationDocumentsTest {
 						+ new String(new char[1100]).replace('\0', '.')
 						+ "%PDF-1.4",
 				"# Title\n\n<b>inline markup</b> in markdown\n",
-				"x = 1 < 2 and <svg> is only mentioned later"};
+				"x = 1 < 2 and <svg> is only mentioned later",
+				"<3 thanks for yesterday",
+				"< 5 minutes left",
+				"<- the arrow points left",
+				"﻿ \n<= 10 items",
+				"<1> first point\n<2> second point",
+				"<",
+				"<<< read this first",
+				"a list\n<!-- a comment further down -->\n<?xml later ?>\n"
+						+ "<gpx> and <kml> are only named here"};
 		for (String text : texts) {
 			sent = null;
 			byte[] bytes = text.getBytes(StandardCharsets.UTF_8);

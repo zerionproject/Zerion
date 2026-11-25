@@ -369,7 +369,11 @@ public class SharedMediaSanitizerContentTest {
 				"<?xml version=\"1.0\"?><svg><metadata>x</metadata></svg>",
 				"\n <!DOCTYPE html><html></html>",
 				"%!PS-Adobe-3.0\n%%Creator: Someone\n",
-				"control \u001B[31m codes"};
+				"control \u001B[31m codes",
+				"<!-- drawn by Someone --><svg><metadata>x</metadata></svg>",
+				"<?xpacket begin=\"\" id=\"W5M0\"?><x:xmpmeta/>",
+				" \n<gpx creator=\"Someone\"></gpx>",
+				"<kml><Document><name>Home</name></Document></kml>"};
 		for (String document : documents) {
 			byte[] data = ascii(document);
 			try {
@@ -385,9 +389,12 @@ public class SharedMediaSanitizerContentTest {
 			assertEquals("text/plain", kept.getMimeType());
 			assertArrayEquals(data, kept.getData());
 		}
-		byte[] text = ascii("ordinary words\n");
-		assertArrayEquals(text, new SharedMediaSanitizer(ctx).sanitize(
-				stage(text), "text/plain", text, MAX).getData());
+		for (String words : new String[] {"ordinary words\n",
+				"<3 and < 5 are still words\n"}) {
+			byte[] text = ascii(words);
+			assertArrayEquals(text, new SharedMediaSanitizer(ctx).sanitize(
+					stage(text), "text/plain", text, MAX).getData());
+		}
 	}
 
 	@Test
