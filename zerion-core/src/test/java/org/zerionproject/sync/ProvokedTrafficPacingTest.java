@@ -67,8 +67,9 @@ public class ProvokedTrafficPacingTest {
 		}, () -> true) {
 			@Override
 			public void enqueueRecord(byte[] record, boolean userOriginated,
-					boolean opensWindow, boolean bulkLane, Runnable onSent) {
-				super.enqueueRecord(record, userOriginated, opensWindow,
+					boolean opensWindow, int rank, boolean bulkLane,
+					Runnable onSent) {
+				super.enqueueRecord(record, userOriginated, opensWindow, rank,
 						bulkLane, onSent);
 				flags.add(userOriginated);
 			}
@@ -407,10 +408,10 @@ public class ProvokedTrafficPacingTest {
 			}, () -> true) {
 				@Override
 				public void enqueueRecord(byte[] record,
-						boolean userOriginated, boolean opensWindow,
+						boolean userOriginated, boolean opensWindow, int rank,
 						boolean bulkLane, Runnable onSent) {
 					super.enqueueRecord(record, userOriginated, opensWindow,
-							bulkLane, onSent);
+							rank, bulkLane, onSent);
 					queued.add((offering ? "offer" : "body")
 							+ (userOriginated ? " user" : "")
 							+ (opensWindow ? " opens" : ""));

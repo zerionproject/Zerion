@@ -48,7 +48,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	private final LongSupplier now;
 	private final TorActivitySink activity;
 	private final SecureRandom random = new SecureRandom();
-	private final Map<Integer, Long> openingWindows =
+	private final Map<Integer, ReceiveActivityGate> rations =
 			new ConcurrentHashMap<>();
 	private final Map<Integer, ReceiveActivityGate> gates =
 			new ConcurrentHashMap<>();
@@ -102,16 +102,13 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	}
 
 	boolean grantsOpeningWindow(int contactId, long at) {
-		boolean[] granted = new boolean[1];
-		openingWindows.compute(contactId, (id, last) -> {
-			if (last != null && at >= last
-					&& at - last < OPENING_WINDOW_INTERVAL_MS) {
-				return last;
-			}
-			granted[0] = true;
-			return at;
-		});
-		return granted[0];
+		return rationFor(contactId).admitOpening(at);
+	}
+
+	ReceiveActivityGate rationFor(int contactId) {
+		return rations.computeIfAbsent(contactId, id ->
+				new ReceiveActivityGate(now, REPLY_WINDOW_MS,
+						OPENING_WINDOW_INTERVAL_MS));
 	}
 
 	ReceiveActivityGate gateFor(int contactId) {
@@ -175,6 +172,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		SlotClock clock = new SlotClock(now,
 				grantsOpeningWindow(contactId, openedAt) ? openedAt : NEVER);
 		ReceiveActivityGate gate = gateFor(contactId);
+		ReceiveActivityGate ration = rationFor(contactId);
 		wire(scheduler, clock);
 		LinkState link = new LinkState();
 		AtomicInteger receivedSinceSend = new AtomicInteger();
@@ -199,7 +197,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			scheduler.wake();
 		};
 		Thread ticker = new Thread(
-				() -> tickLoop(scheduler, clock, gate, running, link,
+				() -> tickLoop(scheduler, clock, gate, ration, running, link,
 						receivedSinceSend, lastSentAtRef, echoDue, readTimeout),
 				"zpp-send-" + contactId);
 		ticker.start();
@@ -289,7 +287,12 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 					}
 					continue;
 				}
-				if (gate.admitReceipt()) clock.noteActivity();
+				boolean admitted = gate.admitReceipt();
+				if (link.dense(pacing.coverTraffic())) {
+					if (ration.admitReceipt()) clock.noteActivity();
+				} else if (admitted) {
+					clock.snap();
+				}
 				recordSink.deliver(contactId, sessionId, type,
 						ZmmRecord.getPayload(record));
 			}
@@ -325,7 +328,8 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	}
 
 	private void tickLoop(ZppSendScheduler scheduler, SlotClock clock,
-			ReceiveActivityGate gate, AtomicBoolean running, LinkState link,
+			ReceiveActivityGate gate, ReceiveActivityGate ration,
+			AtomicBoolean running, LinkState link,
 			AtomicInteger receivedSinceSend, AtomicLong lastSentAtRef,
 			AtomicBoolean echoDue,
 			@Nullable ZtpReadTimeoutControl readTimeout) {
@@ -355,6 +359,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 				}
 				if (dense) {
 					scheduler.setWakeOnAnyEnqueue(false);
+					scheduler.setRanked(true);
 					activity.noteActivity(Activity.COVER_TRAFFIC);
 					boolean realSent = scheduler.tick();
 					if (realSent) activity.noteActivity(Activity.CONNECTION_DATA);
@@ -363,9 +368,11 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 					lastSentAtRef.set(sentAt);
 					echoDue.set(false);
 					receivedSinceSend.set(0);
-					afterFrame(clock, gate, realSent,
+					afterFrame(clock, ration, realSent,
 							scheduler.lastRealFrameOpenedWindow(), sentAt);
-					boolean active = isActive(scheduler.getQueueDepth(),
+					noteMarkedSend(gate, realSent,
+							scheduler.lastRealFrameWasUserOriginated());
+					boolean active = isActive(scheduler.getUrgentDepth(),
 							clock.lastRealMs, sentAt, pacing.idleAfterMs());
 					long activeDelay = computeInterval(pacing.activeIntervalMs(),
 							pacing.activeIntervalMs() / JITTER_DIVISOR, random);
@@ -376,6 +383,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 					clock.awaitNextSlot(running, sentAt, delay, activeDelay);
 				} else {
 					scheduler.setWakeOnAnyEnqueue(true);
+					scheduler.setRanked(false);
 					long period = link.keepalivePeriodMs();
 					boolean echo = echoDue.getAndSet(false);
 					boolean due = sparseSendDue(lastSentAt,
@@ -391,10 +399,9 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 						lastSentAtRef.set(sentAt);
 						echoDue.set(false);
 						receivedSinceSend.set(0);
-						afterFrame(clock, gate,
+						noteMarkedSend(gate,
 								sent == ZppSendScheduler.Sent.REAL,
-								scheduler.lastRealFrameWasUserOriginated(),
-								sentAt);
+								scheduler.lastRealFrameWasUserOriginated());
 					}
 					long deadline;
 					if (scheduler.getQueueDepth() > 0) {
@@ -424,6 +431,11 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			clock.lastRealMs = now;
 			gate.noteLocalSend();
 		}
+	}
+
+	static void noteMarkedSend(ReceiveActivityGate gate, boolean realSent,
+			boolean userOriginated) {
+		if (realSent && userOriginated) gate.noteLocalSend();
 	}
 
 	static final class LinkState {
@@ -473,6 +485,16 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		synchronized void noteLocalSend() {
 			lastLocalSendMs = clock.getAsLong();
 			everSent = true;
+		}
+
+		synchronized boolean admitOpening(long at) {
+			if (everActivated && at >= lastActivationMs
+					&& at - lastActivationMs < activationIntervalMs) {
+				return false;
+			}
+			everActivated = true;
+			lastActivationMs = at;
+			return true;
 		}
 
 		synchronized boolean admitReceipt() {

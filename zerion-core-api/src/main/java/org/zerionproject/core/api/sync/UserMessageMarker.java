@@ -9,4 +9,7 @@ public interface UserMessageMarker {
 
 	default void noteLaterPart(MessageId id) {
 	}
+
+	default void noteUserPart(MessageId id) {
+	}
 }

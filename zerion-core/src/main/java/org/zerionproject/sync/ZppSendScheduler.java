@@ -6,6 +6,7 @@ import org.zerionproject.message.ZmmRecord;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -24,6 +25,10 @@ public class ZppSendScheduler {
 		REAL, COVER, NONE
 	}
 
+	public static final int RANK_USER = 0;
+	public static final int RANK_REPLY = 1;
+	public static final int RANK_AUTOMATIC = 2;
+
 	private final FrameSink sink;
 	private final BooleanSupplier pqReady;
 	private static final class Entry {
@@ -33,17 +38,19 @@ public class ZppSendScheduler {
 		final Supplier<byte[]> builder;
 		final boolean userOriginated;
 		final boolean opensWindow;
+		final int rank;
 		@javax.annotation.Nullable
 		final Runnable onSent;
 
 		Entry(@javax.annotation.Nullable byte[] record,
 				@javax.annotation.Nullable Supplier<byte[]> builder,
-				boolean userOriginated, boolean opensWindow,
+				boolean userOriginated, boolean opensWindow, int rank,
 				@javax.annotation.Nullable Runnable onSent) {
 			this.record = record;
 			this.builder = builder;
 			this.userOriginated = userOriginated;
 			this.opensWindow = opensWindow;
+			this.rank = rank;
 			this.onSent = onSent;
 		}
 
@@ -62,6 +69,9 @@ public class ZppSendScheduler {
 	private final Queue<Entry> bulk = new ConcurrentLinkedQueue<>();
 	private final AtomicLong realFrames = new AtomicLong();
 	private final AtomicLong coverFrames = new AtomicLong();
+	private final AtomicInteger userQueued = new AtomicInteger();
+	private volatile boolean ranked = false;
+	private volatile BooleanSupplier userWaiting = () -> false;
 	private volatile boolean lastRealUserOriginated = false;
 	private volatile boolean lastRealOpenedWindow = false;
 
@@ -83,13 +93,32 @@ public class ZppSendScheduler {
 		this.held = held;
 	}
 
+	public void setRanked(boolean ranked) {
+		this.ranked = ranked;
+	}
+
+	public boolean isRanked() {
+		return ranked;
+	}
+
+	public void setUserWaiting(BooleanSupplier userWaiting) {
+		this.userWaiting = userWaiting;
+	}
+
+	public int getUrgentDepth() {
+		int depth = control.size() + userQueued.get();
+		return userWaiting.getAsBoolean() ? depth + 1 : depth;
+	}
+
 	public void enqueueControl(byte[] record) {
-		control.add(new Entry(record, null, false, false, null));
+		control.add(new Entry(record, null, false, false, RANK_USER,
+				null));
 		wake();
 	}
 
 	public void enqueueControlWhenDue(Supplier<byte[]> builder) {
-		control.add(new Entry(null, builder, false, false, null));
+		control.add(new Entry(null, builder, false, false, RANK_USER,
+				null));
 		wake();
 	}
 
@@ -133,8 +162,17 @@ public class ZppSendScheduler {
 	public void enqueueRecord(byte[] record, boolean userOriginated,
 			boolean opensWindow, boolean bulkLane,
 			@javax.annotation.Nullable Runnable onSent) {
+		enqueueRecord(record, userOriginated, opensWindow,
+				userOriginated || opensWindow ? RANK_USER : RANK_AUTOMATIC,
+				bulkLane, onSent);
+	}
+
+	public void enqueueRecord(byte[] record, boolean userOriginated,
+			boolean opensWindow, int rank, boolean bulkLane,
+			@javax.annotation.Nullable Runnable onSent) {
+		if (rank == RANK_USER) userQueued.incrementAndGet();
 		(bulkLane ? bulk : outgoing).add(new Entry(record, null,
-				userOriginated, opensWindow, onSent));
+				userOriginated, opensWindow, rank, onSent));
 		if (!opensWindow && !wakeOnAnyEnqueue) return;
 		Runnable listener = wakeListener;
 		if (listener != null) listener.run();
@@ -159,8 +197,11 @@ public class ZppSendScheduler {
 			while (bytes == null) {
 				record = control.poll();
 				if (record == null && !held.getAsBoolean()) {
-					record = outgoing.poll();
-					if (record == null) record = bulk.poll();
+					record = ranked ? pollRanked() : outgoing.poll();
+					if (record == null && !ranked) record = bulk.poll();
+					if (record != null && record.rank == RANK_USER) {
+						userQueued.decrementAndGet();
+					}
 				}
 				if (record == null) break;
 				bytes = record.materialise();
@@ -179,6 +220,28 @@ public class ZppSendScheduler {
 		sink.send(ZmmRecord.cover());
 		coverFrames.incrementAndGet();
 		return Sent.COVER;
+	}
+
+	@javax.annotation.Nullable
+	private Entry pollRanked() {
+		Entry first = firstByRank(outgoing);
+		if (first != null) {
+			outgoing.remove(first);
+			return first;
+		}
+		first = firstByRank(bulk);
+		if (first != null) bulk.remove(first);
+		return first;
+	}
+
+	@javax.annotation.Nullable
+	private static Entry firstByRank(Queue<Entry> lane) {
+		Entry first = null;
+		for (Entry e : lane) {
+			if (first == null || e.rank < first.rank) first = e;
+			if (first.rank == RANK_USER) break;
+		}
+		return first;
 	}
 
 	public long getRealFrameCount() {

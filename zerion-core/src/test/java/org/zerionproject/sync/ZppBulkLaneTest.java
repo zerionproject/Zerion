@@ -68,7 +68,8 @@ public class ZppBulkLaneTest {
 		}, () -> true) {
 			@Override
 			public void enqueueRecord(byte[] record, boolean userOriginated,
-					boolean opensWindow, boolean bulkLane, Runnable onSent) {
+					boolean opensWindow, int rank, boolean bulkLane,
+					Runnable onSent) {
 				lanes.add(bulkLane ? "bulk" : "small");
 			}
 		};
@@ -145,8 +146,9 @@ public class ZppBulkLaneTest {
 		}, () -> true) {
 			@Override
 			public void enqueueRecord(byte[] record, boolean userOriginated,
-					boolean opensWindow, boolean bulkLane, Runnable onSent) {
-				super.enqueueRecord(record, userOriginated, opensWindow,
+					boolean opensWindow, int rank, boolean bulkLane,
+					Runnable onSent) {
+				super.enqueueRecord(record, userOriginated, opensWindow, rank,
 						bulkLane, onSent);
 				if (!bulkLane) small.add(record);
 			}

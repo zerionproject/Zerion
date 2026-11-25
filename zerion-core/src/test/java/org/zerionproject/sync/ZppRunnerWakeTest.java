@@ -489,6 +489,79 @@ public class ZppRunnerWakeTest {
 	}
 
 	@Test(timeout = 60_000)
+	public void onADenseLinkQueuedRepliesLeaveAtTheIdleCadenceAfterUserRecords()
+			throws Exception {
+		ScriptedConnection conn = connection();
+		AtomicReference<ZppSendScheduler> opened = new AtomicReference<>();
+		ZppConnectionRunnerImpl runner = new ZppConnectionRunnerImpl(records,
+				capturing(opened), stepPacing(true), now::get, sink);
+		assertTrue(runner.grantsOpeningWindow(1, now.get()));
+		Thread t = run(runner, conn);
+		try {
+			await(() -> conn.sent.size() == 1, "the link parameters frame");
+			conn.deliver(ZmmRecord.encode(ZmmConstants.TYPE_LINK_PARAMS,
+					ZppLinkParams.encode(true)));
+			await(() -> opened.get() != null, "the outgoing source");
+			ZppSendScheduler scheduler = opened.get();
+			await(scheduler::isRanked, "the paced order");
+
+			for (int i = 1; i <= 3; i++) {
+				scheduler.enqueueRecord(text(i), false, false,
+						ZppSendScheduler.RANK_AUTOMATIC, false, null);
+			}
+			scheduler.enqueueRecord(text(9), true, false,
+					ZppSendScheduler.RANK_USER, false, null);
+			now.addAndGet(STEP_IDLE_MAX_MS);
+			await(() -> count("sent-real") == 2, "the record of the user");
+			assertEquals("the record of the user goes first", 9,
+					ZmmRecord.getPayload(conn.sent.get(
+							conn.sent.size() - 1))[0]);
+			now.addAndGet(STEP_BETWEEN_MS);
+			holds(() -> count("sent-real") == 2, STEP_SETTLE_MS,
+					"queued replies do not make the link active");
+			now.addAndGet(STEP_IDLE_MAX_MS);
+			await(() -> count("sent-real") == 3, "a reply at an idle slot");
+			now.addAndGet(STEP_BETWEEN_MS);
+			holds(() -> count("sent-real") == 3, STEP_SETTLE_MS,
+					"one reply per idle slot");
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+	}
+
+	@Test(timeout = 60_000)
+	public void onADenseLinkAReceiptOpensTheWindowOnlyWithTheSharedRation()
+			throws Exception {
+		ScriptedConnection conn = connection();
+		AtomicReference<ZppSendScheduler> opened = new AtomicReference<>();
+		ZppConnectionRunnerImpl runner = new ZppConnectionRunnerImpl(records,
+				capturing(opened), stepPacing(true), now::get, sink);
+		assertTrue(runner.grantsOpeningWindow(1, now.get()));
+		Thread t = run(runner, conn);
+		try {
+			await(() -> conn.sent.size() == 1, "the link parameters frame");
+			conn.deliver(ZmmRecord.encode(ZmmConstants.TYPE_LINK_PARAMS,
+					ZppLinkParams.encode(true)));
+			await(() -> opened.get() != null, "the outgoing source");
+			now.addAndGet(STEP_IDLE_MAX_MS);
+			await(() -> conn.sent.size() == 2, "an idle frame");
+
+			conn.deliver(text(1));
+			await(() -> events.contains("delivered"), "the receipt");
+			int frames = conn.sent.size();
+			now.addAndGet(STEP_BETWEEN_MS);
+			holds(() -> conn.sent.size() == frames, STEP_SETTLE_MS,
+					"a receipt after the opening took the ration");
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+	}
+
+	@Test(timeout = 60_000)
 	public void onASparseLinkTheMarkedBodyStillCountsAsThisSidesSend()
 			throws Exception {
 		ScriptedConnection conn = connection();
@@ -503,6 +576,8 @@ public class ZppRunnerWakeTest {
 			ZppSendScheduler scheduler = opened.get();
 			assertTrue(runner.gateFor(1).admitReceipt());
 			assertFalse(runner.gateFor(1).admitReceipt());
+			holds(() -> !scheduler.isRanked(), 100,
+					"a sparse link sends in the order of queueing");
 
 			scheduler.enqueueRecord(text(1), false, true, false, null);
 			await(() -> count("sent-real") == 2, "the offer");
