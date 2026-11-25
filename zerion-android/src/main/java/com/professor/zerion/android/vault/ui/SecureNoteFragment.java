@@ -24,6 +24,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.util.UiUtils;
+import com.professor.zerion.android.vault.crypto.ProtectedNoteCodec;
 import com.professor.zerion.android.vault.model.VaultItem;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -265,8 +266,11 @@ public class SecureNoteFragment extends BaseFragment {
 				for (VaultItem item : items) {
 					if (item.id.equals(noteId)) {
 						currentNote = item;
-						String displayTitle = item.name.startsWith("🔒 ") ?
-							item.name.substring("🔒 ".length()) : item.name;
+						String displayTitle = item.name.startsWith(
+								ProtectedNoteCodec.TITLE_PREFIX)
+								? item.name.substring(
+										ProtectedNoteCodec.TITLE_PREFIX.length())
+								: item.name;
 
 						removeTextWatchers();
 						titleInput.setText(displayTitle);
@@ -469,6 +473,9 @@ public class SecureNoteFragment extends BaseFragment {
 		viewModel.clearMessages();
 		showSnackbar(result.message, com.google.android.material.snackbar
 				.Snackbar.LENGTH_LONG);
+		if (result.outcome == NoteSaveResult.Outcome.WRONG_PASSWORD) {
+			notePasswordLayout.setError(result.message);
+		}
 		boolean nothingToShow = textLostToRebuild && noteId != null;
 		textLostToRebuild = false;
 		progressOverlay.setVisibility(View.GONE);

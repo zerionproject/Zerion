@@ -10,6 +10,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
@@ -628,6 +629,71 @@ public class SecureNoteSaveTest {
 		assertNotEquals(old.id, now.id);
 		assertArrayEquals(bytes("second entry"), ProtectedNoteCodec.open(
 				rig.vault.raw(now.id), NOTE_PASSWORD.toCharArray()));
+	}
+
+	@Test
+	public void aTypoInThePasswordOfAnOpenedNoteStoresAndRemovesNothing()
+			throws Exception {
+		VaultItem old = storedProtectedNote();
+		byte[] sealed = rig.vault.raw(old.id);
+		SecureNoteFragment screen = show(old.id);
+		answer(askedForThePassword(), NOTE_PASSWORD);
+		assertEquals("dear diary", text(screen).getText().toString());
+		TextInputLayout passwordLayout = screen.requireView()
+				.findViewById(R.id.note_password_layout);
+
+		text(screen).setText("second entry");
+		protect(screen, "open sesane");
+		save(screen);
+		pass(1000);
+
+		assertTrue("the note closed after a refused save", isOpen());
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertOnlyTheStoredNote(old, sealed);
+		assertEquals(rig.app.getString(R.string.vault_incorrect_password),
+				String.valueOf(passwordLayout.getError()));
+		assertEquals("second entry", text(screen).getText().toString());
+		assertTrue(saveButton(screen).isEnabled());
+
+		protect(screen, NOTE_PASSWORD);
+		assertNull(passwordLayout.getError());
+		save(screen);
+		pass(1000);
+
+		assertFalse(isOpen());
+		assertEquals(1, rig.vault.size());
+		VaultItem now = rig.vault.named(PROTECTED_TITLE);
+		assertNotNull(now);
+		assertNotEquals(old.id, now.id);
+		assertArrayEquals(bytes("second entry"), ProtectedNoteCodec.open(
+				rig.vault.raw(now.id), NOTE_PASSWORD.toCharArray()));
+	}
+
+	@Test
+	public void aStoredPlainNoteUnderTheLockPrefixOpensWithoutAPassword()
+			throws Exception {
+		VaultItem old = rig.vault.manager.addItem(VaultItem.ItemType.NOTE,
+				PROTECTED_TITLE, bytes("milk"));
+		model.loadVaultItems();
+		runTheBackground();
+
+		SecureNoteFragment screen = show(old.id);
+
+		assertNull("a password was asked for a note that has none",
+				ShadowDialog.getLatestDialog());
+		assertEquals("Diary", title(screen).getText().toString());
+		assertEquals("milk", text(screen).getText().toString());
+		assertFalse(isLocked(screen));
+
+		text(screen).setText("bread");
+		save(screen);
+		pass(1000);
+
+		assertFalse(isOpen());
+		assertEquals(1, rig.vault.size());
+		VaultItem now = rig.vault.named("Diary");
+		assertNotNull(now);
+		assertArrayEquals(bytes("bread"), rig.vault.raw(now.id));
 	}
 
 	@Test

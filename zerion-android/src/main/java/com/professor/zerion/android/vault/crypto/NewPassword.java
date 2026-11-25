@@ -24,6 +24,21 @@ public final class NewPassword {
 		}
 	}
 
+	public static boolean refuses(IllegalArgumentException refusal) {
+		String reason = refusal.getMessage();
+		return CANNOT_BE_TYPED.equals(reason) || TOO_SHORT.equals(reason);
+	}
+
+	public static boolean isUsable(char[] newPassword, int minLength) {
+		try {
+			char[] normal = normalForm(newPassword, minLength);
+			Arrays.fill(normal, '\0');
+			return true;
+		} catch (IllegalArgumentException e) {
+			return false;
+		}
+	}
+
 	public static char[] normalForm(char[] newPassword, int minLength) {
 		requireTypable(newPassword);
 		char[] normal = PasswordNormalizer.normalize(newPassword);

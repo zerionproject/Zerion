@@ -70,6 +70,44 @@ public class ProtectedNoteCodecTest {
 	}
 
 	@Test
+	public void aPlainTitleNeverStartsWithTheLockPrefix() {
+		assertEquals("Diary", ProtectedNoteCodec.plainTitle("Diary"));
+		assertEquals("Diary", ProtectedNoteCodec.plainTitle("🔒 Diary"));
+		assertEquals("Diary", ProtectedNoteCodec.plainTitle("🔒 🔒 Diary"));
+		assertEquals("", ProtectedNoteCodec.plainTitle("🔒 "));
+		assertEquals("🔒", ProtectedNoteCodec.plainTitle("🔒"));
+		assertEquals("🔒Diary", ProtectedNoteCodec.plainTitle("🔒Diary"));
+		assertEquals("My 🔒 Diary",
+				ProtectedNoteCodec.plainTitle("My 🔒 Diary"));
+	}
+
+	@Test
+	public void sealedNotesAreToldApartFromStoredText() throws Exception {
+		assertEquals(true, ProtectedNoteCodec.couldBeSealed(
+				ProtectedNoteCodec.seal("", "pw".toCharArray())));
+		assertEquals(true, ProtectedNoteCodec.couldBeSealed(
+				ProtectedNoteCodec.seal("note body", "pw".toCharArray())));
+		assertEquals(true, ProtectedNoteCodec.couldBeSealed(
+				v1("", "old", (byte) 0x31)));
+		assertEquals(true, ProtectedNoteCodec.couldBeSealed(
+				v1("old body", "old", (byte) 0x31)));
+		StringBuilder text = new StringBuilder();
+		for (int length = 0; length < 200; length++) {
+			byte[] stored = text.toString().getBytes(StandardCharsets.UTF_8);
+			byte[] before = stored.clone();
+			assertEquals(false, ProtectedNoteCodec.couldBeSealed(stored));
+			assertArrayEquals(before, stored);
+			text.append(length % 7 == 0 ? "é€🔒" : "a");
+		}
+		byte[] startsLikeASealedNote = new byte[100];
+		java.util.Arrays.fill(startsLikeASealedNote, (byte) 'a');
+		startsLikeASealedNote[0] = 0x02;
+		assertEquals(false,
+				ProtectedNoteCodec.couldBeSealed(startsLikeASealedNote));
+		assertEquals(false, ProtectedNoteCodec.couldBeSealed(new byte[43]));
+	}
+
+	@Test
 	public void versionTwoBlobsAreBoundTo256MiBThreePasses() throws Exception {
 		byte[] salt = new byte[32];
 		new SecureRandom().nextBytes(salt);

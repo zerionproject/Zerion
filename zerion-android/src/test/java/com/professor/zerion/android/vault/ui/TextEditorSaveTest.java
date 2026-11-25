@@ -424,6 +424,117 @@ public class TextEditorSaveTest {
 	}
 
 	@Test
+	public void aNewPasswordForAProtectedDocumentNeedsItsCurrentOne()
+			throws Exception {
+		VaultItem old = storedWithPassword();
+		Editor editor = editing(old);
+		text(editor).setText("second draft");
+
+		editor.onOptionsItemSelected(
+				new RoboMenuItem(R.id.action_save_with_password));
+		AlertDialog chosen = dialog();
+		answer(chosen, "new secret", "new secret");
+
+		assertTrue("the document was replaced without its password",
+				isOpen());
+		verify(rig.vault.manager, never()).addMediaItemWithPassword(any(),
+				anyString(), any(), any(), any());
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertEquals(1, rig.vault.size());
+		AlertDialog asked = dialog();
+		assertNotSame(chosen, asked);
+		assertTrue(asked.isShowing());
+
+		answer(asked, "open says me", null);
+
+		assertTrue(isOpen());
+		verify(rig.vault.manager, never()).addMediaItemWithPassword(any(),
+				anyString(), any(), any(), any());
+		assertArrayEquals(bytes("first draft"),
+				rig.vault.manager.getItemContentWithPassword(old.id,
+						"open sesame".toCharArray()));
+		AlertDialog again = dialog();
+		assertNotSame(asked, again);
+		assertTrue(again.isShowing());
+
+		answer(again, "open sesame", null);
+
+		assertFalse(isOpen());
+		assertEquals(1, rig.vault.size());
+		VaultItem now = rig.vault.named("notes.txt");
+		assertNotNull(now);
+		assertNotEquals(old.id, now.id);
+		assertTrue(now.hasExtraPassword);
+		assertArrayEquals(bytes("second draft"),
+				rig.vault.manager.getItemContentWithPassword(now.id,
+						"new secret".toCharArray()));
+	}
+
+	@Test
+	public void aPlainSaveAfterAnAbandonedNewPasswordKeepsTheCurrentOne()
+			throws Exception {
+		VaultItem old = storedWithPassword();
+		Editor editor = editing(old);
+		text(editor).setText("second draft");
+		editor.onOptionsItemSelected(
+				new RoboMenuItem(R.id.action_save_with_password));
+		answer(dialog(), "new secret", "new secret");
+		AlertDialog asked = dialog();
+		asked.getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
+		idle();
+		assertTrue(isOpen());
+
+		save(editor);
+		answer(dialog(), "open sesame", null);
+
+		assertFalse(isOpen());
+		VaultItem now = rig.vault.named("notes.txt");
+		assertNotNull(now);
+		assertArrayEquals(bytes("second draft"),
+				rig.vault.manager.getItemContentWithPassword(now.id,
+						"open sesame".toCharArray()));
+	}
+
+	@Test
+	public void backIsHeldWhileADocumentIsSaved() throws Exception {
+		saveInTheBackground();
+		VaultItem old = stored();
+		Editor editor = editing(old);
+		text(editor).setText("second draft");
+		save(editor);
+		assertFalse(queued.isEmpty());
+
+		assertTrue(editor.onBackPressed());
+		host.getOnBackPressedDispatcher().onBackPressed();
+		idle();
+
+		assertTrue(isOpen());
+		assertNull(ShadowDialog.getLatestDialog());
+
+		runTheBackground();
+
+		assertFalse(isOpen());
+	}
+
+	@Test
+	public void backAsksBeforeLeavingChangedTextAndLeavesUnchangedText()
+			throws Exception {
+		VaultItem old = stored();
+		Editor editor = editing(old);
+		assertFalse(editor.onBackPressed());
+		assertNull(ShadowDialog.getLatestDialog());
+
+		text(editor).setText("second draft");
+
+		assertTrue(editor.onBackPressed());
+		idle();
+		AlertDialog unsaved = (AlertDialog) ShadowDialog.getLatestDialog();
+		assertNotNull(unsaved);
+		assertTrue(unsaved.isShowing());
+		assertTrue(isOpen());
+	}
+
+	@Test
 	public void aSavedTextWhoseEarlierVersionStaysStillClosesTheEditor()
 			throws Exception {
 		VaultItem old = stored();

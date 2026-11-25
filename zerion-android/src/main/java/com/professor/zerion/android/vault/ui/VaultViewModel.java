@@ -5,6 +5,7 @@ import android.content.Context;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.vault.VaultManager;
+import com.professor.zerion.android.vault.crypto.NewPassword;
 import com.professor.zerion.android.vault.crypto.ProtectedNoteCodec;
 import com.professor.zerion.android.vault.keepass.KdbxException;
 import com.professor.zerion.android.vault.keepass.KdbxReader;
@@ -106,6 +107,12 @@ public class VaultViewModel extends AndroidViewModel {
 			new SaveLedger<>();
 	private final MutableLiveData<Event<NoteSaveResult>> noteSaveResult =
 			new MutableLiveData<>();
+	private final MutableLiveData<Boolean> unlockConfirmation =
+			new MutableLiveData<>(false);
+	private final Object unlockConfirmationLock = new Object();
+	@Nullable
+	private char[] firstUnlockEntry;
+	private long unlockConfirmationEpoch;
 	private final SaveLedger<NoteSaveResult> noteSaves = new SaveLedger<>();
 	private final Map<Long, UnsavedNote> unsavedNotes = new HashMap<>();
 
@@ -1757,11 +1764,10 @@ public class VaultViewModel extends AndroidViewModel {
 			return;
 		}
 
-		if (password.length < 8) {
+		if (!VaultManager.acceptsNewPassword(password)) {
 			Arrays.fill(password, '\0');
 			Arrays.fill(confirmPassword, '\0');
-			errorMessage.postValue(
-					getApplication().getString(R.string.password_min_8_chars));
+			errorMessage.postValue(text(R.string.vault_password_rule));
 			return;
 		}
 
@@ -1775,6 +1781,10 @@ public class VaultViewModel extends AndroidViewModel {
 				loadVaultItems();
 			} catch (IllegalStateException e) {
 				errorMessage.postValue(text(R.string.vault_msg_already_exists));
+			} catch (IllegalArgumentException e) {
+				errorMessage.postValue(text(NewPassword.refuses(e)
+						? R.string.vault_password_rule
+						: R.string.vault_msg_create_failed));
 			} catch (SecurityException e) {
 				errorMessage.postValue(text(R.string.vault_msg_security_error));
 			} catch (IOException e) {
@@ -1814,25 +1824,79 @@ public class VaultViewModel extends AndroidViewModel {
 		return message != null && message.equals(text(id));
 	}
 
+	public LiveData<Boolean> getUnlockConfirmation() {
+		return unlockConfirmation;
+	}
+
+	public void discardUnlockConfirmation() {
+		synchronized (unlockConfirmationLock) {
+			unlockConfirmationEpoch++;
+			if (firstUnlockEntry != null) {
+				Arrays.fill(firstUnlockEntry, '\0');
+				firstUnlockEntry = null;
+			}
+		}
+		unlockConfirmation.postValue(false);
+	}
+
+	private boolean keepFirstUnlockEntry(char[] entry, long epoch) {
+		synchronized (unlockConfirmationLock) {
+			if (unlockConfirmationEpoch != epoch) return false;
+			if (firstUnlockEntry != null) {
+				Arrays.fill(firstUnlockEntry, '\0');
+			}
+			firstUnlockEntry = entry.clone();
+			return true;
+		}
+	}
+
 	public void unlockVault(char[] password) {
 		isLoading.postValue(true);
 		long pendingMark = vaultManager.markUnlockPending();
+		char[] firstEntry;
+		long epoch;
+		synchronized (unlockConfirmationLock) {
+			firstEntry = firstUnlockEntry;
+			firstUnlockEntry = null;
+			epoch = unlockConfirmationEpoch;
+		}
 
 		dbExecutor.execute(() -> {
+			boolean confirmNeeded = false;
 			try {
-				boolean success = vaultManager.unlockVault(password,
-						pendingMark);
-				if (success && vaultManager.isUnlocked()) {
+				VaultManager.UnlockResult result = firstEntry == null
+						? vaultManager.unlock(password, pendingMark)
+						: vaultManager.confirmAndUnlock(firstEntry, password,
+								pendingMark);
+				if (result == VaultManager.UnlockResult.OPENED) {
+					if (vaultManager.isUnlocked()) {
+						errorMessage.postValue(null);
+						vaultState.postValue(VaultState.UNLOCKED);
+						loadVaultItems();
+					} else {
+						vaultState.postValue(VaultState.LOCKED);
+					}
+				} else if (result
+						== VaultManager.UnlockResult.CONFIRM_NEEDED) {
+					confirmNeeded = keepFirstUnlockEntry(password, epoch);
 					errorMessage.postValue(null);
-					vaultState.postValue(VaultState.UNLOCKED);
-					loadVaultItems();
-				} else if (success) {
-					vaultState.postValue(VaultState.LOCKED);
+				} else if (result
+						== VaultManager.UnlockResult.ENTRIES_DIFFER) {
+					errorMessage.postValue(
+							text(R.string.vault_unlock_entries_differ));
+				} else if (result == VaultManager.UnlockResult
+						.NOT_CONFIRMED_ON_STORAGE) {
+					errorMessage.postValue(
+							text(R.string.vault_unlock_not_confirmed));
 				} else {
 					errorMessage.postValue(text(R.string.vault_unlock_failed));
 				}
 			} catch (SecurityException e) {
-				errorMessage.postValue(text(R.string.vault_unlock_failed));
+				String m = e.getMessage();
+				errorMessage.postValue(m != null
+						&& m.startsWith(VaultManager.TOO_MANY_ATTEMPTS)
+						? text(R.string.vault_msg_too_many_attempts)
+						: text(R.string.vault_unlock_failed));
 			} catch (com.professor.zerion.android.vault.crypto.Argon2
 					.NativeRequiredException e) {
 				errorMessage.postValue(
@@ -1841,6 +1905,8 @@ public class VaultViewModel extends AndroidViewModel {
 				errorMessage.postValue(text(R.string.vault_msg_unlock_failed));
 			} finally{
 				Arrays.fill(password, '\0');
+				if (firstEntry != null) Arrays.fill(firstEntry, '\0');
+				unlockConfirmation.postValue(confirmNeeded);
 				isLoading.postValue(false);
 			}
 		});
@@ -1853,6 +1919,7 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public void lockVault() {
+		discardUnlockConfirmation();
 		resetWalletSession();
 		vaultManager.requestLock();
 		vaultState.postValue(VaultState.LOCKED);
@@ -2084,24 +2151,25 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void updateDocument(long request, String itemId, String fileName,
 			byte[] content) {
-		replaceDocument(request, itemId, fileName, content, null, false);
+		replaceDocument(request, itemId, fileName, content, null, null);
 	}
 
 	public void updateProtectedDocument(long request, String itemId,
 			String fileName, byte[] content, char[] currentPassword) {
 		replaceDocument(request, itemId, fileName, content, currentPassword,
-				true);
+				currentPassword);
 	}
 
 	public void replaceDocumentWithPassword(long request, String itemId,
-			String fileName, byte[] content, char[] newPassword) {
+			String fileName, byte[] content, char[] newPassword,
+			@Nullable char[] currentPassword) {
 		replaceDocument(request, itemId, fileName, content, newPassword,
-				false);
+				currentPassword);
 	}
 
 	private void replaceDocument(long request, String itemId,
 			String fileName, byte[] content, @Nullable char[] password,
-			boolean passwordMustOpenTheOriginal) {
+			@Nullable char[] currentPassword) {
 		documentSaves.started(request);
 		int refusal = documentRefusal(fileName, content);
 		if (refusal == 0 && (itemId == null || itemId.trim().isEmpty())) {
@@ -2109,6 +2177,7 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 		if (refusal != 0) {
 			wipe(content, password);
+			wipe(null, currentPassword);
 			reportDocumentSave(request, documentSave(
 					DocumentSaveResult.Outcome.FAILED, refusal, null));
 			return;
@@ -2116,14 +2185,17 @@ public class VaultViewModel extends AndroidViewModel {
 
 		char[] usablePassword = password != null && password.length > 0
 				? password : null;
+		char[] usableCurrent = currentPassword != null
+				&& currentPassword.length > 0 ? currentPassword : null;
 		isLoading.postValue(true);
 		dbExecutor.execute(() -> {
 			DocumentSaveResult result = null;
 			try {
 				result = replaceDocumentNow(itemId, fileName, content,
-						usablePassword, passwordMustOpenTheOriginal);
+						usablePassword, usableCurrent);
 			} finally {
 				wipe(content, password);
+				wipe(null, currentPassword);
 				reportDocumentSave(request, result != null ? result
 						: documentSave(DocumentSaveResult.Outcome.FAILED,
 								R.string.vault_msg_update_document_failed,
@@ -2135,17 +2207,16 @@ public class VaultViewModel extends AndroidViewModel {
 
 	private DocumentSaveResult replaceDocumentNow(String itemId,
 			String fileName, byte[] content, @Nullable char[] password,
-			boolean passwordMustOpenTheOriginal) {
+			@Nullable char[] currentPassword) {
 		VaultItem stored;
 		try {
 			boolean isProtected = vaultManager.itemHasExtraPassword(itemId);
-			if (isProtected && password == null) {
+			if (isProtected && currentPassword == null) {
 				return documentSave(
 						DocumentSaveResult.Outcome.PASSWORD_REQUIRED,
 						R.string.vault_doc_password_needed_to_save, null);
 			}
-			if (isProtected && passwordMustOpenTheOriginal
-					&& !opensDocument(itemId, password)) {
+			if (isProtected && !opensDocument(itemId, currentPassword)) {
 				return documentSave(
 						DocumentSaveResult.Outcome.WRONG_PASSWORD,
 						R.string.vault_incorrect_password, null);
@@ -2618,9 +2689,10 @@ public class VaultViewModel extends AndroidViewModel {
 	public void saveNote(long request, String title, String content,
 			@Nullable String existingId) {
 		startNoteSave(request, title, content, false);
+		String plainTitle = ProtectedNoteCodec.plainTitle(title);
 		int refusal = !vaultManager.isUnlocked()
 				? R.string.vault_msg_unlock_first
-				: title.trim().isEmpty()
+				: plainTitle.trim().isEmpty()
 				? R.string.vault_msg_note_title_empty : 0;
 		if (refusal != 0) {
 			reportNoteSave(noteSave(request,
@@ -2631,13 +2703,17 @@ public class VaultViewModel extends AndroidViewModel {
 		isLoading.postValue(true);
 
 		dbExecutor.execute(() -> {
-			byte[] contentBytes = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+			byte[] contentBytes = null;
 			NoteSaveResult result = null;
 			try {
-				result = storeNoteNow(request, title, contentBytes,
+				contentBytes = content.getBytes(
+						java.nio.charset.StandardCharsets.UTF_8);
+				result = storeNoteNow(request, plainTitle, contentBytes,
 						existingId);
+			} catch (OutOfMemoryError e) {
+				result = null;
 			} finally {
-				Arrays.fill(contentBytes, (byte) 0);
+				if (contentBytes != null) Arrays.fill(contentBytes, (byte) 0);
 				reportNoteSave(result != null ? result
 						: noteSave(request, NoteSaveResult.Outcome.FAILED,
 								R.string.vault_msg_save_note_failed));
@@ -2695,6 +2771,12 @@ public class VaultViewModel extends AndroidViewModel {
 			String content, char[] password,
 			@Nullable String earlierVersionId) {
 		try {
+			if (earlierVersionId != null
+					&& !opensEarlierNote(earlierVersionId, password)) {
+				return noteSave(request,
+						NoteSaveResult.Outcome.WRONG_PASSWORD,
+						R.string.vault_incorrect_password);
+			}
 			byte[] combined = ProtectedNoteCodec.seal(content, password);
 
 			String protectedTitle = ProtectedNoteCodec.TITLE_PREFIX + title;
@@ -2704,6 +2786,32 @@ public class VaultViewModel extends AndroidViewModel {
 					R.string.vault_msg_save_note_failed);
 		}
 		return noteStored(request, earlierVersionId);
+	}
+
+	private boolean opensEarlierNote(String noteId, char[] password)
+			throws Exception {
+		VaultItem earlier = null;
+		for (VaultItem item : vaultManager.listItems()) {
+			if (item.id.equals(noteId)) {
+				earlier = item;
+				break;
+			}
+		}
+		if (earlier == null || !earlier.name.startsWith(
+				ProtectedNoteCodec.TITLE_PREFIX)) {
+			return true;
+		}
+		byte[] stored = vaultManager.getItemContent(noteId);
+		char[] attempt = password.clone();
+		byte[] opened = null;
+		try {
+			if (!ProtectedNoteCodec.couldBeSealed(stored)) return true;
+			opened = ProtectedNoteCodec.open(stored, attempt);
+			return opened != null;
+		} finally {
+			wipe(stored, attempt);
+			wipe(opened, null);
+		}
 	}
 
 	private NoteSaveResult noteStored(long request,
@@ -2775,13 +2883,18 @@ public class VaultViewModel extends AndroidViewModel {
 					return;
 				}
 
-				if (targetItem.name.startsWith(ProtectedNoteCodec.TITLE_PREFIX)) {
-					content.postValue("__PASSWORD_REQUIRED__");
-				} else {
-					byte[] contentBytes = vaultManager.getItemContent(noteId);
-					String noteContent = new String(contentBytes, java.nio.charset.StandardCharsets.UTF_8);
-					content.postValue(noteContent);
-
+				byte[] contentBytes = vaultManager.getItemContent(noteId);
+				try {
+					if (targetItem.name.startsWith(
+							ProtectedNoteCodec.TITLE_PREFIX)
+							&& ProtectedNoteCodec.couldBeSealed(
+									contentBytes)) {
+						content.postValue("__PASSWORD_REQUIRED__");
+					} else {
+						String noteContent = new String(contentBytes, java.nio.charset.StandardCharsets.UTF_8);
+						content.postValue(noteContent);
+					}
+				} finally {
 					Arrays.fill(contentBytes, (byte) 0);
 				}
 
@@ -3106,6 +3219,7 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public void lockIfUnlocked() {
+		discardUnlockConfirmation();
 		if (vaultManager.isUnlocked() || vaultManager.isUnlockInProgress()) {
 			lockVault();
 		} else {
@@ -3138,7 +3252,9 @@ public class VaultViewModel extends AndroidViewModel {
 		int refusal = !vaultManager.vaultExists()
 				? R.string.vault_msg_no_vault
 				: !vaultManager.isUnlocked()
-				? R.string.vault_msg_unlock_first : 0;
+				? R.string.vault_msg_unlock_first
+				: !VaultManager.acceptsNewPassword(ownNew)
+				? R.string.vault_password_rule : 0;
 		if (refusal != 0) {
 			Arrays.fill(ownCurrent, '\0');
 			Arrays.fill(ownNew, '\0');
@@ -3159,6 +3275,10 @@ public class VaultViewModel extends AndroidViewModel {
 						: VaultManager.UNLOCK_FIRST.equals(m)
 						? text(R.string.vault_msg_unlock_first)
 						: text(R.string.vault_msg_invalid_current_password));
+			} catch (IllegalArgumentException e) {
+				errorMessage.postValue(text(NewPassword.refuses(e)
+						? R.string.vault_password_rule
+						: R.string.vault_msg_change_password_failed));
 			} catch (Exception e) {
 				errorMessage.postValue(text(R.string.vault_msg_change_password_failed));
 			} finally {
@@ -3171,6 +3291,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void exportVault(char[] exportPassword, ExportCallback callback) {
 		if (!vaultManager.isUnlocked()) {
+			Arrays.fill(exportPassword, '\0');
 			callback.onExportError(text(R.string.vault_msg_unlock_first));
 			return;
 		}
@@ -3194,6 +3315,7 @@ public class VaultViewModel extends AndroidViewModel {
 	private final Runnable lockHook = this::onVaultLocked;
 
 	private void onVaultLocked() {
+		discardUnlockConfirmation();
 		resetWalletSession();
 		if (vaultManager.isLockedNow()) {
 			clearSensitiveMemory();
@@ -3206,6 +3328,7 @@ public class VaultViewModel extends AndroidViewModel {
 	@Override
 	protected void onCleared() {
 		vaultManager.removeLockListener(lockHook);
+		discardUnlockConfirmation();
 		super.onCleared();
 		clearSensitiveMemory();
 		vaultManager.requestLock();

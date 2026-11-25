@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -35,6 +36,8 @@ public class VaultUnlockFragment extends BaseFragment {
 	private TextInputLayout passwordLayout;
 	private Button unlockButton;
 	private ProgressBar progressBar;
+	private TextView titleText;
+	private TextView subtitleText;
 
 	public static VaultUnlockFragment newInstance() {
 		return new VaultUnlockFragment();
@@ -55,6 +58,8 @@ public class VaultUnlockFragment extends BaseFragment {
 		passwordLayout = view.findViewById(R.id.vault_password_layout);
 		unlockButton = view.findViewById(R.id.vault_unlock_button);
 		progressBar = view.findViewById(R.id.progress_bar);
+		titleText = view.findViewById(R.id.vault_unlock_title_text);
+		subtitleText = view.findViewById(R.id.vault_unlock_subtitle_text);
 
 		IncognitoInputHelper.configurePasswordField(passwordInput);
 
@@ -141,6 +146,9 @@ public class VaultUnlockFragment extends BaseFragment {
 			}
 		});
 
+		viewModel.getUnlockConfirmation().observe(getViewLifecycleOwner(),
+				this::showConfirmation);
+
 		viewModel.getVaultState().observe(getViewLifecycleOwner(), state -> {
 			if (state == VaultViewModel.VaultState.UNLOCKED) {
 				if (getActivity() instanceof VaultActivity
@@ -159,9 +167,32 @@ public class VaultUnlockFragment extends BaseFragment {
 		});
 	}
 
+	private void showConfirmation(@Nullable Boolean asked) {
+		boolean confirming = asked != null && asked;
+		titleText.setText(confirming ? R.string.vault_unlock_confirm_title
+				: R.string.vault_unlock_title);
+		subtitleText.setText(confirming
+				? R.string.vault_unlock_confirm_message
+				: R.string.vault_unlock_subtitle);
+		if (confirming) {
+			passwordInput.clearPassword();
+			passwordLayout.setError(null);
+			passwordInput.requestFocus();
+			subtitleText.announceForAccessibility(subtitleText.getText());
+		}
+	}
+
 	private void setInputsEnabled(boolean enabled) {
 		passwordInput.setEnabled(enabled);
 		unlockButton.setEnabled(enabled);
+	}
+
+	@Override
+	public void onStop() {
+		if (viewModel != null) {
+			viewModel.discardUnlockConfirmation();
+		}
+		super.onStop();
 	}
 
 	@Override

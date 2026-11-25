@@ -299,9 +299,39 @@ public class VaultClearedPasswordRecoveryTest {
 		derivations.clear();
 	}
 
+	private static String word(VaultManager.UnlockResult result) {
+		switch (result) {
+			case OPENED:
+				return "opens";
+			case REFUSED:
+				return "refused";
+			case CONFIRM_NEEDED:
+				return "asks again";
+			case ENTRIES_DIFFER:
+				return "entries differ";
+			default:
+				return "not confirmed on storage";
+		}
+	}
+
 	private String attempt(VaultManager m, char[] typed) throws Exception {
 		nextAttempt();
-		return m.unlockVault(typed.clone()) ? "opens" : "refused";
+		return word(m.unlock(typed.clone()));
+	}
+
+	private String confirm(VaultManager m, char[] first, char[] typed)
+			throws Exception {
+		nextAttempt();
+		return word(m.confirmAndUnlock(first.clone(), typed.clone()));
+	}
+
+	private String twice(VaultManager m, char[] typed) throws Exception {
+		assertEquals("asks again", attempt(m, typed));
+		return confirm(m, typed, typed);
+	}
+
+	private String twice(char[] typed) throws Exception {
+		return twice(process(), typed);
 	}
 
 	private String attempt(char[] typed) throws Exception {
@@ -339,13 +369,23 @@ public class VaultClearedPasswordRecoveryTest {
 	}
 
 	@Test
-	public void aVaultSealedUnderTheEmptyPasswordOpensAndIsSealedAgain()
+	public void aVaultSealedUnderTheEmptyPasswordOpensAfterTwoEqualEntries()
 			throws Exception {
 		sealUnderTheEmptyPassword();
 		byte[] before = headerBytes();
+		List<String> keys = aliases();
 		VaultManager m = process();
 
-		assertEquals("opens", attempt(m, CHOSEN));
+		assertEquals("asks again", attempt(m, CHOSEN));
+
+		assertEquals(Arrays.asList("typed", "empty"), derivations);
+		assertFalse(m.isUnlocked());
+		assertThrows(SecurityException.class, m::listItems);
+		assertEquals(0, failures());
+		assertArrayEquals(before, headerBytes());
+		assertEquals(keys, aliases());
+
+		assertEquals("opens", confirm(m, CHOSEN, CHOSEN));
 
 		assertEquals(Arrays.asList("typed", "empty", "typed"), derivations);
 		assertTrue(m.isUnlocked());
@@ -373,7 +413,7 @@ public class VaultClearedPasswordRecoveryTest {
 	}
 
 	@Test
-	public void aVaultSealedUnderZerosOpensAndIsSealedAgain()
+	public void aVaultSealedUnderZerosOpensAfterTwoEqualEntries()
 			throws Exception {
 		sealUnderZeros(CHOSEN.length);
 		byte[] before = headerBytes();
@@ -381,7 +421,17 @@ public class VaultClearedPasswordRecoveryTest {
 		assertEquals(Collections.singletonList(ALIAS), aliases());
 		VaultManager m = process();
 
-		assertEquals("opens", attempt(m, CHOSEN));
+		assertEquals("asks again", attempt(m, CHOSEN));
+
+		assertEquals(Arrays.asList("typed", "zeros " + CHOSEN.length),
+				derivations);
+		assertFalse(m.isUnlocked());
+		assertThrows(SecurityException.class, m::listItems);
+		assertEquals(0, failures());
+		assertArrayEquals(before, headerBytes());
+		assertEquals(Collections.singletonList(ALIAS), aliases());
+
+		assertEquals("opens", confirm(m, CHOSEN, CHOSEN));
 
 		assertEquals(Arrays.asList("typed", "zeros " + CHOSEN.length,
 				"typed"), derivations);
@@ -418,7 +468,7 @@ public class VaultClearedPasswordRecoveryTest {
 		for (char[] password : typed) {
 			startOver();
 			sealUnderTheEmptyPassword();
-			assertEquals("opens", attempt(password));
+			assertEquals("opens", twice(password));
 			assertEquals(Arrays.asList("typed", "empty", "typed"),
 					derivations);
 			assertEquals("opens", attempt(password));
@@ -441,7 +491,7 @@ public class VaultClearedPasswordRecoveryTest {
 				derivations);
 		assertArrayEquals(before, headerBytes());
 
-		assertEquals("opens", attempt(SAME_LENGTH));
+		assertEquals("opens", twice(SAME_LENGTH));
 		assertEquals("opens", attempt(SAME_LENGTH));
 		assertEquals(Collections.singletonList("typed"), derivations);
 		assertEquals("refused", attempt(CHOSEN));
@@ -483,7 +533,7 @@ public class VaultClearedPasswordRecoveryTest {
 			throws Exception {
 		sealUnderTheEmptyPassword();
 		VaultManager m = process();
-		assertEquals("opens", attempt(m, CHOSEN));
+		assertEquals("opens", twice(m, CHOSEN));
 		m.lockVault();
 		assertEquals("refused", attempt(LONGER));
 		assertEquals(2, derivations.size());
@@ -625,7 +675,7 @@ public class VaultClearedPasswordRecoveryTest {
 			throws Exception {
 		sealUnderTheEmptyPassword();
 		VaultManager m = process();
-		assertEquals("opens", attempt(m, CHOSEN));
+		assertEquals("opens", twice(m, CHOSEN));
 		nextAttempt();
 		assertThrows(SecurityException.class, () ->
 				m.changePassword(SAME_LENGTH.clone(), NEW_PASSWORD.clone()));
@@ -652,9 +702,11 @@ public class VaultClearedPasswordRecoveryTest {
 			byte[] before = headerBytes();
 			List<String> keys = aliases();
 			VaultManager m = process();
+			assertEquals("asks again", attempt(m, CHOSEN));
 			sealFails = true;
 
-			assertEquals("refused", attempt(m, CHOSEN));
+			assertEquals("not confirmed on storage",
+					confirm(m, CHOSEN, CHOSEN));
 
 			assertFalse(m.isUnlocked());
 			assertThrows(SecurityException.class, m::listItems);
@@ -663,7 +715,7 @@ public class VaultClearedPasswordRecoveryTest {
 			assertEquals(keys, aliases());
 
 			sealFails = false;
-			assertEquals("opens", attempt(m, CHOSEN));
+			assertEquals("opens", twice(m, CHOSEN));
 			assertEquals("Testnote kept", note(m));
 			assertEquals("version 2, 256 MiB t=3", label(header()));
 		}
@@ -674,9 +726,11 @@ public class VaultClearedPasswordRecoveryTest {
 			throws Exception {
 		sealUnderTheEmptyPassword();
 		VaultManager m = process();
+		assertEquals("asks again", attempt(m, LONGER));
 		syncFailsAtSeal = true;
 
-		assertEquals("refused", attempt(m, LONGER));
+		assertEquals("not confirmed on storage",
+				confirm(m, LONGER, LONGER));
 
 		assertFalse(m.isUnlocked());
 		assertThrows(SecurityException.class, m::listItems);
@@ -684,6 +738,10 @@ public class VaultClearedPasswordRecoveryTest {
 		syncFailsAtSeal = false;
 		assertEquals("refused", attempt(CHOSEN));
 		assertEquals("refused", attempt(new char[0]));
+		assertEquals("opens", attempt(m, LONGER));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals(0, failures());
+		m.lockVault();
 		VaultManager later = process();
 		assertEquals("opens", attempt(later, LONGER));
 		assertEquals(Collections.singletonList("typed"), derivations);
@@ -694,13 +752,195 @@ public class VaultClearedPasswordRecoveryTest {
 	@Test
 	public void theNewSealNeverWeakensTheKeyDerivation() throws Exception {
 		sealUnderTheEmptyPassword(C);
-		assertEquals("opens", attempt(phone(A), CHOSEN));
+		assertEquals("opens", twice(phone(A), CHOSEN));
 		assertEquals("version 2, 1024 MiB t=1", label(header()));
 
 		startOver();
 		sealUnderTheEmptyPassword(A);
-		assertEquals("opens", attempt(phone(C), CHOSEN));
+		assertEquals("opens", twice(phone(C), CHOSEN));
 		assertEquals("version 2, 1024 MiB t=1", label(header()));
 		assertEquals("opens", attempt(phone(C), CHOSEN));
+	}
+
+	private void sealCleared(int form) throws Exception {
+		startOver();
+		if (form == 0) sealUnderTheEmptyPassword();
+		else sealUnderZeros(CHOSEN.length);
+	}
+
+	@Test
+	public void aTypoOnTheFirstEntryWritesNothingAndTheVaultAsksAgain()
+			throws Exception {
+		assertEquals(CHOSEN.length, SAME_LENGTH.length);
+		for (int form = 0; form < 2; form++) {
+			sealCleared(form);
+			byte[] before = headerBytes();
+			List<String> keys = aliases();
+			VaultManager m = process();
+			assertEquals("asks again", attempt(m, SAME_LENGTH));
+
+			assertEquals("entries differ", confirm(m, SAME_LENGTH, CHOSEN));
+
+			assertEquals(Collections.emptyList(), derivations);
+			assertFalse(m.isUnlocked());
+			assertThrows(SecurityException.class, m::listItems);
+			assertEquals(0, failures());
+			assertArrayEquals(before, headerBytes());
+			assertEquals(keys, aliases());
+
+			assertEquals("asks again", attempt(m, CHOSEN));
+			assertArrayEquals(before, headerBytes());
+			assertEquals("opens", confirm(m, CHOSEN, CHOSEN));
+			assertEquals("Testnote kept", note(m));
+			assertEquals("refused", attempt(SAME_LENGTH));
+			assertEquals("opens", attempt(CHOSEN));
+		}
+	}
+
+	@Test
+	public void aSecondEntryThatDiffersFromTheFirstWritesNothing()
+			throws Exception {
+		for (int form = 0; form < 2; form++) {
+			sealCleared(form);
+			byte[] before = headerBytes();
+			List<String> keys = aliases();
+			VaultManager m = process();
+			assertEquals("asks again", attempt(m, CHOSEN));
+
+			assertEquals("entries differ", confirm(m, CHOSEN, SAME_LENGTH));
+
+			assertEquals(Collections.emptyList(), derivations);
+			assertFalse(m.isUnlocked());
+			assertEquals(0, failures());
+			assertArrayEquals(before, headerBytes());
+			assertEquals(keys, aliases());
+			assertEquals("asks again", attempt(m, SAME_LENGTH));
+			assertEquals("asks again", attempt(m, CHOSEN));
+			assertArrayEquals(before, headerBytes());
+		}
+	}
+
+	@Test
+	public void theManagerKeepsNothingOfTheFirstEntry() throws Exception {
+		for (int form = 0; form < 2; form++) {
+			sealCleared(form);
+			byte[] before = headerBytes();
+			VaultManager m = process();
+			assertEquals("asks again", attempt(m, CHOSEN));
+			m.lockVault();
+
+			assertEquals("asks again", attempt(m, CHOSEN));
+			assertEquals("asks again", attempt(m, CHOSEN));
+
+			assertFalse(m.isUnlocked());
+			assertThrows(SecurityException.class, m::listItems);
+			assertArrayEquals(before, headerBytes());
+			assertEquals(0, failures());
+		}
+	}
+
+	@Test
+	public void aProcessThatDiesBetweenTheEntriesLeavesTheVaultRecoverable()
+			throws Exception {
+		for (int form = 0; form < 2; form++) {
+			sealCleared(form);
+			byte[] before = headerBytes();
+			List<String> keys = aliases();
+			assertEquals("asks again", attempt(process(), SAME_LENGTH));
+
+			VaultManager next = process();
+			assertArrayEquals(before, headerBytes());
+			assertEquals(keys, aliases());
+			assertEquals("asks again", attempt(next, CHOSEN));
+			assertEquals("opens", confirm(next, CHOSEN, CHOSEN));
+			assertEquals("Testnote kept", note(next));
+			assertEquals("refused", attempt(SAME_LENGTH));
+			assertEquals("opens", attempt(CHOSEN));
+		}
+	}
+
+	@Test
+	public void theConfirmStepGivesAnOrdinaryVaultNothingExtra()
+			throws Exception {
+		VaultManager first = process();
+		first.createVault(PASSWORD.clone());
+		first.addItem(VaultItem.ItemType.NOTE, "Testnote",
+				"kept".getBytes(StandardCharsets.UTF_8));
+		first.lockVault();
+		byte[] before = headerBytes();
+		VaultManager m = process();
+
+		assertEquals("entries differ", confirm(m, LONGER, PASSWORD));
+		assertEquals(Collections.emptyList(), derivations);
+		assertFalse(m.isUnlocked());
+		assertEquals(0, failures());
+
+		assertEquals("refused", confirm(m, LONGER, LONGER));
+		assertEquals(Arrays.asList("typed", "empty"), derivations);
+		assertEquals(1, failures());
+		assertFalse(m.isUnlocked());
+		assertArrayEquals(before, headerBytes());
+
+		assertEquals("opens", confirm(m, PASSWORD, PASSWORD));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertArrayEquals(before, headerBytes());
+	}
+
+	@Test
+	public void bothEntriesWaitForTheThrottle() throws Exception {
+		sealUnderZeros(CHOSEN.length);
+		byte[] before = headerBytes();
+		VaultManager m = process();
+		assertEquals("refused", attempt(m, LONGER));
+		assertEquals(1, failures());
+		derivations.clear();
+
+		SecurityException first = assertThrows(SecurityException.class,
+				() -> m.unlock(CHOSEN.clone()));
+		SecurityException second = assertThrows(SecurityException.class,
+				() -> m.confirmAndUnlock(CHOSEN.clone(), CHOSEN.clone()));
+
+		assertTrue(first.getMessage()
+				.startsWith(VaultManager.TOO_MANY_ATTEMPTS));
+		assertTrue(second.getMessage()
+				.startsWith(VaultManager.TOO_MANY_ATTEMPTS));
+		assertEquals(Collections.emptyList(), derivations);
+		assertEquals(1, failures());
+		assertArrayEquals(before, headerBytes());
+	}
+
+	@Test
+	public void recoveryStillTakesAPasswordThatIsShortInItsNormalForm()
+			throws Exception {
+		char[] typed = "pass\uD83D\uDE00\uD83D\uDE00".toCharArray();
+		assertEquals(VaultManager.MIN_PASSWORD_LENGTH, typed.length);
+		assertEquals(4, PasswordNormalizer.normalize(typed).length);
+		assertFalse(VaultManager.acceptsNewPassword(typed.clone()));
+		sealUnderTheEmptyPassword();
+		VaultManager m = process();
+
+		assertEquals("opens", twice(m, typed));
+
+		assertEquals("Testnote kept", note(m));
+		assertEquals("version 2, 256 MiB t=3", label(header()));
+		assertEquals("opens", attempt(typed));
+		assertEquals("refused", attempt(CHOSEN));
+		assertEquals("refused", attempt(new char[0]));
+	}
+
+	@Test
+	public void theEntriesAreComparedInTheFormTheSealUses() {
+		char[] typed = "Vaultnew67890".toCharArray();
+		char[] withAnEmoji = "Vaultnew\uD83D\uDE0067890".toCharArray();
+		assertArrayEquals(PasswordNormalizer.normalize(typed),
+				PasswordNormalizer.normalize(withAnEmoji));
+		assertTrue(VaultManager.sameNormalForm(typed, withAnEmoji));
+		assertTrue(VaultManager.sameNormalForm(typed, typed.clone()));
+		assertFalse(VaultManager.sameNormalForm(typed, SAME_LENGTH));
+		assertFalse(VaultManager.sameNormalForm(typed, LONGER));
+		assertFalse(VaultManager.sameNormalForm(typed,
+				Arrays.copyOf(typed, typed.length - 1)));
+		assertFalse(VaultManager.sameNormalForm(typed, new char[0]));
+		assertArrayEquals("Vaultnew67890".toCharArray(), typed);
 	}
 }

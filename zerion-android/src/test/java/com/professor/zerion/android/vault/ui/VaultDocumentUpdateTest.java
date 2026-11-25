@@ -400,7 +400,7 @@ public class VaultDocumentUpdateTest {
 
 		vm.replaceDocumentWithPassword(vm.newDocumentSaveRequest(),
 				old.id, "notes.txt",
-				bytes("second draft"), chosen);
+				bytes("second draft"), chosen, null);
 		idle();
 
 		assertEquals(DocumentSaveResult.Outcome.SAVED, result(vm).outcome);
@@ -422,24 +422,104 @@ public class VaultDocumentUpdateTest {
 	}
 
 	@Test
-	public void aSaveWithANewPasswordReplacesAProtectedDocument()
+	public void aSaveWithANewPasswordAndTheCurrentOneReplacesAProtectedDocument()
 			throws Exception {
 		VaultViewModelRig rig = new VaultViewModelRig();
 		VaultItem old = existingProtected(rig);
 		VaultViewModel vm = rig.newModel();
+		char[] chosen = "new secret".toCharArray();
+		char[] current = "open sesame".toCharArray();
 
 		vm.replaceDocumentWithPassword(vm.newDocumentSaveRequest(),
 				old.id, "notes.txt",
-				bytes("second draft"), "new secret".toCharArray());
+				bytes("second draft"), chosen, current);
 		idle();
 
 		assertEquals(DocumentSaveResult.Outcome.SAVED, result(vm).outcome);
 		assertEquals(1, rig.vault.size());
 		VaultItem now = rig.vault.named("notes.txt");
 		assertNotNull(now);
+		assertNotEquals(old.id, now.id);
 		assertArrayEquals(bytes("second draft"),
 				rig.vault.manager.getItemContentWithPassword(now.id,
 						"new secret".toCharArray()));
+		assertArrayEquals(new char[chosen.length], chosen);
+		assertArrayEquals(new char[current.length], current);
+	}
+
+	@Test
+	public void aNewPasswordAloneNeverReplacesAProtectedDocument()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultItem old = existingProtected(rig);
+		VaultViewModel vm = rig.newModel();
+		char[] chosen = "new secret".toCharArray();
+
+		vm.replaceDocumentWithPassword(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt",
+				bytes("second draft"), chosen, null);
+		idle();
+
+		DocumentSaveResult result = result(vm);
+		assertEquals(DocumentSaveResult.Outcome.PASSWORD_REQUIRED,
+				result.outcome);
+		assertEquals(rig.app.getString(
+				R.string.vault_doc_password_needed_to_save), result.message);
+		verify(rig.vault.manager, never()).addMediaItemWithPassword(any(),
+				anyString(), any(), any(), any());
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertEquals(1, rig.vault.size());
+		assertArrayEquals(bytes("first draft"),
+				rig.vault.manager.getItemContentWithPassword(old.id,
+						"open sesame".toCharArray()));
+		assertArrayEquals(new char[chosen.length], chosen);
+	}
+
+	@Test
+	public void aNewPasswordWithAWrongCurrentOneReplacesNothing()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultItem old = existingProtected(rig);
+		VaultViewModel vm = rig.newModel();
+		char[] chosen = "new secret".toCharArray();
+		char[] current = "open says me".toCharArray();
+
+		vm.replaceDocumentWithPassword(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt",
+				bytes("second draft"), chosen, current);
+		idle();
+
+		DocumentSaveResult result = result(vm);
+		assertEquals(DocumentSaveResult.Outcome.WRONG_PASSWORD,
+				result.outcome);
+		assertEquals(rig.app.getString(R.string.vault_incorrect_password),
+				result.message);
+		verify(rig.vault.manager, never()).addMediaItemWithPassword(any(),
+				anyString(), any(), any(), any());
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertEquals(1, rig.vault.size());
+		assertArrayEquals(bytes("first draft"),
+				rig.vault.manager.getItemContentWithPassword(old.id,
+						"open sesame".toCharArray()));
+		assertArrayEquals(new char[chosen.length], chosen);
+		assertArrayEquals(new char[current.length], current);
+	}
+
+	@Test
+	public void theNewPasswordItselfIsNotTakenAsTheCurrentOne()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultItem old = existingProtected(rig);
+		VaultViewModel vm = rig.newModel();
+
+		vm.replaceDocumentWithPassword(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", bytes("second draft"),
+				"open sesame".toCharArray(), null);
+		idle();
+
+		assertEquals(DocumentSaveResult.Outcome.PASSWORD_REQUIRED,
+				result(vm).outcome);
+		verify(rig.vault.manager, never()).deleteItem(anyString());
 	}
 
 	@Test

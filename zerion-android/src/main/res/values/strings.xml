@@ -1799,6 +1799,11 @@
 	<string name="vault_password_mismatch">Passwords do not match</string>
 	<string name="vault_password_too_short">Password must be at least 8 characters</string>
 	<string name="vault_unlock_failed">Invalid password</string>
+	<string name="vault_unlock_confirm_title">Confirm your vault password</string>
+	<string name="vault_unlock_confirm_message">An earlier version saved this vault without its password. Type your password once more. Zerion then protects the vault with it again.</string>
+	<string name="vault_unlock_entries_differ">The two entries are not the same. Start again.</string>
+	<string name="vault_unlock_not_confirmed">Zerion could not confirm the vault on storage. Try again.</string>
+	<string name="vault_password_rule">Use at least 8 letters, digits or symbols. Emoji do not count.</string>
 	<string name="vault_locked">Vault locked</string>
 	<string name="vault_auto_lock">Vault auto-locked due to inactivity</string>
 	<string name="vault_biometric_prompt_title">Unlock Vault</string>

@@ -65,6 +65,8 @@ public class TextEditorFragment extends BaseFragment {
 	private boolean isEditMode = false;
 	private String itemId;
 	private boolean hasUnsavedChanges = false;
+	@Nullable
+	private char[] pendingNewPassword;
 	private long saveRequest = NO_SAVE;
 	private boolean isMonospace = true;
 
@@ -112,17 +114,24 @@ public class TextEditorFragment extends BaseFragment {
 				new OnBackPressedCallback(true) {
 					@Override
 					public void handleOnBackPressed() {
-						if (isSaving()) {
+						if (onBackPressed()) {
 							return;
 						}
-						if (hasUnsavedChanges) {
-							showUnsavedChangesDialog();
-						} else {
-							setEnabled(false);
-							requireActivity().getOnBackPressedDispatcher().onBackPressed();
-						}
+						setEnabled(false);
+						requireActivity().getOnBackPressedDispatcher().onBackPressed();
 					}
 				});
+	}
+
+	public boolean onBackPressed() {
+		if (isSaving()) {
+			return true;
+		}
+		if (hasUnsavedChanges && getView() != null) {
+			showUnsavedChangesDialog();
+			return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -276,10 +285,22 @@ public class TextEditorFragment extends BaseFragment {
 		return super.onOptionsItemSelected(item);
 	}
 
+	private void forgetPendingNewPassword() {
+		wipe(pendingNewPassword);
+		pendingNewPassword = null;
+	}
+
+	@Override
+	public void onDestroyView() {
+		forgetPendingNewPassword();
+		super.onDestroyView();
+	}
+
 	private void saveDocument() {
 		if (isSaving()) {
 			return;
 		}
+		forgetPendingNewPassword();
 		String name = checkedName();
 		if (name == null) {
 			return;
@@ -301,6 +322,7 @@ public class TextEditorFragment extends BaseFragment {
 		if (isSaving()) {
 			return;
 		}
+		forgetPendingNewPassword();
 		String name = checkedName();
 		if (name == null) {
 			return;
@@ -324,8 +346,10 @@ public class TextEditorFragment extends BaseFragment {
 				if (password == null) {
 					savePlain(request, name, contentBytes);
 				} else if (isEditMode && itemId != null) {
+					forgetPendingNewPassword();
+					pendingNewPassword = password.clone();
 					viewModel.replaceDocumentWithPassword(request, itemId,
-							name, contentBytes, password);
+							name, contentBytes, password, null);
 				} else {
 					viewModel.addDocumentWithPassword(request, name,
 							contentBytes, password);
@@ -349,11 +373,14 @@ public class TextEditorFragment extends BaseFragment {
 			public void onPasswordEntered(@Nullable char[] password) {
 				if (password != null) {
 					saveProtectedDocument(password);
+				} else {
+					forgetPendingNewPassword();
 				}
 			}
 
 			@Override
 			public void onPasswordCancelled() {
+				forgetPendingNewPassword();
 			}
 		});
 
@@ -365,9 +392,15 @@ public class TextEditorFragment extends BaseFragment {
 				? null : checkedName();
 		if (name == null) {
 			wipe(password);
+			forgetPendingNewPassword();
 			return;
 		}
 		byte[] contentBytes = contentBytes();
+		if (pendingNewPassword != null) {
+			viewModel.replaceDocumentWithPassword(beginSave(), itemId, name,
+					contentBytes, pendingNewPassword.clone(), password);
+			return;
+		}
 		viewModel.updateProtectedDocument(beginSave(), itemId, name,
 				contentBytes, password);
 	}
@@ -385,6 +418,7 @@ public class TextEditorFragment extends BaseFragment {
 		setEditingEnabled(true);
 
 		if (result.isStored()) {
+			forgetPendingNewPassword();
 			if (result.outcome
 					== DocumentSaveResult.Outcome.SAVED_EARLIER_VERSION_KEPT) {
 				viewModel.clearMessages();
@@ -404,7 +438,9 @@ public class TextEditorFragment extends BaseFragment {
 		if (result.outcome == DocumentSaveResult.Outcome.WRONG_PASSWORD) {
 			askForTheDocumentPassword(getString(
 					R.string.vault_doc_password_needed_to_save));
+			return;
 		}
+		forgetPendingNewPassword();
 	}
 
 	private boolean isSaving() {
