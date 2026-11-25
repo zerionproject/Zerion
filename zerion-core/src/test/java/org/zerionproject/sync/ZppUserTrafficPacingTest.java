@@ -231,7 +231,6 @@ public class ZppUserTrafficPacingTest {
 
 		assertTrue("the contact kept the link busy for over half an hour",
 				link.now[0] - NOW > 40 * MINUTE);
-		assertTrue(link.count("user") > 0);
 		for (Frame f : link.frames) {
 			assertEquals("the gap after the frame at +" + (f.at - NOW),
 					IDLE_MS, f.gapAfter);
@@ -408,6 +407,334 @@ public class ZppUserTrafficPacingTest {
 	}
 
 	@Test
+	public void aFloodDuringTheUsersTransferAtMostDoublesItAndEndsWithIt()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + 15 * MINUTE);
+		Message header = link.message(200);
+		link.log.noteUserMessage(header.getId());
+		List<Message> all = new ArrayList<>();
+		all.add(header);
+		for (int i = 0; i < 3; i++) {
+			Message chunk = link.message(CHUNK);
+			link.log.noteUserPart(chunk.getId());
+			all.add(chunk);
+		}
+		Message[] sent = all.toArray(new Message[0]);
+		long offeredAt = link.now[0];
+		link.offer(sent);
+		link.slot();
+		link.request(sent);
+
+		long floodEnd = offeredAt + 60 * MINUTE;
+		while (link.now[0] < floodEnd) {
+			link.peerSendsMessage();
+			link.slot();
+		}
+
+		int userFrames = link.count("user");
+		assertTrue("the transfer completed", userFrames > 3 * CHUNK
+				/ FRAME_BYTES && !link.busyWithUsersData());
+		long lastUser = 0;
+		for (Frame f : link.frames) {
+			if (f.kind.equals("user")) lastUser = f.at;
+		}
+		long alone = userFrames * ACTIVE_MS;
+		assertTrue("stretched to " + (lastUser - offeredAt) + " ms",
+				lastUser - offeredAt <= 2 * alone + 4 * ACTIVE_MS);
+		int fastAfter = 0;
+		for (Frame f : link.frames) {
+			if (f.at <= lastUser || f.gapAfter != ACTIVE_MS) continue;
+			fastAfter++;
+			boolean ration = false;
+			for (long opened : link.activations) {
+				if (f.at >= opened && f.at - opened < WINDOW_MS) ration = true;
+			}
+			assertTrue("a fast frame at +" + (f.at - offeredAt)
+					+ " after the user's data was gone", ration);
+		}
+		assertTrue("only the ration of one window per ten minutes",
+				fastAfter * ACTIVE_MS <= 4 * WINDOW_MS);
+		assertTrue("the flood went on long after the transfer",
+				floodEnd - lastUser > 20 * MINUTE);
+		assertTrue("acknowledgements still left",
+				link.count("ack") > userFrames / 2);
+	}
+
+	@Test
+	public void besideAnIdleUserTransferARepliesWaitsAtMostEightIdleSlots()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		link.open();
+		link.runUntil(link.now[0] + 3 * MINUTE);
+		for (int k = 0; k < 4; k++) {
+			Message part = link.message(CHUNK);
+			link.log.noteUserPart(part.getId());
+			link.request(part);
+		}
+		long end = link.now[0] + 6 * MINUTE;
+		long next = link.now[0];
+		while (link.now[0] < end) {
+			while (next <= link.now[0]) {
+				link.peerSendsMessage(next);
+				link.peerOffers(1, next);
+				next += ACTIVE_MS;
+			}
+			link.slot();
+			assertEquals(IDLE_MS, link.lastGap());
+		}
+
+		assertTrue(link.ackWaits.size() > 300);
+		assertTrue(link.requestWaits.size() > 300);
+		long worst = Math.max(Collections.max(link.ackWaits),
+				Collections.max(link.requestWaits));
+		assertTrue("a reply waited " + worst + " ms", worst <= 8 * IDLE_MS);
+		assertTrue("the user's frames still go every other frame",
+				link.count("user") >= link.frames.size() / 2 - 1);
+	}
+
+	@Test
+	public void aMultiFrameOfferCutAfterItsFirstFrameOpensOneWindowInAll()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message chosen = link.message(10);
+		link.log.noteUserMessage(chosen.getId());
+		Message[] offered = new Message[81];
+		offered[0] = chosen;
+		for (int i = 1; i < offered.length; i++) {
+			offered[i] = link.message(10);
+		}
+		int windows = 0;
+		for (int round = 0; round < 6; round++) {
+			link.offer(offered);
+			assertTrue(link.scheduler.getBulkDepth() > 1);
+			long before = link.slots.lastRealMs;
+			link.slot();
+			if (link.slots.lastRealMs != before) windows++;
+			assertTrue("the rest of the offer is cut off",
+					link.scheduler.getBulkDepth() > 0);
+			link.reconnect();
+			link.runUntil(link.now[0] + 10 * MINUTE);
+		}
+
+		assertEquals(1, windows);
+		assertFalse(link.log.isUnannounced(chosen.getId()));
+	}
+
+	@Test
+	public void aPartCutOffByAReconnectGoesFastInAWindowForItsUnusedFrames()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message part = link.message(CHUNK);
+		link.log.noteUserPart(part.getId());
+		link.request(part);
+		for (int i = 0; i < 50; i++) link.slot();
+		assertEquals(50, link.count("user"));
+
+		link.reconnect();
+		link.request(part);
+		for (int i = 0; i < 20; i++) link.slot();
+		for (Frame f : link.frames.subList(50, 70)) {
+			assertEquals("the resend is still the user's", "user", f.kind);
+			assertEquals(IDLE_MS, f.gapAfter);
+		}
+		Message chosen = link.message(10);
+		link.log.noteUserMessage(chosen.getId());
+		link.offer(chosen);
+		int windowAt = link.frames.size();
+		link.slot();
+		while (link.busy()) link.slot();
+		int parts = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
+				OversizedRecordTest.codec().encodeMessage(part), 0,
+				FRAME_BYTES).size();
+		assertEquals("the user's frames add up to the part once", parts,
+				link.count("user"));
+		int lastUser = windowAt;
+		for (int i = windowAt + 1; i < link.frames.size(); i++) {
+			if (link.frames.get(i).kind.equals("user")) lastUser = i;
+		}
+		assertTrue(lastUser - windowAt > 200);
+		for (Frame f : link.frames.subList(windowAt, lastUser)) {
+			assertEquals("fast while the budget lasts", ACTIVE_MS,
+					f.gapAfter);
+		}
+		for (Frame f : link.frames.subList(lastUser, link.frames.size())) {
+			assertEquals(IDLE_MS, f.gapAfter);
+		}
+		assertEquals("the frames the first send used go at the cadence",
+				50, link.count("body"));
+		assertFalse(link.log.isUserTraffic(part.getId()));
+	}
+
+	@Test
+	public void anAcknowledgedPartIsNotTheUsersAnyMore() throws Exception {
+		Link link = new Link(true);
+		Message part = link.message(10);
+		link.log.noteUserPart(part.getId());
+
+		link.peerAcks(part);
+
+		assertFalse(link.log.isUserTraffic(part.getId()));
+	}
+
+	@Test
+	public void aMarkClaimedWhileTheLinkStopsIsGivenBack() throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message chosen = link.message(10);
+		link.log.noteUserMessage(chosen.getId());
+		link.stopDuringOffer = true;
+
+		link.offer(chosen);
+
+		assertTrue(link.log.isUnannounced(chosen.getId()));
+	}
+
+	@Test
+	public void anOfferLeavingAfterTheLinkStoppedTakesItsMarkAgain()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message chosen = link.message(10);
+		link.log.noteUserMessage(chosen.getId());
+		link.offer(chosen);
+		link.source.stop();
+		assertTrue(link.log.isUnannounced(chosen.getId()));
+
+		link.slot();
+
+		assertEquals("offer", link.lastKind());
+		assertFalse(link.log.isUnannounced(chosen.getId()));
+	}
+
+	@Test
+	public void cuttingAPartBeforeItsLastFrameAtEveryOpeningUsesUpItsBudget()
+			throws Exception {
+		Link link = new Link(true);
+		Message part = link.message(300 * FRAME_BYTES);
+		link.log.noteUserPart(part.getId());
+		long end = NOW + 2 * 60 * MINUTE;
+		long fastMs = 0;
+		int windows = 0;
+		long lastOpen = NOW;
+		while (link.now[0] < end) {
+			link.reconnect();
+			int before = link.activations.size();
+			link.open();
+			if (link.activations.size() > before) {
+				windows++;
+				lastOpen = link.now[0];
+			}
+			link.request(part);
+			int guard = 0;
+			while (link.scheduler.getQueueDepth() > 1 && guard++ < 5000) {
+				link.slot();
+				if (link.lastGap() == ACTIVE_MS) fastMs += ACTIVE_MS;
+			}
+			link.requested.remove(part);
+			link.now[0] = Math.max(link.now[0] + 30_000L,
+					lastOpen + OPENING_WINDOW_INTERVAL_MS);
+		}
+
+		assertTrue(windows >= 10);
+		assertTrue("fast for " + fastMs + " ms with " + windows + " windows",
+				fastMs <= windows * WINDOW_MS + 2 * WINDOW_MS);
+		assertFalse("the cut sends used up the part's budget",
+				link.log.isUserTraffic(part.getId()));
+	}
+
+	@Test
+	public void aControlFrameBesideOneReplyLeavesTheContinuationAlone()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message header = link.message(200);
+		link.log.noteUserMessage(header.getId());
+		List<Message> all = new ArrayList<>();
+		all.add(header);
+		for (int i = 0; i < 3; i++) {
+			Message chunk = link.message(300 * FRAME_BYTES);
+			link.log.noteUserPart(chunk.getId());
+			all.add(chunk);
+		}
+		Message[] sent = all.toArray(new Message[0]);
+		long offeredAt = link.now[0];
+		link.offer(sent);
+		link.slot();
+		link.request(sent);
+		boolean injected = false;
+		while (link.busy()) {
+			if (!injected && link.now[0] - offeredAt > 5 * MINUTE) {
+				injected = true;
+				link.scheduler.enqueueControl(ZmmRecord.encode(
+						ZmmConstants.TYPE_ROOT_EVOLUTION, new byte[] {1}));
+				link.ackDue();
+			}
+			link.slot();
+		}
+
+		assertTrue(injected);
+		int last = link.frames.size() - 1;
+		for (Frame f : link.frames.subList(0, last)) {
+			assertEquals("the gap after the frame at +" + (f.at - offeredAt),
+					ACTIVE_MS, f.gapAfter);
+		}
+	}
+
+	@Test
+	public void aStartedAutomaticRecordAndAFloodDoNotStallTheUsersTransfer()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message old = new Message(new MessageId(getRandomId()), link.group,
+				NOW - DAY, new byte[100 * FRAME_BYTES]);
+		link.request(old);
+		link.slot();
+		link.slot();
+		Message header = link.message(200);
+		link.log.noteUserMessage(header.getId());
+		Message part = link.message(300 * FRAME_BYTES);
+		link.log.noteUserPart(part.getId());
+		link.offer(header);
+		link.request(header, part);
+
+		long start = link.now[0];
+		int slots = 0;
+		while (link.now[0] - start < 30 * MINUTE) {
+			link.ackDue();
+			if (++slots % 13 == 0) {
+				link.source.eventOccurred(
+						new MessageRequestedEvent(link.contact));
+			}
+			link.slot();
+		}
+
+		assertFalse("the user's transfer completed",
+				link.busyWithUsersData());
+		assertEquals("and so did the started record", 0,
+				link.scheduler.getBulkDepth());
+	}
+
+	@Test
+	public void aMessageLargerThanTheBulkLaneLeavesWhenTheLaneIsEmpty()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message large = link.message(900_000);
+
+		link.request(large);
+		int guard = 0;
+		while (link.busy() && guard++ < 2_000) link.slot();
+
+		assertTrue(link.requested.isEmpty());
+		assertEquals(0, link.scheduler.getQueueDepth());
+		assertTrue(link.count("body") > 512);
+	}
+
+	@Test
 	public void aRecordThatStartedSendingIsFinishedBeforeAnotherOvertakesIt()
 			throws Exception {
 		List<Long> sent = new ArrayList<>();
@@ -432,6 +759,31 @@ public class ZppUserTrafficPacingTest {
 				expected, sent);
 	}
 
+	@Test
+	public void aStartedRecordAheadOfTheUsersDataCountsAsItsProgress()
+			throws Exception {
+		ZppSendScheduler scheduler = new ZppSendScheduler(record -> {
+		}, () -> true);
+		scheduler.setRanked(true);
+		queue(scheduler, 1, ZppSendScheduler.RANK_AUTOMATIC);
+		scheduler.tick();
+		assertFalse(scheduler.lastFrameWasUsers());
+		queue(scheduler, 2, ZppSendScheduler.RANK_USER);
+
+		for (int i = 0; i < 9; i++) {
+			scheduler.tick();
+			assertTrue("frame " + i, scheduler.lastFrameWasUsers());
+		}
+		queue(scheduler, 3, ZppSendScheduler.RANK_AUTOMATIC);
+		scheduler.tick();
+		assertFalse("with nothing of the user's queued it is not",
+				scheduler.lastFrameWasUsers());
+		scheduler.enqueueControl(ZmmRecord.encode(
+				ZmmConstants.TYPE_ROOT_EVOLUTION, new byte[] {1}));
+		scheduler.tick();
+		assertFalse(scheduler.lastFrameWasUsers());
+	}
+
 	private static void queue(ZppSendScheduler scheduler, long id, int rank) {
 		List<byte[]> frames = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
 				new byte[5 * 1_500], id, FRAME_BYTES);
@@ -442,32 +794,44 @@ public class ZppUserTrafficPacingTest {
 	}
 
 	@Test
-	public void onlyAWindowStartsTheFastRateAndUserRecordsCarryItOn() {
+	public void onlyAWindowStartsTheFastRateAndUserProgressCarriesItOn() {
 		ZppConnectionRunnerImpl.DensePace pace =
 				new ZppConnectionRunnerImpl.DensePace();
-		assertFalse(pace.next(0, 0, NEVER, NOW, WINDOW_MS));
+		assertFalse(pace.next(false, 0, 0, NEVER, NOW, WINDOW_MS));
 		assertFalse("a user record alone starts nothing",
-				pace.next(3, 0, NEVER, NOW, WINDOW_MS));
+				pace.next(true, 3, 0, NEVER, NOW, WINDOW_MS));
 		assertTrue("a control record keeps its treatment",
-				pace.next(0, 1, NEVER, NOW, WINDOW_MS));
-		assertFalse(pace.next(0, 0, NEVER, NOW, WINDOW_MS));
+				pace.next(false, 0, 1, NEVER, NOW, WINDOW_MS));
+		assertFalse(pace.next(false, 0, 0, NEVER, NOW, WINDOW_MS));
 
-		assertTrue("inside a window", pace.next(0, 0, NOW, NOW, WINDOW_MS));
-		assertTrue(pace.next(2, 0, NOW, NOW + WINDOW_MS - 1, WINDOW_MS));
-		assertTrue("carried on while user records are queued",
-				pace.next(2, 0, NOW, NOW + WINDOW_MS, WINDOW_MS));
-		assertTrue(pace.next(1, 0, NOW, NOW + 3 * WINDOW_MS, WINDOW_MS));
-		assertFalse("the first frame time without one ends it",
-				pace.next(0, 0, NOW, NOW + 3 * WINDOW_MS + 1, WINDOW_MS));
+		assertTrue("inside a window",
+				pace.next(false, 0, 0, NOW, NOW, WINDOW_MS));
+		assertTrue(pace.next(true, 2, 0, NOW, NOW + WINDOW_MS - 1,
+				WINDOW_MS));
+		assertTrue("carried on while the user's records move",
+				pace.next(true, 2, 0, NOW, NOW + WINDOW_MS, WINDOW_MS));
+		assertTrue("one other frame in between is fine",
+				pace.next(false, 2, 0, NOW, NOW + WINDOW_MS + 1, WINDOW_MS));
+		assertTrue(pace.next(true, 1, 0, NOW, NOW + 3 * WINDOW_MS,
+				WINDOW_MS));
+		assertFalse("the first frame time without one queued ends it",
+				pace.next(true, 0, 0, NOW, NOW + 3 * WINDOW_MS + 1,
+						WINDOW_MS));
 		assertFalse("and a user record queued later does not restart it",
-				pace.next(5, 0, NOW, NOW + 4 * WINDOW_MS, WINDOW_MS));
+				pace.next(true, 5, 0, NOW, NOW + 4 * WINDOW_MS, WINDOW_MS));
+
 		long later = NOW + 5 * WINDOW_MS;
 		assertTrue("only a new window does",
-				pace.next(5, 0, later, later, WINDOW_MS));
+				pace.next(true, 5, 0, later, later, WINDOW_MS));
+		assertTrue(pace.next(false, 5, 0, later, later + WINDOW_MS,
+				WINDOW_MS));
+		assertFalse("two frame times without the user's records moving end it",
+				pace.next(false, 5, 0, later, later + WINDOW_MS + 1,
+						WINDOW_MS));
 	}
 
 	@Test
-	public void aMarkOfAPartCountsForItsFirstSendAndLastsADay() {
+	public void aMarkOfAPartLastsForItsFramesUntilAcknowledgedOrADayOld() {
 		long[] now = {NOW};
 		LocalMessageLog log = new LocalMessageLog(() -> now[0]);
 		MessageId part = new MessageId(getRandomId());
@@ -475,14 +839,28 @@ public class ZppUserTrafficPacingTest {
 		assertFalse("a part opens no window", log.takeFirstOffer(part));
 		assertFalse("and is no message of its own on a sparse link",
 				log.takeFirstSend(part));
-		assertTrue(log.takeUserTraffic(part));
-		assertFalse("a second send is not the user's",
-				log.takeUserTraffic(part));
+		assertTrue(log.isUserTraffic(part));
+		assertEquals(3, log.userFramesLeft(part, 3));
+		assertEquals("asking does not use it up", 3,
+				log.userFramesLeft(part, 3));
+		log.noteUserFrameSent(part);
+		log.noteUserFrameSent(part);
+		assertTrue(log.isUserTraffic(part));
+		assertEquals(1, log.userFramesLeft(part, 3));
+		log.noteUserFrameSent(part);
+		assertFalse("a part whose frames all left is not the user's any more",
+				log.isUserTraffic(part));
+		assertEquals(0, log.userFramesLeft(part, 3));
+
+		MessageId acked = new MessageId(getRandomId());
+		log.noteUserPart(acked);
+		log.noteAcked(Collections.singletonList(acked));
+		assertFalse(log.isUserTraffic(acked));
 
 		MessageId old = new MessageId(getRandomId());
 		log.noteUserPart(old);
 		now[0] += LocalMessageLog.FRESH_MESSAGE_MS + 1;
-		assertFalse(log.takeUserTraffic(old));
+		assertFalse(log.isUserTraffic(old));
 
 		MessageId message = new MessageId(getRandomId());
 		log.noteUserMessage(message);
@@ -491,7 +869,7 @@ public class ZppUserTrafficPacingTest {
 		for (int i = 0; i < LocalMessageLog.MAX_TRAFFIC_ENTRIES; i++) {
 			log.noteUserPart(new MessageId(getRandomId()));
 		}
-		assertFalse(log.takeUserTraffic(first));
+		assertFalse(log.isUserTraffic(first));
 		assertTrue("the parts do not push out the mark of a message",
 				log.takeFirstOffer(message));
 		log.restoreOffers(Collections.singletonList(message));
@@ -647,13 +1025,13 @@ public class ZppUserTrafficPacingTest {
 		private final Clock wall;
 		private final ZppConnectionRunnerImpl.SlotClock slots;
 		private final ZppConnectionRunnerImpl.ReceiveActivityGate ration;
-		private final ZppConnectionRunnerImpl.DensePace pace =
-				new ZppConnectionRunnerImpl.DensePace();
+		private ZppConnectionRunnerImpl.DensePace pace;
 		private final boolean dense;
 		private ZppSendScheduler scheduler;
 		private ZppOutgoingSource source;
 		private long nextRecord = 0;
 		private String label = "body";
+		private boolean stopDuringOffer = false;
 		private List<Long> carrying = Collections.emptyList();
 
 		private Link(boolean dense) throws Exception {
@@ -681,6 +1059,7 @@ public class ZppUserTrafficPacingTest {
 		}
 
 		private void connect() throws Exception {
+			pace = new ZppConnectionRunnerImpl.DensePace();
 			scheduler = new ZppSendScheduler(record -> {
 				frames.add(new Frame(now[0], ZppRunnerLabels.kind(labels,
 						record)));
@@ -770,6 +1149,7 @@ public class ZppUserTrafficPacingTest {
 				return ids.isEmpty() ? null : new Request(ids);
 			}
 			if (name.equals("generateOffer")) {
+				if (stopDuringOffer) source.stop();
 				label = "offer";
 				return offers.poll();
 			}
@@ -837,6 +1217,11 @@ public class ZppUserTrafficPacingTest {
 			source.eventOccurred(new MessageToAckEvent(contact));
 		}
 
+		private void ackDue() {
+			acksDue.add(now[0]);
+			source.eventOccurred(new MessageToAckEvent(contact));
+		}
+
 		private void peerOffers(int count) {
 			peerOffers(count, now[0]);
 		}
@@ -849,7 +1234,7 @@ public class ZppUserTrafficPacingTest {
 
 		private void peerAcks(Message m) throws Exception {
 			ZmmSyncCodec codec = OversizedRecordTest.codec();
-			ZmmDbRecordSink sink = new ZmmDbRecordSink(db, codec);
+			ZmmDbRecordSink sink = new ZmmDbRecordSink(db, codec, log);
 			byte[] ack = codec.encodeAck(
 					new Ack(Collections.singletonList(m.getId())));
 			for (byte[] frame : ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
@@ -877,6 +1262,10 @@ public class ZppUserTrafficPacingTest {
 			source.eventOccurred(new MessageRequestedEvent(contact));
 		}
 
+		private boolean busyWithUsersData() {
+			return scheduler.getUserDepth() > 0 || !requested.isEmpty();
+		}
+
 		private boolean busy() {
 			return scheduler.getQueueDepth() > 0 || !requested.isEmpty();
 		}
@@ -885,7 +1274,9 @@ public class ZppUserTrafficPacingTest {
 			boolean real = scheduler.tick();
 			ZppConnectionRunnerImpl.afterFrame(slots, ration, real,
 					scheduler.lastRealFrameOpenedWindow(), now[0]);
-			boolean active = pace.next(scheduler.getUserDepth(),
+			boolean active = pace.next(scheduler.lastFrameWasUsers(),
+					scheduler.lastFrameWasControl(),
+					scheduler.getUserDepth(),
 					scheduler.getControlDepth(), slots.lastRealMs, now[0],
 					WINDOW_MS);
 			long gap = active ? ACTIVE_MS : IDLE_MS;

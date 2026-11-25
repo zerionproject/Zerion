@@ -28,6 +28,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,8 +83,11 @@ public class ZppOutgoingSource implements EventListener {
 	private final AtomicBoolean requestWaiting = new AtomicBoolean(false);
 	private final AtomicBoolean offerWaiting = new AtomicBoolean(false);
 	private final AtomicBoolean userOfferDue = new AtomicBoolean(false);
-	private final Set<MessageId> claimedOffers =
-			ConcurrentHashMap.newKeySet();
+	private final Object claimLock = new Object();
+	@GuardedBy("claimLock")
+	private final Set<MessageId> claimedOffers = new HashSet<>();
+	@GuardedBy("claimLock")
+	private boolean claimsReturned = false;
 	private final AtomicLong nextSendTime = new AtomicLong(Long.MAX_VALUE);
 	private final AtomicLong messageIdCounter = new AtomicLong(0);
 	private volatile boolean stopped = false;
@@ -124,8 +128,11 @@ public class ZppOutgoingSource implements EventListener {
 	public void stop() {
 		stopped = true;
 		eventBus.removeListener(this);
-		localMessages.restoreOffers(claimedOffers);
-		claimedOffers.clear();
+		synchronized (claimLock) {
+			claimsReturned = true;
+			localMessages.restoreOffers(claimedOffers);
+			claimedOffers.clear();
+		}
 		cancelRetransmit();
 	}
 
@@ -166,10 +173,11 @@ public class ZppOutgoingSource implements EventListener {
 					db.generateAck(txn, contactId, max));
 			if (a != null && paced) {
 				ackWaiting.set(true);
-				enqueue(codec.encodeAck(a), false, false, RANK_REPLY, () -> {
-					ackWaiting.set(false);
-					generateAck();
-				});
+				enqueue(codec.encodeAck(a), false, false, RANK_REPLY, null,
+						() -> {
+							ackWaiting.set(false);
+							generateAck();
+						});
 			} else if (a != null) {
 				enqueue(codec.encodeAck(a), false);
 				generateAck();
@@ -197,10 +205,7 @@ public class ZppOutgoingSource implements EventListener {
 				long now = clock.currentTimeMillis();
 				for (Message m : b) {
 					if (!inFlight.add(m.getId())) continue;
-					boolean fresh = isFresh(m, now);
-					boolean user = localMessages.takeUserTraffic(m.getId());
-					enqueueMessage(m, fresh,
-							user ? RANK_USER : RANK_AUTOMATIC);
+					enqueueMessage(m, isFresh(m, now));
 				}
 				generateBatch();
 			} else if (scheduler.getBulkDepth() > 0) {
@@ -213,6 +218,9 @@ public class ZppOutgoingSource implements EventListener {
 	private long batchCapacity() {
 		long room = (long) (MAX_LANE_DEPTH - scheduler.getBulkDepth())
 				* maxRecordBytes;
+		if (scheduler.getBulkDepth() == 0) {
+			room = Math.max(room, ZmmConstants.MAX_RECORD_BYTES);
+		}
 		return Math.max(maxRecordBytes, Math.min(BATCH_CAPACITY, room));
 	}
 
@@ -249,17 +257,19 @@ public class ZppOutgoingSource implements EventListener {
 					byte[] offer = codec.encodeOffer(new Offer(ids));
 					List<MessageId> claimed = claimFirstOffers(ids);
 					if (!claimed.isEmpty()) {
-						claimedOffers.addAll(claimed);
+						if (!holdClaims(claimed)) return;
 						enqueue(offer, false, true, RANK_USER,
-								() -> claimedOffers.removeAll(claimed));
+								() -> offerLeft(claimed), null);
 					} else if (paced) {
 						offerWaiting.set(true);
-						enqueue(offer, false, false, RANK_AUTOMATIC, () -> {
-							offerWaiting.set(false);
-							generateOffer();
-						});
+						enqueue(offer, false, false, RANK_AUTOMATIC, null,
+								() -> {
+									offerWaiting.set(false);
+									generateOffer();
+								});
 					} else {
-						enqueue(offer, false, false, RANK_AUTOMATIC, null);
+						enqueue(offer, false, false, RANK_AUTOMATIC, null,
+								null);
 					}
 				}
 				generateOffer();
@@ -281,7 +291,7 @@ public class ZppOutgoingSource implements EventListener {
 					db.generateRequest(txn, contactId, max));
 			if (r != null && paced) {
 				requestWaiting.set(true);
-				enqueue(codec.encodeRequest(r), false, false, RANK_REPLY,
+				enqueue(codec.encodeRequest(r), false, false, RANK_REPLY, null,
 						() -> {
 							requestWaiting.set(false);
 							generateRequest();
@@ -307,6 +317,27 @@ public class ZppOutgoingSource implements EventListener {
 		return claimed;
 	}
 
+	private boolean holdClaims(List<MessageId> claimed) {
+		synchronized (claimLock) {
+			if (stopped) {
+				localMessages.restoreOffers(claimed);
+				return false;
+			}
+			claimedOffers.addAll(claimed);
+			return true;
+		}
+	}
+
+	private void offerLeft(List<MessageId> claimed) {
+		synchronized (claimLock) {
+			if (claimsReturned) {
+				for (MessageId id : claimed) localMessages.takeFirstOffer(id);
+			} else {
+				claimedOffers.removeAll(claimed);
+			}
+		}
+	}
+
 	int idsPerFrame() {
 		return Math.max(1, Math.min(MAX_MESSAGE_IDS,
 				(maxRecordBytes - REPLY_OVERHEAD_BYTES) / MessageId.LENGTH));
@@ -315,12 +346,12 @@ public class ZppOutgoingSource implements EventListener {
 	private void enqueue(byte[] syncRecord, boolean userOriginated)
 			throws IOException {
 		enqueue(syncRecord, userOriginated, userOriginated,
-				userOriginated ? RANK_USER : RANK_AUTOMATIC, null);
+				userOriginated ? RANK_USER : RANK_AUTOMATIC, null, null);
 	}
 
 	private void enqueue(byte[] syncRecord, boolean userOriginated,
-			boolean opensWindow, int rank, @Nullable Runnable onSent)
-			throws IOException {
+			boolean opensWindow, int rank, @Nullable Runnable onFirstSent,
+			@Nullable Runnable onSent) throws IOException {
 		if (syncRecord.length > ZmmConstants.MAX_RECORD_BYTES) {
 			if (onSent != null) onSent.run();
 			return;
@@ -332,16 +363,46 @@ public class ZppOutgoingSource implements EventListener {
 		int last = frames.size() - 1;
 		for (int i = 0; i <= last; i++) {
 			scheduler.enqueueRecord(frames.get(i), userOriginated,
-					opensWindow, rank, bulkLane, i == last ? onSent : null);
+					opensWindow, rank, bulkLane,
+					both(i == 0 ? onFirstSent : null, i == last ? onSent : null));
 		}
 	}
 
-	private void enqueueMessage(Message m, boolean userOriginated, int rank)
+	@Nullable
+	private static Runnable both(@Nullable Runnable first,
+			@Nullable Runnable second) {
+		if (first == null) return second;
+		if (second == null) return first;
+		return () -> {
+			first.run();
+			second.run();
+		};
+	}
+
+	private void enqueueMessage(Message m, boolean userOriginated)
 			throws IOException {
 		MessageId id = m.getId();
 		try {
-			enqueue(codec.encodeMessage(m), userOriginated, false, rank,
-					() -> inFlight.remove(id));
+			byte[] record = codec.encodeMessage(m);
+			Runnable onSent = () -> inFlight.remove(id);
+			if (record.length > ZmmConstants.MAX_RECORD_BYTES) {
+				onSent.run();
+				return;
+			}
+			List<byte[]> frames = ZmmFragmenter.fragment(
+					ZmmConstants.TYPE_SYNC, record,
+					messageIdCounter.getAndIncrement(), maxRecordBytes);
+			int users = localMessages.userFramesLeft(id, frames.size());
+			Runnable sentByUser = () -> localMessages.noteUserFrameSent(id);
+			boolean bulkLane = frames.size() > 1;
+			int last = frames.size() - 1;
+			for (int i = 0; i <= last; i++) {
+				boolean user = i < users;
+				scheduler.enqueueRecord(frames.get(i), userOriginated, false,
+						user ? RANK_USER : RANK_AUTOMATIC, bulkLane,
+						both(user ? sentByUser : null,
+								i == last ? onSent : null));
+			}
 		} catch (IOException | RuntimeException e) {
 			inFlight.remove(id);
 			throw e;
