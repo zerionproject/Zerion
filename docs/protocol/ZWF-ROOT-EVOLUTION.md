@@ -51,7 +51,10 @@ its confirmation key and its pending-id key (in the `chainKey` and the
 row, with bit 1 of `previousChainLength` set; bit 0 is the proved flag, as
 before), so that a later connection can still make and check its pending-root
 id and its DONE. A row written by an earlier release has neither bit 1 nor
-separate keys and reads as version 2. Both keys are deleted with the pending
+separate keys and reads as version 2. A row with bit 1 set and no 32-byte
+value in the `dhPrivateKey` column, which only development builds of this
+cycle wrote, reads as version 3 with its confirmation key standing in as
+its id key. Both keys are deleted with the pending
 row when the root is promoted or dropped. Bob's pending
 root is always unproved by Alice (he stores it before Alice has seen it);
 Alice's pending root is always proved by Bob (she stores it only after
@@ -91,7 +94,10 @@ under distinct labels: holding one gives nothing about the others, and
 confirmation key is used only inside the evolution that produces the root
 (RESP, CONFIRM, DONE); the pending-id key is used on every later connection
 while the root is pending (HELLO, INIT), so the two have keys of their own
-and neither of them is used across both. In version 2 the id is a MAC under
+and neither of them is used across both. The one exception is a pending row
+without an id key, which only development builds of this cycle wrote (see
+"What each side stores"): there the confirmation key also names the pending
+root. In version 2 the id is a MAC under
 the confirmation key, as in earlier releases. `ss` is the
 ML-KEM-768 shared secret Bob encapsulates to Alice's ephemeral encapsulation
 key `ek_A`; `ct` is its ciphertext. `x25519_A` and `x25519_B` are ephemeral
@@ -221,6 +227,21 @@ Alice offers once per connection, so the burst covers a few connections that
 die before completing; a holder of a copied root cannot make Bob encapsulate,
 agree and write roots at frame rate. An offer Bob does not answer counts, for
 the side that waits, like any other evolution that did not complete.
+
+**What is remembered in memory per contact.** The time of the last evolution
+that the ten minute offer limit reads, the answers the rate limit counts, the
+dials counted for the pending-root fallback and for the out-of-sync mark
+(see "Keys out of sync"), a connection noted as stalled or as ended beside
+another, and a remembered pause of the peer are kept in memory per contact
+(`RootEvolutionManager`). They start afresh after a restart of the app, and
+from 3.0.19 also when the contact is removed or its keys are replaced by a
+re-key: `ContactManagerImpl.rekeyContact` attaches a
+`ContactKeysReplacedEvent`, and on it, as on `ContactRemovedEvent`, the
+transport layer drops all of them for that contact
+(`RootEvolutionManager.forget`, called from `ZtpSessionProviderImpl`). A
+dial that has not authenticated when its contact is removed is not closed
+by the removal and can still add one failed dial to the new, empty count
+when it ends.
 
 ## Evolution before records
 
@@ -356,8 +377,12 @@ Version 2 is kept for one more release: the release after 3.0.19 refuses
 an evolution record below version 3, so a contact on an earlier release
 has to update before the two can keep a connection.
 `RootEvolutionVersionTest` cuts an evolution at every step for every pairing
-of current and earlier peers, and updates one side or the other in the
-middle of an interrupted version 2 evolution.
+of current and earlier peers, updates one side or the other in the
+middle of an interrupted version 2 evolution, and checks on the wire that a
+version 3 pending root is named in the HELLO and in the `replaces` of an INIT
+by a MAC under its pending-id key and not under its confirmation key.
+`RootKeyStoreDatabaseTest` pins the reading of a pending row with bit 1 set
+whose id key is missing or not 32 bytes long.
 
 ## Interruption and interleaving
 
@@ -414,7 +439,10 @@ complete". A new link
 exchange between the two re-keys the existing contact in place
 (`ContactManagerImpl.rekeyContact`): the pairing root and the evolved roots
 are replaced by the new root and the contact, its history and its
-verification are kept.
+verification are kept. From 3.0.19 the re-key also attaches a
+`ContactKeysReplacedEvent`, on which the transport layer drops what it
+remembers of the contact in memory (see "What is remembered in memory per
+contact" under Protocol).
 
 **Who may re-key (from 3.0.19).** Up to 3.0.18 every completed add whose
 peer turned out to be an existing contact re-keyed that contact, so a holder
@@ -493,10 +521,15 @@ and no HELLO arrived:
   first round trip, so the closed connection has usually authenticated and
   not greeted. It is not counted for any kind of peer, neither by itself nor
   when the surviving connection ends, and without a greeting it does not
-  clear the out-of-sync mark. A connection the registry closes for another
-  reason (the contact was removed, the transport went inactive) is closed
-  with `forceClose`, is not marked as redundant and is counted like any
-  other.
+  clear the out-of-sync mark. A connection the registry closes because the
+  transport went inactive is closed with `forceClose`, is not marked as
+  redundant and is counted like any other. A connection that ends after its
+  contact was removed is not counted and stores nothing, from 3.0.19: before
+  it counts a connection this side checks that the contact still exists
+  (`RootKeyStore.hasContact`; a contact row that cannot be read counts as
+  removed). The check and the count are separate transactions, so a
+  connection that ends by itself in the same instant as the removal can
+  still store its count.
 - **A missing greeting from a phone not known to renew, unless the hold ran
   to its deadline.** Records are held for the HELLO of every contact that is
   known to greet, earlier releases included, and any connection can drop
@@ -516,15 +549,19 @@ and no HELLO arrived:
   contact that ended earlier beside another one (below), so a connection
   that ended before its HELLO, before this side knew of the pause, beside
   the connection on which the peer then says it is paused is not counted
-  when that one ends. A HELLO without the flag, an offer from the peer or a
-  completed evolution ends this at once. So does a clock that reads earlier,
+  when that one ends. A HELLO without the flag, an offer from the peer, a
+  completed evolution, removing the contact or replacing its keys ends this
+  at once. So does a clock that reads earlier,
   when a connection to the contact ends, than it did at that HELLO or at the
   end of the previous connection to the contact. A connection on which the
   HELLO arrived is judged by that HELLO, as before. Because the time is not
   stored, such endings are counted again after a restart of this phone,
   until the next HELLO with the flag arrives. What is remembered is one
-  entry per contact, dropped when a later HELLO from any contact, or the end
-  of a connection to that contact, finds that it has run out.
+  entry per contact. A HELLO from any contact drops the entries of the
+  other contacts whose 24 hours are over, judged by their age only; the
+  clock rule above is applied only at the end of a connection to the
+  contact itself, which drops its entry when it has run out by either
+  rule.
 
 The contact is marked as not renewing (`ContactKeyRenewalEvent`) when a
 connection is counted and the run, that connection included, then meets any
@@ -592,8 +629,9 @@ peer's HELLO received: the peer does not wait for evolutions (an earlier
 release, iOS), either side has said in its HELLO that it is paused, or this
 side made a new root current less than ten minutes ago. In every other case,
 a connection whose HELLO never arrived included, an authenticated connection
-leaves the mark as it is. A side that is itself paused holds no records,
-waits for no HELLO and counts nothing, but its own pause does not waive the
+leaves the mark as it is. A side that is paused when a connection starts holds no records on it,
+waits for no HELLO and counts nothing (a pause that begins while a
+connection still waits for its HELLO takes effect at the next connection), but its own pause does not waive the
 greeting: on a paused side too the mark is cleared only by a connection on
 which the peer's HELLO arrived. The one connection that clears the mark
 without a HELLO is a connection to a contact that owes no greeting: its
@@ -649,10 +687,19 @@ over connections that end before its greeting (for the length of a pause,
 until a greeting without the flag, and not past a clock that went back), a
 connection that ended beside the one on which the peer says it is paused,
 the time of a remembered pause left out of the day between two stalls, a
-paused side that clears the out-of-sync mark only on the greeting, and the
+paused side that clears the out-of-sync mark only on the greeting, an
+offer from the peer that ends a remembered pause, a connection closed
+because its contact was removed that is not counted, two such connections
+that leave nothing for a contact added later, and the
 unauthenticated and parallel cases; `RootEvolutionDeadlineTest`,
-`RootEvolutionManagerTest` and `RootKeyStoreDatabaseTest` cover the
-deadline, the counting and the stored state.
+`RootEvolutionManagerTest` (also that a greeting from one contact leaves
+another contact's remembered pause alone and that forgetting a contact
+drops its state and no other contact's) and `RootKeyStoreDatabaseTest` (also
+that a connection ending after its contact was removed stores nothing) cover
+the deadline, the counting and the stored state;
+`ZtpSessionProviderContactStateTest` checks that removal and re-key reach
+the transport layer and that loaded root keys are cleared when a contact
+cannot be registered.
 
 ## Compatibility
 
@@ -734,8 +781,9 @@ and import screens say what a late restore means.
 - A holder of the root who is active on the connection, not only
   withholding, is outside these rules as before. Such a party can now also
   make a side believe that a contact on an earlier release waits for
-  evolutions, which silences that contact until it is re-added (re-adding
-  or removing a contact resets what is remembered about it).
+  evolutions, which silences that contact until it is re-added (removing a
+  contact, or re-adding it in a way that replaces its keys, resets what is
+  remembered about it).
 - With a peer on an earlier release only the offering side renews on an
   open connection, since such a peer offers at the start of a connection
   only.
@@ -746,12 +794,15 @@ and import screens say what a late restore means.
   of them with an hour or more between the first and the third or a later
   one, or after two of them with a day or more between the first and the
   second or a later one, not before, and only when such a connection is
-  counted; until then, and toward earlier releases whose greeting arrives,
-  the only sign is that records do not flow.
+  counted; until then the only sign is that records do not flow. Toward an
+  earlier release whose greeting arrives there is no sign at all: its
+  records flow whether or not the evolution completes, and no run is kept.
 - A paused side keeps its roots for 24 hours after a copy of the account is
   made, and each new copy starts that time again. Someone who can make a
   backup on the device already holds everything on it.
-- A database error while the pause is read is treated as paused.
+- A database error while the pause is read is treated as paused. A
+  database error while reading whether a peer waits for evolutions, or
+  whether it has greeted before, is treated as yes, so records are held.
 - If a network cuts more evolutions within ten minutes than the responder
   answers (`MAX_ANSWERS_PER_INTERVAL`), records wait until that window has
   passed.

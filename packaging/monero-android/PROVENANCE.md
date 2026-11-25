@@ -87,8 +87,8 @@ docker build -t zerion-monero-build:v0.18.5.4 .
 
 The libraries are built by running `docker-run.sh` with the ABI as its
 argument (an optional second argument names another image tag). The script
-hard-codes the container flags and runs, for the reference, exactly this
-command:
+hard-codes the container flags and runs exactly this command, shown
+here for both ABIs:
 
 ```
 docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -e ABI=arm64-v8a   -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4

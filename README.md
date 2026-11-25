@@ -37,12 +37,12 @@ Each device holds its own contacts, messages, keys and state in an encrypted dat
 | Message AEAD on the wire | XSalsa20-Poly1305 (24-byte nonce, 16-byte tag) |
 | Post-quantum key encapsulation | ML-KEM-768 |
 | Classical key agreement | X25519 |
-| Signatures on the pairing contact record and on channel, group, introduction and mesh records | ML-DSA-65 + Ed25519 (hybrid; both halves must verify, with the exceptions listed in [SECURITY_CLAIMS.md](docs/protocol/SECURITY_CLAIMS.md); from 3.0.19 prekey bundles to 3.0.19 contacts rely on the authenticated connection instead of a signature, as that file records) |
+| Signatures on the pairing contact record and on channel, group, introduction and mesh records | ML-DSA-65 + Ed25519 (hybrid; both halves must verify, with the exceptions listed in [SECURITY_CLAIMS.md](docs/protocol/SECURITY_CLAIMS.md); from 3.0.19 prekey bundles, mesh envelopes and group key bindings sent to a contact that has announced 3.0.19's messaging version carry no signature (the bundle and the binding rely on the authenticated connection, the envelope on a key both phones hold), as that file records) |
 | Hashing, MAC and key derivation in the messaging core | keyed BLAKE2b-256 |
 | Message ratchet | Mode 3-Full: per-message ML-KEM-768 over a forward-secret chain; each side's key pair is new on every connection and rotates after 16 own frames on it |
 | Calls and vault AEAD | AES-256-GCM |
 | Vault chunk keys, call endpoint keys | HKDF-SHA256 |
-| Passwords | Argon2id (database key 64 to 256 MiB adapted to the device; vault 256 MiB; wallet 64 MiB), PBKDF2-HMAC-SHA256 for the duress password and the Bitcoin section credential |
+| Passwords | Argon2id (database key 64 to 256 MiB adapted to the device; vault 256 MiB to 1 GiB chosen per phone; wallet 64 MiB), PBKDF2-HMAC-SHA256 for the duress password and the Bitcoin section credential |
 | Identifiers and fingerprints | SHA-256 (SHA-512 in the Tor rendezvous derivation, SHA3-256 for the ML-KEM key-seed hash) |
 | Database at rest | SQLCipher (AES-256), key derived from the password and a device-bound keystore factor |
 

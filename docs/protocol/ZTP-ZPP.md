@@ -147,15 +147,34 @@ whether an interval carried a message or was idle, or how large a message was.
 
 Timing (`ZppPacingPolicy`, `ZppConnectionRunnerImpl`):
 
-- Two constant base intervals. The active interval, 750 ms, applies while
-  anything is queued, for two minutes after a connection opens (from 3.0.19
-  only when no connection to that contact opened at the active rate in the
-  last ten minutes), for two minutes after the first send of a message this
-  side's user chose to send, and for two minutes after a received message
-  that counts as activity. The idle interval, 4 s, applies otherwise, the
-  same on every network type.
+- Two constant base intervals. The active interval, 750 ms, applies inside
+  a window of two minutes, and only this side's own events open one: a
+  connection that opens (from 3.0.19 only when neither a connection to that
+  contact opened at the active rate nor a received record from it counted
+  as activity in the last ten minutes), the first frame of the first offer
+  that announces a message this side's user chose to send, and a received
+  record that counts as activity (below). From 3.0.19, after such a window
+  the active interval goes on only while a record of a message the user
+  chose to send is queued and one of its frames left at this or the
+  previous frame time; the first frame time without that ends it, and only
+  a new window starts the active rate again. A record is the user's for
+  the offer that first announces the message and, for the message's body
+  and the parts of its attachments, for as many frames as each has, counted
+  over every send and every connection, until the contact acknowledges it
+  or for up to a day; frames beyond that count are automatic. The count is
+  reserved when the frames are queued and shared by all connections to the
+  contact, and what a connection did not use is given back when it stops. A queued
+  control record (the link parameters, a root evolution record) makes the
+  next spacing active, but a control frame neither carries the active rate
+  on after a window nor ends it. Nothing else that is queued makes the
+  connection active. The idle interval, 4 s, applies otherwise, the same on
+  every network type. Up to 3.0.18 the active interval also applied while
+  anything at all was queued. None of this applies to a connection without
+  cover traffic (see below).
 - Each interval adds uniform zero-mean jitter of up to one third of its length.
-- Activity shortens a pending idle wait to the jittered active spacing, never
+- Activity (a queued control record, the first offer of a message the user
+  chose to send, or a received record that counts as activity) shortens a
+  pending idle wait to the jittered active spacing, never
   below 500 ms after the previous frame as the application hands it to Tor, so
   the onset of activity cannot burst, and a stall lengthens the cadence rather
   than causing a catch-up burst. Tor and TCP buffering can still bring frames
@@ -169,25 +188,47 @@ Timing (`ZppPacingPolicy`, `ZppConnectionRunnerImpl`):
   interleaved. A frame carries at most 1698 bytes of payload (a fragment
   1686 bytes of the record), so at one frame per active slot a connection
   carries a little over 2 KB per second and a 4 MB attachment takes about half
-  an hour.
+  an hour. From 3.0.19, within each lane the records of a message the user
+  chose to send go first, then acknowledgements and requests, then the
+  rest, but a bulk record whose frames have started to leave is finished
+  before another bulk record goes. While the user's records are queued, one
+  of their frames goes after every small record that is not the user's, so
+  acknowledgements and requests still leave at least every other frame. A
+  record whose frames have started to leave takes every other frame beside
+  the small lane; while a part of the user's waits behind it and the link
+  is fast (inside a window or its continuation), each of its frames uses
+  one frame of that part's count and counts as the user's progress, and at
+  the idle rate it uses none.
 - A record waits in the bulk lane far longer than the retransmission timer
   the database starts when it hands the record over, so the sender keeps the
   set of messages whose frames have not all left: such a message is neither
   offered nor sent again until its last frame is out, and only then does the
   timer govern a resend. The batch pulled from the database is bounded by the
-  room left in the bulk lane, always at least one frame, and a requested
-  message that does not fit waits in the database while shorter ones still
-  go, so a text written during a transfer leaves at the next slot.
+  room left in the bulk lane, always at least one frame; whenever the bulk
+  lane is empty that room is raised to 1 MB for every batch, so one record
+  of the largest size fits. A requested message that does not fit waits in
+  the database while shorter ones still go, so a text written during a
+  transfer leaves at the next slot. Up to 3.0.18 a message larger than
+  about 869 KB, the room of an empty lane, never left; this holds with or
+  without cover traffic. A record larger than 1 MB is never sent over this
+  connection (see "Application records" below for what keeps new messages
+  under it).
 
 What this hides and what it does not: within a rate, an observer cannot tell
 which frames carried data. The switch from the idle to the active rate, and
 back after two quiet minutes, reveals the coarse onset and end of activity, and
-because the active rate lasts while records are queued, the length of an active
-period gives a rough bound on how much was sent. Only a message the user
-chose to send starts or extends the two-minute window, and only when it
-leaves for the first time: a private message with its attachments, an edit, a
-reaction, a deletion for everyone, a pin, a group post, a group invite or its
-answer, a change the group owner makes, the introduction a user starts, the
+because the active rate lasts while the user's records are queued and moving,
+the length of an active period gives a rough bound on how much the user sent.
+Of the records this side sends, only a message the user chose to send opens
+or renews the two-minute window, and only when the first frame of the first
+offer that announces it leaves (from 3.0.19; the body never opens it, also
+when the peer asks for it without an offer, and a mark whose offer had no
+frame leave before the connection ended is kept for the next connection): a
+private message with its attachments, an edit, a reaction or its removal, a
+deletion for everyone, a pin or its removal, a group post, leaving a group, a
+group invite or its answer, a change the group owner makes (granting a member
+the right to invite and changing a member's role included), the introduction
+a user starts, the
 user's answer to an introduction (accept or decline), and the call signals
 that follow a tap: placing a call, answering it, declining it, hanging up,
 and switching video on or off or answering a video request during a call. The
@@ -205,30 +246,55 @@ hang-up, a video request that timed out, the video request a video call sends
 by itself once it is connected and the acceptance an answered video call
 gives by itself; of the introduction records, the decline the app sends by
 itself when an unanswered introduction is deleted and every later step of
-the exchange.
+the exchange. The later parts of a voice memo sent in parts are the user's
+records, but their offers do not open the window.
 Acknowledgements, offers and requests the peer's records provoke, and resends
 of messages the peer asks for again, do not count either, and from 3.0.19
 neither do the records of the root key evolution (up to 3.0.18 every such
-record opened the window, so every connection and every hourly renewal did),
-but the active interval applies while anything is queued, so a backlog of
-them drains at it, and a record that is queued during an idle wait shortens
-that one wait to the active spacing. A received message counts as
-activity within ten minutes of
-this side's own last message and otherwise at most once per ten minutes.
+record opened the window, so every connection and every hourly renewal did).
+From 3.0.19 they never make the connection active either (up to 3.0.18 the
+active interval applied while anything was queued, so a backlog of them
+drained at it): they leave in the next frames of the cadence the connection
+is at, at most one acknowledgement and one request waiting at a time, each
+carrying as many ids as fit one frame, so no backlog builds up, and a reply
+leaves within four idle slots (about 21 s at the largest jitter), or eight
+(about 43 s) while a transfer of the user's, or a record that has started
+sending, runs at the idle rate on that link. The phone's own automatic offers wait for each other the same way, one
+at a time. A record queued during an idle wait does not shorten it; only
+the activity listed above does. The peer can end the active rate early by
+holding back its requests, and by keeping the link busy during the user's
+transfer it can stretch that transfer to about twice its length, but it
+cannot start the active rate outside the windows described here or make it
+last beyond the user's data: a body it asks for outside a window leaves at
+the cadence the connection is at, and a transfer it interrupts goes on at
+the idle rate and is fast again only inside a later window, and only for the
+frames of each part not yet sent as the user's. A received record (any but
+cover, a root evolution record and the link parameters) counts as activity
+at any time within ten minutes after this side's first offer of a user
+message last left (on a connection without cover traffic: after this side's
+last message the user chose to send), so the replies to an exchange the user
+started keep the window open, and otherwise at most once per ten minutes.
 From 3.0.19 that ration, and the active window a connection opens with, are
-kept per contact across connections: a reconnect does not refill the ration,
-and a new connection starts at the active rate only when no connection to
-that contact did so in the last ten minutes (up to 3.0.18 both started
-afresh with every connection). So a peer that keeps reconnecting, or keeps
-sending while this side stays silent, opens this side's active window at
-most once per ten minutes, though the active rate still applies while
-anything is queued, so its messages still make this side send
-acknowledgements at that rate. A contact who works with an observer of this
+one ration per contact, kept across connections: a reconnect does not refill
+it, and a new connection starts at the active rate only when neither a
+connection to that contact did so nor a received record from it counted as
+activity in the last ten minutes (up to 3.0.18 both started afresh with every
+connection). So a peer that keeps reconnecting, keeps sending, or both,
+while this side stays silent, opens this side's active window at most once
+per ten minutes in all, and the acknowledgements and requests its records
+provoke leave in the idle frames outside that window. A contact who works with an observer of this
 side's network link needs none of this: it can open and close the connection
 at will, which starts and stops this side's cover stream, and it times its
 own frames, which arrive on that link; both are part of the connection
-lifecycle that is visible. A message composed offline counts when it
-first leaves, up to a day after it was written. The side of each pair with
+lifecycle that is visible. A message composed offline counts when the
+first frame of its first offer leaves, up to a day after it was written.
+The marks and the frame counts of parts are kept in memory only: at most
+1024 marked messages and 16384 parts, each for a day, the oldest dropped
+first. After a restart of the app a message that is still waiting to leave
+opens no window, and its parts go fast only inside windows. In one narrow
+case, an offer that still leaves after its connection began to stop while a
+second connection to the same contact has already taken the mark it gave
+back, both connections open a window. The side of each pair with
 the lower author id is the dialer (`ZtpPoller`, over Tor and over I2P when it
 is enabled): there a queued message, acknowledgement or new contact dials the
 contact at once, so the opening of a connection can coincide with a send, and
@@ -445,7 +511,35 @@ know; Android 3.0.14 does the same, which is how it stays on the pairing root.
 A record is at most `ZmmConstants.MAX_RECORD_BYTES` (1 MiB) before
 fragmentation: the receiver reassembles nothing larger, and the sender never
 queues a larger record, which the peer would drop and the sync layer would send
-again forever. The bound applies to every implementation that sends to Android;
+again forever. From 3.0.19 a stored message whose record can never fit is also
+not reported as sent and is no longer offered on any connection: when a batch
+is built, a requested message whose stored length is over 994,186 bytes
+(`SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH`, the largest message whose
+record fits) is marked not shared and no longer requested, in the same
+transaction and from its stored length only, without its body being read
+(`DatabaseComponentImpl.generateRequestedBatch`,
+`JdbcDatabase.getRequestedMessagesLongerThan`); that covers messages of
+several megabytes stored by 3.0.15 to 3.0.18. The connection also refuses
+such a message by its length before encoding it, and a record that still
+turns out too large after encoding is dropped and its message marked not
+shared (`ZppOutgoingSource.stopOffering`). Such a message stays visible to its
+sender. Such an old message keeps showing as Sent to its sender
+after it is no longer offered: the app has no stored state for a private
+message or a group copy that was not sent. When something is due but nothing
+could be sent, the sender waits 10 seconds before it tries again instead of
+trying at once (`ZppOutgoingSource.setNextSendTime`), and a message waiting
+for room in the bulk lane leaves as soon as the last frame of an earlier
+message has gone. Unpaced offers, acknowledgements and
+requests carry at most 32,767 ids, so they fit one record too. Messages
+created from 3.0.19 keep their body at or below 993,752 bytes
+(`SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH`, the largest body whose
+768-byte fragments fit one 1 MiB record, with a margin of 394 bytes): a group
+post body at most 977,368 bytes (`GroupTrManager.MAX_POST_BODY_LENGTH`), a
+private text at most 991,704 bytes, a chat image or profile picture at most
+993,652 bytes, and an introduction text at most 977,368 bytes; the receive
+limits are unchanged. Up to 3.0.18 a group post with a picture, video or
+voice note, or a private text, larger than that showed as sent and never
+arrived. The bound applies to every implementation that sends to Android;
 the iOS fragmenter accepts records up to 11 MiB and must apply the same bound. A cover record has the cover
 type and an empty payload. The receive side identifies cover by comparing the type
 word and does not deliver it.

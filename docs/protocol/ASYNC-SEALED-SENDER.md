@@ -25,9 +25,11 @@ envelopes; the envelope protects them.
   KEM ciphertext, a time-to-live and a deduplication identifier (see the
   visibility column below).
 - The recipient authenticates the sender after opening, from an authenticator
-  inside the sealed record: from 3.0.19, between two phones that have exchanged
-  mesh link keys, a tag under a key only the two hold; otherwise the sender's
-  account signature. A relay cannot see who sent the envelope.
+  inside the sealed record: from 3.0.19, toward a contact that has announced
+  messaging minor version 17 at any time, a tag under a key only the two hold;
+  toward a contact whose known version is below 17 and that never announced
+  17, the sender's account signature. A relay cannot see who sent the
+  envelope.
 
 ## Primitive sizes
 
@@ -107,9 +109,9 @@ sees differs; the envelope version stays `0x01`.
 **Keyed trailer (from 3.0.19).** Two contacts whose phones both run 3.0.19 or
 later exchange mesh link keys over their Tor connection (`MeshLinkKeys`: each
 sends the other a 32-byte pair secret, and both derive the same link key from
-the two secrets). A sender that holds both secrets for the recipient, and knows
-that the recipient announces messaging minor version 17 or later, seals with
-the keyed trailer: `authKey = KDF(SENDER_AUTH_KEY_V2, linkKey)` and
+the two secrets). Toward a recipient that has announced messaging minor
+version 17 or later at any time, a sender seals with the keyed trailer, and
+only with it: `authKey = KDF(SENDER_AUTH_KEY_V2, linkKey)` and
 `tag = MAC(SENDER_AUTH_V2, authKey, transcript || prefix)`. Because the key is
 held by exactly the two contacts, the opened record proves to the recipient
 that the sender wrote it, and proves nothing to anyone else: the recipient
@@ -122,8 +124,22 @@ a keyed envelope is refused at the recipient; the text and group senders
 reseal and send such a message again on their next pass, so the window delays
 a message but does not lose it.
 
-**Signed trailer.** Towards a contact that has not exchanged mesh link keys,
-or runs an earlier version, the trailer is the sender's hybrid account
+**Which trailer.** From 3.0.19 this phone remembers per contact, in the same database transaction that stores the contact's version update, that it announced messaging minor version 17, and never signs toward it again, whatever it announces later (`UnsignedFormsMemory`; cleared only when the contact is removed, kept across restarts and re-keys). Toward such a contact a
+send for which the sender holds no usable link key (none yet, or the contact
+returned this phone's own pair secret) is refused before any one-time
+prekey is used, and the message stays queued for a later attempt; Tor
+delivery is unchanged. A send to a recipient that is not a contact, or
+during a database error, is refused the same way instead of being signed.
+Until a contact's messaging version is known (its first version update,
+which arrives over the first connection) nothing is sealed to it. The signed
+trailer below goes only to a contact whose known version is below 17 and
+that never announced 17 (`MeshLinkKeys.sendingLinkKeyFor`). A contact that
+announces a lower version from the start, or that the user removes and adds
+again, still receives the signed trailer. Cover frames are sealed to a
+throwaway key and a random recipient and are not records anyone can open.
+
+**Signed trailer.** Towards a contact whose known messaging version is below
+17 and that never announced 17, the trailer is the sender's hybrid account
 signature under the label `SENDER_AUTH`, as in every release up to 3.0.18. A
 signature is transferable: whoever holds the opened record can show others
 that this account signed this text at this time to this recipient.
@@ -165,9 +181,13 @@ bundleSig[3373]           over everything above
 
 Both signatures are hybrid and are verified against the bundle's own identity key.
 
-Version 2 (`0x02`), sent from 3.0.19 to a contact on messaging minor version
-17 or later (`MESH_SENDER_AUTH_V2_MIN_VERSION`): the same fields with both
-signature fields absent, 6746 bytes shorter.
+Version 2 (`0x02`), sent from 3.0.19 to a contact that has announced
+messaging minor version 17 or later at any time
+(`MESH_SENDER_AUTH_V2_MIN_VERSION`, remembered as for the keyed trailer
+above): the same fields with both signature fields absent, 6746 bytes
+shorter. To a contact whose version is not known yet no bundle is sent; the
+bundle follows when its version update arrives (`MeshBundleManager`), so a
+new contact on 3.0.19 never receives a version 1 bundle.
 
 ```
 version[1]                0x02
@@ -191,7 +211,7 @@ signatures verify; a version 2 bundle whose identity key is not the sending
 contact's is dropped, and the bundle store used without a contact list
 (`MeshBundleStore` without a `ContactManager`) accepts signed bundles only.
 Version 1 bundles are still accepted from any contact and are still sent to
-older contacts. The envelope built from either version is the same: the
+a contact whose known version is below 17 and that never announced 17. The envelope built from either version is the same: the
 transcript carries the recipient's identity keys and prekeys, not the bundle
 version or its signatures, so a sender that holds a version 2 bundle seals
 exactly as one that holds version 1, and the cover and padding sizes of the
