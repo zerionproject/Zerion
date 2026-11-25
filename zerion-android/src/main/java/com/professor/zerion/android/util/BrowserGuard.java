@@ -14,6 +14,7 @@ import com.professor.zerion.R;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.net.IDN;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -127,7 +128,7 @@ public final class BrowserGuard {
 
 	public static String shown(String url) {
 		String opened = opened(url);
-		return DisplayNames.clean(opened == null ? url : opened);
+		return opened == null ? DisplayNames.clean(url) : opened;
 	}
 
 	@Nullable
@@ -146,6 +147,7 @@ public final class BrowserGuard {
 
 		private static final String AUTHORITY_END = "/\\?#";
 		private static final int HIGHEST_PORT = 65_535;
+		private static final String HEX = "0123456789ABCDEF";
 
 		private final String writtenHost;
 		private final String host;
@@ -202,8 +204,32 @@ public final class BrowserGuard {
 				host = ascii.toLowerCase(Locale.ROOT);
 			}
 			if (!isPort(port)) return null;
-			return new WebLink(writtenHost, host,
-					scheme + "://" + host + port + url.substring(end));
+			return new WebLink(writtenHost, host, scheme + "://" + host + port
+					+ pathWithHiddenLettersEncoded(url.substring(end)));
+		}
+
+		private static String pathWithHiddenLettersEncoded(String rest) {
+			StringBuilder out = new StringBuilder(rest.length());
+			int i = 0;
+			if (rest.startsWith("\\")) {
+				out.append('/');
+				i = 1;
+			}
+			while (i < rest.length()) {
+				int cp = rest.codePointAt(i);
+				i += Character.charCount(cp);
+				if (!DisplayNames.hidden(cp)) {
+					out.appendCodePoint(cp);
+					continue;
+				}
+				String letter = Character.getType(cp) == Character.SURROGATE
+						? "\uFFFD" : new String(Character.toChars(cp));
+				for (byte b : letter.getBytes(StandardCharsets.UTF_8)) {
+					out.append('%').append(HEX.charAt((b >> 4) & 0xF))
+							.append(HEX.charAt(b & 0xF));
+				}
+			}
+			return out.toString();
 		}
 
 		private static boolean isPort(String port) {

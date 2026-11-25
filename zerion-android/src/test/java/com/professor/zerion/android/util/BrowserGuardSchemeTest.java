@@ -128,7 +128,8 @@ public class BrowserGuardSchemeTest {
 		android.widget.TextView message =
 				d.findViewById(android.R.id.message);
 		String text = message.getText().toString();
-		assertTrue(text, text.endsWith("https://example.org/txt.exe"));
+		assertTrue(text, text.endsWith("https://example.org/%E2%80%AEtxt.exe"));
+		assertFalse(text, text.contains("\u202E"));
 	}
 
 	@Test
@@ -258,6 +259,27 @@ public class BrowserGuardSchemeTest {
 				"https://[2001:db8::1]:8443/login", false);
 		assertShownThenOpened("https://[2001:db8::1]:443/",
 				"https://[2001:db8::1]:443/", false);
+	}
+
+	@Test
+	public void hiddenLettersAfterTheHostAreShownAndOpenedAsTheSameCodes() {
+		assertShownThenOpened(
+				"https://example.org/a\u202Eb?c=\u200Bd#e\u0007\u2066",
+				"https://example.org/a%E2%80%AEb?c=%E2%80%8Bd#e%07%E2%81%A6",
+				false);
+		assertShownThenOpened("https://example.org/\uDB40\uDC41x\uD800",
+				"https://example.org/%F3%A0%81%81x%EF%BF%BD", false);
+	}
+
+	@Test
+	public void aBackslashAfterTheHostOpensAsTheSlashBrowsersReadItAs() {
+		String url = "https://example.org\\@evil.example/x";
+		assertEquals("example.org", BrowserGuard.webHost(url));
+		assertShownThenOpened(url, "https://example.org/@evil.example/x",
+				false);
+		Intent i = openAndConfirm(host(), url);
+		assertNotNull(i);
+		assertEquals("example.org", i.getData().getHost());
 	}
 
 	@Test
