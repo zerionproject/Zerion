@@ -112,6 +112,10 @@ public class VaultViewModel extends AndroidViewModel {
 	private final Object unlockConfirmationLock = new Object();
 	@Nullable
 	private char[] firstUnlockEntry;
+	private final MutableLiveData<Boolean> unlockNewPassword =
+			new MutableLiveData<>(false);
+	@Nullable
+	private char[] newPasswordOpener;
 	private long unlockConfirmationEpoch;
 	private final SaveLedger<NoteSaveResult> noteSaves = new SaveLedger<>();
 	private final Map<Long, UnsavedNote> unsavedNotes = new HashMap<>();
@@ -1828,6 +1832,10 @@ public class VaultViewModel extends AndroidViewModel {
 		return unlockConfirmation;
 	}
 
+	public LiveData<Boolean> getUnlockNewPassword() {
+		return unlockNewPassword;
+	}
+
 	public void discardUnlockConfirmation() {
 		synchronized (unlockConfirmationLock) {
 			unlockConfirmationEpoch++;
@@ -1835,15 +1843,40 @@ public class VaultViewModel extends AndroidViewModel {
 				Arrays.fill(firstUnlockEntry, '\0');
 				firstUnlockEntry = null;
 			}
+			forgetNewPasswordOpener();
 			unlockConfirmation.postValue(false);
+			unlockNewPassword.postValue(false);
+		}
+	}
+
+	private void forgetNewPasswordOpener() {
+		if (newPasswordOpener != null) {
+			Arrays.fill(newPasswordOpener, '\0');
+			newPasswordOpener = null;
+		}
+	}
+
+	private void keepNewPasswordOpener(char[] opener, long epoch) {
+		synchronized (unlockConfirmationLock) {
+			if (unlockConfirmationEpoch != epoch) return;
+			forgetNewPasswordOpener();
+			newPasswordOpener = opener.clone();
+		}
+	}
+
+	private void dropNewPasswordOpener(long epoch) {
+		synchronized (unlockConfirmationLock) {
+			if (unlockConfirmationEpoch == epoch) forgetNewPasswordOpener();
 		}
 	}
 
 	private void showUnlockConfirmation(boolean asked, long epoch) {
 		synchronized (unlockConfirmationLock) {
-			unlockConfirmation.postValue(asked
-					&& unlockConfirmationEpoch == epoch
+			boolean current = unlockConfirmationEpoch == epoch;
+			unlockConfirmation.postValue(asked && current
 					&& firstUnlockEntry != null);
+			unlockNewPassword.postValue(current
+					&& newPasswordOpener != null);
 		}
 	}
 
@@ -1862,19 +1895,23 @@ public class VaultViewModel extends AndroidViewModel {
 		isLoading.postValue(true);
 		long pendingMark = vaultManager.markUnlockPending();
 		char[] firstEntry;
+		char[] opener;
 		long epoch;
 		synchronized (unlockConfirmationLock) {
 			firstEntry = firstUnlockEntry;
 			firstUnlockEntry = null;
+			opener = newPasswordOpener != null
+					? newPasswordOpener.clone() : null;
 			epoch = unlockConfirmationEpoch;
 		}
 
 		try {
-			dbExecutor.execute(() -> unlockNow(password, firstEntry,
+			dbExecutor.execute(() -> unlockNow(password, firstEntry, opener,
 					pendingMark, epoch));
 		} catch (java.util.concurrent.RejectedExecutionException e) {
 			Arrays.fill(password, '\0');
 			if (firstEntry != null) Arrays.fill(firstEntry, '\0');
+			if (opener != null) Arrays.fill(opener, '\0');
 			vaultManager.cancelUnlockPending();
 			errorMessage.postValue(text(R.string.vault_msg_unlock_failed));
 			showUnlockConfirmation(false, epoch);
@@ -1882,15 +1919,30 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 	}
 
+	private static boolean keepsChoosing(VaultManager.UnlockResult result) {
+		return result == VaultManager.UnlockResult.CONFIRM_NEEDED
+				|| result == VaultManager.UnlockResult.NEW_PASSWORD_REFUSED
+				|| result == VaultManager.UnlockResult.ENTRIES_DIFFER;
+	}
+
 	private void unlockNow(char[] password, @Nullable char[] firstEntry,
-			long pendingMark, long epoch) {
+			@Nullable char[] opener, long pendingMark, long epoch) {
 		boolean confirmNeeded = false;
 		try {
-			VaultManager.UnlockResult result = firstEntry == null
+			VaultManager.UnlockResult result = opener != null
+					? vaultManager.chooseNewPassword(opener, firstEntry,
+							password, pendingMark)
+					: firstEntry == null
 					? vaultManager.unlock(password, pendingMark)
 					: vaultManager.confirmAndUnlock(firstEntry, password,
 							pendingMark);
-			if (result == VaultManager.UnlockResult.OPENED) {
+			if (!keepsChoosing(result)) {
+				dropNewPasswordOpener(epoch);
+			}
+			if (result == VaultManager.UnlockResult.NEW_PASSWORD_REQUIRED) {
+				keepNewPasswordOpener(password, epoch);
+				errorMessage.postValue(null);
+			} else if (result == VaultManager.UnlockResult.OPENED) {
 				if (vaultManager.isUnlocked()) {
 					errorMessage.postValue(null);
 					vaultState.postValue(VaultState.UNLOCKED);
@@ -1932,6 +1984,7 @@ public class VaultViewModel extends AndroidViewModel {
 		} finally{
 			Arrays.fill(password, '\0');
 			if (firstEntry != null) Arrays.fill(firstEntry, '\0');
+			if (opener != null) Arrays.fill(opener, '\0');
 			showUnlockConfirmation(confirmNeeded, epoch);
 			isLoading.postValue(false);
 		}

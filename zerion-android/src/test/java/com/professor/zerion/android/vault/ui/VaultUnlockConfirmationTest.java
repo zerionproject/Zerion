@@ -525,4 +525,193 @@ public class VaultUnlockConfirmationTest {
 		assertNull(kept());
 		assertEquals(Arrays.asList(TYPO), firstEntries);
 	}
+
+	private static final String EMOJI = "😀";
+	private static final String NEW = "new vault password 5%Gh";
+
+	private final List<String> openers = new ArrayList<>();
+	private final List<char[]> openersHandedOver = new ArrayList<>();
+
+	private UnlockResult afterFirst;
+	private UnlockResult afterSecond;
+	private boolean choiceStubbed = false;
+
+	private void chooseInTheManager(UnlockResult whenAsked,
+			UnlockResult whenConfirmed) throws Exception {
+		afterFirst = whenAsked;
+		afterSecond = whenConfirmed;
+		if (choiceStubbed) return;
+		choiceStubbed = true;
+		when(rig.vault.manager.unlock(any(), anyLong()))
+				.thenReturn(UnlockResult.NEW_PASSWORD_REQUIRED);
+		when(rig.vault.manager.chooseNewPassword(any(), any(), any(),
+				anyLong())).thenAnswer(a -> {
+					char[] opener = a.getArgument(0);
+					char[] first = a.getArgument(1);
+					openers.add(new String(opener));
+					openersHandedOver.add(opener);
+					if (first == null) return afterFirst;
+					firstEntries.add(new String(first));
+					handedOver.add(first);
+					if (afterSecond == UnlockResult.OPENED) {
+						rig.vault.unlocked = true;
+					}
+					return afterSecond;
+				});
+	}
+
+	private char[] opener() throws Exception {
+		return (char[]) VaultViewModelRig.field(vm, "newPasswordOpener");
+	}
+
+	private boolean choosing() {
+		return Boolean.TRUE.equals(vm.getUnlockNewPassword().getValue());
+	}
+
+	@Test
+	public void anEntryThatIsNothingInItsNormalFormLeadsToANewPassword()
+			throws Exception {
+		chooseInTheManager(UnlockResult.CONFIRM_NEEDED, UnlockResult.OPENED);
+		char[] typed = EMOJI.toCharArray();
+
+		vm.unlockVault(typed);
+
+		assertTrue(choosing());
+		assertFalse(asksAgain());
+		assertNull(vm.getErrorMessage().getValue());
+		assertEquals(EMOJI, new String(opener()));
+		assertWiped(typed);
+		char[] heldOpener = opener();
+
+		vm.unlockVault(NEW.toCharArray());
+
+		assertTrue(choosing());
+		assertTrue(asksAgain());
+		assertEquals(NEW, new String(kept()));
+		char[] first = kept();
+
+		vm.unlockVault(NEW.toCharArray());
+
+		assertEquals(Arrays.asList(EMOJI, EMOJI), openers);
+		assertEquals(Arrays.asList(NEW), firstEntries);
+		assertEquals(VaultViewModel.VaultState.UNLOCKED,
+				vm.getVaultState().getValue());
+		assertFalse(choosing());
+		assertFalse(asksAgain());
+		assertNull(opener());
+		assertNull(kept());
+		assertWiped(heldOpener);
+		assertWiped(first);
+		for (char[] given : openersHandedOver) assertWiped(given);
+		for (char[] given : handedOver) assertWiped(given);
+		verify(rig.vault.manager, times(1)).unlock(any(), anyLong());
+	}
+
+	@Test
+	public void aNewPasswordAgainstTheRuleOrTwoEntriesThatDifferKeepAskingForOne()
+			throws Exception {
+		chooseInTheManager(UnlockResult.NEW_PASSWORD_REFUSED,
+				UnlockResult.ENTRIES_DIFFER);
+		vm.unlockVault(EMOJI.toCharArray());
+
+		vm.unlockVault("short".toCharArray());
+
+		assertEquals(message(R.string.vault_password_rule),
+				vm.getErrorMessage().getValue());
+		assertTrue(choosing());
+		assertFalse(asksAgain());
+		assertEquals(EMOJI, new String(opener()));
+
+		chooseInTheManager(UnlockResult.CONFIRM_NEEDED,
+				UnlockResult.ENTRIES_DIFFER);
+		vm.unlockVault(NEW.toCharArray());
+		vm.unlockVault(TYPED.toCharArray());
+
+		assertEquals(message(R.string.vault_unlock_entries_differ),
+				vm.getErrorMessage().getValue());
+		assertTrue(choosing());
+		assertFalse(asksAgain());
+		assertNull(kept());
+		assertEquals(EMOJI, new String(opener()));
+		assertNotEquals(VaultViewModel.VaultState.UNLOCKED,
+				vm.getVaultState().getValue());
+	}
+
+	@Test
+	public void leavingTheScreenWhileChoosingForgetsTheOldPassword()
+			throws Exception {
+		chooseInTheManager(UnlockResult.CONFIRM_NEEDED, UnlockResult.OPENED);
+		vm.unlockVault(EMOJI.toCharArray());
+		vm.unlockVault(NEW.toCharArray());
+		char[] heldOpener = opener();
+		char[] first = kept();
+
+		vm.discardUnlockConfirmation();
+
+		assertWiped(heldOpener);
+		assertWiped(first);
+		assertNull(opener());
+		assertNull(kept());
+		assertFalse(choosing());
+		assertFalse(asksAgain());
+		vm.unlockVault(NEW.toCharArray());
+		verify(rig.vault.manager, times(2)).unlock(any(), anyLong());
+		assertEquals(Arrays.asList(EMOJI), openers);
+	}
+
+	@Test
+	public void aChosenPasswordThatNoLongerOpensStartsOver() throws Exception {
+		chooseInTheManager(UnlockResult.CONFIRM_NEEDED, UnlockResult.REFUSED);
+		vm.unlockVault(EMOJI.toCharArray());
+		vm.unlockVault(NEW.toCharArray());
+		char[] heldOpener = opener();
+
+		vm.unlockVault(NEW.toCharArray());
+
+		assertEquals(message(R.string.vault_unlock_failed),
+				vm.getErrorMessage().getValue());
+		assertWiped(heldOpener);
+		assertNull(opener());
+		assertFalse(choosing());
+		assertFalse(asksAgain());
+	}
+
+	@Test
+	public void theUnlockScreenAsksForANewPasswordTwice() throws Exception {
+		chooseInTheManager(UnlockResult.CONFIRM_NEEDED, UnlockResult.OPENED);
+		unlockInTheBackground();
+		ActivityController<Host> controller =
+				Robolectric.buildActivity(Host.class).setup();
+		Host host = showUnlockScreen(controller);
+		SecurePasswordEditText field =
+				host.findViewById(R.id.vault_password_input);
+		TextInputLayout layout =
+				host.findViewById(R.id.vault_password_layout);
+
+		enter(host, EMOJI);
+
+		assertEquals(message(R.string.vault_unlock_new_password_title),
+				text(host, R.id.vault_unlock_title_text));
+		assertEquals(message(R.string.vault_unlock_new_password_message),
+				text(host, R.id.vault_unlock_subtitle_text));
+		assertEquals(0, field.length());
+		assertNull(layout.getError());
+
+		enter(host, NEW);
+
+		assertEquals(message(R.string.vault_unlock_new_password_title),
+				text(host, R.id.vault_unlock_title_text));
+		assertEquals(message(R.string.vault_unlock_new_password_again),
+				text(host, R.id.vault_unlock_subtitle_text));
+
+		controller.pause().stop();
+		idle();
+		controller.start().resume();
+		idle();
+
+		assertEquals(message(R.string.vault_unlock_title),
+				text(host, R.id.vault_unlock_title_text));
+		assertNull(opener());
+		assertNull(kept());
+	}
 }
