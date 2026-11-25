@@ -7,6 +7,7 @@ import java.util.List;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static org.zerionproject.core.api.record.Record.MAX_RECORD_PAYLOAD_BYTES;
+import static org.zerionproject.core.api.record.Record.RECORD_HEADER_BYTES;
 
 public interface SyncConstants {
 
@@ -21,6 +22,17 @@ public interface SyncConstants {
 	int MAX_MESSAGE_BODY_LENGTH = MAX_RECORD_PAYLOAD_BYTES - MESSAGE_HEADER_LENGTH;
 
 	int MAX_MESSAGE_LENGTH = MAX_RECORD_PAYLOAD_BYTES;
+
+	int MAX_SYNC_RECORD_BYTES = 1024 * 1024;
+
+	int MESSAGE_FRAGMENT_PAYLOAD_BYTES = 768;
+
+	int MESSAGE_FRAGMENT_OVERHEAD_BYTES =
+			RECORD_HEADER_BYTES + UniqueId.LENGTH + 4;
+
+	int MAX_DELIVERABLE_MESSAGE_BODY_LENGTH = MAX_SYNC_RECORD_BYTES
+			/ (MESSAGE_FRAGMENT_PAYLOAD_BYTES + MESSAGE_FRAGMENT_OVERHEAD_BYTES)
+			* MESSAGE_FRAGMENT_PAYLOAD_BYTES - MESSAGE_HEADER_LENGTH;
 
 	int MAX_MESSAGE_IDS = MAX_RECORD_PAYLOAD_BYTES / UniqueId.LENGTH;
 

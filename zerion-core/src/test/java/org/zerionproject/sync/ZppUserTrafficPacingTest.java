@@ -43,7 +43,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_IDS;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
 import static org.zerionproject.sync.ZppConnectionRunnerImpl.NEVER;
 import static org.zerionproject.sync.ZppConnectionRunnerImpl.OPENING_WINDOW_INTERVAL_MS;
@@ -950,9 +949,9 @@ public class ZppUserTrafficPacingTest {
 
 		assertEquals(Arrays.asList("ack", "ack", "request", "request", "body",
 				"offer", "user"), link.queuedKinds);
-		assertEquals("a reply may carry as many ids as before",
-				Arrays.asList(MAX_MESSAGE_IDS, MAX_MESSAGE_IDS,
-						MAX_MESSAGE_IDS, MAX_MESSAGE_IDS), link.replyLimits);
+		int most = ZppOutgoingSource.MAX_IDS_PER_RECORD;
+		assertEquals("a reply carries as many ids as one record holds",
+				Arrays.asList(most, most, most, most), link.replyLimits);
 		while (link.scheduler.getQueueDepth() > 0) link.slot();
 		assertEquals(link.queuedKinds, link.kinds());
 	}
