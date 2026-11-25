@@ -378,6 +378,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 							scheduler.getUserDepth(),
 							scheduler.getControlDepth(), clock.lastRealMs,
 							sentAt, pacing.idleAfterMs());
+					scheduler.setFast(active);
 					long activeDelay = computeInterval(pacing.activeIntervalMs(),
 							pacing.activeIntervalMs() / JITTER_DIVISOR, random);
 					long delay = active ? activeDelay
