@@ -14,6 +14,7 @@ import org.zerionproject.core.api.crypto.PostQuantumConstants;
 import org.zerionproject.core.api.crypto.PrivateKey;
 import org.zerionproject.core.api.crypto.SignaturePublicKey;
 import org.zerionproject.core.api.data.BdfList;
+import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.identity.AuthorId;
@@ -530,6 +531,92 @@ public class GroupBindingV2Test {
 		for (InviteTestNet.Packet p : offers) {
 			assertEquals(0, identitySigLength(p.body.getList(8)));
 		}
+	}
+
+	@Test
+	public void aVersionStoredBeforeItsEventIsHandledAlreadyCounts()
+			throws Exception {
+		InviteTestNet net = new InviteTestNet();
+		InviteTestNet.Node carol = net.node("Carol", 1);
+		InviteTestNet.Node olga = net.node("Olga", 2);
+		net.connect(carol, olga);
+		int older = MessagingManager.GROUP_BINDING_V2_MIN_VERSION - 1;
+		carol.versionStored(olga, UnsignedFormsMemory.MIN_VERSION);
+		carol.versionStored(olga, older);
+		olga.setVersion(carol, older);
+		byte[] g = carol.manager.createGroup("Club").getGroupId();
+
+		carol.manager.inviteContactToGroup(g, carol.contactIdOf(olga),
+				olga.pub, olga.name);
+		net.pump();
+		BdfList offer = sentOfType(carol, MessageTypes.GROUPTR_INVITE_OFFER)
+				.get(0).body;
+		assertEquals(0, identitySigLength(offer.getList(8)));
+	}
+
+	@Test
+	public void noBindingIsMadeForAContactWhoseVersionIsUnknown()
+			throws Exception {
+		InviteTestNet net = new InviteTestNet();
+		InviteTestNet.Node carol = net.node("Carol", 1);
+		InviteTestNet.Node mia = net.node("Mia", 2);
+		net.connect(carol, mia);
+		byte[] g = carol.manager.createGroup("Club").getGroupId();
+		carol.manager.inviteContactToGroup(g, carol.contactIdOf(mia), mia.pub,
+				mia.name);
+		net.pump();
+		mia.setVersion(carol, -1);
+
+		try {
+			mia.manager.acceptInvite(g);
+			fail("a binding was made for a contact of unknown version");
+		} catch (DbException expected) {
+		}
+		net.pump();
+		assertTrue(sentOfType(mia, MessageTypes.GROUPTR_INVITE_ACCEPT)
+				.isEmpty());
+
+		mia.versionUpdated(carol, UnsignedFormsMemory.MIN_VERSION);
+		mia.manager.acceptInvite(g);
+		net.pump();
+		BdfList accept = sentOfType(mia, MessageTypes.GROUPTR_INVITE_ACCEPT)
+				.get(0).body;
+		assertEquals(0, identitySigLength(accept.getList(4)));
+		assertTrue(carol.manager.isMember(g, key(mia, g)));
+	}
+
+	@Test
+	public void aProbeFromAContactOfUnknownVersionIsAnsweredOnceItIsKnown()
+			throws Exception {
+		InviteTestNet net = new InviteTestNet();
+		InviteTestNet.Node carol = net.node("Carol", 1);
+		InviteTestNet.Node mia = net.node("Mia", 2);
+		InviteTestNet.Node xavi = net.node("Xavi", 3);
+		net.connect(carol, mia);
+		net.connect(carol, xavi);
+		byte[] g = carol.manager.createGroup("Club").getGroupId();
+		join(net, carol, g, mia);
+		join(net, carol, g, xavi);
+		net.pump();
+
+		net.connect(mia, xavi);
+		mia.setVersion(xavi, -1);
+		xavi.versionUpdated(mia, UnsignedFormsMemory.MIN_VERSION);
+		net.pump();
+		assertEquals(1, sentOfType(xavi, MessageTypes.GROUP_KEY_PROBE)
+				.size());
+		assertTrue(sentOfType(mia, MessageTypes.GROUP_KEY_BINDING)
+				.isEmpty());
+
+		mia.versionUpdated(xavi, UnsignedFormsMemory.MIN_VERSION);
+		net.pump();
+		BdfList answer = sentOfType(mia, MessageTypes.GROUP_KEY_BINDING)
+				.get(0).body;
+		assertEquals(0, identitySigLength(answer.getList(2)));
+		assertEquals(mia.contactIdOf(xavi), mia.manager.getMemberContacts(g)
+				.get(toHexString(key(xavi, g))));
+		assertEquals(xavi.contactIdOf(mia), xavi.manager.getMemberContacts(g)
+				.get(toHexString(key(mia, g))));
 	}
 
 	@Test

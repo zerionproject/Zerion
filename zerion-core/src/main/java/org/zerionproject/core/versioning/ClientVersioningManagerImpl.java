@@ -77,6 +77,8 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 	private final List<ClientVersion> clients = new CopyOnWriteArrayList<>();
 	private final Map<ClientMajorVersion, ClientVersioningHook> hooks =
 			new ConcurrentHashMap<>();
+	private final List<RemoteVersionHook> remoteVersionHooks =
+			new CopyOnWriteArrayList<>();
 
 	@Inject
 	ClientVersioningManagerImpl(DatabaseComponent db, ClientHelper clientHelper,
@@ -97,6 +99,11 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 		ClientMajorVersion cmv = new ClientMajorVersion(clientId, majorVersion);
 		clients.add(new ClientVersion(cmv, minorVersion));
 		hooks.put(cmv, hook);
+	}
+
+	@Override
+	public void registerRemoteVersionHook(RemoteVersionHook hook) {
+		remoteVersionHooks.add(hook);
 	}
 
 	@Override
@@ -245,6 +252,9 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 			}
 			for (ClientState cs : newRemoteStates) {
 				if (!oldRemoteStates.contains(cs)) {
+					for (RemoteVersionHook h : remoteVersionHooks) {
+						h.remoteVersionStored(txn, c, cs.clientVersion);
+					}
 					txn.attach(
 							new ClientVersionUpdatedEvent(c, cs.clientVersion));
 				}

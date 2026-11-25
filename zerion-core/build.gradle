@@ -83,11 +83,12 @@ def simulatorJar = tasks.register('transcriptSimulatorJar', Jar) {
 	manifest {
 		attributes 'Main-Class': 'org.zerionproject.tools.TranscriptSimulator'
 	}
+	def runtimeFiles = sourceSets.main.runtimeClasspath
+	inputs.files(runtimeFiles)
+	dependsOn runtimeFiles
 	from toolsOutput
 	from {
-		sourceSets.main.runtimeClasspath.findAll { it.exists() }.collect {
-			it.isDirectory() ? it : zipTree(it)
-		}
+		runtimeFiles.collect { it.isFile() ? zipTree(it) : it }
 	}
 	exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA',
 			'META-INF/*.EC', 'META-INF/INDEX.LIST', 'META-INF/versions/**',

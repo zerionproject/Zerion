@@ -83,12 +83,13 @@ public class MessagingModule {
 	UnsignedFormsMemory provideUnsignedFormsMemory(
 			LifecycleManager lifecycleManager, ContactManager contactManager,
 			DatabaseComponent db, SettingsManager settingsManager,
-			EventBus eventBus, MessagingManager messagingManager) {
+			ClientVersioningManager clientVersioningManager,
+			MessagingManager messagingManager) {
 		UnsignedFormsMemory memory = new UnsignedFormsMemory(db,
 				settingsManager, contactManager, messagingManager);
 		lifecycleManager.registerOpenDatabaseHook(memory);
 		contactManager.registerContactHook(memory);
-		eventBus.addListener(memory);
+		clientVersioningManager.registerRemoteVersionHook(memory);
 		return memory;
 	}
 

@@ -310,6 +310,11 @@ final class GroupTrKeyExchange {
 			int id = contactId.getInt();
 			long now = clock.currentTimeMillis();
 			if (listed(s, b.pub)) {
+				if (answer && formUnknown(contactId)) {
+					db.transaction(false, txn -> keys.storePending(txn,
+							groupId, id, identity, b, now, true));
+					return;
+				}
 				admit(s, c, identity, new GroupTrKeys.Bound(id, identity,
 						b.pub, b.mlDsa, b.timestamp), answer, now);
 				return;
@@ -383,7 +388,8 @@ final class GroupTrKeyExchange {
 						|| p.received > now + PENDING_KEPT_MS
 						|| host.isRemoved(groupId, b.pub)) {
 					dropped.add(e.getKey());
-				} else if (listed(s, b.pub)) {
+				} else if (listed(s, b.pub)
+						&& !(p.answer && formUnknown(c.getId()))) {
 					admit(s, c, b.identity, b, p.answer, now);
 				}
 			}
@@ -459,6 +465,11 @@ final class GroupTrKeyExchange {
 		try {
 			Contact c = contactOrNull(contactId);
 			if (c == null) return;
+			for (GroupTrState s : host.getGroups()) {
+				if (!s.isDissolved() && s.usesGroupKeys()) {
+					membersChanged(s.getGroupId());
+				}
+			}
 			boolean identitySigned = identitySigned(contactId);
 			List<byte[]> groups = new ArrayList<>();
 			List<byte[]> secrets = new ArrayList<>();
@@ -524,6 +535,11 @@ final class GroupTrKeyExchange {
 	private BdfList padding(boolean identitySigned) {
 		return BdfList.of(bytes(GroupTrKeys.PROBE_NONCE_LENGTH), bytes(32),
 				bytes(GroupTrKeys.sealedBindingBytes(identitySigned)));
+	}
+
+	private boolean formUnknown(ContactId contactId) throws DbException {
+		return db.transactionWithResult(true, txn -> unsignedForms.form(txn,
+				contactId) == UnsignedFormsMemory.Form.UNKNOWN);
 	}
 
 	private boolean identitySigned(ContactId contactId) throws DbException {

@@ -168,7 +168,11 @@ public class MeshLinkKeys implements EventListener,
 		try {
 			ContactId c = resolveContact(peerIdentitySigPub);
 			if (c == null) throw new GeneralSecurityException();
-			if (!unsignedOnly(c)) return null;
+			UnsignedFormsMemory.Form form = form(c);
+			if (form == UnsignedFormsMemory.Form.SIGNED) return null;
+			if (form != UnsignedFormsMemory.Form.UNSIGNED) {
+				throw new GeneralSecurityException();
+			}
 			byte[] linkKey = linkKeyFor(c);
 			if (linkKey == null) throw new GeneralSecurityException();
 			return linkKey;
@@ -177,8 +181,8 @@ public class MeshLinkKeys implements EventListener,
 		}
 	}
 
-	boolean unsignedOnly(ContactId c) throws DbException {
-		return unsignedForms.unsignedOnly(c);
+	UnsignedFormsMemory.Form form(ContactId c) throws DbException {
+		return unsignedForms.form(c);
 	}
 
 	@Nullable

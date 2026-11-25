@@ -252,15 +252,26 @@ final class InviteTestNet {
 		}
 
 		void versionUpdated(Node other, int minor) {
-			ContactId c = contactIdOf(other);
-			versions.put(c, minor);
-			Event e = new org.zerionproject.core.api.versioning.event
-					.ClientVersionUpdatedEvent(c,
+			ContactId c = versionStored(other, minor);
+			manager.eventOccurred(new org.zerionproject.core.api.versioning
+					.event.ClientVersionUpdatedEvent(c,
 					new org.zerionproject.core.api.versioning.ClientVersion(
 							MessagingManager.CLIENT_ID,
-							MessagingManager.MAJOR_VERSION, minor));
-			memory.eventOccurred(e);
-			manager.eventOccurred(e);
+							MessagingManager.MAJOR_VERSION, minor)));
+		}
+
+		ContactId versionStored(Node other, int minor) {
+			ContactId c = contactIdOf(other);
+			versions.put(c, minor);
+			try {
+				memory.remoteVersionStored(new Transaction(null, false), c,
+						new org.zerionproject.core.api.versioning
+								.ClientVersion(MessagingManager.CLIENT_ID,
+								MessagingManager.MAJOR_VERSION, minor));
+			} catch (org.zerionproject.core.api.db.DbException e) {
+				throw new AssertionError(e);
+			}
+			return c;
 		}
 
 		void forgetContact(Node other) {
