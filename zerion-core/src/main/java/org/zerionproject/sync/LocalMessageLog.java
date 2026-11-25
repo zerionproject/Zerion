@@ -71,9 +71,17 @@ public class LocalMessageLog implements UserMessageMarker {
 		}
 	}
 
-	public synchronized boolean takeUserTraffic(MessageId id) {
+	public synchronized boolean isUserTraffic(MessageId id) {
 		expire(clock.getAsLong());
-		return traffic.remove(id) != null;
+		return traffic.containsKey(id);
+	}
+
+	public synchronized void noteSentInFull(MessageId id) {
+		traffic.remove(id);
+	}
+
+	public synchronized void noteAcked(Collection<MessageId> acked) {
+		for (MessageId id : acked) traffic.remove(id);
 	}
 
 	public synchronized boolean isUnannounced(MessageId id) {

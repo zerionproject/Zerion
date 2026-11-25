@@ -87,6 +87,9 @@ public class ZppSendScheduler {
 	private volatile boolean ranked = false;
 	@javax.annotation.Nullable
 	private Entry started;
+	private boolean owedUser = false;
+	private boolean tookBulk = false;
+	private volatile boolean lastUserFrame = false;
 	private volatile boolean lastRealUserOriginated = false;
 	private volatile boolean lastRealOpenedWindow = false;
 
@@ -200,6 +203,10 @@ public class ZppSendScheduler {
 		return lastRealOpenedWindow;
 	}
 
+	public boolean lastFrameWasUsers() {
+		return lastUserFrame;
+	}
+
 	public boolean tick() throws IOException {
 		return tickSparse(true) == Sent.REAL;
 	}
@@ -207,20 +214,27 @@ public class ZppSendScheduler {
 	public Sent tickSparse(boolean coverWhenIdle) throws IOException {
 		byte[] bytes = null;
 		Entry record = null;
+		boolean users = false;
 		if (pqReady.getAsBoolean()) {
 			while (bytes == null) {
+				users = false;
+				tookBulk = false;
 				record = control.poll();
 				if (record == null && !held.getAsBoolean()) {
 					record = ranked ? pollRanked() : outgoing.poll();
 					if (record == null && !ranked) record = bulk.poll();
 					if (record != null && record.rank == RANK_USER) {
 						userQueued.decrementAndGet();
+						users = true;
+					} else if (tookBulk && userQueued.get() > 0) {
+						users = true;
 					}
 				}
 				if (record == null) break;
 				bytes = record.materialise();
 			}
 		}
+		lastUserFrame = users && record != null && bytes != null;
 		if (record != null && bytes != null) {
 			lastRealUserOriginated = record.userOriginated;
 			lastRealOpenedWindow = record.opensWindow;
@@ -238,17 +252,22 @@ public class ZppSendScheduler {
 
 	@javax.annotation.Nullable
 	private Entry pollRanked() {
-		Entry first = firstByRank(outgoing);
-		if (first != null) {
-			outgoing.remove(first);
-			return first;
+		Entry small = firstByRank(outgoing);
+		if (small == null || (owedUser && small.rank != RANK_USER)) {
+			Entry big = nextOfStarted();
+			if (big == null) big = firstByRank(bulk);
+			if (big != null && (small == null || big.rank == RANK_USER)) {
+				bulk.remove(big);
+				tookBulk = true;
+				started = big.lastFragment ? null : big;
+				if (big.rank == RANK_USER) owedUser = false;
+				return big;
+			}
 		}
-		first = nextOfStarted();
-		if (first == null) first = firstByRank(bulk);
-		if (first == null) return null;
-		bulk.remove(first);
-		started = first.lastFragment ? null : first;
-		return first;
+		if (small == null) return null;
+		outgoing.remove(small);
+		owedUser = small.rank != RANK_USER;
+		return small;
 	}
 
 	@javax.annotation.Nullable
