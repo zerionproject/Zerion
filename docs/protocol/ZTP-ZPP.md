@@ -512,14 +512,18 @@ A record is at most `ZmmConstants.MAX_RECORD_BYTES` (1 MiB) before
 fragmentation: the receiver reassembles nothing larger, and the sender never
 queues a larger record, which the peer would drop and the sync layer would send
 again forever. From 3.0.19 a stored message whose record can never fit is also
-not reported as sent: it is marked not shared after it is first requested
-(`ZppOutgoingSource.stopOffering`), so it is not offered again on any
-connection and stays visible to its sender. A requested message whose raw
-length is over 994,186 bytes (`SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH`,
-the largest message whose record fits) is always handed to the connection,
-whatever room the batch has (`JdbcDatabase.getRequestedMessagesToSend`), so
-it reaches this path; that covers messages of several megabytes stored by
-3.0.15 to 3.0.18. Such an old message keeps showing as Sent to its sender
+not reported as sent and is no longer offered on any connection: when a batch
+is built, a requested message whose stored length is over 994,186 bytes
+(`SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH`, the largest message whose
+record fits) is marked not shared and no longer requested, in the same
+transaction and from its stored length only, without its body being read
+(`DatabaseComponentImpl.generateRequestedBatch`,
+`JdbcDatabase.getRequestedMessagesLongerThan`); that covers messages of
+several megabytes stored by 3.0.15 to 3.0.18. The connection also refuses
+such a message by its length before encoding it, and a record that still
+turns out too large after encoding is dropped and its message marked not
+shared (`ZppOutgoingSource.stopOffering`). Such a message stays visible to its
+sender. Such an old message keeps showing as Sent to its sender
 after it is no longer offered: the app has no stored state for a private
 message or a group copy that was not sent. When something is due but nothing
 could be sent, the sender waits 10 seconds before it tries again instead of
