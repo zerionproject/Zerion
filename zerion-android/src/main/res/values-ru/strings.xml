@@ -2448,6 +2448,7 @@
 	<string name="vault_msg_update_document_failed">Не удалось обновить документ</string>
 	<string name="vault_msg_saved_earlier_version_kept">Ваши изменения сохранены, но прежнюю версию не удалось убрать. Вы можете удалить её из списка.</string>
 	<string name="vault_doc_password_needed_to_save">Этот документ защищён паролем. Введите этот пароль, чтобы сохранить изменения.</string>
+	<string name="vault_doc_new_password_not_applied">Новый пароль не был применён. У документа остаётся текущий пароль.</string>
 	<string name="vault_msg_save_password_failed">Не удалось сохранить пароль</string>
 	<string name="vault_msg_note_title_empty">Название заметки не может быть пустым</string>
 	<string name="vault_msg_saved">Сохранено</string>

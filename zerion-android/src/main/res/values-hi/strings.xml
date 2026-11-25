@@ -741,6 +741,7 @@
 	<string name="vault_msg_update_document_failed">दस्तावेज़ अपडेट नहीं किया जा सका</string>
 	<string name="vault_msg_saved_earlier_version_kept">आपके बदलाव सहेज लिए गए, लेकिन पिछला संस्करण हटाया नहीं जा सका। आप उसे सूची से हटा सकते हैं।</string>
 	<string name="vault_doc_password_needed_to_save">यह दस्तावेज़ पासवर्ड से सुरक्षित है। अपने बदलाव सहेजने के लिए वही पासवर्ड डालें।</string>
+	<string name="vault_doc_new_password_not_applied">नया पासवर्ड लागू नहीं हुआ। दस्तावेज़ का मौजूदा पासवर्ड ही बना रहता है।</string>
 	<string name="vault_msg_save_password_failed">पासवर्ड सहेजा नहीं जा सका</string>
 	<string name="vault_msg_note_title_empty">नोट का शीर्षक खाली नहीं हो सकता</string>
 	<string name="vault_msg_saved">सहेजा गया</string>

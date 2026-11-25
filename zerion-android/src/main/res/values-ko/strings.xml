@@ -2346,6 +2346,7 @@
 	<string name="vault_msg_update_document_failed">문서를 업데이트하지 못했습니다</string>
 	<string name="vault_msg_saved_earlier_version_kept">변경 사항이 저장되었지만 이전 버전을 제거하지 못했습니다. 목록에서 삭제할 수 있습니다.</string>
 	<string name="vault_doc_password_needed_to_save">이 문서는 비밀번호로 보호되어 있습니다. 변경 사항을 저장하려면 해당 비밀번호를 입력하세요.</string>
+	<string name="vault_doc_new_password_not_applied">새 비밀번호가 적용되지 않았습니다. 문서는 현재 비밀번호를 유지합니다.</string>
 	<string name="vault_msg_save_password_failed">비밀번호를 저장하지 못했습니다</string>
 	<string name="vault_msg_note_title_empty">노트 제목은 비워둘 수 없습니다</string>
 	<string name="vault_msg_saved">저장됨</string>

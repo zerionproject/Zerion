@@ -793,6 +793,7 @@
 	<string name="vault_msg_update_document_failed">Det gick inte att uppdatera dokumentet</string>
 	<string name="vault_msg_saved_earlier_version_kept">Dina ändringar sparades, men den tidigare versionen kunde inte tas bort. Du kan radera den från listan.</string>
 	<string name="vault_doc_password_needed_to_save">Det här dokumentet skyddas av ett lösenord. Ange det lösenordet för att spara dina ändringar.</string>
+	<string name="vault_doc_new_password_not_applied">Det nya lösenordet tillämpades inte. Dokumentet behåller sitt nuvarande lösenord.</string>
 	<string name="vault_msg_save_password_failed">Det gick inte att spara lösenordet</string>
 	<string name="vault_msg_note_title_empty">Anteckningens titel får inte vara tom</string>
 	<string name="vault_msg_saved">Sparat</string>

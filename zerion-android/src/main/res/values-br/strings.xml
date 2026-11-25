@@ -2411,6 +2411,7 @@
 	<string name="vault_msg_update_document_failed">N\'eus ket bet gallet hizivaat an teul</string>
 	<string name="vault_msg_saved_earlier_version_kept">Enrollet eo bet ho kemmoù, met n\'eus ket bet gallet dilemel an handelv kent. Gallout a rit he dilemel diwar ar roll.</string>
 	<string name="vault_doc_password_needed_to_save">Gwarezet eo an teul-mañ gant ur ger-tremen. Roit ar ger-tremen-se evit enrollañ ho kemmoù.</string>
+	<string name="vault_doc_new_password_not_applied">N\'eo ket bet lakaet ar ger-tremen nevez. Mirout a ra an teul e c\'her-tremen a-vremañ.</string>
 	<string name="vault_msg_save_password_failed">N\'eus ket bet gallet enrollañ ar ger-tremen</string>
 	<string name="vault_msg_note_title_empty">Ne c\'hall ket titl an notenn bezañ goullo</string>
 	<string name="vault_msg_saved">Enrollet</string>

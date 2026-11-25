@@ -43,6 +43,8 @@ public class TextEditorFragment extends BaseFragment {
 	private static final String ARG_IS_EDIT_MODE = "is_edit_mode";
 	private static final String ARG_ITEM_ID = "item_id";
 	private static final String STATE_SAVE_REQUEST = "save_request";
+	private static final String STATE_NEW_PASSWORD_LOST =
+			"new_password_lost";
 	private static final long NO_SAVE = 0L;
 	private static final String TAG_NEW_PASSWORD_DIALOG = "password_dialog";
 	private static final String TAG_DOCUMENT_PASSWORD_DIALOG =
@@ -67,6 +69,7 @@ public class TextEditorFragment extends BaseFragment {
 	private boolean hasUnsavedChanges = false;
 	@Nullable
 	private char[] pendingNewPassword;
+	private boolean newPasswordLost = false;
 	private long saveRequest = NO_SAVE;
 	private boolean isMonospace = true;
 
@@ -108,6 +111,8 @@ public class TextEditorFragment extends BaseFragment {
 		if (savedInstanceState != null) {
 			saveRequest = savedInstanceState.getLong(STATE_SAVE_REQUEST,
 					NO_SAVE);
+			newPasswordLost = savedInstanceState.getBoolean(
+					STATE_NEW_PASSWORD_LOST, false);
 		}
 
 		requireActivity().getOnBackPressedDispatcher().addCallback(this,
@@ -138,6 +143,8 @@ public class TextEditorFragment extends BaseFragment {
 	public void onSaveInstanceState(@NonNull Bundle outState) {
 		super.onSaveInstanceState(outState);
 		outState.putLong(STATE_SAVE_REQUEST, saveRequest);
+		outState.putBoolean(STATE_NEW_PASSWORD_LOST,
+				pendingNewPassword != null || newPasswordLost);
 	}
 
 	@Override
@@ -182,7 +189,10 @@ public class TextEditorFragment extends BaseFragment {
 	@Override
 	public void onResume() {
 		super.onResume();
-		requireView().post(this::collectSaveResult);
+		requireView().post(() -> {
+			collectSaveResult();
+			tellIfTheNewPasswordWasLost();
+		});
 	}
 
 	private void setupToolbar() {
@@ -290,8 +300,30 @@ public class TextEditorFragment extends BaseFragment {
 		pendingNewPassword = null;
 	}
 
+	private void tellIfTheNewPasswordWasLost() {
+		if (!newPasswordLost || isSaving() || !isResumed()) {
+			return;
+		}
+		newPasswordLost = false;
+		Toast.makeText(requireContext(),
+				R.string.vault_doc_new_password_not_applied,
+				Toast.LENGTH_LONG).show();
+	}
+
+	private String withTheLostNewPassword(String message) {
+		if (!newPasswordLost) {
+			return message;
+		}
+		newPasswordLost = false;
+		return getString(R.string.vault_doc_new_password_not_applied)
+				+ "\n\n" + message;
+	}
+
 	@Override
 	public void onDestroyView() {
+		if (pendingNewPassword != null) {
+			newPasswordLost = true;
+		}
 		forgetPendingNewPassword();
 		super.onDestroyView();
 	}
@@ -301,6 +333,7 @@ public class TextEditorFragment extends BaseFragment {
 			return;
 		}
 		forgetPendingNewPassword();
+		newPasswordLost = false;
 		String name = checkedName();
 		if (name == null) {
 			return;
@@ -323,6 +356,7 @@ public class TextEditorFragment extends BaseFragment {
 			return;
 		}
 		forgetPendingNewPassword();
+		newPasswordLost = false;
 		String name = checkedName();
 		if (name == null) {
 			return;
@@ -419,6 +453,7 @@ public class TextEditorFragment extends BaseFragment {
 
 		if (result.isStored()) {
 			forgetPendingNewPassword();
+			newPasswordLost = false;
 			if (result.outcome
 					== DocumentSaveResult.Outcome.SAVED_EARLIER_VERSION_KEPT) {
 				viewModel.clearMessages();
@@ -431,16 +466,17 @@ public class TextEditorFragment extends BaseFragment {
 
 		viewModel.clearMessages();
 		if (result.outcome == DocumentSaveResult.Outcome.PASSWORD_REQUIRED) {
-			askForTheDocumentPassword(result.message);
+			askForTheDocumentPassword(withTheLostNewPassword(result.message));
 			return;
 		}
 		showSnackbar(result.message);
 		if (result.outcome == DocumentSaveResult.Outcome.WRONG_PASSWORD) {
-			askForTheDocumentPassword(getString(
-					R.string.vault_doc_password_needed_to_save));
+			askForTheDocumentPassword(withTheLostNewPassword(getString(
+					R.string.vault_doc_password_needed_to_save)));
 			return;
 		}
 		forgetPendingNewPassword();
+		newPasswordLost = false;
 	}
 
 	private boolean isSaving() {

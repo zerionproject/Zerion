@@ -2422,6 +2422,7 @@
 	<string name="vault_msg_update_document_failed">No se pudo actualizar el documento</string>
 	<string name="vault_msg_saved_earlier_version_kept">Tus cambios se guardaron, pero no se pudo quitar la versión anterior. Puedes eliminarla de la lista.</string>
 	<string name="vault_doc_password_needed_to_save">Este documento está protegido con una contraseña. Introduce esa contraseña para guardar tus cambios.</string>
+	<string name="vault_doc_new_password_not_applied">La nueva contraseña no se aplicó. El documento conserva su contraseña actual.</string>
 	<string name="vault_msg_save_password_failed">No se pudo guardar la contraseña</string>
 	<string name="vault_msg_note_title_empty">El título de la nota no puede estar vacío</string>
 	<string name="vault_msg_saved">Guardado</string>

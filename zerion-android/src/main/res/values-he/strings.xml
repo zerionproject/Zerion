@@ -757,6 +757,7 @@
 	<string name="vault_msg_update_document_failed">עדכון המסמך נכשל</string>
 	<string name="vault_msg_saved_earlier_version_kept">השינויים שלך נשמרו, אבל לא ניתן היה להסיר את הגרסה הקודמת. אפשר למחוק אותה מהרשימה.</string>
 	<string name="vault_doc_password_needed_to_save">המסמך הזה מוגן בסיסמה. יש להזין את הסיסמה הזו כדי לשמור את השינויים שלך.</string>
+	<string name="vault_doc_new_password_not_applied">הסיסמה החדשה לא הוחלה. המסמך שומר על הסיסמה הנוכחית שלו.</string>
 	<string name="vault_msg_save_password_failed">שמירת הסיסמה נכשלה</string>
 	<string name="vault_msg_note_title_empty">כותרת הפתק לא יכולה להיות ריקה</string>
 	<string name="vault_msg_saved">נשמר</string>

@@ -126,6 +126,7 @@ public class TextEditorSaveTest {
 	@Before
 	public void setUp() throws Exception {
 		ShadowDialog.reset();
+		org.robolectric.shadows.ShadowToast.reset();
 		rig = new VaultViewModelRig();
 		model = rig.newModel();
 		controller = Robolectric.buildActivity(Host.class).setup();
@@ -593,6 +594,123 @@ public class TextEditorSaveTest {
 		assertArrayEquals(bytes("second draft"),
 				rig.vault.manager.getItemContentWithPassword(now.id,
 						"open sesame".toCharArray()));
+	}
+
+	private static String shownMessage(AlertDialog dialog) {
+		android.widget.TextView message =
+				dialog.findViewById(R.id.password_message);
+		assertNotNull(message);
+		return message.getText().toString();
+	}
+
+	private static void assertHoldsNo(Bundle state, String secret) {
+		for (String key : state.keySet()) {
+			Object value = state.get(key);
+			String seen = value instanceof char[]
+					? new String((char[]) value) : String.valueOf(value);
+			assertFalse(key + " holds the new password",
+					seen.contains(secret));
+		}
+	}
+
+	@Test
+	public void aNewPasswordLostWhileItsSaveRunsIsNamedBeforeTheCurrentOneIsAsked()
+			throws Exception {
+		saveInTheBackground();
+		VaultItem old = storedWithPassword();
+		Editor first = editing(old);
+		text(first).setText("second draft");
+		first.onOptionsItemSelected(
+				new RoboMenuItem(R.id.action_save_with_password));
+		answer(dialog(), "new secret", "new secret");
+		assertEquals(1, queued.size());
+		Bundle state = new Bundle();
+		first.onSaveInstanceState(state);
+		assertHoldsNo(state, "new secret");
+
+		Editor editor = rebuilt();
+		runTheBackground();
+
+		AlertDialog asked = dialog();
+		assertNotNull(asked);
+		assertTrue(asked.isShowing());
+		String message = shownMessage(asked);
+		assertTrue("the lost new password was not named: " + message,
+				message.startsWith(rig.app.getString(
+						R.string.vault_doc_new_password_not_applied)));
+		assertTrue(message.endsWith(rig.app.getString(
+				R.string.vault_doc_password_needed_to_save)));
+
+		answer(asked, "open sesame", null);
+		runTheBackground();
+
+		assertFalse(isOpen());
+		assertEquals(1, rig.vault.size());
+		VaultItem now = rig.vault.named("notes.txt");
+		assertNotNull(now);
+		assertTrue(now.hasExtraPassword);
+		assertArrayEquals(bytes("second draft"),
+				rig.vault.manager.getItemContentWithPassword(now.id,
+						"open sesame".toCharArray()));
+		assertNotEquals(rig.app.getString(
+				R.string.vault_doc_new_password_not_applied),
+				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+	}
+
+	@Test
+	public void aNewPasswordLostWhileTheCurrentOneIsAskedIsNamedAfterTheRebuild()
+			throws Exception {
+		VaultItem old = storedWithPassword();
+		Editor first = editing(old);
+		text(first).setText("second draft");
+		first.onOptionsItemSelected(
+				new RoboMenuItem(R.id.action_save_with_password));
+		answer(dialog(), "new secret", "new secret");
+		assertTrue(dialog().isShowing());
+		Bundle state = new Bundle();
+		first.onSaveInstanceState(state);
+		assertHoldsNo(state, "new secret");
+		assertNull(org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+
+		controller.recreate();
+		host = controller.get();
+		idle();
+
+		assertEquals(rig.app.getString(
+				R.string.vault_doc_new_password_not_applied),
+				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+		org.robolectric.shadows.ShadowToast.reset();
+		Editor again = (Editor) host.getSupportFragmentManager()
+				.findFragmentByTag(TAG);
+		dialog().dismiss();
+		idle();
+		save(again);
+		answer(dialog(), "open sesame", null);
+
+		assertFalse(isOpen());
+		assertNull("the lost new password was named twice",
+				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+		VaultItem now = rig.vault.named("notes.txt");
+		assertNotNull(now);
+		assertArrayEquals(bytes("second draft"),
+				rig.vault.manager.getItemContentWithPassword(now.id,
+						"open sesame".toCharArray()));
+	}
+
+	@Test
+	public void aRebuildWithoutANewPasswordSaysNothingAboutOne()
+			throws Exception {
+		VaultItem old = storedWithPassword();
+		Editor editor = editing(old);
+		text(editor).setText("second draft");
+		save(editor);
+		assertNotNull(dialog());
+
+		controller.recreate();
+		host = controller.get();
+		idle();
+
+		assertNull(org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
 	}
 
 	@Test
