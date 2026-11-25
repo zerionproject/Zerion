@@ -573,6 +573,47 @@ public class ZppRunnerWakeTest {
 	}
 
 	@Test(timeout = 60_000)
+	public void aStartedRecordCarriesTheFastRateOnlyWhenCharged()
+			throws Exception {
+		ScriptedConnection conn = connection();
+		AtomicReference<ZppSendScheduler> opened = new AtomicReference<>();
+		ZppConnectionRunnerImpl runner = new ZppConnectionRunnerImpl(records,
+				capturing(opened), stepPacing(true), now::get, sink);
+		Thread t = run(runner, conn);
+		try {
+			await(() -> conn.sent.size() == 1, "the link parameters frame");
+			conn.deliver(ZmmRecord.encode(ZmmConstants.TYPE_LINK_PARAMS,
+					ZppLinkParams.encode(true)));
+			await(() -> opened.get() != null, "the outgoing source");
+			ZppSendScheduler scheduler = opened.get();
+			await(scheduler::isRanked, "the paced order");
+			bulk(scheduler, 1, ZppSendScheduler.RANK_AUTOMATIC);
+			now.addAndGet(STEP_BETWEEN_MS);
+			await(() -> count("sent-real") == 2, "the first frame of a record");
+			bulk(scheduler, 2, ZppSendScheduler.RANK_USER);
+
+			now.addAndGet(61_000L);
+			await(() -> count("sent-real") == 3, "the started record goes on");
+			now.addAndGet(STEP_BETWEEN_MS);
+			await(() -> count("sent-real") == 4,
+					"charged to the user's data, it carries the fast rate");
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+	}
+
+	private static void bulk(ZppSendScheduler scheduler, long id, int rank) {
+		for (byte[] frame : org.zerionproject.message.ZmmFragmenter.fragment(
+				ZmmConstants.TYPE_SYNC, new byte[5 * 500], id, 600)) {
+			scheduler.enqueueRecord(frame, false, false, rank, true,
+					ZppSendScheduler.charged(() -> {
+					}, null));
+		}
+	}
+
+	@Test(timeout = 60_000)
 	public void onADenseLinkAReceiptOpensTheWindowOnlyWithTheSharedRation()
 			throws Exception {
 		ScriptedConnection conn = connection();

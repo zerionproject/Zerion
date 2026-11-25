@@ -765,6 +765,7 @@ public class ZppUserTrafficPacingTest {
 		ZppSendScheduler scheduler = new ZppSendScheduler(record -> {
 		}, () -> true);
 		scheduler.setRanked(true);
+		scheduler.setFast(true);
 		AtomicInteger charged = new AtomicInteger();
 		queue(scheduler, 1, ZppSendScheduler.RANK_AUTOMATIC, null);
 		scheduler.tick();
@@ -798,6 +799,79 @@ public class ZppUserTrafficPacingTest {
 				ZmmConstants.TYPE_ROOT_EVOLUTION, new byte[] {1}));
 		scheduler.tick();
 		assertFalse(scheduler.lastFrameWasUsers());
+	}
+
+	@Test
+	public void atTheIdleRateAStartedRecordAheadOfTheUsersDataIsNotCharged()
+			throws Exception {
+		ZppSendScheduler scheduler = new ZppSendScheduler(record -> {
+		}, () -> true);
+		scheduler.setRanked(true);
+		AtomicInteger charged = new AtomicInteger();
+		queue(scheduler, 1, ZppSendScheduler.RANK_AUTOMATIC, null);
+		scheduler.tick();
+		queue(scheduler, 2, ZppSendScheduler.RANK_USER,
+				charged::incrementAndGet);
+
+		for (int i = 0; i < 4; i++) {
+			scheduler.tick();
+			assertFalse(scheduler.lastFrameWasUsers());
+		}
+		assertEquals("nothing charged at the idle rate", 0, charged.get());
+		assertEquals(5, scheduler.getUserDepth());
+		for (int i = 0; i < 5; i++) {
+			scheduler.tick();
+			assertTrue(scheduler.lastFrameWasUsers());
+		}
+		assertEquals(5, charged.get());
+	}
+
+	@Test
+	public void anIdleLinkLeavesTheBudgetOfAPartBehindAnOldRecordAlone()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message part = link.message(10 * FRAME_BYTES);
+		link.log.noteUserPart(part.getId());
+		Message old = new Message(new MessageId(getRandomId()), link.group,
+				NOW - DAY, new byte[100 * FRAME_BYTES]);
+		link.request(old);
+		link.slot();
+		link.request(part);
+		int partFrames = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
+				OversizedRecordTest.codec().encodeMessage(part), 0,
+				FRAME_BYTES).size();
+		while (link.scheduler.getBulkDepth() > partFrames) link.slot();
+
+		assertEquals("the old record charged nothing", partFrames,
+				link.scheduler.getUserDepth());
+		while (link.busy()) link.slot();
+		for (Frame f : link.frames) assertEquals(IDLE_MS, f.gapAfter);
+		assertEquals(0, link.log.userFramesLeft(part.getId(), partFrames));
+		assertFalse(link.log.isUserTraffic(part.getId()));
+	}
+
+	@Test
+	public void insideAWindowAStartedRecordAheadOfThePartIsCharged()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message part = link.message(10 * FRAME_BYTES);
+		link.log.noteUserPart(part.getId());
+		Message old = new Message(new MessageId(getRandomId()), link.group,
+				NOW - DAY, new byte[100 * FRAME_BYTES]);
+		link.open();
+		link.request(old);
+		link.slot();
+		link.request(part);
+		int partFrames = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
+				OversizedRecordTest.codec().encodeMessage(part), 0,
+				FRAME_BYTES).size();
+		while (link.scheduler.getBulkDepth() > partFrames) link.slot();
+
+		assertEquals("the old record used the part's budget", 0,
+				link.scheduler.getUserDepth());
+		assertEquals(0, link.log.userFramesLeft(part.getId(), partFrames));
 	}
 
 	@Test
@@ -1398,6 +1472,7 @@ public class ZppUserTrafficPacingTest {
 					scheduler.getUserDepth(),
 					scheduler.getControlDepth(), slots.lastRealMs, now[0],
 					WINDOW_MS);
+			scheduler.setFast(active);
 			long gap = active ? ACTIVE_MS : IDLE_MS;
 			frames.get(frames.size() - 1).gapAfter = gap;
 			now[0] += gap;

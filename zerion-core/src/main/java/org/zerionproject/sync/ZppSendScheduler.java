@@ -122,6 +122,7 @@ public class ZppSendScheduler {
 	private boolean owedUser = false;
 	private boolean tookBulk = false;
 	private boolean chargedAhead = false;
+	private volatile boolean fast = false;
 	private volatile boolean lastUserFrame = false;
 	private volatile boolean lastControlFrame = false;
 	private volatile boolean lastRealUserOriginated = false;
@@ -245,6 +246,10 @@ public class ZppSendScheduler {
 		return lastControlFrame;
 	}
 
+	public void setFast(boolean fast) {
+		this.fast = fast;
+	}
+
 	public boolean tick() throws IOException {
 		return tickSparse(true) == Sent.REAL;
 	}
@@ -306,7 +311,7 @@ public class ZppSendScheduler {
 				bulk.remove(big);
 				tookBulk = true;
 				started = big.lastFragment ? null : big;
-				if (big.rank != RANK_USER && userQueued.get() > 0) {
+				if (big.rank != RANK_USER && fast && userQueued.get() > 0) {
 					chargedAhead = chargeWaitingUserFrame();
 				}
 				if (big.rank == RANK_USER || ahead) owedUser = false;
