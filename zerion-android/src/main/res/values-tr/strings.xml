@@ -837,6 +837,7 @@
 	<string name="vault_msg_update_document_failed">Belge güncellenemedi</string>
 	<string name="vault_msg_saved_earlier_version_kept">Değişiklikleriniz kaydedildi, ancak önceki sürüm kaldırılamadı. Onu listeden silebilirsiniz.</string>
 	<string name="vault_doc_password_needed_to_save">Bu belge bir parolayla korunuyor. Değişikliklerinizi kaydetmek için o parolayı girin.</string>
+	<string name="vault_doc_new_password_not_applied">Yeni parola uygulanmadı. Belge mevcut parolasını koruyor.</string>
 	<string name="vault_msg_save_password_failed">Parola kaydedilemedi</string>
 	<string name="vault_msg_note_title_empty">Not başlığı boş olamaz</string>
 	<string name="vault_msg_saved">Kaydedildi</string>
@@ -2963,4 +2964,9 @@
 		<item quantity="one">Eski bir sürümdeki %d üye sabitlenmiş mesajı görmüyor.</item>
 		<item quantity="other">Eski bir sürümdeki %d üye sabitlenmiş mesajı görmüyor.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Kasa parolanızı onaylayın</string>
+	<string name="vault_unlock_confirm_message">Önceki bir sürüm bu kasayı parolası olmadan kaydetti. Parolanızı bir kez daha yazın. Zerion bundan sonra kasayı yeniden bu parolayla korur.</string>
+	<string name="vault_unlock_entries_differ">İki giriş aynı değil. Baştan başlayın.</string>
+	<string name="vault_unlock_not_confirmed">Zerion kasayı depolama alanında doğrulayamadı. Yeniden deneyin.</string>
+	<string name="vault_password_rule">En az 8 harf, rakam veya simge kullanın. Emojiler sayılmaz.</string>
 </resources>

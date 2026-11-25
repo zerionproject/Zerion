@@ -833,6 +833,7 @@
 	<string name="vault_msg_update_document_failed">Nepavyko atnaujinti dokumento</string>
 	<string name="vault_msg_saved_earlier_version_kept">Jūsų pakeitimai išsaugoti, tačiau ankstesnės versijos pašalinti nepavyko. Galite ją ištrinti iš sąrašo.</string>
 	<string name="vault_doc_password_needed_to_save">Šis dokumentas apsaugotas slaptažodžiu. Įveskite šį slaptažodį, kad išsaugotumėte pakeitimus.</string>
+	<string name="vault_doc_new_password_not_applied">Naujas slaptažodis nebuvo pritaikytas. Dokumentas išlaiko dabartinį slaptažodį.</string>
 	<string name="vault_msg_save_password_failed">Nepavyko įrašyti slaptažodžio</string>
 	<string name="vault_msg_note_title_empty">Užrašo pavadinimas negali būti tuščias</string>
 	<string name="vault_msg_saved">Įrašyta</string>
@@ -3056,4 +3057,9 @@
 		<item quantity="many">%d nario su senesne versija nemato prisegtos žinutės.</item>
 		<item quantity="other">%d narių su senesne versija nemato prisegtos žinutės.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Patvirtinkite saugyklos slaptažodį</string>
+	<string name="vault_unlock_confirm_message">Ankstesnė versija išsaugojo šią saugyklą be jos slaptažodžio. Įveskite slaptažodį dar kartą. Tada Zerion vėl apsaugos saugyklą šiuo slaptažodžiu.</string>
+	<string name="vault_unlock_entries_differ">Du įvedimai nesutampa. Pradėkite iš naujo.</string>
+	<string name="vault_unlock_not_confirmed">Zerion nepavyko patvirtinti saugyklos atmintyje. Bandykite dar kartą.</string>
+	<string name="vault_password_rule">Naudokite bent 8 raides, skaitmenis arba simbolius. Jaustukai neskaičiuojami.</string>
 </resources>

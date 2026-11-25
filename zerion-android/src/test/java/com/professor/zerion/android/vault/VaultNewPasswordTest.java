@@ -240,7 +240,7 @@ public class VaultNewPasswordTest {
 	}
 
 	@Test
-	public void aRefusedNewVaultPasswordIsReportedAsAFailedChange()
+	public void aRefusedNewVaultPasswordIsReportedWithTheRule()
 			throws Exception {
 		VaultManager m = created();
 		byte[] before = header();
@@ -248,8 +248,7 @@ public class VaultNewPasswordTest {
 
 		vm.changePassword(PASSWORD.clone(), WIPED.clone());
 
-		assertEquals(app.getString(
-				R.string.vault_msg_change_password_failed),
+		assertEquals(app.getString(R.string.vault_password_rule),
 				vm.getErrorMessage().getValue());
 		assertNull(vm.getSuccessMessage().getValue());
 		assertArrayEquals(before, header());
@@ -273,7 +272,7 @@ public class VaultNewPasswordTest {
 		VaultViewModel vm = screens(m);
 		vm.createVault(WIPED.clone(), WIPED.clone());
 
-		assertEquals(app.getString(R.string.vault_msg_create_failed),
+		assertEquals(app.getString(R.string.vault_password_rule),
 				vm.getErrorMessage().getValue());
 		assertFalse(m.vaultExists());
 	}
@@ -359,10 +358,78 @@ public class VaultNewPasswordTest {
 			VaultViewModel vm = screens(m);
 			vm.createVault(typed.clone(), typed.clone());
 
-			assertEquals(app.getString(R.string.vault_msg_create_failed),
+			assertEquals(app.getString(R.string.vault_password_rule),
 					vm.getErrorMessage().getValue());
 			assertFalse(m.vaultExists());
 		}
+	}
+
+	@Test
+	public void theScreensAskTheRuleTheManagerApplies() throws Exception {
+		char[][] refused = {ONLY_PICTURES, ONLY_INVISIBLE, FOUR_AND_PICTURES,
+				SEVEN_AND_INVISIBLE, WIPED, WITH_A_ZERO_INSIDE, new char[0],
+				"Seven7&".toCharArray()};
+		for (char[] typed : refused) {
+			char[] asked = typed.clone();
+			assertFalse(VaultManager.acceptsNewPassword(asked));
+			assertArrayEquals(typed, asked);
+			assertThrows(IllegalArgumentException.class, () ->
+					process().createVault(typed.clone()));
+		}
+		char[][] accepted = {EIGHT, EIGHT_AND_PICTURES, PASSWORD,
+				NEW_PASSWORD};
+		for (char[] typed : accepted) {
+			char[] asked = typed.clone();
+			assertTrue(VaultManager.acceptsNewPassword(asked));
+			assertArrayEquals(typed, asked);
+		}
+		VaultManager m = process();
+		m.createVault(EIGHT_AND_PICTURES.clone());
+		assertTrue(m.vaultExists());
+	}
+
+	@Test
+	public void theNewPasswordIsTakenBeforeTheSlowCheckOfTheOldOne()
+			throws Exception {
+		char[] handedOver = NEW_PASSWORD.clone();
+		boolean[] changing = {false};
+		int[] wipedAtDerivation = {0};
+		int[] derivations = {0};
+		VaultManager m = new VaultManager(app, location(),
+				(password, salt, params) -> {
+					if (changing[0]) {
+						derivations[0]++;
+						if (wipedAtDerivation[0] == 0) {
+							java.util.Arrays.fill(handedOver, '\0');
+							wipedAtDerivation[0] = derivations[0];
+						}
+					}
+					return fakeDerive(password, salt, params);
+				});
+		m.createVault(PASSWORD.clone());
+		m.addItem(VaultItem.ItemType.NOTE, "note", bytes("kept"));
+		changing[0] = true;
+
+		m.changePassword(PASSWORD.clone(), handedOver);
+
+		changing[0] = false;
+		assertEquals("the array was wiped while the old password was checked",
+				1, wipedAtDerivation[0]);
+		assertArrayEquals(new char[NEW_PASSWORD.length], handedOver);
+		assertEquals("opens", unlock(NEW_PASSWORD));
+		char[][] others = {new char[NEW_PASSWORD.length], new char[0],
+				PASSWORD};
+		for (char[] other : others) {
+			org.robolectric.shadows.ShadowSystemClock.advanceBy(
+					java.time.Duration.ofSeconds(30));
+			assertFalse(process().unlockVault(other.clone()));
+		}
+		org.robolectric.shadows.ShadowSystemClock.advanceBy(
+				java.time.Duration.ofSeconds(30));
+		VaultManager after = process();
+		assertTrue(after.unlockVault(NEW_PASSWORD.clone()));
+		assertArrayEquals(bytes("kept"),
+				after.getItemContent(after.listItems().get(0).id));
 	}
 
 	@Test
@@ -379,8 +446,7 @@ public class VaultNewPasswordTest {
 			VaultViewModel vm = screens(m);
 			vm.changePassword(PASSWORD.clone(), typed.clone());
 
-			assertEquals(app.getString(
-					R.string.vault_msg_change_password_failed),
+			assertEquals(app.getString(R.string.vault_password_rule),
 					vm.getErrorMessage().getValue());
 			assertNull(vm.getSuccessMessage().getValue());
 		}

@@ -2412,6 +2412,7 @@
 	<string name="vault_msg_update_document_failed">Impossibile aggiornare il documento</string>
 	<string name="vault_msg_saved_earlier_version_kept">Le tue modifiche sono state salvate, ma non è stato possibile rimuovere la versione precedente. Puoi eliminarla dall\'elenco.</string>
 	<string name="vault_doc_password_needed_to_save">Questo documento è protetto con una password. Inserisci quella password per salvare le modifiche.</string>
+	<string name="vault_doc_new_password_not_applied">La nuova password non è stata applicata. Il documento mantiene la password attuale.</string>
 	<string name="vault_msg_save_password_failed">Impossibile salvare la password</string>
 	<string name="vault_msg_note_title_empty">Il titolo della nota non può essere vuoto</string>
 	<string name="vault_msg_saved">Salvato</string>
@@ -3007,4 +3008,9 @@
 		<item quantity="many">%d membri con una versione precedente non vedono il messaggio fissato.</item>
 		<item quantity="other">%d membri con una versione precedente non vedono il messaggio fissato.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Conferma la password del vault</string>
+	<string name="vault_unlock_confirm_message">Una versione precedente ha salvato questo vault senza la sua password. Digita la tua password ancora una volta. Zerion proteggerà di nuovo il vault con questa.</string>
+	<string name="vault_unlock_entries_differ">I due inserimenti non sono uguali. Ricomincia.</string>
+	<string name="vault_unlock_not_confirmed">Zerion non ha potuto confermare il vault nella memoria. Riprova.</string>
+	<string name="vault_password_rule">Usa almeno 8 lettere, cifre o simboli. Le emoji non contano.</string>
 </resources>

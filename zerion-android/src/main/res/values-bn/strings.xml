@@ -2387,6 +2387,7 @@
 	<string name="vault_msg_update_document_failed">ডকুমেন্ট আপডেট করা যায়নি</string>
 	<string name="vault_msg_saved_earlier_version_kept">আপনার পরিবর্তনগুলো সংরক্ষণ করা হয়েছে, তবে আগের সংস্করণটি সরানো যায়নি। আপনি তালিকা থেকে সেটি মুছে ফেলতে পারেন।</string>
 	<string name="vault_doc_password_needed_to_save">এই ডকুমেন্টটি একটি পাসওয়ার্ড দিয়ে সুরক্ষিত। আপনার পরিবর্তনগুলো সংরক্ষণ করতে সেই পাসওয়ার্ডটি লিখুন।</string>
+	<string name="vault_doc_new_password_not_applied">নতুন পাসওয়ার্ডটি প্রয়োগ করা হয়নি। ডকুমেন্টটি তার বর্তমান পাসওয়ার্ডই রাখে।</string>
 	<string name="vault_msg_save_password_failed">পাসওয়ার্ড সংরক্ষণ করা যায়নি</string>
 	<string name="vault_msg_note_title_empty">নোটের শিরোনাম খালি রাখা যাবে না</string>
 	<string name="vault_msg_saved">সংরক্ষণ করা হয়েছে</string>
@@ -2961,4 +2962,9 @@
 		<item quantity="one">পুরোনো সংস্করণের %d জন সদস্য পিন করা বার্তাটি দেখতে পান না।</item>
 		<item quantity="other">পুরোনো সংস্করণের %d জন সদস্য পিন করা বার্তাটি দেখতে পান না।</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">আপনার Vault পাসওয়ার্ড নিশ্চিত করুন</string>
+	<string name="vault_unlock_confirm_message">আগের একটি সংস্করণ এই Vault পাসওয়ার্ড ছাড়াই সংরক্ষণ করেছিল। আপনার পাসওয়ার্ড আরও একবার লিখুন। এরপর Zerion আবার সেই পাসওয়ার্ড দিয়ে Vault সুরক্ষিত করবে।</string>
+	<string name="vault_unlock_entries_differ">দুটি এন্ট্রি এক নয়। আবার শুরু করুন।</string>
+	<string name="vault_unlock_not_confirmed">Zerion স্টোরেজে Vault নিশ্চিত করতে পারেনি। আবার চেষ্টা করুন।</string>
+	<string name="vault_password_rule">অন্তত ৮টি অক্ষর, সংখ্যা বা চিহ্ন ব্যবহার করুন। ইমোজি গণনা করা হয় না।</string>
 </resources>

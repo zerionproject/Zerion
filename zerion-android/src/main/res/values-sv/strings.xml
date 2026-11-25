@@ -793,6 +793,7 @@
 	<string name="vault_msg_update_document_failed">Det gick inte att uppdatera dokumentet</string>
 	<string name="vault_msg_saved_earlier_version_kept">Dina ändringar sparades, men den tidigare versionen kunde inte tas bort. Du kan radera den från listan.</string>
 	<string name="vault_doc_password_needed_to_save">Det här dokumentet skyddas av ett lösenord. Ange det lösenordet för att spara dina ändringar.</string>
+	<string name="vault_doc_new_password_not_applied">Det nya lösenordet tillämpades inte. Dokumentet behåller sitt nuvarande lösenord.</string>
 	<string name="vault_msg_save_password_failed">Det gick inte att spara lösenordet</string>
 	<string name="vault_msg_note_title_empty">Anteckningens titel får inte vara tom</string>
 	<string name="vault_msg_saved">Sparat</string>
@@ -2958,4 +2959,9 @@
 		<item quantity="one">%d medlem med en äldre version ser inte det fästa meddelandet.</item>
 		<item quantity="other">%d medlemmar med en äldre version ser inte det fästa meddelandet.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Bekräfta lösenordet till ditt valv</string>
+	<string name="vault_unlock_confirm_message">En tidigare version sparade det här valvet utan dess lösenord. Skriv ditt lösenord en gång till. Sedan skyddar Zerion valvet med det igen.</string>
+	<string name="vault_unlock_entries_differ">De två inmatningarna är inte lika. Börja om.</string>
+	<string name="vault_unlock_not_confirmed">Zerion kunde inte bekräfta valvet i lagringen. Försök igen.</string>
+	<string name="vault_password_rule">Använd minst 8 bokstäver, siffror eller symboler. Emojier räknas inte.</string>
 </resources>

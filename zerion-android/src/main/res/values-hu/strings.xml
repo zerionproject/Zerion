@@ -800,6 +800,7 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="vault_msg_update_document_failed">Nem sikerült frissíteni a dokumentumot</string>
 	<string name="vault_msg_saved_earlier_version_kept">A módosításait mentettük, de a korábbi verziót nem sikerült eltávolítani. A listából törölheti.</string>
 	<string name="vault_doc_password_needed_to_save">Ez a dokumentum jelszóval védett. A módosítások mentéséhez adja meg ezt a jelszót.</string>
+	<string name="vault_doc_new_password_not_applied">Az új jelszó nem lett alkalmazva. A dokumentum megtartja a jelenlegi jelszavát.</string>
 	<string name="vault_msg_save_password_failed">Nem sikerült menteni a jelszót</string>
 	<string name="vault_msg_note_title_empty">A jegyzet címe nem lehet üres</string>
 	<string name="vault_msg_saved">Mentve</string>
@@ -2962,4 +2963,9 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 		<item quantity="one">%d régebbi verziót használó tag nem látja a kitűzött üzenetet.</item>
 		<item quantity="other">%d régebbi verziót használó tag nem látja a kitűzött üzenetet.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Erősítse meg a széf jelszavát</string>
+	<string name="vault_unlock_confirm_message">Egy korábbi verzió a jelszava nélkül mentette ezt a széfet. Írja be még egyszer a jelszavát. Ezután a Zerion újra ezzel védi a széfet.</string>
+	<string name="vault_unlock_entries_differ">A két beírás nem egyezik. Kezdje újra.</string>
+	<string name="vault_unlock_not_confirmed">A Zerion nem tudta megerősíteni a széf mentését a tárhelyen. Próbálja újra.</string>
+	<string name="vault_password_rule">Használjon legalább 8 betűt, számjegyet vagy szimbólumot. Az emojik nem számítanak.</string>
 </resources>

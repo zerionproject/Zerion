@@ -724,6 +724,7 @@ Umepoteza nenosiri.</string>
 	<string name="vault_msg_update_document_failed">Imeshindwa kusasisha hati</string>
 	<string name="vault_msg_saved_earlier_version_kept">Mabadiliko yako yamehifadhiwa, lakini toleo la awali halikuweza kuondolewa. Unaweza kulifuta kwenye orodha.</string>
 	<string name="vault_doc_password_needed_to_save">Hati hii inalindwa kwa nenosiri. Weka nenosiri hilo ili kuhifadhi mabadiliko yako.</string>
+	<string name="vault_doc_new_password_not_applied">Nenosiri jipya halikutumika. Hati inabaki na nenosiri lake la sasa.</string>
 	<string name="vault_msg_save_password_failed">Imeshindwa kuhifadhi nenosiri</string>
 	<string name="vault_msg_note_title_empty">Kichwa cha dokezo hakiwezi kuwa tupu</string>
 	<string name="vault_msg_saved">Imehifadhiwa</string>
@@ -2951,4 +2952,9 @@ Umepoteza nenosiri.</string>
 		<item quantity="one">Mwanachama %d kwenye toleo la zamani haoni ujumbe uliobandikwa.</item>
 		<item quantity="other">Wanachama %d kwenye toleo la zamani hawaoni ujumbe uliobandikwa.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Thibitisha nenosiri la Hazina yako</string>
+	<string name="vault_unlock_confirm_message">Toleo la awali lilihifadhi Hazina hii bila nenosiri lake. Andika nenosiri lako mara moja zaidi. Kisha Zerion italinda Hazina kwa nenosiri hilo tena.</string>
+	<string name="vault_unlock_entries_differ">Maingizo hayo mawili hayafanani. Anza upya.</string>
+	<string name="vault_unlock_not_confirmed">Zerion haikuweza kuthibitisha Hazina kwenye hifadhi. Jaribu tena.</string>
+	<string name="vault_password_rule">Tumia angalau herufi, tarakimu au alama 8. Emoji hazihesabiwi.</string>
 </resources>

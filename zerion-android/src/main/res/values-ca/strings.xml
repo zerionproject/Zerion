@@ -2386,6 +2386,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="vault_msg_update_document_failed">No s\'ha pogut actualitzar el document</string>
 	<string name="vault_msg_saved_earlier_version_kept">Els canvis s\'han desat, però no s\'ha pogut eliminar la versió anterior. La pots suprimir de la llista.</string>
 	<string name="vault_doc_password_needed_to_save">Aquest document està protegit amb una contrasenya. Introdueix aquesta contrasenya per desar els canvis.</string>
+	<string name="vault_doc_new_password_not_applied">La contrasenya nova no s\'ha aplicat. El document conserva la contrasenya actual.</string>
 	<string name="vault_msg_save_password_failed">No s\'ha pogut desar la contrasenya</string>
 	<string name="vault_msg_note_title_empty">El títol de la nota no pot estar buit</string>
 	<string name="vault_msg_saved">S\'ha desat</string>
@@ -2959,4 +2960,9 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 		<item quantity="one">%d membre amb una versió anterior no veu el missatge fixat.</item>
 		<item quantity="other">%d membres amb una versió anterior no veuen el missatge fixat.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirma la contrasenya de la caixa forta</string>
+	<string name="vault_unlock_confirm_message">Una versió anterior va desar aquesta caixa forta sense la seva contrasenya. Escriu la contrasenya una vegada més. Després, Zerion torna a protegir la caixa forta amb ella.</string>
+	<string name="vault_unlock_entries_differ">Les dues entrades no són iguals. Torna a començar.</string>
+	<string name="vault_unlock_not_confirmed">Zerion no ha pogut confirmar la caixa forta a l\'emmagatzematge. Torna-ho a provar.</string>
+	<string name="vault_password_rule">Fes servir almenys 8 lletres, xifres o símbols. Els emojis no compten.</string>
 </resources>

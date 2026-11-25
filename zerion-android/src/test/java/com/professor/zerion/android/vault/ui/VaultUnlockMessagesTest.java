@@ -2,6 +2,7 @@ package com.professor.zerion.android.vault.ui;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.security.TestAndroidKeyStore;
+import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.vault.crypto.Argon2;
 
 import org.junit.Rule;
@@ -33,7 +34,7 @@ public class VaultUnlockMessagesTest {
 	@Test
 	public void aMissingNativeLibraryHasItsOwnMessage() throws Exception {
 		VaultViewModelRig rig = new VaultViewModelRig();
-		when(rig.vault.manager.unlockVault(any(), anyLong()))
+		when(rig.vault.manager.unlock(any(), anyLong()))
 				.thenThrow(new Argon2.NativeRequiredException());
 		VaultViewModel vm = rig.newModel();
 		vm.unlockVault("vault password 4&Rt".toCharArray());
@@ -47,7 +48,8 @@ public class VaultUnlockMessagesTest {
 			throws Exception {
 		VaultViewModelRig rig = new VaultViewModelRig();
 		rig.vault.unlocked = false;
-		when(rig.vault.manager.unlockVault(any(), anyLong())).thenReturn(true);
+		when(rig.vault.manager.unlock(any(), anyLong()))
+				.thenReturn(VaultManager.UnlockResult.OPENED);
 		VaultViewModel vm = rig.newModel();
 		vm.unlockVault("vault password 4&Rt".toCharArray());
 		assertEquals(VaultViewModel.VaultState.LOCKED,

@@ -107,6 +107,12 @@ public class IncognitoInputHelper {
 		editText.setSaveEnabled(false);
 	}
 
+	public static void configureSecretPhraseField(EditText editText) {
+		configureIncognitoInput(editText, false);
+		editText.setSaveEnabled(false);
+		protectFromAccessibility(editText);
+	}
+
 	public static void install(View root) {
 		enforceSecureInputsOnViewTree(root);
 		root.removeOnAttachStateChangeListener(ON_ATTACH);

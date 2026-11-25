@@ -611,6 +611,7 @@
 	<string name="vault_msg_update_document_failed">Asiakirjan päivittäminen epäonnistui</string>
 	<string name="vault_msg_saved_earlier_version_kept">Muutoksesi tallennettiin, mutta aiempaa versiota ei voitu poistaa. Voit poistaa sen luettelosta.</string>
 	<string name="vault_doc_password_needed_to_save">Tämä asiakirja on suojattu salasanalla. Anna kyseinen salasana, niin voit tallentaa muutoksesi.</string>
+	<string name="vault_doc_new_password_not_applied">Uutta salasanaa ei otettu käyttöön. Asiakirja säilyttää nykyisen salasanansa.</string>
 	<string name="vault_msg_save_password_failed">Salasanan tallentaminen epäonnistui</string>
 	<string name="vault_msg_note_title_empty">Muistiinpanon otsikko ei voi olla tyhjä</string>
 	<string name="vault_msg_saved">Tallennettu</string>
@@ -2936,4 +2937,9 @@
 		<item quantity="one">%d jäsen vanhemmalla versiolla ei näe kiinnitettyä viestiä.</item>
 		<item quantity="other">%d jäsentä vanhemmalla versiolla ei näe kiinnitettyä viestiä.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Vahvista holvin salasana</string>
+	<string name="vault_unlock_confirm_message">Aiempi versio tallensi tämän holvin ilman sen salasanaa. Kirjoita salasanasi vielä kerran. Sen jälkeen Zerion suojaa holvin sillä uudelleen.</string>
+	<string name="vault_unlock_entries_differ">Syötteet eivät ole samat. Aloita alusta.</string>
+	<string name="vault_unlock_not_confirmed">Zerion ei voinut vahvistaa holvia tallennustilassa. Yritä uudelleen.</string>
+	<string name="vault_password_rule">Käytä vähintään 8 kirjainta, numeroa tai symbolia. Emojeja ei lasketa.</string>
 </resources>

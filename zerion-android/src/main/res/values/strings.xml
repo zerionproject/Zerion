@@ -1799,6 +1799,11 @@
 	<string name="vault_password_mismatch">Passwords do not match</string>
 	<string name="vault_password_too_short">Password must be at least 8 characters</string>
 	<string name="vault_unlock_failed">Invalid password</string>
+	<string name="vault_unlock_confirm_title">Confirm your vault password</string>
+	<string name="vault_unlock_confirm_message">An earlier version saved this vault without its password. Type your password once more. Zerion then protects the vault with it again.</string>
+	<string name="vault_unlock_entries_differ">The two entries are not the same. Start again.</string>
+	<string name="vault_unlock_not_confirmed">Zerion could not confirm the vault on storage. Try again.</string>
+	<string name="vault_password_rule">Use at least 8 letters, digits or symbols. Emoji do not count.</string>
 	<string name="vault_locked">Vault locked</string>
 	<string name="vault_auto_lock">Vault auto-locked due to inactivity</string>
 	<string name="vault_biometric_prompt_title">Unlock Vault</string>
@@ -2702,6 +2707,7 @@ The link opens in your browser, which does not use Tor.</string>
 	<string name="vault_msg_update_document_failed">Failed to update document</string>
 	<string name="vault_msg_saved_earlier_version_kept">Your changes were saved, but the earlier version could not be removed. You can delete it from the list.</string>
 	<string name="vault_doc_password_needed_to_save">This document is protected with a password. Enter that password to save your changes.</string>
+	<string name="vault_doc_new_password_not_applied">The new password was not applied. The document keeps its current password.</string>
 	<string name="vault_msg_save_password_failed">Failed to save password</string>
 	<string name="vault_msg_note_title_empty">Note title cannot be empty</string>
 	<string name="vault_msg_saved">Saved</string>

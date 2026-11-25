@@ -802,6 +802,7 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="vault_msg_update_document_failed">Dokumenti nuk u përditësua dot</string>
 	<string name="vault_msg_saved_earlier_version_kept">Ndryshimet e tua u ruajtën, por versioni i mëparshëm nuk u hoq dot. Mund ta fshish nga lista.</string>
 	<string name="vault_doc_password_needed_to_save">Ky dokument është i mbrojtur me një fjalëkalim. Fute atë fjalëkalim për të ruajtur ndryshimet e tua.</string>
+	<string name="vault_doc_new_password_not_applied">Fjalëkalimi i ri nuk u zbatua. Dokumenti e ruan fjalëkalimin e tij të tanishëm.</string>
 	<string name="vault_msg_save_password_failed">Fjalëkalimi nuk u ruajt dot</string>
 	<string name="vault_msg_note_title_empty">Titulli i shënimit nuk mund të jetë i zbrazët</string>
 	<string name="vault_msg_saved">U ruajt</string>
@@ -2959,4 +2960,9 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 		<item quantity="one">%d anëtar me version më të vjetër nuk e sheh mesazhin e fiksuar.</item>
 		<item quantity="other">%d anëtarë me version më të vjetër nuk e shohin mesazhin e fiksuar.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Konfirmo fjalëkalimin e kasafortës</string>
+	<string name="vault_unlock_confirm_message">Një version i mëparshëm e ruajti këtë kasafortë pa fjalëkalimin e saj. Shkruaje fjalëkalimin edhe një herë. Pastaj Zerion e mbron sërish kasafortën me të.</string>
+	<string name="vault_unlock_entries_differ">Dy shkrimet nuk janë të njëjta. Fillo nga e para.</string>
+	<string name="vault_unlock_not_confirmed">Zerion nuk mundi ta konfirmojë kasafortën në hapësirën e ruajtjes. Provo sërish.</string>
+	<string name="vault_password_rule">Përdor të paktën 8 shkronja, shifra ose simbole. Emoji-t nuk llogariten.</string>
 </resources>

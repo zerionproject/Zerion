@@ -660,6 +660,7 @@
 	<string name="vault_msg_update_document_failed">დოკუმენტის განახლება ვერ მოხერხდა</string>
 	<string name="vault_msg_saved_earlier_version_kept">თქვენი ცვლილებები შეინახა, მაგრამ წინა ვერსიის მოშორება ვერ მოხერხდა. შეგიძლიათ ის სიიდან წაშალოთ.</string>
 	<string name="vault_doc_password_needed_to_save">ეს დოკუმენტი პაროლით არის დაცული. ცვლილებების შესანახად შეიყვანეთ ეს პაროლი.</string>
+	<string name="vault_doc_new_password_not_applied">ახალი პაროლი არ გამოყენებულა. დოკუმენტი ინარჩუნებს მიმდინარე პაროლს.</string>
 	<string name="vault_msg_save_password_failed">პაროლის შენახვა ვერ მოხერხდა</string>
 	<string name="vault_msg_note_title_empty">ჩანაწერის სათაური ცარიელი არ შეიძლება იყოს</string>
 	<string name="vault_msg_saved">შენახულია</string>
@@ -2958,4 +2959,9 @@
 		<item quantity="one">უფრო ძველი ვერსიის %d წევრი ვერ ხედავს ჩამაგრებულ შეტყობინებას.</item>
 		<item quantity="other">უფრო ძველი ვერსიის %d წევრი ვერ ხედავს ჩამაგრებულ შეტყობინებას.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">დაადასტურეთ სეიფის პაროლი</string>
+	<string name="vault_unlock_confirm_message">ადრინდელმა ვერსიამ ეს სეიფი პაროლის გარეშე შეინახა. შეიყვანეთ თქვენი პაროლი კიდევ ერთხელ. ამის შემდეგ Zerion სეიფს ისევ ამ პაროლით დაიცავს.</string>
+	<string name="vault_unlock_entries_differ">ორი ჩანაწერი ერთნაირი არ არის. დაიწყეთ თავიდან.</string>
+	<string name="vault_unlock_not_confirmed">Zerion-მა ვერ დაადასტურა სეიფი მეხსიერებაში. სცადეთ ხელახლა.</string>
+	<string name="vault_password_rule">გამოიყენეთ მინიმუმ 8 ასო, ციფრი ან სიმბოლო. ემოჯი არ ითვლება.</string>
 </resources>

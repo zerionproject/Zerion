@@ -576,6 +576,7 @@
 	<string name="vault_msg_update_document_failed">Impossible de metre a jorn lo document</string>
 	<string name="vault_msg_saved_earlier_version_kept">Vòstras modificacions son estadas enregistradas, mas la version precedenta s’es pas poguda levar. La podètz suprimir de la lista.</string>
 	<string name="vault_doc_password_needed_to_save">Aqueste document es protegit per un senhal. Picatz aquel senhal per enregistrar vòstras modificacions.</string>
+	<string name="vault_doc_new_password_not_applied">Lo senhal nòu es pas estat aplicat. Lo document garda son senhal actual.</string>
 	<string name="vault_msg_save_password_failed">Impossible d’enregistrar lo senhal</string>
 	<string name="vault_msg_note_title_empty">Lo títol de la nòta pòt pas èsser void</string>
 	<string name="vault_msg_saved">Enregistrat</string>
@@ -2941,4 +2942,9 @@
 		<item quantity="one">%d membre amb una version mai vièlha vei pas lo messatge espinglat.</item>
 		<item quantity="other">%d membres amb una version mai vièlha veson pas lo messatge espinglat.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirmatz lo senhal de vòstre còfre</string>
+	<string name="vault_unlock_confirm_message">Una version anteriora enregistrèt aqueste còfre sens son senhal. Picatz vòstre senhal un còp de mai. Puèi Zerion torna protegir lo còfre amb el.</string>
+	<string name="vault_unlock_entries_differ">Las doas picadas son pas identicas. Tornatz començar.</string>
+	<string name="vault_unlock_not_confirmed">Zerion a pas pogut confirmar lo còfre dins l’emmagazinatge. Tornatz ensajar.</string>
+	<string name="vault_password_rule">Utilizatz almens 8 letras, chifras o simbòls. Los emojis comptan pas.</string>
 </resources>

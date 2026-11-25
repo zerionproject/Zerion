@@ -2368,6 +2368,7 @@
 	<string name="vault_msg_update_document_failed">Ezin izan da dokumentua eguneratu</string>
 	<string name="vault_msg_saved_earlier_version_kept">Zure aldaketak gorde dira, baina ezin izan da aurreko bertsioa kendu. Zerrendatik ezaba dezakezu.</string>
 	<string name="vault_doc_password_needed_to_save">Dokumentu hau pasahitz batekin babestuta dago. Sartu pasahitz hori zure aldaketak gordetzeko.</string>
+	<string name="vault_doc_new_password_not_applied">Pasahitz berria ez da aplikatu. Dokumentuak bere uneko pasahitza mantentzen du.</string>
 	<string name="vault_msg_save_password_failed">Ezin izan da pasahitza gorde</string>
 	<string name="vault_msg_note_title_empty">Oharraren izenburua ezin da hutsik egon</string>
 	<string name="vault_msg_saved">Gordeta</string>
@@ -2942,4 +2943,9 @@
 		<item quantity="one">Bertsio zaharragoko kide %d-ek ez du mezu ainguratua ikusten.</item>
 		<item quantity="other">Bertsio zaharragoko %d kidek ez dute mezu ainguratua ikusten.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Berretsi kutxaren pasahitza</string>
+	<string name="vault_unlock_confirm_message">Aurreko bertsio batek kutxa hau pasahitzik gabe gorde zuen. Idatzi zure pasahitza beste behin. Ondoren, Zerion-ek kutxa pasahitz horrekin babestuko du berriro.</string>
+	<string name="vault_unlock_entries_differ">Bi sarrerak ez dira berdinak. Hasi berriro.</string>
+	<string name="vault_unlock_not_confirmed">Zerion-ek ezin izan du kutxa biltegian berretsi. Saiatu berriro.</string>
+	<string name="vault_password_rule">Erabili gutxienez 8 letra, digitu edo ikur. Emojiek ez dute balio.</string>
 </resources>

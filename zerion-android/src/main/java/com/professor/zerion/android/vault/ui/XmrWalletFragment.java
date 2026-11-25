@@ -271,7 +271,7 @@ public class XmrWalletFragment extends BaseFragment {
 				false);
 		seed.setMinLines(3);
 		seed.setMaxLines(8);
-		IncognitoInputHelper.configureIncognitoInput(seed, false);
+		IncognitoInputHelper.configureSecretPhraseField(seed);
 		TextView heightNote = new TextView(requireContext());
 		heightNote.setText(R.string.wallet_xmr_restore_height_note);
 		heightNote.setTextSize(12);

@@ -256,6 +256,218 @@ public class VaultNoteUpdateTest {
 		assertNull(vm.getSuccessMessage().getValue());
 	}
 
+	@Test
+	public void aProtectedNoteIsNotReplacedUnderAnotherPassword()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		VaultItem old = protectedNote(rig, vm);
+		byte[] before = rig.vault.raw(old.id);
+		char[] typed = "pv".toCharArray();
+
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "Diary",
+				"second entry", typed, old.id);
+		idle();
+
+		NoteSaveResult result = result(vm);
+		assertEquals(NoteSaveResult.Outcome.WRONG_PASSWORD, result.outcome);
+		assertFalse(result.isStored());
+		assertEquals(rig.app.getString(R.string.vault_incorrect_password),
+				result.message);
+		verify(rig.vault.manager, never()).addItem(any(), anyString(),
+				any());
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertEquals(1, rig.vault.size());
+		assertArrayEquals(before, rig.vault.raw(old.id));
+		assertEquals("dear diary", opened(vm, old.id, "pw"));
+		assertArrayEquals(new char[typed.length], typed);
+		assertNull(vm.getSuccessMessage().getValue());
+	}
+
+	@Test
+	public void aPlainNoteGivenAPasswordIsSealedUnderIt() throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		VaultItem old = plainNote(rig, vm);
+
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "Groceries",
+				"bread", "pw".toCharArray(), old.id);
+		idle();
+
+		assertEquals(NoteSaveResult.Outcome.SAVED, result(vm).outcome);
+		assertEquals(1, rig.vault.size());
+		VaultItem now = rig.vault.named("🔒 Groceries");
+		assertNotNull(now);
+		assertEquals("bread", opened(vm, now.id, "pw"));
+	}
+
+	private static String loaded(VaultViewModel vm, String id)
+			throws Exception {
+		LiveData<String> text = vm.loadNoteContent(id);
+		await(() -> text.getValue() != null);
+		return text.getValue();
+	}
+
+	@Test
+	public void aPlainNoteIsNeverStoredUnderTheLockPrefix() throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		String text = "milk, bread and everything else for a long week ahead";
+		assertTrue(bytes(text).length > 44);
+
+		vm.saveNote(vm.newNoteSaveRequest(), "🔒 Groceries", text, null);
+		idle();
+		vm.saveNote(vm.newNoteSaveRequest(), "🔒 🔒 Twice", "x", null);
+		idle();
+
+		assertEquals(NoteSaveResult.Outcome.SAVED, result(vm).outcome);
+		assertNull(rig.vault.named("🔒 Groceries"));
+		VaultItem stored = rig.vault.named("Groceries");
+		assertNotNull("the note was not stored under its plain title",
+				stored);
+		assertArrayEquals(bytes(text), rig.vault.raw(stored.id));
+		assertEquals(text, loaded(vm, stored.id));
+		assertNotNull(rig.vault.named("Twice"));
+		assertEquals(2, rig.vault.size());
+	}
+
+	@Test
+	public void aProtectedNoteIsStoredUnderOneLockPrefix() throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "🔒 🔒 Diary",
+				"dear diary", "pw".toCharArray(), null);
+		idle();
+
+		assertEquals(NoteSaveResult.Outcome.SAVED, result(vm).outcome);
+		assertEquals(1, rig.vault.size());
+		VaultItem stored = rig.vault.named(PROTECTED_TITLE);
+		assertNotNull("the note was not stored under one lock prefix",
+				stored);
+		assertEquals("dear diary", opened(vm, stored.id, "pw"));
+	}
+
+	@Test
+	public void aPlainNoteWhoseTitleIsOnlyTheLockPrefixIsRefused()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+
+		vm.saveNote(vm.newNoteSaveRequest(), "🔒 🔒  ", "milk", null);
+		idle();
+
+		NoteSaveResult result = result(vm);
+		assertEquals(NoteSaveResult.Outcome.FAILED, result.outcome);
+		assertEquals(rig.app.getString(R.string.vault_msg_note_title_empty),
+				result.message);
+		assertEquals(0, rig.vault.size());
+	}
+
+	@Test
+	public void aStoredPlainNoteUnderTheLockPrefixOpensAsText()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		String longText = "milk, bread and everything else for a long week "
+				+ "ahead, with an accent é and a sign €";
+		assertTrue(bytes(longText).length > 61);
+		VaultItem shortNote = rig.vault.manager.addItem(
+				VaultItem.ItemType.NOTE, "🔒 Short", bytes("milk"));
+		VaultItem longNote = rig.vault.manager.addItem(
+				VaultItem.ItemType.NOTE, "🔒 Long", bytes(longText));
+		VaultItem empty = rig.vault.manager.addItem(
+				VaultItem.ItemType.NOTE, "🔒 Empty", new byte[0]);
+		VaultItem sealed = protectedNote(rig, vm);
+
+		assertEquals("milk", loaded(vm, shortNote.id));
+		assertEquals(longText, loaded(vm, longNote.id));
+		assertEquals("", loaded(vm, empty.id));
+		assertEquals("__PASSWORD_REQUIRED__", loaded(vm, sealed.id));
+
+		vm.saveNote(vm.newNoteSaveRequest(), "Long", longText + "!",
+				longNote.id);
+		idle();
+
+		assertEquals(NoteSaveResult.Outcome.SAVED, result(vm).outcome);
+		assertNull(rig.vault.named("🔒 Long"));
+		VaultItem now = rig.vault.named("Long");
+		assertNotNull(now);
+		assertEquals(longText + "!", loaded(vm, now.id));
+	}
+
+	@Test
+	public void aStoredPlainNoteUnderTheLockPrefixCanBeGivenAPassword()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		VaultItem old = rig.vault.manager.addItem(VaultItem.ItemType.NOTE,
+				"🔒 Short", bytes("milk"));
+
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "Short", "bread",
+				"pw".toCharArray(), old.id);
+		idle();
+
+		assertEquals(NoteSaveResult.Outcome.SAVED, result(vm).outcome);
+		assertEquals(1, rig.vault.size());
+		VaultItem now = rig.vault.named("🔒 Short");
+		assertNotNull(now);
+		assertNotEquals(old.id, now.id);
+		assertEquals("bread", opened(vm, now.id, "pw"));
+	}
+
+	@Test
+	public void aNoteSaveThatRunsOutOfMemoryStillEndsInAResult()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		VaultItem old = plainNote(rig, vm);
+		doThrow(new OutOfMemoryError("injected"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		long request = vm.newNoteSaveRequest();
+
+		vm.saveNote(request, "Groceries", "bread", old.id);
+		idle();
+
+		NoteSaveResult result = result(vm);
+		assertEquals(request, result.request);
+		assertEquals(NoteSaveResult.Outcome.FAILED, result.outcome);
+		assertEquals(rig.app.getString(R.string.vault_msg_save_note_failed),
+				result.message);
+		assertFalse(vm.isNoteSaveRunning(request));
+		assertEquals(Boolean.FALSE, vm.getIsLoading().getValue());
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertArrayEquals(bytes("milk"), rig.vault.raw(old.id));
+	}
+
+	@Test
+	public void aProtectedNoteSaveThatRunsOutOfMemoryStillEndsInAResult()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		VaultItem old = protectedNote(rig, vm);
+		byte[] before = rig.vault.raw(old.id);
+		doThrow(new OutOfMemoryError("injected"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		long request = vm.newNoteSaveRequest();
+		char[] typed = "pw".toCharArray();
+
+		vm.saveNoteWithPassword(request, "Diary", "second entry", typed,
+				old.id);
+		idle();
+
+		NoteSaveResult result = result(vm);
+		assertEquals(request, result.request);
+		assertEquals(NoteSaveResult.Outcome.FAILED, result.outcome);
+		assertEquals(rig.app.getString(R.string.vault_msg_save_note_failed),
+				result.message);
+		assertFalse(vm.isNoteSaveRunning(request));
+		assertEquals(Boolean.FALSE, vm.getIsLoading().getValue());
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertArrayEquals(before, rig.vault.raw(old.id));
+		assertArrayEquals(new char[typed.length], typed);
+	}
+
 	private static NoteSaveResult result(VaultViewModel vm) {
 		Event<NoteSaveResult> latest = vm.getNoteSaveResult().getValue();
 		assertNotNull("the save ended without a result", latest);

@@ -413,6 +413,10 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 					&& ((SecureNoteFragment) shown).onBackPressed()) {
 				return;
 			}
+			if (shown instanceof TextEditorFragment
+					&& ((TextEditorFragment) shown).onBackPressed()) {
+				return;
+			}
 			if (fm.getBackStackEntryCount() > 0) {
 				fm.popBackStack();
 			} else {

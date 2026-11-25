@@ -660,6 +660,7 @@
 	<string name="vault_msg_update_document_failed">စာရွက်စာတမ်းကို အပ်ဒိတ်လုပ်၍ မရပါ</string>
 	<string name="vault_msg_saved_earlier_version_kept">သင့်ပြောင်းလဲမှုများကို သိမ်းပြီးပါပြီ၊ သို့သော် ယခင်ဗားရှင်းကို ဖယ်ရှား၍ မရပါ။ ၎င်းကို စာရင်းမှ ဖျက်နိုင်ပါသည်။</string>
 	<string name="vault_doc_password_needed_to_save">ဤစာရွက်စာတမ်းကို စကားဝှက်ဖြင့် ကာကွယ်ထားသည်။ သင့်ပြောင်းလဲမှုများကို သိမ်းရန် ထိုစကားဝှက်ကို ထည့်ပါ။</string>
+	<string name="vault_doc_new_password_not_applied">စကားဝှက်အသစ်ကို အသုံးမပြုခဲ့ပါ။ စာရွက်စာတမ်းသည် လက်ရှိစကားဝှက်ကိုသာ ဆက်ထားသည်။</string>
 	<string name="vault_msg_save_password_failed">စကားဝှက်ကို သိမ်း၍ မရပါ</string>
 	<string name="vault_msg_note_title_empty">မှတ်စု ခေါင်းစဉ် ဗလာ ဖြစ်၍ မရပါ</string>
 	<string name="vault_msg_saved">သိမ်းပြီးပါပြီ</string>
@@ -2915,4 +2916,9 @@
 	<plurals name="grouptr_pin_kept_older">
 		<item quantity="other">ဗားရှင်းဟောင်းရှိ အဖွဲ့ဝင် %d ဦးသည် ပင်ထိုးထားသော မက်ဆေ့ချ်ကို မမြင်ရပါ။</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">သင့်လုံခြုံသေတ္တာ စကားဝှက်ကို အတည်ပြုပါ</string>
+	<string name="vault_unlock_confirm_message">ယခင်ဗားရှင်းတစ်ခုက ဤလုံခြုံသေတ္တာကို စကားဝှက်မပါဘဲ သိမ်းခဲ့သည်။ သင့်စကားဝှက်ကို နောက်တစ်ကြိမ် ထပ်ရိုက်ပါ။ ထို့နောက် Zerion က လုံခြုံသေတ္တာကို ထိုစကားဝှက်ဖြင့် ပြန်လည်ကာကွယ်ပါမည်။</string>
+	<string name="vault_unlock_entries_differ">ရိုက်ထည့်မှု နှစ်ခု မတူပါ။ အစမှ ပြန်စပါ။</string>
+	<string name="vault_unlock_not_confirmed">Zerion သည် သိုလှောင်မှုတွင် လုံခြုံသေတ္တာကို အတည်မပြုနိုင်ပါ။ ထပ်ကြိုးစားပါ။</string>
+	<string name="vault_password_rule">အနည်းဆုံး စာလုံး၊ ဂဏန်း သို့မဟုတ် သင်္ကေတ 8 လုံး သုံးပါ။ အီမိုဂျီများကို ထည့်မတွက်ပါ။</string>
 </resources>

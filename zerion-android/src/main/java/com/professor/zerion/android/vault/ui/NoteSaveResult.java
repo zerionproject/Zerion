@@ -8,6 +8,7 @@ public final class NoteSaveResult {
 	public enum Outcome {
 		SAVED,
 		SAVED_EARLIER_VERSION_KEPT,
+		WRONG_PASSWORD,
 		FAILED
 	}
 

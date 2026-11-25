@@ -732,6 +732,7 @@
 	<string name="vault_msg_update_document_failed">Документот не може да се ажурира</string>
 	<string name="vault_msg_saved_earlier_version_kept">Твоите промени се зачувани, но претходната верзија не можеше да се отстрани. Можеш да ја избришеш од списокот.</string>
 	<string name="vault_doc_password_needed_to_save">Овој документ е заштитен со лозинка. Внеси ја таа лозинка за да ги зачуваш промените.</string>
+	<string name="vault_doc_new_password_not_applied">Новата лозинка не беше применета. Документот ја задржува својата тековна лозинка.</string>
 	<string name="vault_msg_save_password_failed">Лозинката не може да се зачува</string>
 	<string name="vault_msg_note_title_empty">Насловот на белешката не може да биде празен</string>
 	<string name="vault_msg_saved">Зачувано</string>
@@ -2942,4 +2943,9 @@
 		<item quantity="one">%d член со постара верзија не ја гледа закачената порака.</item>
 		<item quantity="other">%d членови со постара верзија не ја гледаат закачената порака.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Потврди ја лозинката за сефот</string>
+	<string name="vault_unlock_confirm_message">Претходна верзија го зачувала овој сеф без неговата лозинка. Внеси ја лозинката уште еднаш. Потоа Zerion повторно ќе го заштити сефот со неа.</string>
+	<string name="vault_unlock_entries_differ">Двата внеса не се исти. Почни одново.</string>
+	<string name="vault_unlock_not_confirmed">Zerion не можеше да го потврди зачувувањето на сефот. Обиди се повторно.</string>
+	<string name="vault_password_rule">Користи најмалку 8 букви, цифри или симболи. Емоџијата не се бројат.</string>
 </resources>

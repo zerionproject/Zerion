@@ -36,6 +36,15 @@ public class VaultManager
 		implements com.professor.zerion.android.vault.wallet.xmr.VaultGate {
 	public static final String TOO_MANY_ATTEMPTS = "Too many failed attempts";
 	public static final String UNLOCK_FIRST = "Please unlock your vault first";
+
+	public enum UnlockResult {
+		OPENED,
+		REFUSED,
+		CONFIRM_NEEDED,
+		ENTRIES_DIFFER,
+		NOT_CONFIRMED_ON_STORAGE
+	}
+
 	public static final int MIN_PASSWORD_LENGTH = 8;
 	private static final String HEADER_FILE = "vault.header";
 	private static final String HEADER_NEW_FILE = "vault.header.new";
@@ -187,6 +196,10 @@ public class VaultManager
 		void reset() {
 			get().reset();
 		}
+	}
+
+	public static boolean acceptsNewPassword(char[] typed) {
+		return NewPassword.isUsable(typed, MIN_PASSWORD_LENGTH);
 	}
 
 	public boolean vaultExists() {
@@ -801,30 +814,72 @@ public class VaultManager
 	}
 
 	public synchronized boolean unlockVault(char[] password) throws Exception {
-		return unlockVaultMarked(password, lockRequests.get());
+		return unlock(password) == UnlockResult.OPENED;
 	}
 
 	public boolean unlockVault(char[] password, long pendingMark)
 			throws Exception {
+		return unlock(password, pendingMark) == UnlockResult.OPENED;
+	}
+
+	public synchronized UnlockResult unlock(char[] password)
+			throws Exception {
+		return unlockVaultMarked(password, null, lockRequests.get());
+	}
+
+	public synchronized UnlockResult confirmAndUnlock(char[] firstEntry,
+			char[] password) throws Exception {
+		return unlockVaultMarked(password, firstEntry, lockRequests.get());
+	}
+
+	public UnlockResult unlock(char[] password, long pendingMark)
+			throws Exception {
 		try {
-			return unlockVaultMarked(password, pendingMark);
+			return unlockVaultMarked(password, null, pendingMark);
 		} finally {
 			pendingUnlocks.decrementAndGet();
 		}
 	}
 
-	private synchronized boolean unlockVaultMarked(char[] password,
-			long mark) throws Exception {
+	public UnlockResult confirmAndUnlock(char[] firstEntry, char[] password,
+			long pendingMark) throws Exception {
+		try {
+			return unlockVaultMarked(password, firstEntry, pendingMark);
+		} finally {
+			pendingUnlocks.decrementAndGet();
+		}
+	}
+
+	private synchronized UnlockResult unlockVaultMarked(char[] password,
+			@Nullable char[] firstEntry, long mark) throws Exception {
 		unlockRunning = true;
 		try {
-			return unlockVaultLocked(password, mark);
+			return unlockVaultLocked(password, firstEntry, mark);
 		} finally {
 			unlockRunning = false;
 		}
 	}
 
-	private boolean unlockVaultLocked(char[] password, long mark)
-			throws Exception {
+	static boolean sameNormalForm(char[] first, char[] second) {
+		char[] a = PasswordNormalizer.normalize(first);
+		char[] b = PasswordNormalizer.normalize(second);
+		try {
+			int difference = a.length ^ b.length;
+			int longest = Math.max(a.length, b.length);
+			for (int i = 0; i < longest; i++) {
+				char x = i < a.length ? a[i] : 0;
+				char y = i < b.length ? b[i] : 0;
+				difference |= x ^ y;
+			}
+			return difference == 0;
+		} finally {
+			java.util.Arrays.fill(a, '\0');
+			java.util.Arrays.fill(b, '\0');
+		}
+	}
+
+	private UnlockResult unlockVaultLocked(char[] password,
+			@Nullable char[] firstEntry, long mark) throws Exception {
 		if (!vaultExists()) {
 			throw new IllegalStateException("No vault exists");
 		}
@@ -844,14 +899,23 @@ public class VaultManager
 				loadVaultHeader();
 			}
 
+			if (firstEntry != null && !sameNormalForm(firstEntry, password)) {
+				return UnlockResult.ENTRIES_DIFFER;
+			}
+
 			OpenedVault opened = openForUnlock(currentHeader, password);
 			if (opened == null) {
 				return registerFailedUnlock();
 			}
+			if (opened.clearedForm && firstEntry == null) {
+				SecureMemory.shred(opened.masterKey);
+				return UnlockResult.CONFIRM_NEEDED;
+			}
 			if (opened.clearedForm
 					&& !resealClearedForm(opened.masterKey, password)) {
 				SecureMemory.shred(opened.masterKey);
-				return registerFailedUnlock();
+				unlockThrottle.recordFailure();
+				return UnlockResult.NOT_CONFIRMED_ON_STORAGE;
 			}
 			byte[] previous = this.vaultMasterKey;
 			this.vaultMasterKey = opened.masterKey;
@@ -889,7 +953,7 @@ public class VaultManager
 			} else if (mark > completedUnlockMark) {
 				completedUnlockMark = mark;
 			}
-			return true;
+			return UnlockResult.OPENED;
 
 		} catch (SecurityException | Argon2.NativeRequiredException e) {
 			throw e;
@@ -900,9 +964,9 @@ public class VaultManager
 		}
 	}
 
-	private boolean registerFailedUnlock() {
+	private UnlockResult registerFailedUnlock() {
 		unlockThrottle.recordFailure();
-		return false;
+		return UnlockResult.REFUSED;
 	}
 
 	private static final long UNLOCK_TIME_FLOOR_MS = 1500L;

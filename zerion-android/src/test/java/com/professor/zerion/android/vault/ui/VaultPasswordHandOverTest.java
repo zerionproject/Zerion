@@ -209,6 +209,34 @@ public class VaultPasswordHandOverTest {
 	}
 
 	@Test
+	public void anExportRefusedWhileLockedWipesItsPassword()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = queuedModel(rig);
+		rig.vault.unlocked = false;
+		char[] typed = "export pass 4$Dd".toCharArray();
+		List<String> reported = new ArrayList<>();
+
+		vm.exportVault(typed, new VaultViewModel.ExportCallback() {
+			@Override
+			public void onExportSuccess(byte[] data) {
+				reported.add("written");
+			}
+
+			@Override
+			public void onExportError(String error) {
+				reported.add(error);
+			}
+		});
+
+		assertTrue(queued.isEmpty());
+		assertArrayEquals(new char[typed.length], typed);
+		assertEquals(Arrays.asList(rig.app.getString(
+				R.string.vault_msg_unlock_first)), reported);
+		verify(rig.vault.manager, never()).exportVault(any());
+	}
+
+	@Test
 	public void oneArrayHandedOverForBothPasswordsIsUsedForBoth()
 			throws Exception {
 		VaultViewModelRig rig = new VaultViewModelRig();

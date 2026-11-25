@@ -2355,6 +2355,7 @@
 	<string name="vault_msg_update_document_failed">ドキュメントの更新に失敗しました</string>
 	<string name="vault_msg_saved_earlier_version_kept">変更は保存されましたが、以前のバージョンを削除できませんでした。一覧から削除できます。</string>
 	<string name="vault_doc_password_needed_to_save">このドキュメントはパスワードで保護されています。変更を保存するには、そのパスワードを入力してください。</string>
+	<string name="vault_doc_new_password_not_applied">新しいパスワードは適用されませんでした。ドキュメントは現在のパスワードのままです。</string>
 	<string name="vault_msg_save_password_failed">パスワードの保存に失敗しました</string>
 	<string name="vault_msg_note_title_empty">ノートのタイトルは空にできません</string>
 	<string name="vault_msg_saved">保存しました</string>
@@ -2914,4 +2915,9 @@
 	<plurals name="grouptr_pin_kept_older">
 		<item quantity="other">古いバージョンのメンバー %d 人には、ピン留めされたメッセージが表示されません。</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">保管庫のパスワードを確認</string>
+	<string name="vault_unlock_confirm_message">以前のバージョンでは、この保管庫がパスワードなしで保存されていました。パスワードをもう一度入力してください。その後、Zerion はそのパスワードで保管庫を再び保護します。</string>
+	<string name="vault_unlock_entries_differ">2 回の入力が一致しません。最初からやり直してください。</string>
+	<string name="vault_unlock_not_confirmed">Zerion はストレージ上の保管庫を確認できませんでした。もう一度お試しください。</string>
+	<string name="vault_password_rule">8 文字以上の文字、数字、記号を使用してください。絵文字は数に含まれません。</string>
 </resources>

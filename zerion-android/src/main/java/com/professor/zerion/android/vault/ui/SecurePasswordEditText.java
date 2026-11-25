@@ -12,6 +12,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 
 import com.google.android.material.textfield.TextInputEditText;
+import com.professor.zerion.android.vault.VaultManager;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -87,6 +88,15 @@ public class SecurePasswordEditText extends TextInputEditText {
 			return 0;
 		}
 		return passwordChars.length;
+	}
+
+	public boolean holdsNewVaultPassword() {
+		char[] typed = getPasswordChars();
+		try {
+			return VaultManager.acceptsNewPassword(typed);
+		} finally {
+			Arrays.fill(typed, '\0');
+		}
 	}
 
 	public boolean isPasswordEmpty() {

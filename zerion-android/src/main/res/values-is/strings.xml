@@ -773,6 +773,7 @@
 	<string name="vault_msg_update_document_failed">Ekki tókst að uppfæra skjalið</string>
 	<string name="vault_msg_saved_earlier_version_kept">Breytingarnar þínar voru vistaðar, en ekki tókst að fjarlægja fyrri útgáfuna. Þú getur eytt henni af listanum.</string>
 	<string name="vault_doc_password_needed_to_save">Þetta skjal er varið með lykilorði. Sláðu það lykilorð inn til að vista breytingarnar þínar.</string>
+	<string name="vault_doc_new_password_not_applied">Nýja lykilorðið var ekki notað. Skjalið heldur núverandi lykilorði sínu.</string>
 	<string name="vault_msg_save_password_failed">Ekki tókst að vista lykilorðið</string>
 	<string name="vault_msg_note_title_empty">Titill minnispunkts má ekki vera auður</string>
 	<string name="vault_msg_saved">Vistað</string>
@@ -2956,4 +2957,9 @@
 		<item quantity="one">%d meðlimur á eldri útgáfu sér ekki festu skilaboðin.</item>
 		<item quantity="other">%d meðlimir á eldri útgáfu sjá ekki festu skilaboðin.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Staðfestu lykilorð hvelfingarinnar</string>
+	<string name="vault_unlock_confirm_message">Eldri útgáfa vistaði þessa hvelfingu án lykilorðsins. Sláðu lykilorðið þitt inn einu sinni enn. Zerion ver síðan hvelfinguna með því á ný.</string>
+	<string name="vault_unlock_entries_differ">Innslættirnir tveir eru ekki eins. Byrjaðu aftur.</string>
+	<string name="vault_unlock_not_confirmed">Zerion gat ekki staðfest hvelfinguna í gagnageymslu. Reyndu aftur.</string>
+	<string name="vault_password_rule">Notaðu að minnsta kosti 8 bókstafi, tölustafi eða tákn. Emoji teljast ekki með.</string>
 </resources>

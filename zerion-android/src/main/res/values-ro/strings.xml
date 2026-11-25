@@ -817,6 +817,7 @@
 	<string name="vault_msg_update_document_failed">Documentul nu a putut fi actualizat</string>
 	<string name="vault_msg_saved_earlier_version_kept">Modificările dvs. au fost salvate, dar versiunea anterioară nu a putut fi eliminată. O puteți șterge din listă.</string>
 	<string name="vault_doc_password_needed_to_save">Acest document este protejat cu o parolă. Introduceți acea parolă pentru a salva modificările.</string>
+	<string name="vault_doc_new_password_not_applied">Parola nouă nu a fost aplicată. Documentul își păstrează parola actuală.</string>
 	<string name="vault_msg_save_password_failed">Parola nu a putut fi salvată</string>
 	<string name="vault_msg_note_title_empty">Titlul notiței nu poate fi gol</string>
 	<string name="vault_msg_saved">Salvat</string>
@@ -3007,4 +3008,9 @@
 		<item quantity="few">%d membri cu o versiune mai veche nu văd mesajul fixat.</item>
 		<item quantity="other">%d de membri cu o versiune mai veche nu văd mesajul fixat.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirmați parola seifului</string>
+	<string name="vault_unlock_confirm_message">O versiune anterioară a salvat acest seif fără parola lui. Introduceți parola încă o dată. Apoi Zerion protejează din nou seiful cu ea.</string>
+	<string name="vault_unlock_entries_differ">Cele două introduceri nu sunt identice. Începeți din nou.</string>
+	<string name="vault_unlock_not_confirmed">Zerion nu a putut confirma seiful în spațiul de stocare. Încercați din nou.</string>
+	<string name="vault_password_rule">Folosiți cel puțin 8 litere, cifre sau simboluri. Emoji nu se iau în calcul.</string>
 </resources>
