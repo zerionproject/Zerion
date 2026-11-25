@@ -377,6 +377,23 @@ grep -q 'm_zerion_body_cap = zerion_body_cap_for(uri, body);' "${EPEE_HTTP_H}" |
 grep -q 'm_body.size() + piece_of_transfer.size() > m_zerion_body_cap' "${EPEE_HTTP_H}" || { echo "epee body cap patch missing in handle_target_data"; exit 4; }
 grep -q 'content_len_valid && m_len_in_summary > m_zerion_body_cap' "${EPEE_HTTP_H}" || { echo "epee body cap patch missing in header analysis"; exit 4; }
 echo "epee HTTP response body cap patch verified (http_client.h, per-request caps)"
+# Documented minimal patch: the same client fills two more buffers from the
+# node before any body is counted: the reply header, collected until its blank
+# line, and the size line of a chunk, collected until its line end. Neither had
+# a limit, so a node could send a header or a size line that never ends. A
+# reply header over 64 KiB and a chunk size line over 1 KiB now fail the
+# request like any other node error. Each patch must apply exactly once.
+if ! grep -q 'Zerion: bounded response header' "${EPEE_HTTP_H}"; then
+  sed -i 's~^\(\t*\)std::string::size_type pos = m_header_cache.find(".r.n.r.n");$~&\n\1if ((pos == std::string::npos ? m_header_cache.size() : pos) > (size_t) 64 * 1024) { LOG_ERROR("response header over the cap"); m_state = reciev_machine_state_error; return false; } // Zerion: bounded response header~' "${EPEE_HTTP_H}"
+  sed -i 's~^\(\t*\)if(!get_chunk_head(m_chunked_cache, m_len_in_remain, is_matched))$~\1if(!get_chunk_head(m_chunked_cache, m_len_in_remain, is_matched) || (!is_matched \&\& m_chunked_cache.size() > (size_t) 1024)) // Zerion: bounded chunk size line~' "${EPEE_HTTP_H}"
+fi
+PATCH_COUNT=$(grep -c 'Zerion: bounded response header' "${EPEE_HTTP_H}")
+[ "${PATCH_COUNT}" = "1" ] || { echo "epee http_client.h header cap patch count=${PATCH_COUNT} (expected 1)"; exit 4; }
+PATCH_COUNT=$(grep -c 'Zerion: bounded chunk size line' "${EPEE_HTTP_H}")
+[ "${PATCH_COUNT}" = "1" ] || { echo "epee http_client.h chunk size line cap patch count=${PATCH_COUNT} (expected 1)"; exit 4; }
+grep -qF '(pos == std::string::npos ? m_header_cache.size() : pos) > (size_t) 64 * 1024' "${EPEE_HTTP_H}" || { echo "epee header cap patch missing in handle_header"; exit 4; }
+grep -qF '(!is_matched && m_chunked_cache.size() > (size_t) 1024)' "${EPEE_HTTP_H}" || { echo "epee chunk size line cap patch missing in handle_body_body_chunked"; exit 4; }
+echo "epee HTTP response header and chunk size line cap patches verified (http_client.h)"
 MB=/build/monero/build/${ABI}
 # Dependencies are built; drop the cross compilers from the environment so
 # Monero's translations ExternalProject (which has no toolchain file) builds its
