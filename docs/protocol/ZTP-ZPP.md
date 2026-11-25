@@ -161,7 +161,9 @@ Timing (`ZppPacingPolicy`, `ZppConnectionRunnerImpl`):
   the offer that first announces the message and, for the message's body
   and the parts of its attachments, for as many frames as each has, counted
   over every send and every connection, until the contact acknowledges it
-  or for up to a day; frames beyond that count are automatic. A queued
+  or for up to a day; frames beyond that count are automatic. The count is
+  reserved when the frames are queued and shared by all connections to the
+  contact, and what a connection did not use is given back when it stops. A queued
   control record (the link parameters, a root evolution record) makes the
   next spacing active, but a control frame neither carries the active rate
   on after a window nor ends it. Nothing else that is queued makes the
@@ -190,23 +192,27 @@ Timing (`ZppPacingPolicy`, `ZppConnectionRunnerImpl`):
   chose to send go first, then acknowledgements and requests, then the
   rest, but a bulk record whose frames have started to leave is finished
   before another bulk record goes. While the user's records are queued, one
-  of their frames goes after every small record that is not the user's (if
-  the bulk lane must first finish a record that has started, a frame of
-  that record goes instead and counts as the user's progress), so
-  acknowledgements and requests still leave at least every other frame.
+  of their frames goes after every small record that is not the user's, so
+  acknowledgements and requests still leave at least every other frame. A
+  record whose frames have started to leave takes every other frame beside
+  the small lane; while a part of the user's waits behind it and the link
+  is fast (inside a window or its continuation), each of its frames uses
+  one frame of that part's count and counts as the user's progress, and at
+  the idle rate it uses none.
 - A record waits in the bulk lane far longer than the retransmission timer
   the database starts when it hands the record over, so the sender keeps the
   set of messages whose frames have not all left: such a message is neither
   offered nor sent again until its last frame is out, and only then does the
   timer govern a resend. The batch pulled from the database is bounded by the
-  room left in the bulk lane, always at least one frame and, with the lane
-  empty, at least one record of the largest size (1 MB), and a requested
-  message that does not fit waits in the database while shorter ones still
-  go, so a text written during a transfer leaves at the next slot. Up to
-  3.0.18 a message larger than about 869 KB, the room of an
-  empty lane, never left; this holds with or without cover traffic. A
-  record larger than 1 MB is never sent over this connection: the sender
-  drops it and the receiver's reassembler takes at most 1 MB.
+  room left in the bulk lane, always at least one frame; whenever the bulk
+  lane is empty that room is raised to 1 MB for every batch, so one record
+  of the largest size fits. A requested message that does not fit waits in
+  the database while shorter ones still go, so a text written during a
+  transfer leaves at the next slot. Up to 3.0.18 a message larger than
+  about 869 KB, the room of an empty lane, never left; this holds with or
+  without cover traffic. A record larger than 1 MB is never sent over this
+  connection (see "Application records" below for what keeps new messages
+  under it).
 
 What this hides and what it does not: within a rate, an observer cannot tell
 which frames carried data. The switch from the idle to the active rate, and
@@ -252,8 +258,8 @@ drained at it): they leave in the next frames of the cadence the connection
 is at, at most one acknowledgement and one request waiting at a time, each
 carrying as many ids as fit one frame, so no backlog builds up, and a reply
 leaves within four idle slots (about 21 s at the largest jitter), or eight
-(about 43 s) while the user's own transfer to that contact runs at the idle
-rate. The phone's own automatic offers wait for each other the same way, one
+(about 43 s) while a transfer of the user's, or a record that has started
+sending, runs at the idle rate on that link. The phone's own automatic offers wait for each other the same way, one
 at a time. A record queued during an idle wait does not shorten it; only
 the activity listed above does. The peer can end the active rate early by
 holding back its requests, and by keeping the link busy during the user's
@@ -505,7 +511,21 @@ know; Android 3.0.14 does the same, which is how it stays on the pairing root.
 A record is at most `ZmmConstants.MAX_RECORD_BYTES` (1 MiB) before
 fragmentation: the receiver reassembles nothing larger, and the sender never
 queues a larger record, which the peer would drop and the sync layer would send
-again forever. The bound applies to every implementation that sends to Android;
+again forever. From 3.0.19 a stored message whose record can never fit is also
+not reported as sent: it is marked not shared after it is first requested
+(`ZppOutgoingSource.stopOffering`), so it is not offered again on any
+connection and stays visible to its sender; a message stored this way by an
+earlier release still shows as sent. Unpaced offers, acknowledgements and
+requests carry at most 32,767 ids, so they fit one record too. Messages
+created from 3.0.19 keep their body at or below 993,752 bytes
+(`SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH`, the largest body whose
+768-byte fragments fit one 1 MiB record, with a margin of 394 bytes): a group
+post body at most 977,368 bytes (`GroupTrManager.MAX_POST_BODY_LENGTH`), a
+private text at most 991,704 bytes, a chat image or profile picture at most
+993,652 bytes, and an introduction text at most 977,368 bytes; the receive
+limits are unchanged. Up to 3.0.18 a group post with a picture, video or
+voice note, or a private text, larger than that showed as sent and never
+arrived. The bound applies to every implementation that sends to Android;
 the iOS fragmenter accepts records up to 11 MiB and must apply the same bound. A cover record has the cover
 type and an empty payload. The receive side identifies cover by comparing the type
 word and does not deliver it.

@@ -17,7 +17,9 @@ every implementation.
 `target` is the 32-byte id under which the sender stored the message. A
 message that reached the receiver over the mesh is stored there under a
 different id, and neither record applies to it (see the mesh rule below).
-`text` is 1 to `MAX_PRIVATE_MESSAGE_TEXT_LENGTH` bytes and may not start
+`text` is 1 to `MAX_PRIVATE_MESSAGE_TEXT_LENGTH` bytes on receipt; from 3.0.19
+a sender sends at most `MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH` (991,704)
+bytes, so the edit fits one sync record, and refuses a longer edit. It may not start
 with a form the app gives a special meaning (`SECRET:`, `VOICE_CALL:`,
 `[VOICE:`, `[VMP:` or the legacy call signal prefix). `salt` is 32 random
 bytes, sent only to a contact that announces minor version 12 or later (see

@@ -11,8 +11,12 @@ client they announce (`MessagingManager.MINOR_VERSION`). Minor version 8
 at the recipient's announced version before using any of them:
 
 - **Large posts.** A receiver on version 8 keeps a post's body in the
-  message only, so it takes in a post as large as a message allows (the
-  composer allows about 9.5 MB). A receiver on an earlier version copies the
+  message only, so it takes in a post as large as a message allows. From
+  3.0.19 the composer and `sendGroupPost` allow a post body of at most
+  977,368 bytes (`GroupTrManager.MAX_POST_BODY_LENGTH`), so that the post
+  and its relay request each fit one sync record; larger posts, which the
+  composer of 3.0.15 to 3.0.18 allowed up to about 9.5 MB, showed as sent
+  and never arrived. A receiver on an earlier version copies the
   body into the message's metadata, which holds no value longer than 64 KiB,
   and refuses a larger post as invalid. A sender therefore sends a post with
   a body larger than 64 KiB (65,536 bytes) only to members that announce
