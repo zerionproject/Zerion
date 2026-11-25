@@ -182,6 +182,7 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 					.clearIfOurs(appContext);
 			PendingSends.get().clear();
 			MemoryCaches.clearThumbnails();
+			com.professor.zerion.android.conversation.OpenedVideos.clear();
 			com.professor.zerion.android.util.CacheSweeper.sweepAsync(appContext);
 		} else {
 			tellWhatTheLockRemoved();
