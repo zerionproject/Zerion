@@ -2779,7 +2779,8 @@ public class VaultViewModel extends AndroidViewModel {
 			}
 			byte[] combined = ProtectedNoteCodec.seal(content, password);
 
-			String protectedTitle = ProtectedNoteCodec.TITLE_PREFIX + title;
+			String protectedTitle = ProtectedNoteCodec.TITLE_PREFIX
+					+ ProtectedNoteCodec.plainTitle(title);
 			vaultManager.addItem(VaultItem.ItemType.NOTE, protectedTitle, combined);
 		} catch (Exception e) {
 			return noteSave(request, NoteSaveResult.Outcome.FAILED,

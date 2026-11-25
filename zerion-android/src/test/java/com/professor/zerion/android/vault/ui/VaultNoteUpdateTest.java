@@ -332,6 +332,23 @@ public class VaultNoteUpdateTest {
 	}
 
 	@Test
+	public void aProtectedNoteIsStoredUnderOneLockPrefix() throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "🔒 🔒 Diary",
+				"dear diary", "pw".toCharArray(), null);
+		idle();
+
+		assertEquals(NoteSaveResult.Outcome.SAVED, result(vm).outcome);
+		assertEquals(1, rig.vault.size());
+		VaultItem stored = rig.vault.named(PROTECTED_TITLE);
+		assertNotNull("the note was not stored under one lock prefix",
+				stored);
+		assertEquals("dear diary", opened(vm, stored.id, "pw"));
+	}
+
+	@Test
 	public void aPlainNoteWhoseTitleIsOnlyTheLockPrefixIsRefused()
 			throws Exception {
 		VaultViewModelRig rig = new VaultViewModelRig();
