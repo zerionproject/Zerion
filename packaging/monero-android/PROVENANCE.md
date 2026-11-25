@@ -187,8 +187,10 @@ Notes recorded during bring-up:
   it passes 1 KiB without its line end. Before them a node could send a header
   or a chunk size line that never ends and grow either buffer without limit.
   An honest daemon's reply header is a few hundred bytes and its chunk size
-  lines a few bytes. The build asserts each of the two is present exactly
-  once.
+  lines a few bytes. A third patch empties the chunk buffer at the start of
+  every chunked reply, so bytes a failed reply left in it cannot break the
+  next reply on the same client. The build asserts each of the three is
+  present exactly once.
 - Only the JNI entry points are exported. The link uses the version script
   `jni/zmonero.map` (global: `JNI_OnLoad` and the
   `Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_*`
@@ -236,7 +238,8 @@ builds different bytes can be compared with the reference stage by stage.
 ## Accepted hashes (reply header and chunk size line caps, 2026-11-25)
 
 These are the values the Gradle gate enforces since the two patches that bound
-the reply header and the chunk size line (build flags above) were added.
+the reply header and the chunk size line, and the patch that empties the chunk
+buffer for every chunked reply (build flags above), were added.
 Nothing else in the recipe changed: the Monero commit, the four body cap
 patches, the export map, the shim, the dependency pins, the NDK, the base image
 and the snapshot package versions are the same, and every dependency archive
@@ -246,16 +249,16 @@ message.
 
 Produced in two independent environments that agree byte for byte: the
 pinned image of this directory's Dockerfile (`docker build -t
-zerion-monero-build:v0.18.5.4-hdr .`, then `docker-run.sh` per ABI with that
+zerion-monero-build:v0.18.5.4-hdr2 .`, then `docker-run.sh` per ABI with that
 tag, as the `builder` user with every capability dropped) and F-Droid's
 `registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie` image, prepared
 as the recipe's `sudo` step prepares it, where `fdroid-build.sh` ran as
 `vagrant` with NDK r27b under `/opt/android-sdk/ndk/27.1.12297006`.
 
 - **libzmonero.so arm64-v8a SHA-256:
-  `2b6a9819648698814378d7fae421f0be32c01f3d9ce9a28387cfcfc1d25ed404`**
+  `54651364705d257f24c74d496bc3f69d8d3c17fcb51ae25cf7f1fe09e75d3e6b`**
 - **libzmonero.so armeabi-v7a SHA-256:
-  `5fc9a5908a9bca6950d45fa75cdd169b111455e05f529c39f1062c893420441c`**
+  `e52735b34fd3c55c0e4306cdb303ab0f4b1d2418c7046ea67cec2e2e6fdedc6b`**
 
 They supersede `e0336d5d…` / `6d870954…` (no header or chunk size line cap),
 listed below for the record.
