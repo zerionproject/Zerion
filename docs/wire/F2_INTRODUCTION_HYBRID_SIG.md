@@ -107,6 +107,10 @@ Never verify only the first 64 bytes of a signature: the Ed25519 half of a hybri
 
 ## 3a. Key confirmation (ActivateMessage)
 
+This section describes the earlier key schedule. From 3.0.19, when both
+introducees announce key schedule 2, the keys are derived as in section 3c
+instead.
+
 Once an introducee has verified the peer's AUTH it derives the final master key
 
 ```
@@ -146,6 +150,118 @@ message is refused as malformed, so a contact who learns the three author ids
 can no longer abort someone else's introduction (3.0.14 and earlier accepted it,
 and a foreign ABORT to an introducer left a message that failed validation at
 every start).
+
+---
+
+## 3c. Key separation (key schedule 2, from 3.0.19)
+
+From 3.0.19 each introducee announces the key schedule it supports. It does
+this with one extra entry in the transport properties of its AcceptMessage
+(slot 5): transport id `org.zerionproject.app.introduction`, holding the
+single property `keySchedule` with the decimal value `2` (`KeySchedule`).
+
+The value must be written in canonical form, from 2 to 127. An entry with
+any other value, or without the property, is malformed, and an introducee
+that announced the new schedule itself aborts the session on it before it
+sends its AUTH. An introducee that did not announce ignores the entry, as
+3.0.18 does. The entry is not a transport: it is removed before the new
+contact's transport properties are stored. An introducer forwards it
+unchanged, like any other transport, as every Android release since the
+hybrid ACCEPT already does.
+
+The new schedule is used when both the introducee's own ACCEPT and the
+peer's ACCEPT carry a valid announcement. Otherwise the earlier derivation of
+sections 2, 3 and 3a is used exactly as in 3.0.18. Both sides compute this
+decision from the same two maps, which are stored in the session, so a
+session begun before an update finishes in the form it began in.
+
+Let pA and pB be the two X25519 ephemeral public keys, with Alice the
+introducee whose author id is smaller. Let vA and vB be the two announced
+versions as one byte each. Let ssA and ssB be the ML-KEM-768 secrets that
+Alice and Bob encapsulate in their AUTH messages. All labels below begin
+with `org.zerionproject.app.introduction/`.
+
+```
+S              = deriveSharedSecret("SHARED_SECRET_V2", X25519(own, peer),
+                                    [MAJOR_VERSION], pA, pB, [vA], [vB])
+authSecret_X   = KDF("AUTH_SECRET_V2", S, ssX)                   for each sender X
+authMacKey_X   = KDF("ALICE_AUTH_MAC_KEY_V2" | "BOB_AUTH_MAC_KEY_V2", authSecret_X)
+authNonceKey_X = KDF("ALICE_AUTH_NONCE_KEY_V2" | "BOB_AUTH_NONCE_KEY_V2", authSecret_X)
+final          = KDF("FINAL_SECRET_V2", S, ssA, ssB)
+root           = KDF("ROOT_KEY_V2", final)
+activateKey_X  = KDF("ALICE_ACTIVATE_KEY_V2" | "BOB_ACTIVATE_KEY_V2", final)
+```
+
+The AUTH MAC is computed over the same transcript as before (introducer id,
+and for each side the author id, accept timestamp, X25519 key, transport
+properties including the announcement, and ML-KEM key), under the sender's
+AUTH MAC key. The signed nonce is MAC(`AUTH_NONCE`) under the sender's AUTH
+nonce key, signed with the same hybrid Ed25519 and ML-DSA-65 identity
+signature as before. The ACTIVATE MAC is MAC(`ACTIVATE_MAC`) under the
+sender's ACTIVATE key. The root is stored for the new contact and is never a
+key or an input of any value that leaves the phone during the introduction;
+each derived key has one role only.
+
+**Wiping.** The shared secret, the AUTH secrets, the AUTH keys and the final
+secret are wiped after use. A session waiting for the peer's AUTH stores only
+its own ML-KEM secret beside its ephemeral private keys. Whenever a session
+drops a secret, the introducee fills it with zeros: when an introduction
+aborts, is declined or completes, this covers the X25519 and ML-KEM private
+keys, its own ML-KEM secret, the AUTH or ACTIVATE keys and the root. The
+earlier form's pre-master and AUTH MAC keys are zeroed once the final keys
+replace them. The root is zeroed in the session once the contact is added,
+and the contact and key managers receive their own copies. The in-memory
+copy of a session is zeroed after it is stored
+(`IntroductionManagerImpl.storeSession`). The earlier form behaves the same
+way. The zeroing after a session is stored is covered by reading the code
+and by the unit test of the wipe itself, not by a test of the store.
+
+**Downgrade.** The introducer relays every message and can alter or strip
+any of them. The AUTH MAC has always covered each side's transport
+properties as that side sent them, so removing, adding or changing an
+announcement makes the MAC check fail on both introducees. Both announced
+versions are also inputs of S, so a changed version gives different keys.
+Two introducees that both announce therefore either both use the new
+schedule or both abort before any contact is added. They never complete
+with the earlier derivation.
+
+**Compatibility.** Cases, in order:
+
+- Both on 3.0.19 with an honest introducer on 3.0.19 or 3.0.18: the new
+  schedule, completes.
+- One announcement stripped: one side uses the new schedule and the other
+  the earlier one, and both abort.
+- Both announcements stripped: both use the earlier schedule, and both
+  abort.
+- An announcement changed, or added for an introducee that did not
+  announce: both abort.
+- A 3.0.19 introducee with an introducee on 3.0.18 or earlier: the earlier
+  derivation, unchanged, completes. The 3.0.18 phone stores the announcement
+  entry as a transport property of an unknown transport, kept locally and
+  read by no plugin.
+- iOS never announces, so the earlier derivation would apply; iOS does not
+  yet send an AUTH, so an introduction between Android and iOS does not
+  complete, before this change and after it.
+
+Limits. Contacts introduced before 3.0.19, and contacts introduced with a
+peer on 3.0.18 or earlier, keep the root of the earlier derivation, which
+also keys their ACTIVATE MACs. As in section 3a, an introducer that tampers
+with an AUTH's KEM ciphertext after the honest AUTH has been delivered the
+other way can make one side add the contact and store a root while the other
+aborts; the contact stays in place and its keys are never activated, in both
+forms.
+
+**Sunset.** The earlier derivation is kept for one more release. The release
+after 3.0.19 refuses an introduction in which either ACCEPT carries no valid
+announcement.
+
+Tests: `IntroductionKeySeparationTest` (a three-phone network with the real
+introducer and a relay that strips or changes announcements: every case
+above, sessions stored by the earlier code before and after its AUTH and
+before its ACTIVATE, the root never a key, an input or a wire value, and
+every secret at zero after an abort, a decline or the end),
+`IntroductionVectorTest` (fixed vectors for both derivations, the earlier
+ones equal to what 3.0.18 computes), `KeyScheduleTest`.
 
 ---
 
@@ -235,6 +351,13 @@ LABEL_ACTIVATE_MAC   = "org.zerionproject.app.introduction/ACTIVATE_MAC"
 LABEL_ALICE_ACTIVATE_KEY = "org.zerionproject.app.introduction/ALICE_ACTIVATE_KEY"
 LABEL_BOB_ACTIVATE_KEY   = "org.zerionproject.app.introduction/BOB_ACTIVATE_KEY"
 ```
+
+Key schedule 2 (section 3c), each with the prefix
+`org.zerionproject.app.introduction/`: `SHARED_SECRET_V2`, `AUTH_SECRET_V2`,
+`ALICE_AUTH_MAC_KEY_V2`, `BOB_AUTH_MAC_KEY_V2`, `ALICE_AUTH_NONCE_KEY_V2`,
+`BOB_AUTH_NONCE_KEY_V2`, `FINAL_SECRET_V2`, `ALICE_ACTIVATE_KEY_V2`,
+`BOB_ACTIVATE_KEY_V2`, `ROOT_KEY_V2`. Announcement: transport id
+`org.zerionproject.app.introduction`, property `keySchedule`.
 
 ---
 
