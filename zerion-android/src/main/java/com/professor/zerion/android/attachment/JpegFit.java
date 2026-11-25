@@ -27,17 +27,22 @@ public final class JpegFit {
 	public static byte[] fit(Encoder encoder, int firstQuality, int maxBytes)
 			throws IOException {
 		for (int scale : SCALES) {
-			byte[] data = encoder.encode(firstQuality, scale);
-			if (data == null) return null;
+			byte[] data = encoded(encoder, firstQuality, scale);
 			if (data.length <= maxBytes) return data;
 			for (int quality : QUALITIES) {
 				if (quality >= firstQuality) continue;
-				data = encoder.encode(quality, scale);
-				if (data == null) return null;
+				data = encoded(encoder, quality, scale);
 				if (data.length <= maxBytes) return data;
 			}
 		}
 		return null;
+	}
+
+	private static byte[] encoded(Encoder encoder, int quality, int scale)
+			throws IOException {
+		byte[] data = encoder.encode(quality, scale);
+		if (data == null) throw new IOException();
+		return data;
 	}
 
 	@Nullable
