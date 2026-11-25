@@ -111,6 +111,8 @@ final class RootEvolutionTestBed {
 				new HashMap<>();
 		private final Map<Integer, byte[]> pendingIdKeys = new HashMap<>();
 		private final Map<Integer, Boolean> confirmed = new HashMap<>();
+		private final java.util.Set<Integer> removed =
+				java.util.concurrent.ConcurrentHashMap.newKeySet();
 		volatile boolean paused = false;
 		final AtomicInteger pendingStores = new AtomicInteger();
 
@@ -120,6 +122,7 @@ final class RootEvolutionTestBed {
 		}
 
 		synchronized void put(ContactId c, ContactRootKeys keys) {
+			removed.remove(c.getInt());
 			epochs.put(c.getInt(), new long[] {keys.getEpoch()});
 			current.put(c.getInt(), keys.getCurrent().getBytes().clone());
 			SecretKey p = keys.getPending();
@@ -132,6 +135,28 @@ final class RootEvolutionTestBed {
 			if (pi == null) pendingIdKeys.remove(c.getInt());
 			else pendingIdKeys.put(c.getInt(), pi.getBytes().clone());
 			confirmed.put(c.getInt(), keys.isPendingConfirmed());
+		}
+
+		synchronized void remove(ContactId c) {
+			int id = c.getInt();
+			epochs.remove(id);
+			current.remove(id);
+			pending.remove(id);
+			pendingConfirmKeys.remove(id);
+			pendingIdKeys.remove(id);
+			confirmed.remove(id);
+			outOfSync.remove(id);
+			enforcing.remove(id);
+			evolving.remove(id);
+			evolvedAt.remove(id);
+			stalls.remove(id);
+			notRenewing.remove(id);
+			removed.add(id);
+		}
+
+		@Override
+		public boolean hasContact(ContactId c) {
+			return !removed.contains(c.getInt());
 		}
 
 		@Override
@@ -592,8 +617,7 @@ final class RootEvolutionTestBed {
 				public void onRecord(byte[] payload) {
 					if (payload.length > 1) {
 						device.receivedKinds.add(payload[1]);
-						device.receivedRecords.add(new byte[] {payload[0],
-								payload[1]});
+						device.receivedRecords.add(payload.clone());
 						Gate g = device.gate;
 						if (g != null && payload[1] == g.kind) {
 							g.reached.countDown();

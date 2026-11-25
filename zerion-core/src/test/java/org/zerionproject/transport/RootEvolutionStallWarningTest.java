@@ -2,6 +2,7 @@ package org.zerionproject.transport;
 
 import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
@@ -746,6 +747,50 @@ public class RootEvolutionStallWarningTest {
 	}
 
 	@Test
+	public void anOfferFromThePeerEndsWhatIsRememberedOfItsPause() {
+		RootEvolutionManager m = manager(bob);
+		bob.store.setPeerEvolves(ALICE);
+		bob.store.setPeerEnforces(ALICE, true);
+		RootEvolution paused = new RootEvolution(m, ALICE, false);
+		paused.start(silent());
+		paused.onPeerStreamAuthenticated(0);
+		paused.onRecord(greeting(
+				FLAG_ENFORCES_EVOLUTION | FLAG_EVOLUTION_PAUSED));
+		paused.close();
+		RootEvolution dropped = new RootEvolution(m, ALICE, false);
+		dropped.start(silent());
+		dropped.onPeerStreamAuthenticated(0);
+		dropped.close();
+		assertEquals("a connection to a paused peer was counted", 0,
+				bob.store.stalls(ALICE)[0]);
+		assertEquals(1, m.peerPausesRemembered());
+
+		RootEvolution offered = new RootEvolution(m, ALICE, false);
+		offered.start(silent());
+		offered.onPeerStreamAuthenticated(0);
+		offered.onRecord(greeting(
+				FLAG_ENFORCES_EVOLUTION | FLAG_EVOLUTION_PAUSED));
+		assertEquals(1, m.peerPausesRemembered());
+		offered.onRecord(RootEvolutionRecord.init(0,
+				new byte[RootEvolutionRecord.MAC_LENGTH],
+				bed.crypto.generateAgreementKeyPair().getPublic().getEncoded(),
+				bed.mlKem.generateKeyPair().getEncapsulationKey()));
+		assertTrue("the offer was not answered",
+				bob.keys().getPending() != null);
+		assertEquals("an offer from the peer left its pause remembered", 0,
+				m.peerPausesRemembered());
+		offered.close();
+		assertEquals(0, bob.store.stalls(ALICE)[0]);
+
+		RootEvolution next = new RootEvolution(m, ALICE, false);
+		next.start(silent());
+		next.onPeerStreamAuthenticated(0);
+		next.close();
+		assertEquals("a peer that offered was still excused as paused", 1,
+				bob.store.stalls(ALICE)[0]);
+	}
+
+	@Test
 	public void aPeersPauseIsRememberedForTheLengthOfAPauseAndNoLonger() {
 		RootEvolutionManager m = aliceKnowsThatBobRenews();
 		greetedAndEnded(m, FLAG_ENFORCES_EVOLUTION | FLAG_EVOLUTION_PAUSED);
@@ -962,6 +1007,58 @@ public class RootEvolutionStallWarningTest {
 		assertEquals("a connection closed for another reason than being"
 						+ " redundant was not counted", 1,
 				alice.store.stalls(BOB)[0]);
+	}
+
+	@Test
+	public void aConnectionClosedBecauseItsContactWasRemovedIsNotCounted()
+			throws Exception {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		ConnectionRegistry registry = registry();
+		AtomicBoolean closed = new AtomicBoolean();
+		RootEvolution only = new RootEvolution(m, BOB, true);
+		SessionConnection session = session(only, closed);
+		only.start(silent());
+		only.onPeerStreamAuthenticated(0);
+		registry.registerOutgoingConnection(BOB, TorConstants.ID, session,
+				priority(1));
+		assertFalse(closed.get());
+		alice.store.remove(BOB);
+		((EventListener) registry).eventOccurred(
+				new ContactRemovedEvent(BOB));
+		assertTrue(closed.get());
+		only.close();
+		only.close();
+		assertEquals("a connection that ended because its contact was removed"
+				+ " was counted", 0, alice.store.stalls(BOB)[0]);
+		assertFalse(alice.store.isNotRenewing(BOB));
+		assertFalse("a removed contact is remembered as stalled",
+				m.recentlyStalled(ALICE_SEES_BOB));
+	}
+
+	@Test
+	public void twoConnectionsToARemovedContactLeaveNothingForAContactAddedLater() {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		RootEvolution first = new RootEvolution(m, BOB, true);
+		RootEvolution second = new RootEvolution(m, BOB, true);
+		first.start(silent());
+		second.start(silent());
+		first.onPeerStreamAuthenticated(0);
+		second.onPeerStreamAuthenticated(0);
+		alice.store.remove(BOB);
+		m.forget(BOB);
+		first.close();
+		second.close();
+		assertEquals(0, alice.store.stalls(BOB)[0]);
+		assertFalse(m.recentlyStalled(ALICE_SEES_BOB));
+
+		alice.resetKeys(ContactRootKeys.atPairing(bed.randomKey()));
+		RootEvolution later = new RootEvolution(m, BOB, true);
+		later.start(silent());
+		later.onPeerStreamAuthenticated(0);
+		later.close();
+		assertEquals("a contact added later was charged with a connection to"
+				+ " the removed one", 0, alice.store.stalls(BOB)[0]);
+		assertFalse(alice.store.isOutOfSync(BOB));
 	}
 
 	private static SecretKey copy(SecretKey k) {

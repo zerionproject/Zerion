@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class RootEvolutionManagerTest {
@@ -128,6 +129,98 @@ public class RootEvolutionManagerTest {
 		assertFalse("a renewal that completed",
 				manager.peerPauseRemembered(other));
 		assertEquals(0, manager.peerPausesRemembered());
+	}
+
+	@Test
+	public void aGreetingFromOneContactLeavesAnotherContactsPauseAlone() {
+		ContactId other = new ContactId(8);
+		for (boolean otherPaused : new boolean[] {false, true}) {
+			manager.peerGreeted(contact, true);
+			clock.addAndGet(1);
+			assertTrue(manager.peerPauseRemembered(contact));
+			clock.addAndGet(-1);
+			manager.peerGreeted(other, otherPaused);
+			clock.addAndGet(1);
+			assertTrue("a greeting from another contact, read off the clock a"
+							+ " millisecond earlier, ended the pause",
+					manager.peerPauseRemembered(contact));
+			clock.addAndGet(-10_000);
+			manager.peerGreeted(other, otherPaused);
+			clock.addAndGet(10_000);
+			assertTrue("a greeting from another contact after the clock"
+							+ " stepped back ended the pause",
+					manager.peerPauseRemembered(contact));
+			manager.peerGreeted(other, false);
+		}
+		clock.addAndGet(-1);
+		assertFalse("a clock that went back for the contact itself kept its"
+				+ " pause", manager.peerPauseRemembered(contact));
+		assertEquals(0, manager.peerPausesRemembered());
+
+		manager.peerGreeted(contact, true);
+		clock.addAndGet(RootEvolutionManager.PEER_PAUSE_MEMORY_MS - 1);
+		manager.peerGreeted(other, false);
+		assertEquals("a pause that is not over was dropped", 1,
+				manager.peerPausesRemembered());
+		clock.addAndGet(1);
+		manager.peerGreeted(other, false);
+		assertEquals("a pause that is over stayed in memory", 0,
+				manager.peerPausesRemembered());
+	}
+
+	@Test
+	public void forgettingAContactDropsWhatIsRememberedOfItAndOfNoOtherContact() {
+		ContactId other = new ContactId(8);
+		ContactRootKeys confirmed = new ContactRootKeys(3, bed.randomKey(),
+				bed.randomKey(), true);
+		RootEvolution offering = new RootEvolution(manager, contact, true);
+		for (ContactId c : new ContactId[] {contact, other}) {
+			store.put(c, ContactRootKeys.atPairing(bed.randomKey()));
+			manager.peerGreeted(c, true);
+			manager.stalledBesideAnother(c);
+			manager.stalled(c);
+			manager.proved(c);
+			for (int i = 0; i < RootEvolutionManager.MAX_ANSWERS_PER_INTERVAL;
+					i++) {
+				assertTrue(manager.mayAnswer(c));
+			}
+			for (int i = 0; i < RootEvolutionManager.OUT_OF_SYNC_AFTER - 1;
+					i++) {
+				manager.dialEnded(c, false);
+			}
+			assertEquals("the dial after five failed ones", 3,
+					manager.dialEpoch(c, confirmed));
+		}
+		assertFalse(manager.mayOffer(contact, offering));
+
+		manager.forget(contact);
+
+		assertFalse("a pause of the peer outlived the contact's keys",
+				manager.peerPauseRemembered(contact));
+		assertEquals(1, manager.peerPausesRemembered());
+		assertFalse(manager.recentlyStalled(contact.getInt()));
+		assertNull(manager.lastEvolution(contact));
+		assertTrue(manager.mayOffer(contact, offering));
+		assertTrue("the answers given under the earlier keys still counted",
+				manager.mayAnswer(contact));
+		assertEquals("the failed dials under the earlier keys still counted",
+				4, manager.dialEpoch(contact, confirmed));
+		manager.dialEnded(contact, false);
+		assertFalse(store.isOutOfSync(contact));
+		manager.connectionEnded(contact, false);
+		assertEquals("a stall noted beside another connection outlived the"
+				+ " contact's keys", 0, store.stalls(contact)[0]);
+
+		assertTrue(manager.peerPauseRemembered(other));
+		assertTrue(manager.recentlyStalled(other.getInt()));
+		assertFalse(manager.mayOffer(other,
+				new RootEvolution(manager, other, true)));
+		assertFalse(manager.mayAnswer(other));
+		assertEquals(3, manager.dialEpoch(other, confirmed));
+		manager.dialEnded(other, false);
+		assertTrue(store.isOutOfSync(other));
+		manager.connectionEnded(other, false);
+		assertEquals(1, store.stalls(other)[0]);
 	}
 
 	@Test

@@ -79,6 +79,10 @@ public class RootEvolutionManager {
 			return now >= seenAt && now - saidAt < PEER_PAUSE_MEMORY_MS;
 		}
 
+		private boolean isOverAt(long now) {
+			return now - saidAt >= PEER_PAUSE_MEMORY_MS;
+		}
+
 		private PeerPause seenAt(long now) {
 			return new PeerPause(saidAt, now);
 		}
@@ -283,9 +287,21 @@ public class RootEvolutionManager {
 		stalledBeside.add(c.getInt());
 	}
 
+	public void forget(ContactId c) {
+		int id = c.getInt();
+		lastEvolution.remove(id);
+		answers.remove(id);
+		pendingDialFailures.remove(id);
+		unauthenticatedDials.remove(id);
+		stalledAt.remove(id);
+		stalledBeside.remove(id);
+		peerPauses.remove(id);
+		pausedInRun.remove(id);
+	}
+
 	void peerGreeted(ContactId c, boolean paused) {
 		long now = now();
-		peerPauses.values().removeIf(p -> !p.holdsAt(now));
+		peerPauses.values().removeIf(p -> p.isOverAt(now));
 		if (!paused) {
 			peerPauseEnded(c, now);
 			return;
