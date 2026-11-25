@@ -18,7 +18,7 @@ import java.io.InputStream;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
-import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH;
 import static org.zerionproject.core.util.IoUtils.copyAndClose;
 import static org.zerionproject.app.api.attachment.MediaConstants.MSG_KEY_CONTENT_TYPE;
 import static org.zerionproject.app.api.attachment.MediaConstants.MSG_KEY_DESCRIPTOR_LENGTH;
@@ -47,7 +47,7 @@ class AvatarMessageEncoderImpl implements AvatarMessageEncoder {
 		ByteArrayOutputStream bodyOut = new ByteArrayOutputStream();
 		bodyOut.write(descriptor);
 		copyAndClose(in, bodyOut);
-		if (bodyOut.size() > MAX_MESSAGE_BODY_LENGTH)
+		if (bodyOut.size() > MAX_DELIVERABLE_MESSAGE_BODY_LENGTH)
 			throw new FileTooBigException();
 		byte[] body = bodyOut.toByteArray();
 		long timestamp = clock.currentTimeMillis();

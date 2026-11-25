@@ -8,8 +8,17 @@ import java.util.Collection;
 
 import javax.annotation.Nullable;
 
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH;
+
 @NotNullByDefault
 public interface GroupTrManager {
+
+	int POST_RECORD_OVERHEAD_BYTES = 16 * 1024;
+
+	int MAX_POST_BODY_LENGTH =
+			MAX_DELIVERABLE_MESSAGE_BODY_LENGTH - POST_RECORD_OVERHEAD_BYTES;
+
+	int RELAY_ENVELOPE_BYTES = 10 * 1024;
 
 	@Nullable
 	GroupTrState getGroup(byte[] groupId) throws DbException;

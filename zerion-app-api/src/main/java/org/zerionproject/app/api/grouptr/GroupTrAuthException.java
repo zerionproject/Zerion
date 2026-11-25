@@ -21,7 +21,8 @@ public class GroupTrAuthException extends DbException {
 		GROUP_FULL,
 		INCOGNITO_NOT_SUPPORTED,
 		INCOGNITO_NAME_FIXED,
-		CONTACT_MUST_UPDATE
+		CONTACT_MUST_UPDATE,
+		POST_TOO_LARGE
 	}
 
 	private final Reason reason;

@@ -1,5 +1,7 @@
 package org.zerionproject.app.grouptr;
 
+import org.zerionproject.app.api.grouptr.GroupTrAuthException;
+import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrMember;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
 import org.zerionproject.core.api.contact.ContactId;
@@ -16,6 +18,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.zerionproject.app.grouptr.GroupTrTestNode.creator;
 import static org.zerionproject.app.grouptr.GroupTrTestNode.member;
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
@@ -24,7 +27,7 @@ import static org.zerionproject.core.test.TestUtils.getRandomId;
 public class GroupLargePostTest {
 
 	private static final long EPOCH = 4L;
-	private static final int LARGE = 1024 * 1024;
+	private static final int LARGE = 512 * 1024;
 
 	private final byte[] groupId = getRandomId();
 	private final byte[] creatorKey = key((byte) 1);
@@ -46,6 +49,37 @@ public class GroupLargePostTest {
 				getRandomBytes(LARGE), 0L);
 
 		assertEquals(1, skipped);
+		assertEquals(1, node.sent.size());
+		assertEquals(current, node.sent.get(0).to);
+	}
+
+	@Test
+	public void aPostOverTheGroupLimitIsRefusedBeforeAnythingIsStored()
+			throws Exception {
+		group();
+		node.addContact(currentKey);
+
+		try {
+			node.manager.sendGroupPostReporting(groupId, getRandomBytes(
+					GroupTrManager.MAX_POST_BODY_LENGTH + 1), 0L);
+			fail();
+		} catch (GroupTrAuthException e) {
+			assertEquals(GroupTrAuthException.Reason.POST_TOO_LARGE,
+					e.getReason());
+		}
+
+		assertTrue(node.sent.isEmpty());
+		assertTrue(node.manager.getRecentPosts(groupId).isEmpty());
+	}
+
+	@Test
+	public void aPostAtTheGroupLimitIsSent() throws Exception {
+		group();
+		ContactId current = node.addContact(currentKey);
+
+		node.manager.sendGroupPostReporting(groupId,
+				getRandomBytes(GroupTrManager.MAX_POST_BODY_LENGTH), 0L);
+
 		assertEquals(1, node.sent.size());
 		assertEquals(current, node.sent.get(0).to);
 	}
