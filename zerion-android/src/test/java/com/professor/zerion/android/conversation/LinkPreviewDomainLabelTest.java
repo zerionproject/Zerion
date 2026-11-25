@@ -34,6 +34,16 @@ public class LinkPreviewDomainLabelTest {
 	}
 
 	@Test
+	public void aHostThatIsRespelledInPlainLettersIsMarked() {
+		String marked = "sparkasse.de "
+				+ ctx.getString(R.string.link_host_other_alphabet_mark);
+		assertEquals(marked, ConversationItemViewHolder.previewDomainLabel(
+				ctx, "https://sparka\u00DFe.de/login"));
+		assertEquals(marked, ConversationItemViewHolder.previewDomainLabel(
+				ctx, "https://spark\u200Dasse.de/login"));
+	}
+
+	@Test
 	public void aLinkThatIsNotAWebLinkIsShownAsUnsupported() {
 		assertEquals(ctx.getString(R.string.link_unsupported),
 				ConversationItemViewHolder.previewDomainLabel(ctx,

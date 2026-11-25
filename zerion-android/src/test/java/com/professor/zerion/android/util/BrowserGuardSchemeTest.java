@@ -117,7 +117,7 @@ public class BrowserGuardSchemeTest {
 						"https://user@\u0440\u0430ypal.com:8443/a?b=\u00E9#c"));
 		assertEquals("https://example.org/caf\u00E9",
 				BrowserGuard.shown("https://example.org/caf\u00E9"));
-		assertEquals("HTTPS://Example.org/Page",
+		assertEquals("https://example.org/Page",
 				BrowserGuard.shown("HTTPS://Example.org/Page"));
 		assertEquals("https://[2001:db8::1]:443/",
 				BrowserGuard.shown("https://[2001:db8::1]:443/"));
@@ -138,7 +138,132 @@ public class BrowserGuardSchemeTest {
 				+ a.getString(R.string.link_host_other_alphabet)));
 		Intent i = openAndConfirm(a, "https://\u0440\u0430ypal.com/login");
 		assertNotNull(i);
-		assertEquals("https://\u0440\u0430ypal.com/login", i.getDataString());
+		assertEquals("https://xn--ypal-43d9g.com/login", i.getDataString());
+	}
+
+	private static String warningText(FragmentActivity a, String url) {
+		BrowserGuard.openUrl(a, url);
+		shadowOf(Looper.getMainLooper()).idle();
+		AlertDialog d = (AlertDialog) ShadowDialog.getLatestDialog();
+		android.widget.TextView message =
+				d.findViewById(android.R.id.message);
+		String text = message.getText().toString();
+		d.dismiss();
+		return text;
+	}
+
+	private static void assertShownThenOpened(String url, String address,
+			boolean noted) {
+		FragmentActivity a = host();
+		String note = a.getString(R.string.link_host_other_alphabet);
+		assertEquals(url, address, BrowserGuard.shown(url));
+		assertEquals(url, address, BrowserGuard.opened(url));
+		assertEquals(url, noted, BrowserGuard.hostNeedsAlphabetNote(url));
+		String text = warningText(a, url);
+		assertTrue(text, text.endsWith(noted ? address + "\n" + note
+				: address));
+		assertEquals(text, noted, text.contains(note));
+		Intent i = openAndConfirm(a, url);
+		assertNotNull(url, i);
+		assertEquals(url, address, i.getDataString());
+	}
+
+	@Test
+	public void aSharpSHostOpensAsTheDoubleSHostThatWasShown() {
+		assertShownThenOpened("https://sparka\u00dfe.de/login",
+				"https://sparkasse.de/login", true);
+	}
+
+	@Test
+	public void aFinalSigmaHostOpensAsTheHostThatWasShown() {
+		String mapped = java.net.IDN.toASCII("\u03bf\u03b4\u03cc\u03c3.gr");
+		assertTrue(mapped, mapped.startsWith("xn--"));
+		assertShownThenOpened("https://\u03bf\u03b4\u03cc\u03c2.gr",
+				"https://" + mapped, true);
+	}
+
+	@Test
+	public void aJoinerHiddenInAHostIsGoneFromWhatIsShownAndOpened() {
+		assertShownThenOpened("https://exam\u200dple.org/a",
+				"https://example.org/a", true);
+		assertShownThenOpened("https://exam\u200cple.org/a",
+				"https://example.org/a", true);
+	}
+
+	@Test
+	public void aCyrillicHostOpensInTheSpellingThatWasShown() {
+		assertShownThenOpened("https://\u0440\u0430ypal.com/login",
+				"https://xn--ypal-43d9g.com/login", true);
+		assertShownThenOpened("https://xn--ypal-43d9g.com/login",
+				"https://xn--ypal-43d9g.com/login", true);
+	}
+
+	@Test
+	public void aWideLetterHostIsNotedAndOpensInPlainLetters() {
+		assertShownThenOpened("https://\uff45xample.org/",
+				"https://example.org/", true);
+	}
+
+	@Test
+	public void aPlainHostOpensUnchanged() {
+		String plain = "https://example.org:8443/a/b.html?c=d&e=%20f#g-h";
+		assertShownThenOpened(plain, plain, false);
+		assertShownThenOpened("http://example.org", "http://example.org",
+				false);
+		assertShownThenOpened("https://example.org/caf\u00e9?q=\u00df",
+				"https://example.org/caf\u00e9?q=\u00df", false);
+	}
+
+	@Test
+	public void userInfoInFrontOfTheHostIsNeitherShownNorOpened() {
+		assertShownThenOpened(
+				"https://user:pw@example.org:8443/a/b.html?c=d#e",
+				"https://example.org:8443/a/b.html?c=d#e", false);
+		assertShownThenOpened("https://accounts.example.com@evil.example/x",
+				"https://evil.example/x", false);
+		assertShownThenOpened("https://a@b@evil.example/x@y",
+				"https://evil.example/x@y", false);
+	}
+
+	@Test
+	public void userInfoInFrontOfABracketedAddressIsNeitherShownNorOpened() {
+		assertShownThenOpened(
+				"https://accounts.example.com@[2001:db8::1]/login",
+				"https://[2001:db8::1]/login", false);
+		assertShownThenOpened(
+				"https://accounts.example.com:pw@[2001:DB8::1]:8443/login",
+				"https://[2001:db8::1]:8443/login", false);
+		assertShownThenOpened("https://[2001:db8::1]:443/",
+				"https://[2001:db8::1]:443/", false);
+	}
+
+	@Test
+	public void aLinkWhoseHostEndsInSomethingElseThanAPortIsNotOpened() {
+		for (String url : new String[] {"https://example.org:80x/",
+				"https://example.org:123456/", "https://example.org:70000/",
+				"https://[2001:db8::1]evil.example/",
+				"https://[2001:db8::1]:x/"}) {
+			assertNull(url, BrowserGuard.webHost(url));
+			assertNull(url, BrowserGuard.opened(url));
+			assertNull(url, openAndConfirm(host(), url));
+		}
+		assertEquals("https://example.org:/",
+				BrowserGuard.opened("https://example.org:/"));
+	}
+
+	@Test
+	public void theCopiedLinkIsTheLinkThatWasShown() {
+		FragmentActivity a = host();
+		BrowserGuard.openUrl(a, "https://bank.example@sparka\u00dfe.de/x");
+		shadowOf(Looper.getMainLooper()).idle();
+		AlertDialog d = (AlertDialog) ShadowDialog.getLatestDialog();
+		d.getButton(DialogInterface.BUTTON_NEUTRAL).performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+		android.content.ClipboardManager clipboard =
+				(android.content.ClipboardManager) a.getSystemService(
+						android.content.Context.CLIPBOARD_SERVICE);
+		assertEquals("https://sparkasse.de/x", clipboard.getPrimaryClip()
+				.getItemAt(0).getText().toString());
 	}
 
 	@Test
