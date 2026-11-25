@@ -1198,7 +1198,14 @@ class GroupTrManagerImpl
 	static boolean bindingIdentitySigned(
 			org.zerionproject.app.messaging.UnsignedFormsMemory unsignedForms,
 			Transaction txn, ContactId contactId) throws DbException {
-		return !unsignedForms.unsignedOnly(txn, contactId);
+		org.zerionproject.app.messaging.UnsignedFormsMemory.Form form =
+				unsignedForms.form(txn, contactId);
+		if (form == org.zerionproject.app.messaging.UnsignedFormsMemory
+				.Form.UNKNOWN) {
+			throw new DbException();
+		}
+		return form == org.zerionproject.app.messaging.UnsignedFormsMemory
+				.Form.SIGNED;
 	}
 
 	private boolean bindingIdentitySignedFor(ContactId contactId)

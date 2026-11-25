@@ -6,8 +6,10 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfEntry;
 import org.zerionproject.core.api.data.BdfList;
+import org.zerionproject.core.api.db.CommitAction;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.EventAction;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.settings.Settings;
@@ -18,7 +20,10 @@ import org.zerionproject.core.api.sync.Group.Visibility;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.core.api.versioning.ClientVersion;
 import org.zerionproject.core.api.versioning.ClientVersioningManager.ClientVersioningHook;
+import org.zerionproject.core.api.versioning.ClientVersioningManager.RemoteVersionHook;
+import org.zerionproject.core.api.versioning.event.ClientVersionUpdatedEvent;
 import org.zerionproject.core.test.BrambleMockTestCase;
 import org.zerionproject.core.test.DbExpectations;
 import org.jmock.Expectations;
@@ -45,6 +50,7 @@ import static org.zerionproject.core.test.TestUtils.getRandomId;
 import static org.zerionproject.core.versioning.ClientVersioningConstants.MSG_KEY_LOCAL;
 import static org.zerionproject.core.versioning.ClientVersioningConstants.MSG_KEY_UPDATE_VERSION;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 
@@ -57,6 +63,8 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 			context.mock(SettingsManager.class);
 	private final ClientVersioningHook hook =
 			context.mock(ClientVersioningHook.class);
+	private final RemoteVersionHook remoteVersionHook =
+			context.mock(RemoteVersionHook.class);
 
 	private final Group localGroup = getGroup(CLIENT_ID, MAJOR_VERSION);
 	private final Group contactGroup = getGroup(CLIENT_ID, MAJOR_VERSION);
@@ -523,6 +531,65 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 
 	private void testActivatesClientOnIncomingMessage(boolean remoteActive,
 			Visibility visibility) throws Exception {
+		Message newRemoteUpdate = expectActivation(remoteActive, visibility);
+
+		ClientVersioningManagerImpl c = createInstance();
+		c.registerClient(clientId, 123, 234, hook);
+		assertEquals(ACCEPT_DO_NOT_SHARE,
+				c.incomingMessage(txn, newRemoteUpdate, new Metadata()));
+	}
+
+	@Test
+	public void testRemoteVersionHookRunsInTheDeliveringTransaction()
+			throws Exception {
+		Message newRemoteUpdate = expectActivation(false, VISIBLE);
+		context.checking(new Expectations() {{
+			oneOf(remoteVersionHook).remoteVersionStored(txn,
+					contact.getId(), new ClientVersion(clientId, 123, 234));
+		}});
+
+		ClientVersioningManagerImpl c = createInstance();
+		c.registerClient(clientId, 123, 234, hook);
+		c.registerRemoteVersionHook(remoteVersionHook);
+		assertEquals(ACCEPT_DO_NOT_SHARE,
+				c.incomingMessage(txn, newRemoteUpdate, new Metadata()));
+		assertEquals(1, versionEvents());
+	}
+
+	@Test
+	public void testFailingRemoteVersionHookFailsTheDelivery()
+			throws Exception {
+		Message newRemoteUpdate = expectActivation(false, VISIBLE);
+		context.checking(new Expectations() {{
+			oneOf(remoteVersionHook).remoteVersionStored(txn,
+					contact.getId(), new ClientVersion(clientId, 123, 234));
+			will(throwException(new DbException()));
+		}});
+
+		ClientVersioningManagerImpl c = createInstance();
+		c.registerClient(clientId, 123, 234, hook);
+		c.registerRemoteVersionHook(remoteVersionHook);
+		try {
+			c.incomingMessage(txn, newRemoteUpdate, new Metadata());
+			fail("the failure was swallowed");
+		} catch (DbException expected) {
+		}
+		assertEquals(0, versionEvents());
+	}
+
+	private int versionEvents() {
+		int n = 0;
+		for (CommitAction a : txn.getActions()) {
+			if (a instanceof EventAction && ((EventAction) a).getEvent()
+					instanceof ClientVersionUpdatedEvent) {
+				n++;
+			}
+		}
+		return n;
+	}
+
+	private Message expectActivation(boolean remoteActive,
+			Visibility visibility) throws Exception {
 
 		BdfList oldRemoteUpdateBody = BdfList.of(new BdfList(), 1L);
 
@@ -586,11 +653,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(contact));
 			oneOf(hook).onClientVisibilityChanging(txn, contact, visibility);
 		}});
-
-		ClientVersioningManagerImpl c = createInstance();
-		c.registerClient(clientId, 123, 234, hook);
-		assertEquals(ACCEPT_DO_NOT_SHARE,
-				c.incomingMessage(txn, newRemoteUpdate, new Metadata()));
+		return newRemoteUpdate;
 	}
 
 	@Test

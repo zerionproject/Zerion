@@ -15,6 +15,7 @@ import org.zerionproject.core.api.crypto.SignaturePublicKey;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbCallable;
 import org.zerionproject.core.api.db.DbRunnable;
+import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.identity.Author;
@@ -198,11 +199,15 @@ public class MeshSenderFormTest {
 
 	private void announce(int minor) {
 		announced = minor;
-		ClientVersionUpdatedEvent e = new ClientVersionUpdatedEvent(contactId,
-				new ClientVersion(MessagingManager.CLIENT_ID,
-						MessagingManager.MAJOR_VERSION, minor));
-		memory.eventOccurred(e);
-		keys.eventOccurred(e);
+		ClientVersion v = new ClientVersion(MessagingManager.CLIENT_ID,
+				MessagingManager.MAJOR_VERSION, minor);
+		try {
+			memory.remoteVersionStored(new Transaction(null, false),
+					contactId, v);
+		} catch (DbException e) {
+			throw new AssertionError(e);
+		}
+		keys.eventOccurred(new ClientVersionUpdatedEvent(contactId, v));
 	}
 
 	private byte[] send(String text) throws Exception {

@@ -20,6 +20,8 @@ public interface ClientVersioningManager {
 	void registerClient(ClientId clientId, int majorVersion, int minorVersion,
 			ClientVersioningHook hook);
 
+	void registerRemoteVersionHook(RemoteVersionHook hook);
+
 	Visibility getClientVisibility(Transaction txn, ContactId contactId,
 			ClientId clientId, int majorVersion) throws DbException;
 
@@ -30,5 +32,11 @@ public interface ClientVersioningManager {
 
 		void onClientVisibilityChanging(Transaction txn, Contact c,
 				Visibility v) throws DbException;
+	}
+
+	interface RemoteVersionHook {
+
+		void remoteVersionStored(Transaction txn, ContactId c,
+				ClientVersion v) throws DbException;
 	}
 }

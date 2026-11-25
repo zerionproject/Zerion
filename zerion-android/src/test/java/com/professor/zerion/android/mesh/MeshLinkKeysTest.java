@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.messaging.UnsignedFormsMemory;
+import org.zerionproject.app.messaging.UnsignedFormsMemory.Form;
 import org.zerionproject.app.api.messaging.event.MeshLinkKeysReceivedEvent;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
@@ -20,7 +21,6 @@ import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.DbRunnable;
 import org.zerionproject.core.api.db.NoSuchContactException;
 import org.zerionproject.core.api.db.Transaction;
-import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
@@ -345,11 +345,11 @@ public class MeshLinkKeysTest {
 
 		announce(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
 
-		assertTrue(keys.unsignedOnly(alice));
+		assertEquals(Form.UNSIGNED, keys.form(alice));
 		assertArrayEquals(expected,
 				keys.sendingLinkKeyFor(identities.get(alice)));
 		announce(alice, 0);
-		assertTrue(keys.unsignedOnly(alice));
+		assertEquals(Form.UNSIGNED, keys.form(alice));
 		assertArrayEquals(expected,
 				keys.sendingLinkKeyFor(identities.get(alice)));
 	}
@@ -361,7 +361,7 @@ public class MeshLinkKeysTest {
 
 		announce(bob, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
 
-		assertTrue(keys.unsignedOnly(bob));
+		assertEquals(Form.UNSIGNED, keys.form(bob));
 		assertRefused(identities.get(bob));
 	}
 
@@ -388,7 +388,7 @@ public class MeshLinkKeysTest {
 
 		keys = start();
 
-		assertTrue(keys.unsignedOnly(alice));
+		assertEquals(Form.UNSIGNED, keys.form(alice));
 		assertArrayEquals(expected,
 				keys.sendingLinkKeyFor(identities.get(alice)));
 	}
@@ -406,7 +406,7 @@ public class MeshLinkKeysTest {
 		assertFalse(stored.getBoolean(
 				UnsignedFormsMemory.UNSIGNED_ONLY + alice.getInt(), false));
 		versions.put(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
-		assertFalse(keys.unsignedOnly(alice));
+		assertEquals(Form.SIGNED, keys.form(alice));
 		assertNull(keys.sendingLinkKeyFor(identities.get(alice)));
 	}
 
@@ -419,7 +419,7 @@ public class MeshLinkKeysTest {
 		keys.addingContact(new Transaction(null, false), known.get(alice));
 		memory.addingContact(new Transaction(null, false), known.get(alice));
 
-		assertFalse(keys.unsignedOnly(alice));
+		assertEquals(Form.SIGNED, keys.form(alice));
 	}
 
 	@Test
@@ -427,14 +427,11 @@ public class MeshLinkKeysTest {
 		byte[] expected = exchangeWith(alice);
 		announce(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
 
-		for (Event e : new Event[] {new ContactConnectionKeysEvent(alice,
-				false), new ContactKeyRenewalEvent(alice, false)}) {
-			memory.eventOccurred(e);
-			keys.eventOccurred(e);
-		}
+		keys.eventOccurred(new ContactConnectionKeysEvent(alice, false));
+		keys.eventOccurred(new ContactKeyRenewalEvent(alice, false));
 		announce(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
 
-		assertTrue(keys.unsignedOnly(alice));
+		assertEquals(Form.UNSIGNED, keys.form(alice));
 		assertArrayEquals(expected,
 				keys.sendingLinkKeyFor(identities.get(alice)));
 	}
@@ -448,21 +445,43 @@ public class MeshLinkKeysTest {
 		memory.onDatabaseOpened(new Transaction(null, false));
 
 		versions.put(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
-		assertTrue(keys.unsignedOnly(alice));
-		assertFalse(keys.unsignedOnly(bob));
+		assertEquals(Form.UNSIGNED, keys.form(alice));
+		assertEquals(Form.SIGNED, keys.form(bob));
 	}
 
 	@Test
-	public void aVersionFirstSeenWhileSendingIsRemembered() throws Exception {
+	public void aVersionStoredBeforeItsEventIsHandledIsAlreadyRemembered()
+			throws Exception {
 		byte[] expected = exchangeWith(alice);
-		versions.put(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		store(alice, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		store(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+
+		assertEquals(Form.UNSIGNED, keys.form(alice));
 		assertArrayEquals(expected,
 				keys.sendingLinkKeyFor(identities.get(alice)));
+	}
 
-		versions.put(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+	@Test
+	public void aContactWhoseVersionIsUnknownIsSentNothing()
+			throws Exception {
+		exchangeWith(alice);
+		versions.put(alice, -1);
 
-		assertArrayEquals(expected,
-				keys.sendingLinkKeyFor(identities.get(alice)));
+		assertEquals(Form.UNKNOWN, keys.form(alice));
+		assertRefused(identities.get(alice));
+	}
+
+	@Test
+	public void aContactOn3018IsSentTheSignedFormOnceItsVersionIsKnown()
+			throws Exception {
+		exchangeWith(alice);
+		versions.put(alice, -1);
+		assertRefused(identities.get(alice));
+
+		announce(alice, 13);
+
+		assertEquals(Form.SIGNED, keys.form(alice));
+		assertNull(keys.sendingLinkKeyFor(identities.get(alice)));
 	}
 
 	@Test
@@ -473,7 +492,7 @@ public class MeshLinkKeysTest {
 		announce(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
 		memory.onDatabaseOpened(new Transaction(null, false));
 
-		assertFalse(keys.unsignedOnly(alice));
+		assertEquals(Form.SIGNED, keys.form(alice));
 		assertNull(keys.sendingLinkKeyFor(identities.get(alice)));
 		assertNull(stored.get(
 				UnsignedFormsMemory.UNSIGNED_ONLY + alice.getInt()));
@@ -481,29 +500,16 @@ public class MeshLinkKeysTest {
 
 	@Test
 	public void anotherClientOrMajorVersionDoesNotCount() throws Exception {
-		memory.eventOccurred(new ClientVersionUpdatedEvent(alice,
+		memory.remoteVersionStored(new Transaction(null, false), alice,
 				new ClientVersion(new ClientId("org.zerionproject.other"),
 						MessagingManager.MAJOR_VERSION,
-						MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION)));
-		memory.eventOccurred(new ClientVersionUpdatedEvent(alice,
+						MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION));
+		memory.remoteVersionStored(new Transaction(null, false), alice,
 				new ClientVersion(MessagingManager.CLIENT_ID,
 						MessagingManager.MAJOR_VERSION + 1,
-						MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION)));
+						MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION));
 
-		assertFalse(keys.unsignedOnly(alice));
-	}
-
-	@Test
-	public void anAnnouncementOfARemovedContactIsNotKept() {
-		known.remove(alice);
-
-		memory.eventOccurred(new ClientVersionUpdatedEvent(alice,
-				new ClientVersion(MessagingManager.CLIENT_ID,
-						MessagingManager.MAJOR_VERSION,
-						MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION)));
-
-		assertNull(stored.get(
-				UnsignedFormsMemory.UNSIGNED_ONLY + alice.getInt()));
+		assertEquals(Form.SIGNED, keys.form(alice));
 	}
 
 	@Test
@@ -529,12 +535,21 @@ public class MeshLinkKeysTest {
 	}
 
 	private void announce(ContactId c, int minor) {
-		versions.put(c, minor);
-		ClientVersionUpdatedEvent e = new ClientVersionUpdatedEvent(c,
+		store(c, minor);
+		keys.eventOccurred(new ClientVersionUpdatedEvent(c,
 				new ClientVersion(MessagingManager.CLIENT_ID,
-						MessagingManager.MAJOR_VERSION, minor));
-		memory.eventOccurred(e);
-		keys.eventOccurred(e);
+						MessagingManager.MAJOR_VERSION, minor)));
+	}
+
+	private void store(ContactId c, int minor) {
+		versions.put(c, minor);
+		try {
+			memory.remoteVersionStored(new Transaction(null, false), c,
+					new ClientVersion(MessagingManager.CLIENT_ID,
+							MessagingManager.MAJOR_VERSION, minor));
+		} catch (DbException e) {
+			throw new AssertionError(e);
+		}
 	}
 
 	private void assertRefused(byte[] identity) {

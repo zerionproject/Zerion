@@ -36,6 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doAnswer;
@@ -174,6 +175,38 @@ public class MeshBundleManagerTest {
 	}
 
 	@Test
+	public void aNewContactGetsNoBundleBeforeItsVersionIsKnown()
+			throws Exception {
+		when(messagingManager.getContactClientMinorVersion(any(),
+				eq(contactId))).thenReturn(-1);
+		publishEitherForm();
+
+		listener.eventOccurred(new ContactConnectedEvent(contactId));
+
+		verify(meshManager, never()).publishBundle(any(), anyBoolean());
+		verify(messagingManager, never()).sendPrekeyBundle(any(), any());
+
+		announceTo(listener, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+
+		verify(meshManager, never()).publishBundle(any(), eq(true));
+		assertFalse(sentBundle().isSigned());
+	}
+
+	@Test
+	public void aContactOn3018GetsItsSignedBundleOnceItsVersionIsKnown()
+			throws Exception {
+		when(messagingManager.getContactClientMinorVersion(any(),
+				eq(contactId))).thenReturn(-1);
+		publishEitherForm();
+		listener.eventOccurred(new ContactConnectedEvent(contactId));
+		verify(messagingManager, never()).sendPrekeyBundle(any(), any());
+
+		announceTo(listener, 13);
+
+		assertTrue(sentBundle().isSigned());
+	}
+
+	@Test
 	public void aContactThatAnnouncedVersion17GetsNoSignedBundleLater()
 			throws Exception {
 		announce(MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
@@ -208,7 +241,8 @@ public class MeshBundleManagerTest {
 			throws Exception {
 		announce(MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
 		announce(MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION - 1);
-		assertTrue(linkKeys.unsignedOnly(contactId));
+		assertEquals(UnsignedFormsMemory.Form.UNSIGNED,
+				linkKeys.form(contactId));
 		publishEitherForm();
 
 		linkKeys.removingContact(new Transaction(null, false),
@@ -223,11 +257,19 @@ public class MeshBundleManagerTest {
 	private void announce(int minor) throws Exception {
 		when(messagingManager.getContactClientMinorVersion(any(),
 				eq(contactId))).thenReturn(minor);
-		ClientVersionUpdatedEvent e = new ClientVersionUpdatedEvent(contactId,
+		ClientVersion v = new ClientVersion(MessagingManager.CLIENT_ID,
+				MessagingManager.MAJOR_VERSION, minor);
+		memory.remoteVersionStored(new Transaction(null, false), contactId,
+				v);
+		linkKeys.eventOccurred(new ClientVersionUpdatedEvent(contactId, v));
+	}
+
+	private void announceTo(EventListener bundles, int minor)
+			throws Exception {
+		announce(minor);
+		bundles.eventOccurred(new ClientVersionUpdatedEvent(contactId,
 				new ClientVersion(MessagingManager.CLIENT_ID,
-						MessagingManager.MAJOR_VERSION, minor));
-		memory.eventOccurred(e);
-		linkKeys.eventOccurred(e);
+						MessagingManager.MAJOR_VERSION, minor)));
 	}
 
 	private void publishEitherForm() throws Exception {

@@ -8,20 +8,22 @@ import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Transaction;
-import org.zerionproject.core.api.event.Event;
-import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.versioning.ClientVersion;
-import org.zerionproject.core.api.versioning.event.ClientVersionUpdatedEvent;
+import org.zerionproject.core.api.versioning.ClientVersioningManager.RemoteVersionHook;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 @ThreadSafe
 @NotNullByDefault
-public class UnsignedFormsMemory implements EventListener,
+public class UnsignedFormsMemory implements RemoteVersionHook,
 		ContactManager.ContactHook, OpenDatabaseHook {
+
+	public enum Form {
+		UNSIGNED, SIGNED, UNKNOWN
+	}
 
 	public static final String NAMESPACE = "org.zerionproject.mesh/linkKeys";
 	public static final String UNSIGNED_ONLY = "unsignedOnly.";
@@ -42,19 +44,27 @@ public class UnsignedFormsMemory implements EventListener,
 		this.messagingManager = messagingManager;
 	}
 
-	public boolean unsignedOnly(Transaction txn, ContactId c)
-			throws DbException {
-		return held(txn, c) || announced(txn, c);
+	public Form form(Transaction txn, ContactId c) throws DbException {
+		if (held(txn, c)) return Form.UNSIGNED;
+		int minor = messagingManager.getContactClientMinorVersion(txn, c);
+		if (minor >= MIN_VERSION) return Form.UNSIGNED;
+		if (minor < 0) return Form.UNKNOWN;
+		return Form.SIGNED;
 	}
 
-	public boolean unsignedOnly(ContactId c) throws DbException {
-		boolean[] held = new boolean[1];
-		boolean unsigned = db.transactionWithResult(true, txn -> {
-			held[0] = held(txn, c);
-			return held[0] || announced(txn, c);
-		});
-		if (unsigned && !held[0]) remember(c);
-		return unsigned;
+	public Form form(ContactId c) throws DbException {
+		return db.transactionWithResult(true, txn -> form(txn, c));
+	}
+
+	@Override
+	public void remoteVersionStored(Transaction txn, ContactId c,
+			ClientVersion v) throws DbException {
+		if (!v.getClientId().equals(MessagingManager.CLIENT_ID)) return;
+		if (v.getMajorVersion() != MessagingManager.MAJOR_VERSION) return;
+		if (v.getMinorVersion() < MIN_VERSION) return;
+		Settings update = new Settings();
+		update.putBoolean(UNSIGNED_ONLY + c.getInt(), true);
+		settingsManager.mergeSettings(txn, update, NAMESPACE);
 	}
 
 	@Override
@@ -77,7 +87,10 @@ public class UnsignedFormsMemory implements EventListener,
 			String name = UNSIGNED_ONLY + c.getInt();
 			if (held.getBoolean(name, false)) continue;
 			try {
-				if (announced(txn, c)) update.putBoolean(name, true);
+				if (messagingManager.getContactClientMinorVersion(txn, c)
+						>= MIN_VERSION) {
+					update.putBoolean(name, true);
+				}
 			} catch (DbException e) {
 			}
 		}
@@ -86,40 +99,9 @@ public class UnsignedFormsMemory implements EventListener,
 		}
 	}
 
-	@Override
-	public void eventOccurred(Event e) {
-		if (!(e instanceof ClientVersionUpdatedEvent)) return;
-		ClientVersionUpdatedEvent v = (ClientVersionUpdatedEvent) e;
-		ClientVersion version = v.getClientVersion();
-		if (!version.getClientId().equals(MessagingManager.CLIENT_ID)) return;
-		if (version.getMajorVersion() != MessagingManager.MAJOR_VERSION) {
-			return;
-		}
-		if (version.getMinorVersion() < MIN_VERSION) return;
-		try {
-			remember(v.getContactId());
-		} catch (DbException | RuntimeException ex) {
-		}
-	}
-
 	private boolean held(Transaction txn, ContactId c) throws DbException {
 		return settingsManager.getSettings(txn, NAMESPACE)
 				.getBoolean(UNSIGNED_ONLY + c.getInt(), false);
-	}
-
-	private boolean announced(Transaction txn, ContactId c)
-			throws DbException {
-		return messagingManager.getContactClientMinorVersion(txn, c)
-				>= MIN_VERSION;
-	}
-
-	private void remember(ContactId c) throws DbException {
-		db.transaction(false, txn -> {
-			contactManager.getContact(txn, c);
-			Settings update = new Settings();
-			update.putBoolean(UNSIGNED_ONLY + c.getInt(), true);
-			settingsManager.mergeSettings(txn, update, NAMESPACE);
-		});
 	}
 
 	private void forget(Transaction txn, ContactId c) throws DbException {
