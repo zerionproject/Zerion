@@ -2,6 +2,8 @@ package com.professor.zerion.android.util;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.widget.Toast;
 
@@ -222,6 +224,52 @@ public final class BrowserGuard {
 		return null;
 	}
 
+	@Nullable
+	static String defaultBrowserPackage(Context ctx) {
+		ResolveInfo chosen;
+		try {
+			chosen = ctx.getPackageManager().resolveActivity(
+					anyWebLink("https"), PackageManager.MATCH_DEFAULT_ONLY);
+		} catch (RuntimeException e) {
+			return null;
+		}
+		if (chosen == null || chosen.activityInfo == null) return null;
+		String pkg = chosen.activityInfo.packageName;
+		return pkg != null && opensAnyWebLink(ctx, pkg) ? pkg : null;
+	}
+
+	private static Intent anyWebLink(String scheme) {
+		Intent any = new Intent(Intent.ACTION_VIEW,
+				Uri.parse(scheme + "://"));
+		any.addCategory(Intent.CATEGORY_BROWSABLE);
+		return any;
+	}
+
+	private static boolean opensAnyWebLink(Context ctx, String pkg) {
+		return handles(ctx, pkg, anyWebLink("http"))
+				&& handles(ctx, pkg, anyWebLink("https"));
+	}
+
+	private static boolean opensOnlyInBrowsers(Context ctx, Intent link) {
+		List<ResolveInfo> handlers;
+		try {
+			handlers = ctx.getPackageManager().queryIntentActivities(link,
+					PackageManager.MATCH_DEFAULT_ONLY);
+		} catch (RuntimeException e) {
+			return false;
+		}
+		if (handlers.isEmpty()) return false;
+		for (ResolveInfo handler : handlers) {
+			if (handler.activityInfo == null
+					|| handler.activityInfo.packageName == null
+					|| !opensAnyWebLink(ctx,
+					handler.activityInfo.packageName)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	private static boolean handles(Context ctx, String pkg, Intent intent) {
 		Intent probe = new Intent(intent);
 		probe.setPackage(pkg);
@@ -296,8 +344,15 @@ public final class BrowserGuard {
 			showDialog(ctx, url, true);
 			return;
 		}
-		String tor = promised != null ? promised : torBrowserPackage(ctx);
-		if (tor != null) i.setPackage(tor);
+		String browser = promised != null ? promised : torBrowserPackage(ctx);
+		if (browser == null) browser = defaultBrowserPackage(ctx);
+		if (browser != null) {
+			i.setPackage(browser);
+		} else if (!opensOnlyInBrowsers(ctx, i)) {
+			Toast.makeText(ctx, R.string.updates_no_browser,
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
 		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		try {
 			ctx.startActivity(i);

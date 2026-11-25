@@ -79,11 +79,22 @@ public class LinkDialogNoteTest {
 	}
 
 	@Test
-	public void theSheetOpensTheAddressItShows() {
+	public void theSheetOpensTheAddressItShows() throws Exception {
 		String url = "https://bank.example@sparka\u00DFe.de/login";
 		FragmentActivity a = Robolectric.buildActivity(FragmentActivity.class)
 				.setup().get();
 		a.setTheme(R.style.ZerionTheme_NoActionBar);
+		android.content.ComponentName browser = new android.content
+				.ComponentName("com.example.browser", "com.example.Main");
+		android.content.IntentFilter web =
+				new android.content.IntentFilter(Intent.ACTION_VIEW);
+		web.addCategory(Intent.CATEGORY_DEFAULT);
+		web.addCategory(Intent.CATEGORY_BROWSABLE);
+		web.addDataScheme("http");
+		web.addDataScheme("https");
+		shadowOf(a.getPackageManager()).addActivityIfNotPresent(browser);
+		shadowOf(a.getPackageManager()).addIntentFilterForActivity(browser,
+				web);
 		LinkDialogFragment f = LinkDialogFragment.newInstance(url);
 		f.show(a.getSupportFragmentManager(), f.getUniqueTag());
 		shadowOf(Looper.getMainLooper()).idle();

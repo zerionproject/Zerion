@@ -27,10 +27,32 @@ import static org.robolectric.Shadows.shadowOf;
 @Config(sdk = 29)
 public class BrowserGuardSchemeTest {
 
-	private static FragmentActivity host() {
+	private static final String BROWSER = "com.example.browser";
+
+	private static FragmentActivity hostWithoutABrowser() {
 		FragmentActivity a = Robolectric.buildActivity(FragmentActivity.class)
 				.setup().get();
 		a.setTheme(R.style.ZerionTheme_NoActionBar);
+		return a;
+	}
+
+	private static FragmentActivity host() {
+		FragmentActivity a = hostWithoutABrowser();
+		android.content.ComponentName browser =
+				new android.content.ComponentName(BROWSER, BROWSER + ".Main");
+		android.content.IntentFilter web =
+				new android.content.IntentFilter(Intent.ACTION_VIEW);
+		web.addCategory(Intent.CATEGORY_DEFAULT);
+		web.addCategory(Intent.CATEGORY_BROWSABLE);
+		web.addDataScheme("http");
+		web.addDataScheme("https");
+		shadowOf(a.getPackageManager()).addActivityIfNotPresent(browser);
+		try {
+			shadowOf(a.getPackageManager()).addIntentFilterForActivity(
+					browser, web);
+		} catch (android.content.pm.PackageManager.NameNotFoundException e) {
+			throw new AssertionError(e);
+		}
 		return a;
 	}
 
@@ -51,6 +73,7 @@ public class BrowserGuardSchemeTest {
 		assertNotNull(i);
 		assertEquals(Intent.ACTION_VIEW, i.getAction());
 		assertEquals("https://example.org/page", i.getDataString());
+		assertEquals(BROWSER, i.getPackage());
 		assertTrue(i.hasCategory(Intent.CATEGORY_BROWSABLE));
 		assertNull(i.getSelector());
 		assertNull(i.getComponent());
@@ -277,9 +300,9 @@ public class BrowserGuardSchemeTest {
 
 	@Test
 	public void aLinkNothingCanOpenSaysSo() {
-		FragmentActivity a = host();
+		FragmentActivity a = hostWithoutABrowser();
 		shadowOf(a.getApplication()).checkActivities(true);
-		openAndConfirm(a, "https://example.org/");
+		assertNull(openAndConfirm(a, "https://example.org/"));
 		assertEquals(a.getString(R.string.updates_no_browser),
 				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
 	}
