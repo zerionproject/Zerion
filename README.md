@@ -42,7 +42,7 @@ Each device holds its own contacts, messages, keys and state in an encrypted dat
 | Message ratchet | Mode 3-Full: per-message ML-KEM-768 over a forward-secret chain; each side's key pair is new on every connection and rotates after 16 own frames on it |
 | Calls and vault AEAD | AES-256-GCM |
 | Vault chunk keys, call endpoint keys | HKDF-SHA256 |
-| Passwords | Argon2id (database key 64 to 256 MiB adapted to the device; vault 256 MiB; wallet 64 MiB), PBKDF2-HMAC-SHA256 for the duress password and the Bitcoin section credential |
+| Passwords | Argon2id (database key 64 to 256 MiB adapted to the device; vault 256 MiB to 1 GiB chosen per phone; wallet 64 MiB), PBKDF2-HMAC-SHA256 for the duress password and the Bitcoin section credential |
 | Identifiers and fingerprints | SHA-256 (SHA-512 in the Tor rendezvous derivation, SHA3-256 for the ML-KEM key-seed hash) |
 | Database at rest | SQLCipher (AES-256), key derived from the password and a device-bound keystore factor |
 
