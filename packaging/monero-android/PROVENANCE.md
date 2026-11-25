@@ -181,6 +181,14 @@ Notes recorded during bring-up:
   the header check alone (the body cannot exceed the declared length); the
   running check is what stops a chunked or connection-close body. The build
   asserts all four patches are present exactly once and fails otherwise.
+  Two more patches bound the two buffers the client fills before any body is
+  counted: the reply header, collected until its blank line, is refused once
+  it passes 64 KiB without one, and the size line of a chunk is refused once
+  it passes 1 KiB without its line end. Before them a node could send a header
+  or a chunk size line that never ends and grow either buffer without limit.
+  An honest daemon's reply header is a few hundred bytes and its chunk size
+  lines a few bytes. The build asserts each of the two is present exactly
+  once.
 - Only the JNI entry points are exported. The link uses the version script
   `jni/zmonero.map` (global: `JNI_OnLoad` and the
   `Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_*`
@@ -225,9 +233,36 @@ features CMake settled on and the SHA-256 of every archive in the link), and
 the Gradle gate prints that file when it refuses a library, so a host that
 builds different bytes can be compared with the reference stage by stage.
 
-## Accepted hashes (JNI-only exports, 2026-11-20)
+## Accepted hashes (reply header and chunk size line caps, 2026-11-25)
 
-These are the values the Gradle gate enforces since the link step gained the
+These are the values the Gradle gate enforces since the two patches that bound
+the reply header and the chunk size line (build flags above) were added.
+Nothing else in the recipe changed: the Monero commit, the four body cap
+patches, the export map, the shim, the dependency pins, the NDK, the base image
+and the snapshot package versions are the same, and every dependency archive
+(`dep` lines of `buildinfo.txt`) hashes exactly as in the previous build. The
+library embeds `0.18.5.4-release`, the body cap message and the new header cap
+message.
+
+Produced in two independent environments that agree byte for byte: the
+pinned image of this directory's Dockerfile (`docker build -t
+zerion-monero-build:v0.18.5.4-hdr .`, then `docker-run.sh` per ABI with that
+tag, as the `builder` user with every capability dropped) and F-Droid's
+`registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie` image, prepared
+as the recipe's `sudo` step prepares it, where `fdroid-build.sh` ran as
+`vagrant` with NDK r27b under `/opt/android-sdk/ndk/27.1.12297006`.
+
+- **libzmonero.so arm64-v8a SHA-256:
+  `2b6a9819648698814378d7fae421f0be32c01f3d9ce9a28387cfcfc1d25ed404`**
+- **libzmonero.so armeabi-v7a SHA-256:
+  `5fc9a5908a9bca6950d45fa75cdd169b111455e05f529c39f1062c893420441c`**
+
+They supersede `e0336d5d…` / `6d870954…` (no header or chunk size line cap),
+listed below for the record.
+
+## Previous hashes (JNI-only exports, 2026-11-20)
+
+These are the values the Gradle gate enforced since the link step gained the
 version script `jni/zmonero.map` and `-Wl,--exclude-libs,ALL` (build flags
 above). Nothing else in the recipe changed: the Monero commit, the four epee
 patches, the shim, the dependency pins, the NDK, the base image and the
@@ -258,7 +293,7 @@ still exported), listed below for the record.
 
 ## Previous hashes (per-request HTTP body caps, 2026-11-19)
 
-These are the values the Gradle gate enforces since the epee patch set grew
+These are the values the Gradle gate enforced since the epee patch set grew
 from two pieces to four (build flags above): the response body cap is now
 chosen per request when the wallet sends it, 128 MiB for the binary endpoints
 and the transaction fetch, 1 MiB for the small JSON-RPC metadata methods and
@@ -292,7 +327,7 @@ the record.
 
 ## Previous hashes (Monero v0.18.5.4 and the HTTP body cap, 2026-11-04)
 
-These are the values the Gradle gate enforces since the Monero pin moved
+These are the values the Gradle gate enforced since the Monero pin moved
 from v0.18.5.1 (`4f92268d`) to v0.18.5.4 (`85f036ba`), the newest release
 of the 0.18 line (17 October 2026), and since the fourth documented patch
 bounded epee's HTTP response body at 128 MiB (build flags above). v0.18.5.3
