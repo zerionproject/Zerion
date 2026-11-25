@@ -157,6 +157,67 @@ public class RootEvolutionVersionTest {
 	}
 
 	@Test(timeout = 120_000)
+	public void aVersionThreePendingRootIsNamedUnderItsPendingIdKey()
+			throws Exception {
+		Device alice = alice(true);
+		Device bob = bob(true);
+		Cut cut = new Cut("bob", KIND_RESP);
+		bob.cut = cut;
+		bed.connect(alice, bob, () -> cut.fired);
+		assertTrue(cut.fired);
+		bob.cut = null;
+		assertNull(alice.keys().getPending());
+		ContactRootKeys b = bob.keys();
+		assertNotNull(b.getPending());
+		assertTrue(b.isPendingSeparated());
+		assertFalse(b.isPendingConfirmed());
+		assertEquals(0, b.getEpoch());
+		byte[] nextEpoch = {0, 0, 0, 0, 0, 0, 0, 1};
+		String label = "org.zerionproject.transport/ROOT_PENDING_ID_V1";
+		byte[] underIdKey = bed.crypto.mac(label, b.getPendingIdKey(),
+				nextEpoch);
+		byte[] underConfirmKey = bed.crypto.mac(label,
+				b.getPendingConfirmKey(), nextEpoch);
+		assertFalse(Arrays.equals(underIdKey, underConfirmKey));
+		alice.receivedRecords.clear();
+		bob.receivedRecords.clear();
+		assertTrue(bed.exchange(alice, bob));
+		RootEvolutionRecord hello = first(alice, KIND_HELLO);
+		assertEquals(0, hello.epoch);
+		assertTrue("the greeting names the pending root under another key"
+				+ " than its pending-id key",
+				Arrays.equals(underIdKey, hello.a));
+		assertFalse("the greeting names the pending root under its"
+				+ " confirmation key", Arrays.equals(underConfirmKey, hello.a));
+		RootEvolutionRecord init = first(bob, KIND_INIT);
+		assertEquals(VERSION_SEPARATED, init.version);
+		assertEquals(0, init.epoch);
+		assertTrue("the offer names the root it replaces under another key"
+				+ " than its pending-id key",
+				Arrays.equals(underIdKey, init.a));
+		assertFalse("the offer names the root it replaces under its"
+				+ " confirmation key", Arrays.equals(underConfirmKey, init.a));
+		assertTrue(RootEvolutionTestBed.sameRoot(alice, bob));
+		assertEquals(1, alice.keys().getEpoch());
+		assertFalse("the root that was replaced became the current one",
+				Arrays.equals(b.getPending().getBytes(),
+						alice.keys().getCurrent().getBytes()));
+	}
+
+	private static RootEvolutionRecord first(Device d, byte kind)
+			throws Exception {
+		synchronized (d.receivedRecords) {
+			for (byte[] r : d.receivedRecords) {
+				if (r[1] != kind) continue;
+				RootEvolutionRecord decoded = RootEvolutionRecord.decode(r);
+				assertNotNull(decoded);
+				return decoded;
+			}
+		}
+		throw new AssertionError("no record of kind " + kind);
+	}
+
+	@Test(timeout = 120_000)
 	public void aCurrentAliceUsesVersionTwoWithAnEarlierBob()
 			throws Exception {
 		Device alice = alice(true);

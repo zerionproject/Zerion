@@ -592,8 +592,7 @@ final class RootEvolutionTestBed {
 				public void onRecord(byte[] payload) {
 					if (payload.length > 1) {
 						device.receivedKinds.add(payload[1]);
-						device.receivedRecords.add(new byte[] {payload[0],
-								payload[1]});
+						device.receivedRecords.add(payload.clone());
 						Gate g = device.gate;
 						if (g != null && payload[1] == g.kind) {
 							g.reached.countDown();
