@@ -746,6 +746,50 @@ public class RootEvolutionStallWarningTest {
 	}
 
 	@Test
+	public void anOfferFromThePeerEndsWhatIsRememberedOfItsPause() {
+		RootEvolutionManager m = manager(bob);
+		bob.store.setPeerEvolves(ALICE);
+		bob.store.setPeerEnforces(ALICE, true);
+		RootEvolution paused = new RootEvolution(m, ALICE, false);
+		paused.start(silent());
+		paused.onPeerStreamAuthenticated(0);
+		paused.onRecord(greeting(
+				FLAG_ENFORCES_EVOLUTION | FLAG_EVOLUTION_PAUSED));
+		paused.close();
+		RootEvolution dropped = new RootEvolution(m, ALICE, false);
+		dropped.start(silent());
+		dropped.onPeerStreamAuthenticated(0);
+		dropped.close();
+		assertEquals("a connection to a paused peer was counted", 0,
+				bob.store.stalls(ALICE)[0]);
+		assertEquals(1, m.peerPausesRemembered());
+
+		RootEvolution offered = new RootEvolution(m, ALICE, false);
+		offered.start(silent());
+		offered.onPeerStreamAuthenticated(0);
+		offered.onRecord(greeting(
+				FLAG_ENFORCES_EVOLUTION | FLAG_EVOLUTION_PAUSED));
+		assertEquals(1, m.peerPausesRemembered());
+		offered.onRecord(RootEvolutionRecord.init(0,
+				new byte[RootEvolutionRecord.MAC_LENGTH],
+				bed.crypto.generateAgreementKeyPair().getPublic().getEncoded(),
+				bed.mlKem.generateKeyPair().getEncapsulationKey()));
+		assertTrue("the offer was not answered",
+				bob.keys().getPending() != null);
+		assertEquals("an offer from the peer left its pause remembered", 0,
+				m.peerPausesRemembered());
+		offered.close();
+		assertEquals(0, bob.store.stalls(ALICE)[0]);
+
+		RootEvolution next = new RootEvolution(m, ALICE, false);
+		next.start(silent());
+		next.onPeerStreamAuthenticated(0);
+		next.close();
+		assertEquals("a peer that offered was still excused as paused", 1,
+				bob.store.stalls(ALICE)[0]);
+	}
+
+	@Test
 	public void aPeersPauseIsRememberedForTheLengthOfAPauseAndNoLonger() {
 		RootEvolutionManager m = aliceKnowsThatBobRenews();
 		greetedAndEnded(m, FLAG_ENFORCES_EVOLUTION | FLAG_EVOLUTION_PAUSED);

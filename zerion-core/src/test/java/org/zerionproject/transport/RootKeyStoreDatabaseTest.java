@@ -201,6 +201,95 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void aSeparatedPendingRowWithoutAnIdKeyNamesItsRootUnderTheConfirmKey()
+			throws Exception {
+		SecretKey pending = getSecretKey();
+		SecretKey confirmKey = getSecretKey();
+		for (int flags = 2; flags < 4; flags++) {
+			int stored = flags;
+			db.transaction(false, txn -> db.setPcsMode2SessionState(txn,
+					contact, DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING,
+					confirmKey, 1, stored, pending, null, null, null, true,
+					null));
+			ContactRootKeys keys = new RootKeyStore(db).load(contact);
+			assertNotNull(keys);
+			assertArrayEquals(pending.getBytes(), keys.getPending().getBytes());
+			assertTrue("flags " + flags, keys.isPendingSeparated());
+			assertEquals(RootEvolutionRecord.VERSION_SEPARATED,
+					RootEvolutionCrypto.pendingVersion(keys));
+			assertEquals("flags " + flags, flags == 3,
+					keys.isPendingConfirmed());
+			assertArrayEquals(confirmKey.getBytes(),
+					keys.getPendingConfirmKey().getBytes());
+			assertNotNull("flags " + flags, keys.getPendingIdKey());
+			assertArrayEquals("a row without an id key names its root under"
+							+ " another key than its confirm key, flags " + flags,
+					confirmKey.getBytes(), keys.getPendingIdKey().getBytes());
+		}
+	}
+
+	private DatabaseComponent pendingIdKeyReadAs(byte[] idKey) {
+		return (DatabaseComponent) Proxy.newProxyInstance(
+				DatabaseComponent.class.getClassLoader(),
+				new Class<?>[] {DatabaseComponent.class},
+				(proxy, method, args) -> {
+					Object result;
+					try {
+						result = method.invoke(db, args);
+					} catch (InvocationTargetException e) {
+						throw e.getCause();
+					}
+					if (!method.getName().equals("getPcsMode2SessionState")
+							|| result == null || !Integer.valueOf(
+							DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING)
+							.equals(args[2])) {
+						return result;
+					}
+					PcsSessionRow row = (PcsSessionRow) result;
+					return new PcsSessionRow(row.getChainKey(),
+							row.getMessageNumber(),
+							row.getPreviousChainLength(), row.getRootKey(),
+							idKey.clone(), row.getDhPublicKey(),
+							row.getDhRemotePublicKey(), row.isMode2Enabled(),
+							row.getMode3FullStateBlob());
+				});
+	}
+
+	@Test
+	public void aSeparatedPendingRowWithAnIdKeyOfTheWrongLengthUsesTheConfirmKey()
+			throws Exception {
+		SecretKey pending = getSecretKey();
+		SecretKey confirmKey = getSecretKey();
+		SecretKey idKey = getSecretKey();
+		assertTrue(new RootKeyStore(db).storePending(contact, 0, pending,
+				confirmKey, idKey, true));
+		for (int length : new int[] {0, 1, SecretKey.LENGTH - 1,
+				SecretKey.LENGTH + 1, 2 * SecretKey.LENGTH}) {
+			byte[] misread = new byte[length];
+			java.util.Arrays.fill(misread, (byte) 7);
+			ContactRootKeys keys = new RootKeyStore(
+					pendingIdKeyReadAs(misread)).load(contact);
+			assertNotNull("length " + length, keys);
+			assertTrue(keys.isPendingSeparated());
+			assertTrue(keys.isPendingConfirmed());
+			assertArrayEquals(pending.getBytes(), keys.getPending().getBytes());
+			assertArrayEquals(confirmKey.getBytes(),
+					keys.getPendingConfirmKey().getBytes());
+			assertArrayEquals("an id key of " + length + " bytes was used",
+					confirmKey.getBytes(), keys.getPendingIdKey().getBytes());
+		}
+		SecretKey other = getSecretKey();
+		ContactRootKeys keys = new RootKeyStore(
+				pendingIdKeyReadAs(other.getBytes())).load(contact);
+		assertNotNull(keys);
+		assertArrayEquals("an id key of the right length was not used",
+				other.getBytes(), keys.getPendingIdKey().getBytes());
+		keys = new RootKeyStore(db).load(contact);
+		assertNotNull(keys);
+		assertArrayEquals(idKey.getBytes(), keys.getPendingIdKey().getBytes());
+	}
+
+	@Test
 	public void wipingTheCallersKeysLeavesTheStoredKeysIntact()
 			throws Exception {
 		RootKeyStore store = new RootKeyStore(db);
