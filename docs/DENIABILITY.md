@@ -39,9 +39,9 @@ that one could exist. The transcript simulator below is that tool for Zerion.
 | Calls | call endpoint keys derived from the same pair secrets; media is AEAD | anyone holding the pair secrets |
 | Contact requests | MACs and an AEAD seal under keys agreed for the request (`ContactRequestCrypto`) | anyone holding the request's agreed key |
 | Root key renewals | confirmation MACs under keys derived from the evolving root (`RootEvolutionCrypto`) | anyone holding the root being renewed |
-| Mesh envelopes between two phones that have exchanged mesh link keys (3.0.19) | the keyed trailer: a MAC under a key derived from the pair's link key (`AsyncSealedSender`, V2) | anyone holding the link key |
+| Mesh envelopes to a contact that has announced messaging version 17 (3.0.19) at any time | the keyed trailer: a MAC under a key derived from the pair's link key (`AsyncSealedSender`, V2) | anyone holding the link key |
 | Pairing by link or invite that creates a new contact between two 3.0.19 phones | the contact record carries one tag under the exchange key over the record's contents (role, author record, ML-DSA-65 key, transport properties, timestamp, static ML-KEM-768 key and session id); the identity keys sign nothing | anyone holding the exchange key, which both phones wipe when the exchange ends |
-| Prekey bundles to a contact on 3.0.19 | bundle version 2 carries no signature; the authenticated contact connection proves who sent it and the identity key inside must be the sending contact's | anyone can fabricate the bundle bytes; only the authenticated contact connection they arrive over binds them to a sender |
+| Prekey bundles to a contact that has announced messaging version 17 (3.0.19) at any time | bundle version 2 carries no signature; the authenticated contact connection proves who sent it and the identity key inside must be the sending contact's | anyone can fabricate the bundle bytes; only the authenticated contact connection they arrive over binds them to a sender |
 
 None of these records carries a signature by an identity key, so none of them
 binds an identity to content in a way a third party can check.
@@ -53,12 +53,13 @@ binds an identity to content in a way a third party can check.
   are not each other's contacts, and the copies the group owner passes on,
   must be able to verify the author without a shared key. The signature names a
   pseudonymous member key; from 3.0.19 that key's link to the account is
-  carried over the authenticated contact connection and no longer certified by
-  an identity signature towards 3.0.19 peers, so a contact can assert, but not
-  prove, whose key it is.
-- **Groups created before 3.0.18** sign with the account key, and so do group
-  records towards peers on older versions. Those records prove to anyone that
-  the account key produced them.
+  carried over the authenticated contact connection and is no longer
+  certified by an identity signature towards a contact that has announced
+  messaging version 17 at any time, so such a contact can assert, but not
+  prove, whose key it is. Towards a contact that never announced version 17
+  the binding is still signed by the account key.
+- **Groups created before 3.0.18** sign with the account key. Those records
+  prove to anyone that the account key produced them.
 - **Channel feeds** are signed by the channel key, and comments and reactions
   by a key derived per channel from the member's identity key; the publisher
   and every subscriber must verify them without any shared key.
@@ -70,19 +71,66 @@ binds an identity to content in a way a third party can check.
   identities and keys: with a MAC alone it could present one introducee's real
   identity while running the other side itself and bind that identity to a
   contact only the introducer can reach, which the signature makes detectable.
+  From 3.0.19, between two introducees that both announce key schedule 2,
+  the new contact's root is derived beside the introduction's own keys and
+  is never used during the introduction
+  ([wire/F2_INTRODUCTION_HYBRID_SIG.md](wire/F2_INTRODUCTION_HYBRID_SIG.md),
+  section 3c); the AUTH signature is the same in both forms.
   The simulator does not cover introductions.
-- **Prekey bundles to a contact on 3.0.18 or earlier** are signed by the
-  account key, as every bundle was up to 3.0.18. The simulator does not cover
-  them.
-- **Mesh envelopes towards a phone without mesh link keys** (3.0.18 and
-  earlier) carry the account signature, and a pairing with a phone on an
-  earlier version keeps the identity signatures of the older contact exchange.
+- **Prekey bundles to a contact that has never announced messaging version
+  17** (3.0.18 and earlier) are signed by the account key, as every bundle was
+  up to 3.0.18. The simulator does not cover them.
+- **Mesh envelopes to a contact that has never announced messaging version
+  17** (3.0.18 and earlier) carry the account signature, and a pairing with a
+  phone on an earlier version keeps the identity signatures of the older
+  contact exchange.
 - **Re-adding a contact you already have, and in-person pairings** (a QR code
   scanned in person, the nearby pairing) carry the identity signatures of the
   contact exchange even between two 3.0.19 phones, because replacing a stored
   contact's keys must prove possession of that contact's identity keys. The
   signatures cover values derived from the exchange key, so they are provable
   only to a holder of that key, which both phones wipe when the exchange ends.
+
+## Which form a phone sends to a contact
+
+From 3.0.19, once a contact has announced messaging version 17 this phone
+remembers it and sends that contact only the unsigned forms: the keyed mesh
+envelope, the version 2 prekey bundle and the group member key binding
+without an identity signature. The memory is one flag per contact in the
+encrypted settings (`UnsignedFormsMemory`). It is written in the same
+database transaction that stores the contact's version update, so a later
+lower announcement is never read without it; if the flag cannot be written,
+the update is not stored either and is delivered again later. It survives
+restarts and re-keys and is cleared only when the contact is removed. A
+contact that announced version 17 and then a lower version while this phone
+still ran 3.0.18 or earlier is not remembered, because only the latest
+announcement was stored then.
+
+Until a contact's messaging version is known (from its first version update,
+which a new contact sends over the first connection) this phone sends it no
+prekey bundle, seals no mesh envelope to it and makes no group member key
+binding for it: accepting a group invitation from such a contact fails and
+can be repeated, a key binding it sent is answered once its version is known,
+and the bundle follows when the version arrives. The signed forms go only to a
+contact whose known version is below 17 and that never announced 17. Toward
+a contact that announced 17, a mesh send for which this phone holds no usable
+link key is not sent over the mesh (Tor delivery is unchanged), and a mesh
+send to someone who is not a contact, or during a database error, is not
+sent instead of being signed. Receiving is unchanged: both forms are still
+accepted from a contact.
+
+What a contact can still obtain: a contact that announces a version below 17
+from the start and never announces 17, such as a modified 3.0.19 phone,
+receives account-signed mesh envelopes, prekey bundles and group bindings,
+and so does a contact after the user removes it and adds it again. A backup
+made on 3.0.19 can be chosen on 3.0.18, but the account does not open there
+(its database is newer), so a contact cannot return to 3.0.18 under the same
+identity; one that starts over on 3.0.18 is a new contact and gets the
+signed forms like any 3.0.18 contact. A contact that once announced 17 and
+then runs a build below 17 cannot take the unsigned group bindings this phone
+keeps sending, so group invitations and key probes between the two do not
+complete until it announces 17 again; Android does not install an older
+version over a newer one without removing the account.
 
 ## The transcript simulator
 
@@ -145,6 +193,18 @@ key, so the tool cannot fall behind the production code unnoticed:
 ```
 ./gradlew :zerion-core:test --tests org.zerionproject.tools.TranscriptSimulatorTest
 ```
+
+The simulator can also be built as one self-contained file: run
+`./gradlew :zerion-core:transcriptSimulatorJar` in a source checkout and take
+`zerion-core/build/tools/zerion-transcript-simulator.jar`. It runs on any JDK
+17 or later without Gradle or the source tree, for example
+`java -jar zerion-transcript-simulator.jar mesh --verify Hello over the mesh`,
+and with no scenario it prints the scenarios and every option. The jar holds
+the tool and the whole runtime class path of `zerion-core`, and building it
+twice from the same source gives the same file.
+`./gradlew :zerion-core:checkTranscriptSimulatorJar` builds the jar and runs
+each scenario with `--verify` from it; that task is not part of the app
+build.
 
 ## Honest limits
 

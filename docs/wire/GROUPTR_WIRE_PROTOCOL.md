@@ -86,12 +86,13 @@ contact that announces less than 13 cannot be invited to such a group.
 Groups created earlier are unchanged. See "Member keys in private groups".
 
 Minor version 17 (Android 3.0.19, `GROUP_BINDING_V2_MIN_VERSION`) changes
-one slot of the binding: towards a contact that announces 17 or more the
-`identitySig` slot is empty, so the account key no longer signs the binding
+one slot of the binding: towards a contact that has announced 17 or more at
+any time the `identitySig` slot is empty, so the account key no longer signs the binding
 and the binding is bound to the account only by the authenticated contact
 connection it arrives on and by the member key signature, whose input names
-that account key. Towards a contact that announces less the account key still
-signs it. A receiver on 17 takes both forms. See "Binding (57
+that account key. Towards a contact whose known version is below 17 and that
+never announced 17 the account key still signs it. A receiver on 17 takes
+both forms. See "Binding (57
 GROUP_KEY_BINDING and the binding slot)".
 
 Minor version 17 (Android 3.0.19, `GROUP_POST_RELAY_MIN_VERSION`) adds two
@@ -696,7 +697,9 @@ copy the creator sends:
   - To a fellow member on an earlier version when that contact reaches
     version 16.
   - In answer to a post that arrives signed with a timer other than the
-    group's, regardless of the note below.
+    group's, regardless of the note below, when the post's author
+    delivered it itself; a copy of a post that another contact handed on
+    is not answered.
 
   It notes per group which contacts were sent the setting in force
   (settings key `settingsSentTo`: the setting's timestamp followed by the
@@ -704,7 +707,15 @@ copy the creator sends:
   whenever a pass or a hand-over writes the note, and a newer setting
   starts it afresh, so after each write it holds no more ids than the group has
   members). The contact the record came from counts as sent and is noted
-  together with the record. A connection of a contact that is already
+  together with the record. A copy of the setting the device already holds,
+  arriving from a fellow member, is noted afterwards on a background thread
+  under the group's lock, and only if the device still holds that same
+  setting and signature then; a member noted after a pass already sent to it
+  gets one extra copy. A pass is skipped only when every current fellow
+  member it reaches as a contact is noted; ids of former members are not
+  counted. The other settings writes of this step, taking a newer record or
+  a confirmation from the creator, still run on the thread that delivers the
+  received record. A connection of a contact that is already
   noted costs one read of the group's settings and no write. Sending a
   post hands nothing on. The creator answers a post without the timer the
   same way with a record it signs again over the same timestamp. A device that
@@ -1892,9 +1903,23 @@ receiver takes it from the pairwise contact the record came from, and the
 member key signature covers it, so a binding is valid for exactly one
 contact whichever form it has. From version 17 (`GROUP_BINDING_V2_MIN_VERSION`)
 a device leaves the `identitySig` slot empty in every binding it sends to a
-contact that announces 17 or more (the invitation slots, 57 and the sealed
-probe entry alike) and still signs with the account key towards a contact
-that announces less (`GroupTrManagerImpl.bindingIdentitySigned`). The
+contact that has announced 17 or more at any time (the invitation slots, 57
+and the sealed probe entry alike) and still signs with the account key
+towards a contact whose known version is below 17 and that never announced
+17 (`GroupTrManagerImpl.bindingIdentitySigned`). That a contact announced 17
+is recorded in the transaction that stores its version update and kept
+across restarts and re-keys until the contact is removed
+(`UnsignedFormsMemory`, shared with the mesh), so announcing a lower version
+later does not bring the account signature back. For a contact whose
+version is not known yet no binding is made: accepting its invitation or
+member invitation fails and can be repeated, and a probe that needs an
+answer is kept as pending and answered once the version is known
+(`GroupTrKeyExchange.contactUpgraded`). A contact that announces a lower
+version from the start, or that is removed and added again, still gets the
+signed form. A contact that once announced 17 and then runs a build below
+17 cannot take the unsigned bindings this device keeps sending, so
+invitations, answers and probes between the two do not complete until it
+announces 17 again. The
 account signature gave the receiver nothing it did not already have, because
 the authenticated contact connection the binding arrives on proves which
 account sent it; it only made a proof that could be shown to a third party,
@@ -2012,9 +2037,9 @@ sealed binding = AES-256-GCM (128-bit tag, all-zero 96-bit IV) under
 ```
 
 The key K is fresh for every nonce, so the fixed IV is never reused under one
-key. The sealed binding is 8754 bytes towards a contact below version 17 and
-5381 bytes towards a contact on 17 or more (the account signature is left
-out, see "Binding"); the validator takes both lengths and the receiver tells
+key. The sealed binding is 8754 bytes towards a contact that gets the signed
+form and 5381 bytes towards a contact that has announced 17 or more (the
+account signature is left out, see "Binding"); the validator takes both lengths and the receiver tells
 the form from the length. A padding entry is 32, 32 and 8754 (or 5381) random
 bytes, the same lengths as the real entries of the same record, so without S
 an entry cannot be told from padding and shows no key, no timestamp and

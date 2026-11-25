@@ -264,12 +264,16 @@ Each message is sealed to the recipient's published **prekey bundle** using a
 hybrid key encapsulation: ML-KEM-768 (post-quantum) combined with X25519
 (classical), mixed through a keyed KDF, feeding an XSalsa20-Poly1305
 authenticated cipher. Inside the sealed envelope the sender authenticates the
-sender identity, the recipient, and the payload. From 3.0.19, between two
-phones that have exchanged mesh link keys over Tor, this is a tag under a key
-only the two contacts hold, so the opened record proves the sender to the
-recipient and to nobody else, as messages over Tor always have; towards a
-contact that has not exchanged them it is a signature with the sender's hybrid
-Ed25519 + ML-DSA-65 identity key, both halves of which must verify. The two
+sender identity, the recipient, and the payload. From 3.0.19, toward a
+contact that has announced messaging version 17 (3.0.19) at any time, this is
+a tag under a key only the two contacts hold, derived from the mesh link keys
+they exchanged over Tor, so the opened record proves the sender to the
+recipient and to nobody else, as messages over Tor always have; toward such a
+contact without a usable link key nothing is sent over the mesh. Toward a
+contact whose known version is below 17 and that never announced 17 it is a
+signature with the sender's hybrid Ed25519 + ML-DSA-65 identity key, both
+halves of which must verify, and to a contact whose version is not known yet
+nothing is sealed. The two
 forms have the same length, so a relay cannot tell them apart. This gives:
 
 - **Confidentiality and integrity to relays.** Only the holder of the recipient
@@ -300,7 +304,10 @@ genuine envelope.
 Sealing to a recipient requires their current prekey bundle. Bundles are
 exchanged over the encrypted online channel (Tor or I2P) whenever a pair is
 online together: on connection, a device sends its bundle to a contact, throttled
-so it is not resent constantly. Received bundles are verified against the
+so it is not resent constantly. From 3.0.19 a bundle goes to a contact only
+once its messaging version is known (a new contact's bundle follows its first
+version update), unsigned (version 2) to a contact that has announced version
+17 at any time and signed only to a contact that never did. Received bundles are verified against the
 contact's identity and stored (`MeshBundleStore`). When the pair later goes
 offline, the mesh already holds the bundle it needs.
 
