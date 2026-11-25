@@ -688,6 +688,8 @@ copy the creator sends:
     ten minutes bound what a creator who changes the timer again and
     again can make every member send. The plan is kept in memory only;
     after a restart the next occasion covers the members still missing.
+    The ten minutes are kept in memory too and start afresh with the app
+    or when the clock reads earlier than the previous pass.
   - To a fellow member it has not sent the record to (not yet a contact
     or not yet a member at the time of the pass, or the app was closed
     before the pass ran) the next time that contact connects.
@@ -700,7 +702,7 @@ copy the creator sends:
   (settings key `settingsSentTo`: the setting's timestamp followed by the
   contact ids; ids of contacts that are no longer members drop out
   whenever a pass or a hand-over writes the note, and a newer setting
-  starts it afresh, so it never holds more ids than the group has
+  starts it afresh, so after each write it holds no more ids than the group has
   members). The contact the record came from counts as sent and is noted
   together with the record. A connection of a contact that is already
   noted costs one read of the group's settings and no write. Sending a

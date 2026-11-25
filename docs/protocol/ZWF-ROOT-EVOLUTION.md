@@ -51,7 +51,10 @@ its confirmation key and its pending-id key (in the `chainKey` and the
 row, with bit 1 of `previousChainLength` set; bit 0 is the proved flag, as
 before), so that a later connection can still make and check its pending-root
 id and its DONE. A row written by an earlier release has neither bit 1 nor
-separate keys and reads as version 2. Both keys are deleted with the pending
+separate keys and reads as version 2. A row with bit 1 set and no 32-byte
+value in the `dhPrivateKey` column, which only development builds of this
+cycle wrote, reads as version 3 with its confirmation key standing in as
+its id key. Both keys are deleted with the pending
 row when the root is promoted or dropped. Bob's pending
 root is always unproved by Alice (he stores it before Alice has seen it);
 Alice's pending root is always proved by Bob (she stores it only after
@@ -592,8 +595,9 @@ peer's HELLO received: the peer does not wait for evolutions (an earlier
 release, iOS), either side has said in its HELLO that it is paused, or this
 side made a new root current less than ten minutes ago. In every other case,
 a connection whose HELLO never arrived included, an authenticated connection
-leaves the mark as it is. A side that is itself paused holds no records,
-waits for no HELLO and counts nothing, but its own pause does not waive the
+leaves the mark as it is. A side that is paused when a connection starts holds no records on it,
+waits for no HELLO and counts nothing (a pause that begins while a
+connection still waits for its HELLO takes effect at the next connection), but its own pause does not waive the
 greeting: on a paused side too the mark is cleared only by a connection on
 which the peer's HELLO arrived. The one connection that clears the mark
 without a HELLO is a connection to a contact that owes no greeting: its
@@ -746,12 +750,15 @@ and import screens say what a late restore means.
   of them with an hour or more between the first and the third or a later
   one, or after two of them with a day or more between the first and the
   second or a later one, not before, and only when such a connection is
-  counted; until then, and toward earlier releases whose greeting arrives,
-  the only sign is that records do not flow.
+  counted; until then the only sign is that records do not flow. Toward an
+  earlier release whose greeting arrives there is no sign at all: its
+  records flow whether or not the evolution completes, and no run is kept.
 - A paused side keeps its roots for 24 hours after a copy of the account is
   made, and each new copy starts that time again. Someone who can make a
   backup on the device already holds everything on it.
-- A database error while the pause is read is treated as paused.
+- A database error while the pause is read is treated as paused. A
+  database error while reading whether a peer waits for evolutions, or
+  whether it has greeted before, is treated as yes, so records are held.
 - If a network cuts more evolutions within ten minutes than the responder
   answers (`MAX_ANSWERS_PER_INTERVAL`), records wait until that window has
   passed.
