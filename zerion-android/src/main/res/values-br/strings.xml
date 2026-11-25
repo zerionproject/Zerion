@@ -852,6 +852,7 @@
 	<string name="grouptr_error_save">N\'eus ket bet gallet enrollañ an arventenn.</string>
 	<string name="grouptr_error_respond">N\'eus ket bet gallet respont d\'ar bedadenn.</string>
 	<string name="grouptr_post_too_long">Re hir eo ar gemennadenn.</string>
+	<string name="grouptr_post_too_large">Re vras eo evit bezañ kaset d\'ur strollad. Tro 1 MB eo ar vevenn.</string>
 	<string name="settings_save_failed">N\'eus ket bet gallet enrollañ an arventenn.</string>
 	<string name="grouptr_open">Digeriñ</string>
 	<string name="grouptr_input_hint">Kemennadenn</string>
@@ -914,7 +915,6 @@
 	<string name="grouptr_voice_play_failed">N\'eus ket bet gallet lenn ar gemennadenn mouezh.</string>
 	<string name="grouptr_attach_picker_failed">N\'eus ket bet gallet digeriñ an dibaber.</string>
 	<string name="grouptr_attach_read_failed">N\'eus ket bet gallet lenn ar skeudenn.</string>
-	<string name="grouptr_attach_video_too_large">Re vras eo ar video (8 MB d\'ar muiañ).</string>
 	<string name="grouptr_attach_unknown_type">Seurt restr n\'eo ket skoret.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Skeudenn</string>
@@ -3041,5 +3041,8 @@
 	<string name="vault_unlock_confirm_message">Gant ur stumm koshoc\'h eo bet enrollet ar c\'hofr-kreñv-mañ hep e c\'her-tremen. Skrivit ho ker-tremen ur wech ouzhpenn. Goude-se e vo gwarezet ar c\'hofr-kreñv gantañ en-dro gant Zerion.</string>
 	<string name="vault_unlock_entries_differ">N\'eo ket heñvel an daou enmont. Krogit en-dro.</string>
 	<string name="vault_unlock_not_confirmed">N\'eo ket bet gouest Zerion da gadarnaat ar c\'hofr-kreñv er c\'hadaviñ. Klaskit en-dro.</string>
+	<string name="vault_unlock_new_password_title">Dibabit ur ger-tremen nevez evit ar c\'hofr-kreñv</string>
+	<string name="vault_unlock_new_password_message">Ne c\'hall ket Zerion gwareziñ ar c\'hofr-kreñv-mañ gant e c\'her-tremen a-vremañ ken, da skouer peogwir n\'eus nemet emojioù ennañ. Dibabit ur ger-tremen nevez gant 8 lizherenn, sifr pe arouezenn d\'an nebeutañ ha skrivit anezhañ div wech.</string>
+	<string name="vault_unlock_new_password_again">Skrivit ar ger-tremen nevez ur wech ouzhpenn. Goude-se e vo gwarezet ar c\'hofr-kreñv gantañ gant Zerion.</string>
 	<string name="vault_password_rule">Implijit 8 lizherenn, sifr pe arouez da nebeutañ. Ne gont ket an emojioù.</string>
 </resources>

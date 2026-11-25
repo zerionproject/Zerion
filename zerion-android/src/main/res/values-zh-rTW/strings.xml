@@ -1001,6 +1001,7 @@
 	<string name="grouptr_error_save">無法儲存設定。</string>
 	<string name="grouptr_error_respond">無法回應邀請。</string>
 	<string name="grouptr_post_too_long">訊息太長。</string>
+	<string name="grouptr_post_too_large">內容太大，無法傳送到群組。上限約為 1 MB。</string>
 	<string name="settings_save_failed">無法儲存設定。</string>
 	<string name="grouptr_open">開啟</string>
 	<string name="grouptr_input_hint">訊息</string>
@@ -1055,7 +1056,6 @@
 	<string name="grouptr_voice_play_failed">無法播放語音留言。</string>
 	<string name="grouptr_attach_picker_failed">無法開啟選擇器。</string>
 	<string name="grouptr_attach_read_failed">無法讀取圖片。</string>
-	<string name="grouptr_attach_video_too_large">影片太大（上限 8 MB）。</string>
 	<string name="grouptr_attach_unknown_type">不支援的檔案類型。</string>
 	<string name="grouptr_video">影片</string>
 	<string name="grouptr_image">圖片</string>
@@ -2920,5 +2920,8 @@
 	<string name="vault_unlock_confirm_message">較舊的版本在儲存此保險庫時未使用其密碼。請再輸入一次您的密碼。之後 Zerion 會再次以該密碼保護保險庫。</string>
 	<string name="vault_unlock_entries_differ">兩次輸入不一致。請重新開始。</string>
 	<string name="vault_unlock_not_confirmed">Zerion 無法確認保險庫已儲存到儲存空間。請再試一次。</string>
+	<string name="vault_unlock_new_password_title">為保險庫選擇新密碼</string>
+	<string name="vault_unlock_new_password_message">Zerion 已無法再以目前的密碼保護此保險庫，例如因為該密碼只由表情符號組成。請選擇至少包含 8 個字母、數字或符號的新密碼，並輸入兩次。</string>
+	<string name="vault_unlock_new_password_again">請再輸入一次新密碼。之後 Zerion 會以該密碼保護保險庫。</string>
 	<string name="vault_password_rule">請使用至少 8 個字母、數字或符號。表情符號不計入。</string>
 </resources>

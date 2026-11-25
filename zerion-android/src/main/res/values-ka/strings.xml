@@ -1227,6 +1227,7 @@
 	<string name="grouptr_error_save">პარამეტრის შენახვა ვერ მოხერხდა.</string>
 	<string name="grouptr_error_respond">მოწვევაზე პასუხის გაცემა ვერ მოხერხდა.</string>
 	<string name="grouptr_post_too_long">შეტყობინება ძალიან გრძელია.</string>
+	<string name="grouptr_post_too_large">ეს ძალიან დიდია ჯგუფში გასაგზავნად. ლიმიტი არის დაახლოებით 1 MB.</string>
 	<string name="settings_save_failed">პარამეტრის შენახვა ვერ მოხერხდა.</string>
 	<string name="grouptr_open">გახსნა</string>
 	<string name="grouptr_input_hint">შეტყობინება</string>
@@ -1286,7 +1287,6 @@
 	<string name="grouptr_voice_play_failed">ხმოვანი ჩანაწერის დაკვრა ვერ მოხერხდა.</string>
 	<string name="grouptr_attach_picker_failed">არჩევის ფანჯრის გახსნა ვერ მოხერხდა.</string>
 	<string name="grouptr_attach_read_failed">სურათის წაკითხვა ვერ მოხერხდა.</string>
-	<string name="grouptr_attach_video_too_large">ვიდეო ძალიან დიდია (მაქს. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">ფაილის ეს ტიპი არ არის მხარდაჭერილი.</string>
 	<string name="grouptr_video">ვიდეო</string>
 	<string name="grouptr_image">სურათი</string>
@@ -2963,5 +2963,8 @@
 	<string name="vault_unlock_confirm_message">ადრინდელმა ვერსიამ ეს სეიფი პაროლის გარეშე შეინახა. შეიყვანეთ თქვენი პაროლი კიდევ ერთხელ. ამის შემდეგ Zerion სეიფს ისევ ამ პაროლით დაიცავს.</string>
 	<string name="vault_unlock_entries_differ">ორი ჩანაწერი ერთნაირი არ არის. დაიწყეთ თავიდან.</string>
 	<string name="vault_unlock_not_confirmed">Zerion-მა ვერ დაადასტურა სეიფი მეხსიერებაში. სცადეთ ხელახლა.</string>
+	<string name="vault_unlock_new_password_title">აირჩიეთ სეიფის ახალი პაროლი</string>
+	<string name="vault_unlock_new_password_message">Zerion ვეღარ დაიცავს ამ სეიფს მისი მიმდინარე პაროლით, მაგალითად, რადგან ის მხოლოდ ემოჯებისგან შედგება. აირჩიეთ ახალი პაროლი, სულ მცირე 8 ასოთი, ციფრით ან სიმბოლოთი, და შეიყვანეთ ორჯერ.</string>
+	<string name="vault_unlock_new_password_again">შეიყვანეთ ახალი პაროლი კიდევ ერთხელ. ამის შემდეგ Zerion სეიფს ამ პაროლით დაიცავს.</string>
 	<string name="vault_password_rule">გამოიყენეთ მინიმუმ 8 ასო, ციფრი ან სიმბოლო. ემოჯი არ ითვლება.</string>
 </resources>

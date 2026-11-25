@@ -63,7 +63,7 @@ public class LocalMessageLog implements UserMessageMarker {
 
 	private void noteTraffic(MessageId id, long now) {
 		traffic.remove(id);
-		traffic.put(id, new long[] {now, 0, -1});
+		traffic.put(id, new long[] {now, 0, -1, 0});
 		if (traffic.size() > MAX_TRAFFIC_ENTRIES) {
 			Iterator<MessageId> it = traffic.keySet().iterator();
 			it.next();
@@ -82,12 +82,31 @@ public class LocalMessageLog implements UserMessageMarker {
 		long[] part = traffic.get(id);
 		if (part == null) return 0;
 		part[2] = frames;
-		return (int) Math.max(0, frames - part[1]);
+		return (int) Math.max(0, frames - part[1] - part[3]);
+	}
+
+	public synchronized int reserveUserFrames(MessageId id, int frames) {
+		int left = userFramesLeft(id, frames);
+		long[] part = traffic.get(id);
+		if (part != null) part[3] += left;
+		return left;
+	}
+
+	public synchronized void releaseUserFrames(MessageId id, int frames) {
+		long[] part = traffic.get(id);
+		if (part != null) part[3] = Math.max(0, part[3] - frames);
 	}
 
 	public synchronized void noteUserFrameSent(MessageId id) {
+		noteUserFrameSent(id, true);
+	}
+
+	public synchronized void noteUserFrameSent(MessageId id,
+			boolean reserved) {
 		long[] part = traffic.get(id);
-		if (part != null) part[1]++;
+		if (part == null) return;
+		part[1]++;
+		if (reserved && part[3] > 0) part[3]--;
 	}
 
 	public synchronized void noteAcked(Collection<MessageId> acked) {

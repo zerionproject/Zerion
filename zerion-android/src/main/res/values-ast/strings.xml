@@ -802,6 +802,7 @@
 	<string name="grouptr_error_save">Nun se pudo guardar la preferencia.</string>
 	<string name="grouptr_error_respond">Nun se pudo responder a la invitación.</string>
 	<string name="grouptr_post_too_long">El mensaxe ye enforma llargu.</string>
+	<string name="grouptr_post_too_large">Esto ye enforma grande pa unviase a un grupu. La llende ye de 1 MB aproximao.</string>
 	<string name="settings_save_failed">Nun se pudo guardar la preferencia.</string>
 	<string name="grouptr_open">Abrir</string>
 	<string name="grouptr_input_hint">Mensaxe</string>
@@ -861,7 +862,6 @@
 	<string name="grouptr_voice_play_failed">Nun se pudo reproducir la nota de voz.</string>
 	<string name="grouptr_attach_picker_failed">Nun se pudo abrir el selector.</string>
 	<string name="grouptr_attach_read_failed">Nun se pudo lleer la imaxe.</string>
-	<string name="grouptr_attach_video_too_large">El vídeu ye enforma grande (máx. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Tipu de ficheru non compatible.</string>
 	<string name="grouptr_video">Vídeu</string>
 	<string name="grouptr_image">Imaxe</string>
@@ -2894,5 +2894,8 @@
 	<string name="vault_unlock_confirm_message">Una versión anterior guardó esta caxa fuerte ensin la so contraseña. Escribi la contraseña otra vuelta. Dempués, Zerion protexe la caxa fuerte con ella de nueves.</string>
 	<string name="vault_unlock_entries_differ">Les dos entraes nun son iguales. Volvi empezar.</string>
 	<string name="vault_unlock_not_confirmed">Zerion nun pudo confirmar la caxa fuerte nel almacenamientu. Volvi tentalo.</string>
+	<string name="vault_unlock_new_password_title">Escueyi una contraseña nueva pa la caxa fuerte</string>
+	<string name="vault_unlock_new_password_message">Zerion yá nun pue protexer esta caxa fuerte cola so contraseña actual, por exemplu porque namás tien emojis. Escueyi una contraseña nueva de polo menos 8 lletres, cifres o símbolos y escríbila dos vegaes.</string>
+	<string name="vault_unlock_new_password_again">Escribi la contraseña nueva otra vuelta. Dempués, Zerion protexe la caxa fuerte con ella.</string>
 	<string name="vault_password_rule">Usa polo menos 8 lletres, cifres o símbolos. Los emojis nun cuenten.</string>
 </resources>

@@ -43,7 +43,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_IDS;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
 import static org.zerionproject.sync.ZppConnectionRunnerImpl.NEVER;
 import static org.zerionproject.sync.ZppConnectionRunnerImpl.OPENING_WINDOW_INTERVAL_MS;
@@ -760,21 +759,38 @@ public class ZppUserTrafficPacingTest {
 	}
 
 	@Test
-	public void aStartedRecordAheadOfTheUsersDataCountsAsItsProgress()
+	public void aStartedRecordAheadOfTheUsersDataIsChargedToItsBudget()
 			throws Exception {
 		ZppSendScheduler scheduler = new ZppSendScheduler(record -> {
 		}, () -> true);
 		scheduler.setRanked(true);
-		queue(scheduler, 1, ZppSendScheduler.RANK_AUTOMATIC);
+		scheduler.setFast(true);
+		AtomicInteger charged = new AtomicInteger();
+		queue(scheduler, 1, ZppSendScheduler.RANK_AUTOMATIC, null);
 		scheduler.tick();
 		assertFalse(scheduler.lastFrameWasUsers());
-		queue(scheduler, 2, ZppSendScheduler.RANK_USER);
+		queue(scheduler, 2, ZppSendScheduler.RANK_USER,
+				charged::incrementAndGet);
+		assertEquals(5, scheduler.getUserDepth());
 
-		for (int i = 0; i < 9; i++) {
+		for (int i = 0; i < 4; i++) {
 			scheduler.tick();
-			assertTrue("frame " + i, scheduler.lastFrameWasUsers());
+			assertTrue("frame " + i + " of the started record",
+					scheduler.lastFrameWasUsers());
+			assertEquals(i + 1, charged.get());
+			assertEquals(4 - i, scheduler.getUserDepth());
 		}
-		queue(scheduler, 3, ZppSendScheduler.RANK_AUTOMATIC);
+		scheduler.tick();
+		assertTrue("the one frame of the user's left", scheduler
+				.lastFrameWasUsers());
+		assertEquals(5, charged.get());
+		for (int i = 0; i < 4; i++) {
+			scheduler.tick();
+			assertFalse("a frame whose budget went to the started record",
+					scheduler.lastFrameWasUsers());
+		}
+		assertEquals(5, charged.get());
+		queue(scheduler, 3, ZppSendScheduler.RANK_AUTOMATIC, null);
 		scheduler.tick();
 		assertFalse("with nothing of the user's queued it is not",
 				scheduler.lastFrameWasUsers());
@@ -784,12 +800,183 @@ public class ZppUserTrafficPacingTest {
 		assertFalse(scheduler.lastFrameWasUsers());
 	}
 
+	@Test
+	public void atTheIdleRateAStartedRecordAheadOfTheUsersDataIsNotCharged()
+			throws Exception {
+		ZppSendScheduler scheduler = new ZppSendScheduler(record -> {
+		}, () -> true);
+		scheduler.setRanked(true);
+		AtomicInteger charged = new AtomicInteger();
+		queue(scheduler, 1, ZppSendScheduler.RANK_AUTOMATIC, null);
+		scheduler.tick();
+		queue(scheduler, 2, ZppSendScheduler.RANK_USER,
+				charged::incrementAndGet);
+
+		for (int i = 0; i < 4; i++) {
+			scheduler.tick();
+			assertFalse(scheduler.lastFrameWasUsers());
+		}
+		assertEquals("nothing charged at the idle rate", 0, charged.get());
+		assertEquals(5, scheduler.getUserDepth());
+		for (int i = 0; i < 5; i++) {
+			scheduler.tick();
+			assertTrue(scheduler.lastFrameWasUsers());
+		}
+		assertEquals(5, charged.get());
+	}
+
+	@Test
+	public void anIdleLinkLeavesTheBudgetOfAPartBehindAnOldRecordAlone()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message part = link.message(10 * FRAME_BYTES);
+		link.log.noteUserPart(part.getId());
+		Message old = new Message(new MessageId(getRandomId()), link.group,
+				NOW - DAY, new byte[100 * FRAME_BYTES]);
+		link.request(old);
+		link.slot();
+		link.request(part);
+		int partFrames = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
+				OversizedRecordTest.codec().encodeMessage(part), 0,
+				FRAME_BYTES).size();
+		while (link.scheduler.getBulkDepth() > partFrames) link.slot();
+
+		assertEquals("the old record charged nothing", partFrames,
+				link.scheduler.getUserDepth());
+		while (link.busy()) link.slot();
+		for (Frame f : link.frames) assertEquals(IDLE_MS, f.gapAfter);
+		assertEquals(0, link.log.userFramesLeft(part.getId(), partFrames));
+		assertFalse(link.log.isUserTraffic(part.getId()));
+	}
+
+	@Test
+	public void insideAWindowAStartedRecordAheadOfThePartIsCharged()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message part = link.message(10 * FRAME_BYTES);
+		link.log.noteUserPart(part.getId());
+		Message old = new Message(new MessageId(getRandomId()), link.group,
+				NOW - DAY, new byte[100 * FRAME_BYTES]);
+		link.open();
+		link.request(old);
+		link.slot();
+		link.request(part);
+		int partFrames = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
+				OversizedRecordTest.codec().encodeMessage(part), 0,
+				FRAME_BYTES).size();
+		while (link.scheduler.getBulkDepth() > partFrames) link.slot();
+
+		assertEquals("the old record used the part's budget", 0,
+				link.scheduler.getUserDepth());
+		assertEquals(0, link.log.userFramesLeft(part.getId(), partFrames));
+	}
+
+	@Test
+	public void anOldRecordAheadOfAnUntouchedPartAtEveryOpeningIsBounded()
+			throws Exception {
+		Link link = new Link(true);
+		Message part = link.message(10 * FRAME_BYTES);
+		link.log.noteUserPart(part.getId());
+		Message old = new Message(new MessageId(getRandomId()), link.group,
+				NOW - DAY, new byte[400 * FRAME_BYTES]);
+		long end = NOW + 2 * 60 * MINUTE;
+		long fastMs = 0;
+		int windows = 0;
+		long lastOpen = NOW;
+		while (link.now[0] < end) {
+			link.reconnect();
+			int before = link.activations.size();
+			link.open();
+			if (link.activations.size() > before) {
+				windows++;
+				lastOpen = link.now[0];
+			}
+			link.request(old);
+			link.slot();
+			if (link.lastGap() == ACTIVE_MS) fastMs += ACTIVE_MS;
+			link.request(part);
+			int guard = 0;
+			while (link.scheduler.getBulkDepth() > 0 && guard++ < 5000) {
+				if (link.scheduler.getUserDepth() > 0 && link.scheduler
+						.getBulkDepth() <= link.scheduler.getUserDepth()) {
+					break;
+				}
+				link.slot();
+				if (link.lastGap() == ACTIVE_MS) fastMs += ACTIVE_MS;
+			}
+			link.requested.remove(part);
+			link.requested.remove(old);
+			link.now[0] = Math.max(link.now[0] + 30_000L,
+					lastOpen + OPENING_WINDOW_INTERVAL_MS);
+		}
+
+		assertTrue(windows >= 4);
+		int partFrames = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
+				OversizedRecordTest.codec().encodeMessage(part), 0,
+				FRAME_BYTES).size();
+		assertTrue("fast for " + fastMs + " ms with " + windows + " windows",
+				fastMs <= windows * WINDOW_MS + (partFrames + 2) * ACTIVE_MS);
+		assertEquals("the old record used up the part's budget", 0,
+				link.log.userFramesLeft(part.getId(), partFrames));
+	}
+
+	@Test
+	public void twoConnectionsAtOnceShareOneBudget() throws Exception {
+		Link first = new Link(true);
+		Link second = new Link(true, first.log);
+		Message part = first.message(5 * FRAME_BYTES);
+		first.log.noteUserPart(part.getId());
+
+		first.request(part);
+		second.request(part);
+
+		int frames = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
+				OversizedRecordTest.codec().encodeMessage(part), 0,
+				FRAME_BYTES).size();
+		assertEquals(frames, first.scheduler.getUserDepth());
+		assertEquals("the budget was handed out once", 0,
+				second.scheduler.getUserDepth());
+
+		first.reconnect();
+		second.reconnect();
+		second.request(part);
+		assertEquals("the stopped link gave its budget back", frames,
+				second.scheduler.getUserDepth());
+	}
+
+	@Test
+	public void aReservedBudgetIsGivenBackAndNeverHandedOutTwice() {
+		LocalMessageLog log = new LocalMessageLog(() -> NOW);
+		MessageId part = new MessageId(getRandomId());
+		log.noteUserPart(part);
+		assertEquals(10, log.reserveUserFrames(part, 10));
+		assertEquals(0, log.reserveUserFrames(part, 10));
+		log.noteUserFrameSent(part);
+		log.noteUserFrameSent(part);
+		log.releaseUserFrames(part, 8);
+		assertEquals(8, log.userFramesLeft(part, 10));
+		assertEquals(8, log.reserveUserFrames(part, 10));
+		log.releaseUserFrames(part, 8);
+		log.noteUserFrameSent(part, false);
+		assertEquals("a frame that left after its link gave the budget back"
+				+ " still counts", 7, log.userFramesLeft(part, 10));
+	}
+
 	private static void queue(ZppSendScheduler scheduler, long id, int rank) {
+		queue(scheduler, id, rank, null);
+	}
+
+	private static void queue(ZppSendScheduler scheduler, long id, int rank,
+			Runnable charge) {
 		List<byte[]> frames = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
 				new byte[5 * 1_500], id, FRAME_BYTES);
 		assertEquals(5, frames.size());
 		for (byte[] frame : frames) {
-			scheduler.enqueueRecord(frame, false, false, rank, true, null);
+			scheduler.enqueueRecord(frame, false, false, rank, true,
+					charge == null ? null
+							: ZppSendScheduler.charged(charge, null));
 		}
 	}
 
@@ -950,9 +1137,9 @@ public class ZppUserTrafficPacingTest {
 
 		assertEquals(Arrays.asList("ack", "ack", "request", "request", "body",
 				"offer", "user"), link.queuedKinds);
-		assertEquals("a reply may carry as many ids as before",
-				Arrays.asList(MAX_MESSAGE_IDS, MAX_MESSAGE_IDS,
-						MAX_MESSAGE_IDS, MAX_MESSAGE_IDS), link.replyLimits);
+		int most = ZppOutgoingSource.MAX_IDS_PER_RECORD;
+		assertEquals("a reply carries as many ids as one record holds",
+				Arrays.asList(most, most, most, most), link.replyLimits);
 		while (link.scheduler.getQueueDepth() > 0) link.slot();
 		assertEquals(link.queuedKinds, link.kinds());
 	}
@@ -1002,7 +1189,7 @@ public class ZppUserTrafficPacingTest {
 	private static final class Link {
 
 		private final long[] now = {NOW};
-		private final LocalMessageLog log = new LocalMessageLog(() -> now[0]);
+		private final LocalMessageLog log;
 		private final ContactId contact = new ContactId(1);
 		private final GroupId group = new GroupId(getRandomId());
 		private final List<Frame> frames = new ArrayList<>();
@@ -1035,7 +1222,12 @@ public class ZppUserTrafficPacingTest {
 		private List<Long> carrying = Collections.emptyList();
 
 		private Link(boolean dense) throws Exception {
+			this(dense, null);
+		}
+
+		private Link(boolean dense, LocalMessageLog shared) throws Exception {
 			this.dense = dense;
+			log = shared != null ? shared : new LocalMessageLog(() -> now[0]);
 			slots = new ZppConnectionRunnerImpl.SlotClock(() -> now[0],
 					NEVER);
 			ration = new ZppConnectionRunnerImpl.ReceiveActivityGate(
@@ -1279,6 +1471,7 @@ public class ZppUserTrafficPacingTest {
 					scheduler.getUserDepth(),
 					scheduler.getControlDepth(), slots.lastRealMs, now[0],
 					WINDOW_MS);
+			scheduler.setFast(active);
 			long gap = active ? ACTIVE_MS : IDLE_MS;
 			frames.get(frames.size() - 1).gapAfter = gap;
 			now[0] += gap;

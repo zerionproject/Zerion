@@ -333,6 +333,22 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void anEditLongerThanOneSyncRecordHoldsIsRefused()
+			throws Exception {
+		MessagingManagerImpl sender = senderSeeing(9);
+		MessageId mine = own("short", now - HOUR);
+
+		assertEquals(EditResult.NOT_EDITABLE, sender.editMessage(contact,
+				mine, org.zerionproject.core.util.StringUtils.getRandomString(
+						org.zerionproject.app.api.messaging.MessagingConstants
+								.MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH
+								+ 1)));
+
+		assertTrue(localControls(MESSAGE_EDIT).isEmpty());
+		assertEquals("short", messagingManager.getMessageText(mine));
+	}
+
+	@Test
 	public void editingSendsAnEditTheContactAccepts() throws Exception {
 		MessagingManagerImpl sender = senderSeeing(9);
 		MessageId mine = own("Hey Allfs good", now - HOUR);

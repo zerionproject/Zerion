@@ -1120,6 +1120,7 @@
 	<string name="grouptr_error_save">Parametri yadda saxlamaq alınmadı.</string>
 	<string name="grouptr_error_respond">Dəvətə cavab vermək alınmadı.</string>
 	<string name="grouptr_post_too_long">Mesaj çox uzundur.</string>
+	<string name="grouptr_post_too_large">Bu, qrupa göndərmək üçün çox böyükdür. Limit təxminən 1 MB təşkil edir.</string>
 	<string name="settings_save_failed">Parametri yadda saxlamaq alınmadı.</string>
 	<string name="grouptr_open">Aç</string>
 	<string name="grouptr_input_hint">Mesaj</string>
@@ -1179,7 +1180,6 @@
 	<string name="grouptr_voice_play_failed">Səsli mesajı oxutmaq alınmadı.</string>
 	<string name="grouptr_attach_picker_failed">Fayl seçicisini açmaq alınmadı.</string>
 	<string name="grouptr_attach_read_failed">Şəkli oxumaq alınmadı.</string>
-	<string name="grouptr_attach_video_too_large">Video çox böyükdür (maks. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Dəstəklənməyən fayl növü.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Şəkil</string>
@@ -2895,5 +2895,8 @@
 	<string name="vault_unlock_confirm_message">Əvvəlki versiya bu seyfi parolsuz saxlayıb. Parolunuzu bir daha yazın. Bundan sonra Zerion seyfi yenidən həmin parolla qoruyacaq.</string>
 	<string name="vault_unlock_entries_differ">İki daxiletmə eyni deyil. Yenidən başlayın.</string>
 	<string name="vault_unlock_not_confirmed">Zerion seyfin yaddaşda saxlandığını təsdiqləyə bilmədi. Yenidən cəhd edin.</string>
+	<string name="vault_unlock_new_password_title">Yeni seyf parolu seçin</string>
+	<string name="vault_unlock_new_password_message">Zerion bu seyfi artıq hazırkı parolu ilə qoruya bilmir, məsələn, parol yalnız emojilərdən ibarət olduğu üçün. Ən azı 8 hərf, rəqəm və ya simvoldan ibarət yeni parol seçin və onu iki dəfə yazın.</string>
+	<string name="vault_unlock_new_password_again">Yeni parolu bir daha yazın. Bundan sonra Zerion seyfi həmin parolla qoruyacaq.</string>
 	<string name="vault_password_rule">Ən azı 8 hərf, rəqəm və ya simvol istifadə edin. Emoji sayılmır.</string>
 </resources>

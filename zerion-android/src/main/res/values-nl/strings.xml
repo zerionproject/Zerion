@@ -1084,6 +1084,7 @@
 	<string name="grouptr_error_save">Kan instelling niet opslaan.</string>
 	<string name="grouptr_error_respond">Kan niet op uitnodiging reageren.</string>
 	<string name="grouptr_post_too_long">Bericht is te lang.</string>
+	<string name="grouptr_post_too_large">Dit is te groot om naar een groep te sturen. De limiet is ongeveer 1 MB.</string>
 	<string name="settings_save_failed">Kan instelling niet opslaan.</string>
 	<string name="grouptr_open">Openen</string>
 	<string name="grouptr_input_hint">Bericht</string>
@@ -1139,7 +1140,6 @@
 	<string name="grouptr_voice_play_failed">Kan spraakmemo niet afspelen.</string>
 	<string name="grouptr_attach_picker_failed">Kan kiezer niet openen.</string>
 	<string name="grouptr_attach_read_failed">Kan de afbeelding niet lezen.</string>
-	<string name="grouptr_attach_video_too_large">Video te groot (max. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Niet-ondersteund bestandstype.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Afbeelding</string>
@@ -2967,5 +2967,8 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="vault_unlock_confirm_message">Een eerdere versie heeft deze kluis zonder het wachtwoord opgeslagen. Typ je wachtwoord nog een keer. Daarna beveiligt Zerion de kluis er weer mee.</string>
 	<string name="vault_unlock_entries_differ">De twee invoeren zijn niet gelijk. Begin opnieuw.</string>
 	<string name="vault_unlock_not_confirmed">Zerion kon de kluis niet bevestigen in de opslag. Probeer het opnieuw.</string>
+	<string name="vault_unlock_new_password_title">Kies een nieuw wachtwoord voor je kluis</string>
+	<string name="vault_unlock_new_password_message">Zerion kan deze kluis niet langer beveiligen met het huidige wachtwoord, bijvoorbeeld omdat het alleen uit emoji bestaat. Kies een nieuw wachtwoord van minimaal 8 letters, cijfers of symbolen en typ het twee keer.</string>
+	<string name="vault_unlock_new_password_again">Typ het nieuwe wachtwoord nog een keer. Daarna beveiligt Zerion de kluis ermee.</string>
 	<string name="vault_password_rule">Gebruik minimaal 8 letters, cijfers of symbolen. Emoji tellen niet mee.</string>
 </resources>

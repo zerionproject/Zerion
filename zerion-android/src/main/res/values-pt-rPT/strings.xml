@@ -1431,6 +1431,7 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 	<string name="grouptr_error_save">Não foi possível guardar a definição.</string>
 	<string name="grouptr_error_respond">Não foi possível responder ao convite.</string>
 	<string name="grouptr_post_too_long">A mensagem é demasiado longa.</string>
+	<string name="grouptr_post_too_large">Isto é demasiado grande para enviar para um grupo. O limite é de cerca de 1 MB.</string>
 	<string name="settings_save_failed">Não foi possível guardar a definição.</string>
 	<string name="grouptr_open">Abrir</string>
 	<string name="grouptr_input_hint">Mensagem</string>
@@ -1491,7 +1492,6 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 	<string name="grouptr_voice_play_failed">Não foi possível reproduzir a mensagem de voz.</string>
 	<string name="grouptr_attach_picker_failed">Não foi possível abrir o seletor.</string>
 	<string name="grouptr_attach_read_failed">Não foi possível ler a imagem.</string>
-	<string name="grouptr_attach_video_too_large">Vídeo demasiado grande (máx. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Tipo de ficheiro não suportado.</string>
 	<string name="grouptr_video">Vídeo</string>
 	<string name="grouptr_image">Imagem</string>
@@ -3020,5 +3020,8 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 	<string name="vault_unlock_confirm_message">Uma versão anterior guardou este cofre sem a respetiva palavra-passe. Introduza a sua palavra-passe mais uma vez. Depois disso, o Zerion volta a proteger o cofre com ela.</string>
 	<string name="vault_unlock_entries_differ">As duas introduções não são iguais. Comece de novo.</string>
 	<string name="vault_unlock_not_confirmed">O Zerion não conseguiu confirmar o cofre no armazenamento. Tente novamente.</string>
+	<string name="vault_unlock_new_password_title">Escolha uma nova palavra-passe para o cofre</string>
+	<string name="vault_unlock_new_password_message">O Zerion já não consegue proteger este cofre com a palavra-passe atual, por exemplo porque é composta apenas por emojis. Escolha uma nova palavra-passe com pelo menos 8 letras, dígitos ou símbolos e introduza-a duas vezes.</string>
+	<string name="vault_unlock_new_password_again">Introduza a nova palavra-passe mais uma vez. Depois disso, o Zerion protege o cofre com ela.</string>
 	<string name="vault_password_rule">Use pelo menos 8 letras, dígitos ou símbolos. Os emojis não contam.</string>
 </resources>

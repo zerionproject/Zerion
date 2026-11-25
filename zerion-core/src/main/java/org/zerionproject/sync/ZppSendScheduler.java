@@ -31,6 +31,30 @@ public class ZppSendScheduler {
 	public static final int RANK_REPLY = 1;
 	public static final int RANK_AUTOMATIC = 2;
 
+	private static final class Charged implements Runnable {
+
+		private final Runnable charge;
+		@javax.annotation.Nullable
+		private final Runnable then;
+
+		private Charged(Runnable charge,
+				@javax.annotation.Nullable Runnable then) {
+			this.charge = charge;
+			this.then = then;
+		}
+
+		@Override
+		public void run() {
+			charge.run();
+			if (then != null) then.run();
+		}
+	}
+
+	public static Runnable charged(Runnable charge,
+			@javax.annotation.Nullable Runnable then) {
+		return new Charged(charge, then);
+	}
+
 	private final FrameSink sink;
 	private final BooleanSupplier pqReady;
 	private static final class Entry {
@@ -40,11 +64,13 @@ public class ZppSendScheduler {
 		final Supplier<byte[]> builder;
 		final boolean userOriginated;
 		final boolean opensWindow;
-		final int rank;
+		volatile int rank;
 		final long fragmentOf;
 		final boolean lastFragment;
 		@javax.annotation.Nullable
 		final Runnable onSent;
+		@javax.annotation.Nullable
+		volatile Runnable charge;
 
 		Entry(@javax.annotation.Nullable byte[] record,
 				@javax.annotation.Nullable Supplier<byte[]> builder,
@@ -55,7 +81,13 @@ public class ZppSendScheduler {
 			this.userOriginated = userOriginated;
 			this.opensWindow = opensWindow;
 			this.rank = rank;
-			this.onSent = onSent;
+			if (onSent instanceof Charged) {
+				charge = ((Charged) onSent).charge;
+				this.onSent = ((Charged) onSent).then;
+			} else {
+				charge = null;
+				this.onSent = onSent;
+			}
 			if (record != null && record.length >= 12
 					&& ZmmRecord.getType(record)
 					== ZmmConstants.TYPE_FRAGMENT) {
@@ -89,6 +121,8 @@ public class ZppSendScheduler {
 	private Entry started;
 	private boolean owedUser = false;
 	private boolean tookBulk = false;
+	private boolean chargedAhead = false;
+	private volatile boolean fast = false;
 	private volatile boolean lastUserFrame = false;
 	private volatile boolean lastControlFrame = false;
 	private volatile boolean lastRealUserOriginated = false;
@@ -212,6 +246,10 @@ public class ZppSendScheduler {
 		return lastControlFrame;
 	}
 
+	public void setFast(boolean fast) {
+		this.fast = fast;
+	}
+
 	public boolean tick() throws IOException {
 		return tickSparse(true) == Sent.REAL;
 	}
@@ -225,6 +263,7 @@ public class ZppSendScheduler {
 			while (bytes == null) {
 				users = false;
 				tookBulk = false;
+				chargedAhead = false;
 				record = control.poll();
 				controlled = record != null;
 				if (record == null && !held.getAsBoolean()) {
@@ -233,7 +272,7 @@ public class ZppSendScheduler {
 					if (record != null && record.rank == RANK_USER) {
 						userQueued.decrementAndGet();
 						users = true;
-					} else if (tookBulk && userQueued.get() > 0) {
+					} else if (tookBulk && chargedAhead) {
 						users = true;
 					}
 				}
@@ -248,6 +287,8 @@ public class ZppSendScheduler {
 			lastRealOpenedWindow = record.opensWindow;
 			sink.send(bytes);
 			realFrames.incrementAndGet();
+			Runnable charge = record.charge;
+			if (charge != null && record.rank == RANK_USER) charge.run();
 			Runnable onSent = record.onSent;
 			if (onSent != null) onSent.run();
 			return Sent.REAL;
@@ -263,13 +304,16 @@ public class ZppSendScheduler {
 		Entry small = firstByRank(outgoing);
 		if (small == null || (owedUser && small.rank != RANK_USER)) {
 			Entry big = nextOfStarted();
-			boolean ahead = big != null && userQueued.get() > 0;
+			boolean ahead = big != null;
 			if (big == null) big = firstByRank(bulk);
 			if (big != null && (small == null || big.rank == RANK_USER
 					|| ahead)) {
 				bulk.remove(big);
 				tookBulk = true;
 				started = big.lastFragment ? null : big;
+				if (big.rank != RANK_USER && fast && userQueued.get() > 0) {
+					chargedAhead = chargeWaitingUserFrame();
+				}
 				if (big.rank == RANK_USER || ahead) owedUser = false;
 				return big;
 			}
@@ -278,6 +322,29 @@ public class ZppSendScheduler {
 		outgoing.remove(small);
 		owedUser = small.rank != RANK_USER;
 		return small;
+	}
+
+	private boolean chargeWaitingUserFrame() {
+		Entry head = null;
+		for (Entry e : bulk) {
+			if (e.rank == RANK_USER) {
+				head = e;
+				break;
+			}
+		}
+		if (head == null) return false;
+		Entry last = head;
+		for (Entry e : bulk) {
+			if (e.fragmentOf == head.fragmentOf && e.rank == RANK_USER) {
+				last = e;
+			}
+		}
+		last.rank = RANK_AUTOMATIC;
+		userQueued.decrementAndGet();
+		Runnable charge = last.charge;
+		last.charge = null;
+		if (charge != null) charge.run();
+		return true;
 	}
 
 	@javax.annotation.Nullable

@@ -116,8 +116,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 	TextForwarder textForwarder;
 
 	private static final int REQ_RECORD_AUDIO = 4011;
-	private static final long MAX_INLINE_MEDIA_BYTES = 8L * 1024L * 1024L;
-	private static final int MAX_POST_BODY_BYTES = 9_500_000;
+	static final int MAX_POST_BODY_BYTES = GroupTrManager.MAX_POST_BODY_LENGTH;
 	private static final int MAX_IMAGE_DIM = 1600;
 	private static final int IMAGE_JPEG_QUALITY = 78;
 
@@ -155,7 +154,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 			long ms = recorder.elapsedMs();
 			recordingTimer.setText(formatDuration(ms));
 			if (ms >= com.professor.zerion.android.grouptr.voice
-					.GroupTrVoiceRecorder.MAX_DURATION_MS) {
+					.GroupTrVoiceRecorder.MAX_DURATION_MS
+					|| recorder.limitReached()) {
 				finishVoiceRecording();
 				return;
 			}
@@ -1340,7 +1340,11 @@ public class GroupTrConversationActivity extends ZerionActivity
 			} catch (org.zerionproject.app.api.grouptr
 					.GroupTrAuthException refused) {
 				return PendingSends.Result.refused(PendingSends.Notice.of(
-						R.string.grouptr_error_send));
+						refused.getReason() == org.zerionproject.app.api
+								.grouptr.GroupTrAuthException.Reason
+								.POST_TOO_LARGE
+								? R.string.grouptr_post_too_large
+								: R.string.grouptr_error_send));
 			} catch (DbException ex) {
 				return PendingSends.Result.failed(null);
 			}
@@ -1762,12 +1766,14 @@ public class GroupTrConversationActivity extends ZerionActivity
 				: input.getText().toString().trim();
 		if (text.isEmpty()) return;
 		byte[] body = text.getBytes(StandardCharsets.UTF_8);
-		if (body.length > MAX_POST_BODY_BYTES) {
+		GroupTrPost quoting = replyingTo;
+		byte[] target = quoting == null ? null : quoting.getPostId();
+		int posted = target == null ? body.length
+				: GroupTrBody.encodeReply(target, text).length;
+		if (posted > MAX_POST_BODY_BYTES) {
 			feedback(R.string.grouptr_post_too_long);
 			return;
 		}
-		GroupTrPost quoting = replyingTo;
-		byte[] target = quoting == null ? null : quoting.getPostId();
 		PendingSends.Entry pending = queuePost(
 				new PendingGroupPost.Send(body, target, text));
 		showPendingRows();
@@ -1923,7 +1929,13 @@ public class GroupTrConversationActivity extends ZerionActivity
 			return;
 		}
 		if (mime.startsWith("image/")) {
-			byte[] jpeg = readImageDownscaledJpeg(uri);
+			byte[] jpeg;
+			try {
+				jpeg = readImageDownscaledJpeg(uri);
+			} catch (ImageTooLargeException ex) {
+				main.post(() -> feedback(R.string.grouptr_post_too_large));
+				return;
+			}
 			if (jpeg == null) {
 				main.post(() -> feedback(R.string.grouptr_attach_read_failed));
 				return;
@@ -1933,9 +1945,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 			return;
 		}
 		if (mime.startsWith("video/")) {
-			byte[] data = readUriBytes(uri, MAX_INLINE_MEDIA_BYTES);
+			byte[] data = readUriBytes(uri, MAX_POST_BODY_BYTES);
 			if (data == null) {
-				main.post(() -> feedback(R.string.grouptr_attach_video_too_large));
+				main.post(() -> feedback(R.string.grouptr_post_too_large));
 				return;
 			}
 			com.professor.zerion.android.attachment.SharedMediaSanitizer
@@ -1943,7 +1955,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			try {
 				cleaned = new com.professor.zerion.android.attachment
 						.SharedMediaSanitizer(getApplicationContext())
-						.sanitize(uri, mime, data, MAX_INLINE_MEDIA_BYTES);
+						.sanitize(uri, mime, data, MAX_POST_BODY_BYTES);
 			} catch (IOException | RuntimeException ex) {
 				main.post(() -> {
 					if (ex instanceof com.professor.zerion.android.attachment
@@ -1968,8 +1980,12 @@ public class GroupTrConversationActivity extends ZerionActivity
 		main.post(() -> feedback(R.string.grouptr_attach_unknown_type));
 	}
 
+	static final class ImageTooLargeException extends Exception {
+	}
+
 	@Nullable
-	private byte[] readImageDownscaledJpeg(Uri uri) {
+	private byte[] readImageDownscaledJpeg(Uri uri)
+			throws ImageTooLargeException {
 		ContentResolver cr = getContentResolver();
 		BitmapFactory.Options probe = new BitmapFactory.Options();
 		probe.inJustDecodeBounds = true;
@@ -1994,18 +2010,21 @@ public class GroupTrConversationActivity extends ZerionActivity
 			return null;
 		}
 		if (bitmap == null) return null;
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		boolean ok = bitmap.compress(Bitmap.CompressFormat.JPEG,
-				IMAGE_JPEG_QUALITY, out);
-		bitmap.recycle();
-		if (!ok) return null;
+		byte[] fitted;
 		try {
-			return com.professor.zerion.android.attachment.ImageScrubber
-					.scrub(out.toByteArray());
+			fitted = com.professor.zerion.android.attachment.JpegFit
+					.fitBitmap(bitmap, IMAGE_JPEG_QUALITY, MAX_IMAGE_BYTES);
 		} catch (IOException ex) {
 			return null;
+		} finally {
+			bitmap.recycle();
 		}
+		if (fitted == null) throw new ImageTooLargeException();
+		return fitted;
 	}
+
+	static final int MAX_IMAGE_BYTES = MAX_POST_BODY_BYTES
+			- GroupTrBody.MAX_MIME_LENGTH - 8;
 
 	@Nullable
 	private byte[] readUriBytes(Uri uri, long maxBytes) {
@@ -2047,7 +2066,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 	private void sendBodyAsync(byte[] body) {
 		if (body.length > MAX_POST_BODY_BYTES) {
-			main.post(() -> feedback(R.string.grouptr_attach_video_too_large));
+			main.post(() -> feedback(R.string.grouptr_post_too_large));
 			return;
 		}
 		PendingSends.Entry pending = queuePost(

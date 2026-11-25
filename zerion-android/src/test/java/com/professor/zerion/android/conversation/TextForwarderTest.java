@@ -26,6 +26,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -36,7 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH;
 
 public class TextForwarderTest {
 
@@ -144,12 +145,22 @@ public class TextForwarderTest {
 	@Test
 	public void longTextIsCutToWhatOneMessageHolds() {
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < MAX_PRIVATE_MESSAGE_TEXT_LENGTH + 10; i++) {
+		for (int i = 0; i < MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH + 10;
+				i++) {
 			sb.append('a');
 		}
-		assertEquals(MAX_PRIVATE_MESSAGE_TEXT_LENGTH,
+		assertEquals(MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH,
 				TextForwarder.limit(sb.toString()).length());
 		assertEquals("short", TextForwarder.limit("short"));
+		StringBuilder wide = new StringBuilder();
+		for (int i = 0; i < MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH; i++) {
+			wide.append((char) 0xe9);
+		}
+		String cut = TextForwarder.limit(wide.toString());
+		assertTrue(cut.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+				.length <= MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH);
+		assertEquals(MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH / 2,
+				cut.length());
 	}
 
 	private static Contact contact(int id) {

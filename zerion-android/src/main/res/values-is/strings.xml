@@ -1344,6 +1344,7 @@
 	<string name="grouptr_error_save">Ekki tókst að vista stillingu.</string>
 	<string name="grouptr_error_respond">Ekki tókst að svara boðinu.</string>
 	<string name="grouptr_post_too_long">Skilaboðin eru of löng.</string>
+	<string name="grouptr_post_too_large">Þetta er of stórt til að senda í hóp. Hámarkið er um 1 MB.</string>
 	<string name="settings_save_failed">Ekki tókst að vista stillingu.</string>
 	<string name="grouptr_open">Opna</string>
 	<string name="grouptr_input_hint">Skilaboð</string>
@@ -1403,7 +1404,6 @@
 	<string name="grouptr_voice_play_failed">Ekki tókst að spila raddskilaboðin.</string>
 	<string name="grouptr_attach_picker_failed">Ekki tókst að opna valgluggann.</string>
 	<string name="grouptr_attach_read_failed">Ekki tókst að lesa myndina.</string>
-	<string name="grouptr_attach_video_too_large">Myndskeiðið er of stórt (hámark 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Skráartegund er ekki studd.</string>
 	<string name="grouptr_video">Myndskeið</string>
 	<string name="grouptr_image">Mynd</string>
@@ -2961,5 +2961,8 @@
 	<string name="vault_unlock_confirm_message">Eldri útgáfa vistaði þessa hvelfingu án lykilorðsins. Sláðu lykilorðið þitt inn einu sinni enn. Zerion ver síðan hvelfinguna með því á ný.</string>
 	<string name="vault_unlock_entries_differ">Innslættirnir tveir eru ekki eins. Byrjaðu aftur.</string>
 	<string name="vault_unlock_not_confirmed">Zerion gat ekki staðfest hvelfinguna í gagnageymslu. Reyndu aftur.</string>
+	<string name="vault_unlock_new_password_title">Veldu nýtt lykilorð fyrir hvelfinguna</string>
+	<string name="vault_unlock_new_password_message">Zerion getur ekki lengur varið þessa hvelfingu með núverandi lykilorði hennar, til dæmis af því að það er eingöngu úr tjáningartáknum. Veldu nýtt lykilorð með að minnsta kosti 8 bókstöfum, tölustöfum eða táknum og sláðu það inn tvisvar.</string>
+	<string name="vault_unlock_new_password_again">Sláðu nýja lykilorðið inn einu sinni enn. Zerion ver síðan hvelfinguna með því.</string>
 	<string name="vault_password_rule">Notaðu að minnsta kosti 8 bókstafi, tölustafi eða tákn. Emoji teljast ekki með.</string>
 </resources>

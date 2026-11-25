@@ -1362,6 +1362,7 @@
 	<string name="grouptr_error_save">Kunne ikke lagre innstillingen.</string>
 	<string name="grouptr_error_respond">Kunne ikke svare på invitasjonen.</string>
 	<string name="grouptr_post_too_long">Meldingen er for lang.</string>
+	<string name="grouptr_post_too_large">Dette er for stort til å sendes til en gruppe. Grensen er omtrent 1 MB.</string>
 	<string name="settings_save_failed">Kunne ikke lagre innstillingen.</string>
 	<string name="grouptr_open">Åpne</string>
 	<string name="grouptr_input_hint">Melding</string>
@@ -1421,7 +1422,6 @@
 	<string name="grouptr_voice_play_failed">Kunne ikke spille av talemeldingen.</string>
 	<string name="grouptr_attach_picker_failed">Kunne ikke åpne velgeren.</string>
 	<string name="grouptr_attach_read_failed">Kunne ikke lese bildet.</string>
-	<string name="grouptr_attach_video_too_large">Videoen er for stor (maks 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Filtypen støttes ikke.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Bilde</string>
@@ -2966,5 +2966,8 @@
 	<string name="vault_unlock_confirm_message">En tidligere versjon lagret dette hvelvet uten passordet. Skriv inn passordet ditt en gang til. Deretter beskytter Zerion hvelvet med det igjen.</string>
 	<string name="vault_unlock_entries_differ">De to inntastingene er ikke like. Start på nytt.</string>
 	<string name="vault_unlock_not_confirmed">Zerion kunne ikke bekrefte hvelvet på lagringsplassen. Prøv igjen.</string>
+	<string name="vault_unlock_new_password_title">Velg et nytt passord for hvelvet</string>
+	<string name="vault_unlock_new_password_message">Zerion kan ikke lenger beskytte dette hvelvet med det nåværende passordet, for eksempel fordi det bare består av emojier. Velg et nytt passord med minst 8 bokstaver, sifre eller symboler, og skriv det inn to ganger.</string>
+	<string name="vault_unlock_new_password_again">Skriv inn det nye passordet en gang til. Deretter beskytter Zerion hvelvet med det.</string>
 	<string name="vault_password_rule">Bruk minst 8 bokstaver, sifre eller symboler. Emojier teller ikke.</string>
 </resources>

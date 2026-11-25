@@ -5,24 +5,23 @@ import android.graphics.BitmapFactory;
 import android.graphics.ColorSpace;
 
 import com.professor.zerion.android.attachment.ImageOrientation;
-import com.professor.zerion.android.attachment.ImageScrubber;
+import com.professor.zerion.android.attachment.JpegFit;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import javax.inject.Inject;
 
-import static android.graphics.Bitmap.CompressFormat.JPEG;
 import static android.graphics.BitmapFactory.decodeStream;
 import static org.zerionproject.core.util.IoUtils.tryToClose;
-import static org.zerionproject.app.api.attachment.MediaConstants.MAX_IMAGE_SIZE;
+import static org.zerionproject.app.api.attachment.MediaConstants.MAX_DELIVERABLE_IMAGE_SIZE;
 
 class ImageCompressorImpl implements ImageCompressor {
 
 	private static final int MAX_ATTACHMENT_DIMENSION = 1600;
+	private static final int JPEG_QUALITY = 75;
 
 	private final ImageSizeCalculator imageSizeCalculator;
 
@@ -58,11 +57,9 @@ class ImageCompressorImpl implements ImageCompressor {
 	}
 
 	private InputStream compressImageInternal(Bitmap bitmap) throws IOException {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		if (!bitmap.compress(JPEG, 75, out))
-			throw new IOException();
-		byte[] imageData = ImageScrubber.scrub(out.toByteArray());
-		if (imageData.length > MAX_IMAGE_SIZE) throw new IOException();
+		byte[] imageData = JpegFit.fitBitmap(bitmap, JPEG_QUALITY,
+				MAX_DELIVERABLE_IMAGE_SIZE);
+		if (imageData == null) throw new IOException();
 		return new ByteArrayInputStream(imageData);
 	}
 

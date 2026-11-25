@@ -1094,6 +1094,7 @@
 	<string name="grouptr_error_save">No se pudo guardar el ajuste.</string>
 	<string name="grouptr_error_respond">No se pudo responder a la invitación.</string>
 	<string name="grouptr_post_too_long">El mensaje es demasiado largo.</string>
+	<string name="grouptr_post_too_large">Esto es demasiado grande para enviarlo a un grupo. El límite es de aproximadamente 1 MB.</string>
 	<string name="settings_save_failed">No se pudo guardar el ajuste.</string>
 	<string name="grouptr_open">Abrir</string>
 	<string name="grouptr_input_hint">Mensaje</string>
@@ -1148,7 +1149,6 @@
 	<string name="grouptr_voice_play_failed">No se pudo reproducir la nota de voz.</string>
 	<string name="grouptr_attach_picker_failed">No se pudo abrir el selector.</string>
 	<string name="grouptr_attach_read_failed">No se pudo leer la imagen.</string>
-	<string name="grouptr_attach_video_too_large">Vídeo demasiado grande (máx. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Tipo de archivo no compatible.</string>
 	<string name="grouptr_video">Vídeo</string>
 	<string name="grouptr_image">Imagen</string>
@@ -3022,5 +3022,8 @@
 	<string name="vault_unlock_confirm_message">Una versión anterior guardó este baúl sin su contraseña. Escribe tu contraseña una vez más. Después, Zerion vuelve a proteger el baúl con ella.</string>
 	<string name="vault_unlock_entries_differ">Las dos entradas no son iguales. Empieza de nuevo.</string>
 	<string name="vault_unlock_not_confirmed">Zerion no pudo confirmar el baúl en el almacenamiento. Inténtalo de nuevo.</string>
+	<string name="vault_unlock_new_password_title">Elige una contraseña nueva para tu baúl</string>
+	<string name="vault_unlock_new_password_message">Zerion ya no puede proteger este baúl con su contraseña actual, por ejemplo porque solo contiene emojis. Elige una contraseña nueva de al menos 8 letras, dígitos o símbolos y escríbela dos veces.</string>
+	<string name="vault_unlock_new_password_again">Escribe la contraseña nueva una vez más. Después, Zerion protege el baúl con ella.</string>
 	<string name="vault_password_rule">Usa al menos 8 letras, cifras o símbolos. Los emojis no cuentan.</string>
 </resources>

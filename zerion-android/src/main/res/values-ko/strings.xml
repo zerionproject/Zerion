@@ -976,6 +976,7 @@
 	<string name="grouptr_error_save">설정을 저장할 수 없습니다.</string>
 	<string name="grouptr_error_respond">초대에 응답할 수 없습니다.</string>
 	<string name="grouptr_post_too_long">메시지가 너무 깁니다.</string>
+	<string name="grouptr_post_too_large">그룹에 보내기에는 너무 큽니다. 한도는 약 1 MB입니다.</string>
 	<string name="settings_save_failed">설정을 저장할 수 없습니다.</string>
 	<string name="grouptr_open">열기</string>
 	<string name="grouptr_input_hint">메시지</string>
@@ -1030,7 +1031,6 @@
 	<string name="grouptr_voice_play_failed">음성 메모를 재생할 수 없습니다.</string>
 	<string name="grouptr_attach_picker_failed">선택기를 열 수 없습니다.</string>
 	<string name="grouptr_attach_read_failed">이미지를 읽을 수 없습니다.</string>
-	<string name="grouptr_attach_video_too_large">동영상이 너무 큽니다 (최대 8MB).</string>
 	<string name="grouptr_attach_unknown_type">지원되지 않는 파일 형식입니다.</string>
 	<string name="grouptr_video">동영상</string>
 	<string name="grouptr_image">이미지</string>
@@ -2910,5 +2910,8 @@
 	<string name="vault_unlock_confirm_message">이전 버전에서 이 보관함이 비밀번호 없이 저장되었습니다. 비밀번호를 한 번 더 입력하세요. 그러면 Zerion이 그 비밀번호로 보관함을 다시 보호합니다.</string>
 	<string name="vault_unlock_entries_differ">두 입력이 서로 다릅니다. 처음부터 다시 시작하세요.</string>
 	<string name="vault_unlock_not_confirmed">Zerion이 저장소에서 보관함을 확인하지 못했습니다. 다시 시도하세요.</string>
+	<string name="vault_unlock_new_password_title">보관함의 새 비밀번호 선택</string>
+	<string name="vault_unlock_new_password_message">Zerion은 더 이상 현재 비밀번호로 이 보관함을 보호할 수 없습니다. 예를 들어 비밀번호가 이모지로만 이루어진 경우입니다. 문자, 숫자 또는 기호 8자 이상으로 된 새 비밀번호를 선택하고 두 번 입력하세요.</string>
+	<string name="vault_unlock_new_password_again">새 비밀번호를 한 번 더 입력하세요. 그러면 Zerion이 그 비밀번호로 보관함을 보호합니다.</string>
 	<string name="vault_password_rule">문자, 숫자 또는 기호를 8자 이상 사용하세요. 이모지는 글자 수에 포함되지 않습니다.</string>
 </resources>

@@ -1399,6 +1399,7 @@
 	<string name="grouptr_error_save">Ayar kaydedilemedi.</string>
 	<string name="grouptr_error_respond">Davete yanıt verilemedi.</string>
 	<string name="grouptr_post_too_long">İleti çok uzun.</string>
+	<string name="grouptr_post_too_large">Bu, bir gruba göndermek için çok büyük. Sınır yaklaşık 1 MB.</string>
 	<string name="settings_save_failed">Ayar kaydedilemedi.</string>
 	<string name="grouptr_open">Aç</string>
 	<string name="grouptr_input_hint">İleti</string>
@@ -1458,7 +1459,6 @@
 	<string name="grouptr_voice_play_failed">Sesli not oynatılamadı.</string>
 	<string name="grouptr_attach_picker_failed">Seçici açılamadı.</string>
 	<string name="grouptr_attach_read_failed">Görsel okunamadı.</string>
-	<string name="grouptr_attach_video_too_large">Video çok büyük (en fazla 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Desteklenmeyen dosya türü.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Görsel</string>
@@ -2968,5 +2968,8 @@
 	<string name="vault_unlock_confirm_message">Önceki bir sürüm bu kasayı parolası olmadan kaydetti. Parolanızı bir kez daha yazın. Zerion bundan sonra kasayı yeniden bu parolayla korur.</string>
 	<string name="vault_unlock_entries_differ">İki giriş aynı değil. Baştan başlayın.</string>
 	<string name="vault_unlock_not_confirmed">Zerion kasayı depolama alanında doğrulayamadı. Yeniden deneyin.</string>
+	<string name="vault_unlock_new_password_title">Yeni bir kasa parolası seçin</string>
+	<string name="vault_unlock_new_password_message">Zerion bu kasayı artık mevcut parolasıyla koruyamıyor, örneğin parola yalnızca emojilerden oluştuğu için. En az 8 harf, rakam veya simgeden oluşan yeni bir parola seçin ve iki kez yazın.</string>
+	<string name="vault_unlock_new_password_again">Yeni parolayı bir kez daha yazın. Zerion bundan sonra kasayı bu parolayla korur.</string>
 	<string name="vault_password_rule">En az 8 harf, rakam veya simge kullanın. Emojiler sayılmaz.</string>
 </resources>

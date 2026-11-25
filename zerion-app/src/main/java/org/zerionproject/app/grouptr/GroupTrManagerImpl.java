@@ -4884,13 +4884,25 @@ class GroupTrManagerImpl
 				s.getGroupId(), unreachable, record);
 		try {
 			if (clientHelper.toByteArray(body).length > org.zerionproject
-					.core.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH) {
+					.core.api.sync.SyncConstants
+					.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH) {
 				return;
 			}
 		} catch (FormatException ex) {
 			return;
 		}
 		dispatchToContact(txn, creator, timestamp, body, false);
+	}
+
+	private boolean fitsOneRecordWithRelay(BdfList record) {
+		try {
+			return clientHelper.toByteArray(record).length
+					<= org.zerionproject.core.api.sync.SyncConstants
+					.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH
+					- RELAY_ENVELOPE_BYTES;
+		} catch (FormatException ex) {
+			return false;
+		}
 	}
 
 	private void handleRelayRecord(org.zerionproject.app.api.messaging.event
@@ -6020,6 +6032,10 @@ class GroupTrManagerImpl
 				throw new GroupTrAuthException(
 						GroupTrAuthException.Reason.GROUP_DISSOLVED);
 			}
+			if (body.length > MAX_POST_BODY_LENGTH) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.POST_TOO_LARGE);
+			}
 			long effectiveTtl = effectiveTtl(autoDeleteTimerMs,
 					s.getDefaultAutoDeleteTimerMs());
 			LocalAuthor la = localAuthor();
@@ -6070,6 +6086,10 @@ class GroupTrManagerImpl
 							finalSenderName, body, sig, effectiveTtl)
 					: BdfList.of(32L, groupId, (long) epoch, localPub,
 							finalSenderName, body, sig);
+			if (!fitsOneRecordWithRelay(msgBody)) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.POST_TOO_LARGE);
+			}
 			int failed = 0;
 			byte[] postId = postIdentity(signed);
 			for (Contact c : recipients) {

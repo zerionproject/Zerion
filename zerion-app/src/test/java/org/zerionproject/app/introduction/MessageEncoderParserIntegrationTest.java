@@ -148,6 +148,20 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void theLongestRequestTextTheComposerAllowsFitsOneSyncRecord()
+			throws FormatException {
+		String longest = getRandomString(org.zerionproject.app.api
+				.introduction.IntroductionConstants
+				.MAX_DELIVERABLE_INTRODUCTION_TEXT_LENGTH);
+		Message m = messageEncoder.encodeRequestMessage(groupId,
+				Long.MAX_VALUE, previousMsgId, author, longest,
+				MAX_AUTO_DELETE_TIMER_MS);
+		validator.validateMessage(m, group, clientHelper.toList(m));
+		assertTrue(m.getBody().length <= org.zerionproject.core.api.sync
+				.SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH);
+	}
+
+	@Test
 	public void testRequestMessageWithAutoDeleteTimer() throws FormatException {
 		Message m = messageEncoder.encodeRequestMessage(groupId, timestamp,
 				previousMsgId, author, text, MIN_AUTO_DELETE_TIMER_MS);

@@ -1258,6 +1258,7 @@
 	<string name="grouptr_error_save">সেটিং সংরক্ষণ করা যায়নি।</string>
 	<string name="grouptr_error_respond">আমন্ত্রণে সাড়া দেওয়া যায়নি।</string>
 	<string name="grouptr_post_too_long">বার্তাটি খুব দীর্ঘ।</string>
+	<string name="grouptr_post_too_large">এটি গ্রুপে পাঠানোর জন্য খুব বড়। সীমা প্রায় 1 MB।</string>
 	<string name="settings_save_failed">সেটিং সংরক্ষণ করা যায়নি।</string>
 	<string name="grouptr_open">খুলুন</string>
 	<string name="grouptr_input_hint">বার্তা</string>
@@ -1317,7 +1318,6 @@
 	<string name="grouptr_voice_play_failed">ভয়েস মেমো চালানো যায়নি।</string>
 	<string name="grouptr_attach_picker_failed">ফাইল নির্বাচক খোলা যায়নি।</string>
 	<string name="grouptr_attach_read_failed">ছবিটি পড়া যায়নি।</string>
-	<string name="grouptr_attach_video_too_large">ভিডিও খুব বড় (সর্বোচ্চ ৮ MB)।</string>
 	<string name="grouptr_attach_unknown_type">অসমর্থিত ফাইলের ধরন।</string>
 	<string name="grouptr_video">ভিডিও</string>
 	<string name="grouptr_image">ছবি</string>
@@ -2966,5 +2966,8 @@
 	<string name="vault_unlock_confirm_message">আগের একটি সংস্করণ এই Vault পাসওয়ার্ড ছাড়াই সংরক্ষণ করেছিল। আপনার পাসওয়ার্ড আরও একবার লিখুন। এরপর Zerion আবার সেই পাসওয়ার্ড দিয়ে Vault সুরক্ষিত করবে।</string>
 	<string name="vault_unlock_entries_differ">দুটি এন্ট্রি এক নয়। আবার শুরু করুন।</string>
 	<string name="vault_unlock_not_confirmed">Zerion স্টোরেজে Vault নিশ্চিত করতে পারেনি। আবার চেষ্টা করুন।</string>
+	<string name="vault_unlock_new_password_title">Vault-এর জন্য নতুন পাসওয়ার্ড বেছে নিন</string>
+	<string name="vault_unlock_new_password_message">Zerion এই Vault আর এর বর্তমান পাসওয়ার্ড দিয়ে সুরক্ষিত রাখতে পারে না, যেমন পাসওয়ার্ডটি শুধু ইমোজি দিয়ে তৈরি হলে। কমপক্ষে 8টি অক্ষর, সংখ্যা বা চিহ্ন দিয়ে একটি নতুন পাসওয়ার্ড বেছে নিন এবং সেটি দুবার লিখুন।</string>
+	<string name="vault_unlock_new_password_again">নতুন পাসওয়ার্ডটি আরও একবার লিখুন। এরপর Zerion সেই পাসওয়ার্ড দিয়ে Vault সুরক্ষিত করবে।</string>
 	<string name="vault_password_rule">অন্তত ৮টি অক্ষর, সংখ্যা বা চিহ্ন ব্যবহার করুন। ইমোজি গণনা করা হয় না।</string>
 </resources>

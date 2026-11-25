@@ -1337,6 +1337,7 @@
 	<string name="grouptr_error_save">Non se puido gardar o axuste.</string>
 	<string name="grouptr_error_respond">Non se puido responder ao convite.</string>
 	<string name="grouptr_post_too_long">A mensaxe é demasiado longa.</string>
+	<string name="grouptr_post_too_large">Isto é demasiado grande para envialo a un grupo. O límite é de aproximadamente 1 MB.</string>
 	<string name="settings_save_failed">Non se puido gardar o axuste.</string>
 	<string name="grouptr_open">Abrir</string>
 	<string name="grouptr_input_hint">Mensaxe</string>
@@ -1396,7 +1397,6 @@
 	<string name="grouptr_voice_play_failed">Non se puido reproducir a nota de voz.</string>
 	<string name="grouptr_attach_picker_failed">Non se puido abrir o selector.</string>
 	<string name="grouptr_attach_read_failed">Non se puido ler a imaxe.</string>
-	<string name="grouptr_attach_video_too_large">Vídeo demasiado grande (máx. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Tipo de ficheiro non compatible.</string>
 	<string name="grouptr_video">Vídeo</string>
 	<string name="grouptr_image">Imaxe</string>
@@ -2957,5 +2957,8 @@
 	<string name="vault_unlock_confirm_message">Unha versión anterior gardou este cofre sen o seu contrasinal. Escribe o teu contrasinal unha vez máis. Despois, Zerion volve protexer o cofre con el.</string>
 	<string name="vault_unlock_entries_differ">As dúas entradas non son iguais. Comeza de novo.</string>
 	<string name="vault_unlock_not_confirmed">Zerion non puido confirmar o cofre no almacenamento. Téntao de novo.</string>
+	<string name="vault_unlock_new_password_title">Escolle un contrasinal novo para o cofre</string>
+	<string name="vault_unlock_new_password_message">Zerion xa non pode protexer este cofre co seu contrasinal actual, por exemplo porque só contén emojis. Escolle un contrasinal novo de polo menos 8 letras, díxitos ou símbolos e escríbeo dúas veces.</string>
+	<string name="vault_unlock_new_password_again">Escribe o contrasinal novo unha vez máis. Despois, Zerion protexe o cofre con el.</string>
 	<string name="vault_password_rule">Usa polo menos 8 letras, cifras ou símbolos. Os emojis non contan.</string>
 </resources>

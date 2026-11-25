@@ -1397,6 +1397,7 @@
 	<string name="grouptr_error_save">Nastavenie sa nepodarilo uložiť.</string>
 	<string name="grouptr_error_respond">Na pozvánku sa nepodarilo odpovedať.</string>
 	<string name="grouptr_post_too_long">Správa je príliš dlhá.</string>
+	<string name="grouptr_post_too_large">Toto je príliš veľké na odoslanie do skupiny. Limit je približne 1 MB.</string>
 	<string name="settings_save_failed">Nastavenie sa nepodarilo uložiť.</string>
 	<string name="grouptr_open">Otvoriť</string>
 	<string name="grouptr_input_hint">Správa</string>
@@ -1458,7 +1459,6 @@
 	<string name="grouptr_voice_play_failed">Hlasovú správu sa nepodarilo prehrať.</string>
 	<string name="grouptr_attach_picker_failed">Výber súboru sa nepodarilo otvoriť.</string>
 	<string name="grouptr_attach_read_failed">Obrázok sa nepodarilo načítať.</string>
-	<string name="grouptr_attach_video_too_large">Video je príliš veľké (max. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Nepodporovaný typ súboru.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Obrázok</string>
@@ -3061,5 +3061,8 @@
 	<string name="vault_unlock_confirm_message">Staršia verzia uložila tento trezor bez jeho hesla. Zadajte heslo ešte raz. Zerion ním potom trezor znova ochráni.</string>
 	<string name="vault_unlock_entries_differ">Tieto dva zápisy nie sú rovnaké. Začnite znova.</string>
 	<string name="vault_unlock_not_confirmed">Zerion nemohol potvrdiť uloženie trezoru v úložisku. Skúste to znova.</string>
+	<string name="vault_unlock_new_password_title">Zvoľte nové heslo k trezoru</string>
+	<string name="vault_unlock_new_password_message">Zerion už nemôže chrániť tento trezor jeho súčasným heslom, napríklad preto, že sa skladá len z emoji. Zvoľte nové heslo s aspoň 8 písmenami, číslicami alebo symbolmi a zadajte ho dvakrát.</string>
+	<string name="vault_unlock_new_password_again">Zadajte nové heslo ešte raz. Zerion ním potom trezor ochráni.</string>
 	<string name="vault_password_rule">Použite aspoň 8 písmen, číslic alebo symbolov. Emoji sa nepočítajú.</string>
 </resources>

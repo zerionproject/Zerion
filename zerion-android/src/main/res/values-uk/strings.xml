@@ -1397,6 +1397,7 @@
 	<string name="grouptr_error_save">Не вдалося зберегти налаштування.</string>
 	<string name="grouptr_error_respond">Не вдалося відповісти на запрошення.</string>
 	<string name="grouptr_post_too_long">Повідомлення надто довге.</string>
+	<string name="grouptr_post_too_large">Це завелике для надсилання в групу. Обмеження приблизно 1 МБ.</string>
 	<string name="settings_save_failed">Не вдалося зберегти налаштування.</string>
 	<string name="grouptr_open">Відкрити</string>
 	<string name="grouptr_input_hint">Повідомлення</string>
@@ -1458,7 +1459,6 @@
 	<string name="grouptr_voice_play_failed">Не вдалося відтворити голосове повідомлення.</string>
 	<string name="grouptr_attach_picker_failed">Не вдалося відкрити вибір файлів.</string>
 	<string name="grouptr_attach_read_failed">Не вдалося прочитати зображення.</string>
-	<string name="grouptr_attach_video_too_large">Відео надто велике (макс. 8 МБ).</string>
 	<string name="grouptr_attach_unknown_type">Непідтримуваний тип файлу.</string>
 	<string name="grouptr_video">Відео</string>
 	<string name="grouptr_image">Зображення</string>
@@ -3061,5 +3061,8 @@
 	<string name="vault_unlock_confirm_message">Попередня версія зберегла це сховище без його пароля. Введіть пароль ще раз. Після цього Zerion знову захистить сховище цим паролем.</string>
 	<string name="vault_unlock_entries_differ">Два введення не збігаються. Почніть спочатку.</string>
 	<string name="vault_unlock_not_confirmed">Zerion не вдалося підтвердити, що сховище збережено на пристрої. Спробуйте ще раз.</string>
+	<string name="vault_unlock_new_password_title">Виберіть новий пароль сховища</string>
+	<string name="vault_unlock_new_password_message">Zerion більше не може захищати це сховище поточним паролем, наприклад тому, що він складається лише з емодзі. Виберіть новий пароль щонайменше з 8 літер, цифр або символів і введіть його двічі.</string>
+	<string name="vault_unlock_new_password_again">Введіть новий пароль ще раз. Після цього Zerion захистить сховище цим паролем.</string>
 	<string name="vault_password_rule">Використовуйте щонайменше 8 літер, цифр або символів. Емодзі не враховуються.</string>
 </resources>

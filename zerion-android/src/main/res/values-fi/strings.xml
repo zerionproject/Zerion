@@ -1211,6 +1211,7 @@
 	<string name="grouptr_error_save">Asetusta ei voitu tallentaa.</string>
 	<string name="grouptr_error_respond">Kutsuun ei voitu vastata.</string>
 	<string name="grouptr_post_too_long">Viesti on liian pitkä.</string>
+	<string name="grouptr_post_too_large">Tämä on liian suuri lähetettäväksi ryhmään. Raja on noin 1 Mt.</string>
 	<string name="settings_save_failed">Asetusta ei voitu tallentaa.</string>
 	<string name="grouptr_open">Avaa</string>
 	<string name="grouptr_input_hint">Viesti</string>
@@ -1270,7 +1271,6 @@
 	<string name="grouptr_voice_play_failed">Ääniviestiä ei voitu toistaa.</string>
 	<string name="grouptr_attach_picker_failed">Valitsinta ei voitu avata.</string>
 	<string name="grouptr_attach_read_failed">Kuvaa ei voitu lukea.</string>
-	<string name="grouptr_attach_video_too_large">Video on liian suuri (enintään 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Tiedostotyyppiä ei tueta.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Kuva</string>
@@ -2941,5 +2941,8 @@
 	<string name="vault_unlock_confirm_message">Aiempi versio tallensi tämän holvin ilman sen salasanaa. Kirjoita salasanasi vielä kerran. Sen jälkeen Zerion suojaa holvin sillä uudelleen.</string>
 	<string name="vault_unlock_entries_differ">Syötteet eivät ole samat. Aloita alusta.</string>
 	<string name="vault_unlock_not_confirmed">Zerion ei voinut vahvistaa holvia tallennustilassa. Yritä uudelleen.</string>
+	<string name="vault_unlock_new_password_title">Valitse holville uusi salasana</string>
+	<string name="vault_unlock_new_password_message">Zerion ei voi enää suojata tätä holvia sen nykyisellä salasanalla, esimerkiksi koska se koostuu pelkistä emojeista. Valitse uusi salasana, jossa on vähintään 8 kirjainta, numeroa tai symbolia, ja kirjoita se kahdesti.</string>
+	<string name="vault_unlock_new_password_again">Kirjoita uusi salasana vielä kerran. Sen jälkeen Zerion suojaa holvin sillä.</string>
 	<string name="vault_password_rule">Käytä vähintään 8 kirjainta, numeroa tai symbolia. Emojeja ei lasketa.</string>
 </resources>

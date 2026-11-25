@@ -1,5 +1,7 @@
 package org.zerionproject.message;
 
+import org.zerionproject.core.api.sync.SyncConstants;
+
 public interface ZmmConstants {
 
 	int TYPE_COVER = 0x00;
@@ -35,5 +37,5 @@ public interface ZmmConstants {
 
 	int MAX_TYPE = 0xFFFF;
 
-	int MAX_RECORD_BYTES = 1024 * 1024;
+	int MAX_RECORD_BYTES = SyncConstants.MAX_SYNC_RECORD_BYTES;
 }

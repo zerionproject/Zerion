@@ -1397,6 +1397,7 @@
 	<string name="grouptr_error_save">Nepavyko išsaugoti nustatymo.</string>
 	<string name="grouptr_error_respond">Nepavyko atsakyti į pakvietimą.</string>
 	<string name="grouptr_post_too_long">Žinutė per ilga.</string>
+	<string name="grouptr_post_too_large">Tai per didelis turinys siųsti grupei. Riba yra apie 1 MB.</string>
 	<string name="settings_save_failed">Nepavyko išsaugoti nustatymo.</string>
 	<string name="grouptr_open">Atverti</string>
 	<string name="grouptr_input_hint">Žinutė</string>
@@ -1458,7 +1459,6 @@
 	<string name="grouptr_voice_play_failed">Nepavyko paleisti balso žinutės.</string>
 	<string name="grouptr_attach_picker_failed">Nepavyko atverti parinkiklio.</string>
 	<string name="grouptr_attach_read_failed">Nepavyko nuskaityti atvaizdo.</string>
-	<string name="grouptr_attach_video_too_large">Vaizdo įrašas per didelis (daugiausia 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Nepalaikomas failo tipas.</string>
 	<string name="grouptr_video">Vaizdo įrašas</string>
 	<string name="grouptr_image">Atvaizdas</string>
@@ -3061,5 +3061,8 @@
 	<string name="vault_unlock_confirm_message">Ankstesnė versija išsaugojo šią saugyklą be jos slaptažodžio. Įveskite slaptažodį dar kartą. Tada Zerion vėl apsaugos saugyklą šiuo slaptažodžiu.</string>
 	<string name="vault_unlock_entries_differ">Du įvedimai nesutampa. Pradėkite iš naujo.</string>
 	<string name="vault_unlock_not_confirmed">Zerion nepavyko patvirtinti saugyklos atmintyje. Bandykite dar kartą.</string>
+	<string name="vault_unlock_new_password_title">Pasirinkite naują saugyklos slaptažodį</string>
+	<string name="vault_unlock_new_password_message">Zerion nebegali apsaugoti šios saugyklos dabartiniu jos slaptažodžiu, pavyzdžiui, nes jį sudaro tik jaustukai. Pasirinkite naują slaptažodį iš bent 8 raidžių, skaitmenų ar simbolių ir įveskite jį du kartus.</string>
+	<string name="vault_unlock_new_password_again">Įveskite naują slaptažodį dar kartą. Tada Zerion apsaugos saugyklą šiuo slaptažodžiu.</string>
 	<string name="vault_password_rule">Naudokite bent 8 raides, skaitmenis arba simbolius. Jaustukai neskaičiuojami.</string>
 </resources>

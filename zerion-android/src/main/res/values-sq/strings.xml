@@ -1364,6 +1364,7 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="grouptr_error_save">Cilësimi nuk u ruajt dot.</string>
 	<string name="grouptr_error_respond">Përgjigjja për ftesën nuk u dërgua dot.</string>
 	<string name="grouptr_post_too_long">Mesazhi është shumë i gjatë.</string>
+	<string name="grouptr_post_too_large">Kjo është shumë e madhe për t\'u dërguar në një grup. Kufiri është rreth 1 MB.</string>
 	<string name="settings_save_failed">Cilësimi nuk u ruajt dot.</string>
 	<string name="grouptr_open">Hape</string>
 	<string name="grouptr_input_hint">Mesazh</string>
@@ -1423,7 +1424,6 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="grouptr_voice_play_failed">Mesazhi zanor nuk u luajt dot.</string>
 	<string name="grouptr_attach_picker_failed">Përzgjedhësi nuk u hap dot.</string>
 	<string name="grouptr_attach_read_failed">Figura nuk u lexua dot.</string>
-	<string name="grouptr_attach_video_too_large">Video shumë e madhe (maks. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Lloj skedari i pambuluar.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Figurë</string>
@@ -2964,5 +2964,8 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="vault_unlock_confirm_message">Një version i mëparshëm e ruajti këtë kasafortë pa fjalëkalimin e saj. Shkruaje fjalëkalimin edhe një herë. Pastaj Zerion e mbron sërish kasafortën me të.</string>
 	<string name="vault_unlock_entries_differ">Dy shkrimet nuk janë të njëjta. Fillo nga e para.</string>
 	<string name="vault_unlock_not_confirmed">Zerion nuk mundi ta konfirmojë kasafortën në hapësirën e ruajtjes. Provo sërish.</string>
+	<string name="vault_unlock_new_password_title">Zgjidh një fjalëkalim të ri për kasafortën</string>
+	<string name="vault_unlock_new_password_message">Zerion nuk mund ta mbrojë më këtë kasafortë me fjalëkalimin e saj të tanishëm, për shembull sepse përbëhet vetëm nga emoji. Zgjidh një fjalëkalim të ri me të paktën 8 shkronja, shifra ose simbole dhe shkruaje dy herë.</string>
+	<string name="vault_unlock_new_password_again">Shkruaje fjalëkalimin e ri edhe një herë. Pastaj Zerion e mbron kasafortën me të.</string>
 	<string name="vault_password_rule">Përdor të paktën 8 shkronja, shifra ose simbole. Emoji-t nuk llogariten.</string>
 </resources>

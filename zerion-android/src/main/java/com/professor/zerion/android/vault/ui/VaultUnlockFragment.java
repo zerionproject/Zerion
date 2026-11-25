@@ -147,7 +147,9 @@ public class VaultUnlockFragment extends BaseFragment {
 		});
 
 		viewModel.getUnlockConfirmation().observe(getViewLifecycleOwner(),
-				this::showConfirmation);
+				asked -> showConfirmation());
+		viewModel.getUnlockNewPassword().observe(getViewLifecycleOwner(),
+				asked -> showConfirmation());
 
 		viewModel.getVaultState().observe(getViewLifecycleOwner(), state -> {
 			if (state == VaultViewModel.VaultState.UNLOCKED) {
@@ -167,14 +169,25 @@ public class VaultUnlockFragment extends BaseFragment {
 		});
 	}
 
-	private void showConfirmation(@Nullable Boolean asked) {
-		boolean confirming = asked != null && asked;
-		titleText.setText(confirming ? R.string.vault_unlock_confirm_title
+	private void showConfirmation() {
+		boolean confirming = Boolean.TRUE.equals(
+				viewModel.getUnlockConfirmation().getValue());
+		boolean choosing = Boolean.TRUE.equals(
+				viewModel.getUnlockNewPassword().getValue());
+		String shownTitle = titleText.getText().toString();
+		String shownMessage = subtitleText.getText().toString();
+		titleText.setText(choosing ? R.string.vault_unlock_new_password_title
+				: confirming ? R.string.vault_unlock_confirm_title
 				: R.string.vault_unlock_title);
-		subtitleText.setText(confirming
-				? R.string.vault_unlock_confirm_message
+		subtitleText.setText(choosing && confirming
+				? R.string.vault_unlock_new_password_again
+				: choosing ? R.string.vault_unlock_new_password_message
+				: confirming ? R.string.vault_unlock_confirm_message
 				: R.string.vault_unlock_subtitle);
-		if (confirming) {
+		boolean newTitle = !shownTitle.equals(titleText.getText().toString());
+		boolean newMessage =
+				!shownMessage.equals(subtitleText.getText().toString());
+		if (newMessage && (confirming || (choosing && newTitle))) {
 			passwordInput.clearPassword();
 			passwordLayout.setError(null);
 			passwordInput.requestFocus();

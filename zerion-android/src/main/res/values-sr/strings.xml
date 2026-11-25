@@ -1180,6 +1180,7 @@
 	<string name="grouptr_error_save">Nije moguće sačuvati podešavanje.</string>
 	<string name="grouptr_error_respond">Nije moguće odgovoriti na pozivnicu.</string>
 	<string name="grouptr_post_too_long">Poruka je preduga.</string>
+	<string name="grouptr_post_too_large">Ovo je preveliko za slanje grupi. Ograničenje je oko 1 MB.</string>
 	<string name="settings_save_failed">Nije moguće sačuvati podešavanje.</string>
 	<string name="grouptr_open">Otvori</string>
 	<string name="grouptr_input_hint">Poruka</string>
@@ -1240,7 +1241,6 @@
 	<string name="grouptr_voice_play_failed">Nije moguće pustiti glasovnu poruku.</string>
 	<string name="grouptr_attach_picker_failed">Nije moguće otvoriti birač.</string>
 	<string name="grouptr_attach_read_failed">Nije moguće pročitati sliku.</string>
-	<string name="grouptr_attach_video_too_large">Video je prevelik (najviše 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Nepodržana vrsta datoteke.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Slika</string>
@@ -2946,5 +2946,8 @@
 	<string name="vault_unlock_confirm_message">Ranija verzija je sačuvala ovaj sef bez njegove lozinke. Upiši lozinku još jednom. Zerion će zatim ponovo zaštititi sef njom.</string>
 	<string name="vault_unlock_entries_differ">Dva unosa nisu ista. Počni ponovo.</string>
 	<string name="vault_unlock_not_confirmed">Zerion nije mogao da potvrdi sef u skladištu. Pokušaj ponovo.</string>
+	<string name="vault_unlock_new_password_title">Izaberi novu lozinku sefa</string>
+	<string name="vault_unlock_new_password_message">Zerion više ne može da zaštiti ovaj sef njegovom trenutnom lozinkom, na primer zato što se sastoji samo od emodžija. Izaberi novu lozinku od najmanje 8 slova, cifara ili simbola i upiši je dvaput.</string>
+	<string name="vault_unlock_new_password_again">Upiši novu lozinku još jednom. Zerion će zatim zaštititi sef njom.</string>
 	<string name="vault_password_rule">Koristi najmanje 8 slova, cifara ili simbola. Emodži se ne računaju.</string>
 </resources>

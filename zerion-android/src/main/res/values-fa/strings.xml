@@ -1251,6 +1251,7 @@
 	<string name="grouptr_error_save">ذخیره تنظیم ممکن نشد.</string>
 	<string name="grouptr_error_respond">پاسخ به دعوت ممکن نشد.</string>
 	<string name="grouptr_post_too_long">پیام بیش از حد طولانی است.</string>
+	<string name="grouptr_post_too_large">این برای ارسال به گروه بیش از حد بزرگ است. محدودیت حدود ۱ مگابایت است.</string>
 	<string name="settings_save_failed">ذخیره تنظیم ممکن نشد.</string>
 	<string name="grouptr_open">باز کردن</string>
 	<string name="grouptr_input_hint">پیام</string>
@@ -1310,7 +1311,6 @@
 	<string name="grouptr_voice_play_failed">پخش پیام صوتی ممکن نشد.</string>
 	<string name="grouptr_attach_picker_failed">باز کردن انتخابگر ممکن نشد.</string>
 	<string name="grouptr_attach_read_failed">خواندن تصویر ممکن نشد.</string>
-	<string name="grouptr_attach_video_too_large">ویدیو بیش از حد بزرگ است (حداکثر ۸ MB).</string>
 	<string name="grouptr_attach_unknown_type">نوع فایل پشتیبانی نمی‌شود.</string>
 	<string name="grouptr_video">ویدیو</string>
 	<string name="grouptr_image">تصویر</string>
@@ -2967,5 +2967,8 @@
 	<string name="vault_unlock_confirm_message">نسخهٔ قبلی این گاوصندوق را بدون رمز عبورش ذخیره کرده است. رمز عبور خود را یک بار دیگر وارد کنید. سپس Zerion دوباره با همان رمز از گاوصندوق محافظت می‌کند.</string>
 	<string name="vault_unlock_entries_differ">دو ورودی یکسان نیستند. دوباره شروع کنید.</string>
 	<string name="vault_unlock_not_confirmed">Zerion نتوانست ذخیره شدن گاوصندوق را در حافظه تأیید کند. دوباره تلاش کنید.</string>
+	<string name="vault_unlock_new_password_title">یک رمز عبور جدید برای گاوصندوق انتخاب کنید</string>
+	<string name="vault_unlock_new_password_message">Zerion دیگر نمی‌تواند با رمز عبور فعلی از این گاوصندوق محافظت کند، برای مثال چون فقط از ایموجی تشکیل شده است. یک رمز عبور جدید با دست‌کم 8 حرف، رقم یا نماد انتخاب کنید و آن را دو بار وارد کنید.</string>
+	<string name="vault_unlock_new_password_again">رمز عبور جدید را یک بار دیگر وارد کنید. سپس Zerion با همان رمز از گاوصندوق محافظت می‌کند.</string>
 	<string name="vault_password_rule">دست‌کم از ۸ حرف، رقم یا نماد استفاده کنید. ایموجی‌ها شمرده نمی‌شوند.</string>
 </resources>

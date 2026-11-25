@@ -101,7 +101,7 @@ public class NotificationQuickReplyReceiverTest {
 		lockManager.setLocked(false);
 		StringBuilder text = new StringBuilder();
 		while (text.length() <= org.zerionproject.app.api.messaging
-				.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH) {
+				.MessagingConstants.MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH) {
 			text.append("abcdefghij");
 		}
 		android.app.NotificationManager nm =

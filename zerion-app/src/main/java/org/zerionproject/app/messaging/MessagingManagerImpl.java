@@ -43,6 +43,7 @@ import org.zerionproject.app.api.attachment.Attachment;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.zerionproject.app.api.attachment.AttachmentNotYetAvailableException;
 import org.zerionproject.app.api.attachment.FileTooBigException;
+import org.zerionproject.app.api.messaging.MessageTooLargeException;
 import org.zerionproject.app.api.autodelete.AutoDeleteManager;
 import org.zerionproject.app.api.autodelete.event.ConversationMessagesDeletedEvent;
 import org.zerionproject.app.api.client.MessageTracker;
@@ -99,7 +100,9 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.zerionproject.core.api.client.ContactGroupConstants.GROUP_KEY_CONTACT_ID;
 import static org.zerionproject.core.api.data.BdfDictionary.NULL_VALUE;
-import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH;
+import static org.zerionproject.core.util.StringUtils.utf8IsTooLong;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH;
 import static org.zerionproject.core.api.sync.validation.IncomingMessageHook.DeliveryAction.ACCEPT_DO_NOT_SHARE;
 import static org.zerionproject.core.util.IoUtils.copyAndClose;
 import static org.zerionproject.app.api.attachment.MediaConstants.MSG_KEY_CONTENT_TYPE;
@@ -770,6 +773,10 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 
 	private void addLocalMessage(Transaction txn, PrivateMessage m,
 			boolean shared, boolean mesh) throws DbException {
+		if (m.getMessage().getBody().length
+				> MAX_DELIVERABLE_MESSAGE_BODY_LENGTH) {
+			throw new MessageTooLargeException();
+		}
 		try {
 			long timer = m.getAutoDeleteTimer();
 			BdfDictionary meta = new BdfDictionary();
@@ -1355,7 +1362,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				clientHelper.toByteArray(BdfList.of(ATTACHMENT, contentType));
 		bodyOut.write(descriptor);
 		copyAndClose(in, bodyOut);
-		if (bodyOut.size() > MAX_MESSAGE_BODY_LENGTH)
+		if (bodyOut.size() > MAX_DELIVERABLE_MESSAGE_BODY_LENGTH)
 			throw new FileTooBigException();
 		byte[] body = bodyOut.toByteArray();
 		BdfDictionary meta = new BdfDictionary();
@@ -2759,7 +2766,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					return EditResult.NOT_EDITABLE;
 				}
 				if (!isEditableTarget(txn, target, t, true)
-						|| !MessageEdits.isEditableText(text)) {
+						|| !MessageEdits.isEditableText(text)
+						|| utf8IsTooLong(text,
+								MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH)) {
 					return EditResult.NOT_EDITABLE;
 				}
 				long sentAt = t.getLong(MSG_KEY_TIMESTAMP);

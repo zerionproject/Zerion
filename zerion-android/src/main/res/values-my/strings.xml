@@ -1224,6 +1224,7 @@
 	<string name="grouptr_error_save">ဆက်တင်ကို သိမ်း၍ မရပါ။</string>
 	<string name="grouptr_error_respond">ဖိတ်ကြားချက်ကို တုံ့ပြန်၍ မရပါ။</string>
 	<string name="grouptr_post_too_long">မက်ဆေ့ချ် ရှည်လွန်းသည်။</string>
+	<string name="grouptr_post_too_large">ဤအရာသည် အဖွဲ့သို့ ပို့ရန် ကြီးလွန်းသည်။ ကန့်သတ်ချက်မှာ ခန့်မှန်းခြေ 1 MB ဖြစ်သည်။</string>
 	<string name="settings_save_failed">ဆက်တင်ကို သိမ်း၍ မရပါ။</string>
 	<string name="grouptr_open">ဖွင့်မည်</string>
 	<string name="grouptr_input_hint">မက်ဆေ့ချ်</string>
@@ -1282,7 +1283,6 @@
 	<string name="grouptr_voice_play_failed">အသံ မှတ်စုကို ဖွင့်၍ မရပါ။</string>
 	<string name="grouptr_attach_picker_failed">ဖိုင်ရွေးချယ်ရေး စခရင်ကို ဖွင့်၍ မရပါ။</string>
 	<string name="grouptr_attach_read_failed">ရုပ်ပုံကို ဖတ်၍ မရပါ။</string>
-	<string name="grouptr_attach_video_too_large">ဗီဒီယို ကြီးလွန်းသည် (အများဆုံး 8 MB)။</string>
 	<string name="grouptr_attach_unknown_type">ပံ့ပိုးမထားသော ဖိုင်အမျိုးအစား။</string>
 	<string name="grouptr_video">ဗီဒီယို</string>
 	<string name="grouptr_image">ရုပ်ပုံ</string>
@@ -2920,5 +2920,8 @@
 	<string name="vault_unlock_confirm_message">ယခင်ဗားရှင်းတစ်ခုက ဤလုံခြုံသေတ္တာကို စကားဝှက်မပါဘဲ သိမ်းခဲ့သည်။ သင့်စကားဝှက်ကို နောက်တစ်ကြိမ် ထပ်ရိုက်ပါ။ ထို့နောက် Zerion က လုံခြုံသေတ္တာကို ထိုစကားဝှက်ဖြင့် ပြန်လည်ကာကွယ်ပါမည်။</string>
 	<string name="vault_unlock_entries_differ">ရိုက်ထည့်မှု နှစ်ခု မတူပါ။ အစမှ ပြန်စပါ။</string>
 	<string name="vault_unlock_not_confirmed">Zerion သည် သိုလှောင်မှုတွင် လုံခြုံသေတ္တာကို အတည်မပြုနိုင်ပါ။ ထပ်ကြိုးစားပါ။</string>
+	<string name="vault_unlock_new_password_title">လုံခြုံသေတ္တာအတွက် စကားဝှက်အသစ် ရွေးပါ</string>
+	<string name="vault_unlock_new_password_message">Zerion သည် ဤလုံခြုံသေတ္တာကို လက်ရှိစကားဝှက်ဖြင့် ဆက်၍ မကာကွယ်နိုင်တော့ပါ။ ဥပမာ စကားဝှက်တွင် အီမိုဂျီများသာ ပါဝင်သောကြောင့် ဖြစ်နိုင်သည်။ အနည်းဆုံး စာလုံး၊ ဂဏန်း သို့မဟုတ် သင်္ကေတ 8 လုံးပါသော စကားဝှက်အသစ်ကို ရွေးပြီး နှစ်ကြိမ် ရိုက်ထည့်ပါ။</string>
+	<string name="vault_unlock_new_password_again">စကားဝှက်အသစ်ကို နောက်တစ်ကြိမ် ထပ်ရိုက်ပါ။ ထို့နောက် Zerion က လုံခြုံသေတ္တာကို ထိုစကားဝှက်ဖြင့် ကာကွယ်ပါမည်။</string>
 	<string name="vault_password_rule">အနည်းဆုံး စာလုံး၊ ဂဏန်း သို့မဟုတ် သင်္ကေတ 8 လုံး သုံးပါ။ အီမိုဂျီများကို ထည့်မတွက်ပါ။</string>
 </resources>
