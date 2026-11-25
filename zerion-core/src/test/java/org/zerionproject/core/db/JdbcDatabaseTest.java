@@ -2138,7 +2138,7 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
-	public void testRequestedMessageThatCanNeverFitOneRecordIsAlwaysReturned()
+	public void testRequestedMessagesThatCanNeverFitOneRecordAreListed()
 			throws Exception {
 		Database<Connection> db = open(false);
 		Connection txn = db.startTransaction();
@@ -2162,8 +2162,14 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 		db.raiseRequestedFlag(txn, contactId, fits.getId());
 
 		assertEquals(singletonList(old.getId()),
-				db.getRequestedMessagesToSend(txn, contactId, 1_000,
+				db.getRequestedMessagesLongerThan(txn, contactId,
+						MAX_ONE_RECORD_MESSAGE_LENGTH));
+		assertEquals(singletonList(fits.getId()),
+				db.getRequestedMessagesToSend(txn, contactId, 10_000,
 						MAX_LATENCY));
+		db.lowerRequestedFlag(txn, contactId, singletonList(old.getId()));
+		assertEquals(emptyList(), db.getRequestedMessagesLongerThan(txn,
+				contactId, MAX_ONE_RECORD_MESSAGE_LENGTH));
 
 		db.commitTransaction(txn);
 		db.close();

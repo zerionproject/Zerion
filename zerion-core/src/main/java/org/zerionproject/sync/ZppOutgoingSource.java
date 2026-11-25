@@ -46,6 +46,7 @@ import static org.zerionproject.core.api.record.Record.RECORD_HEADER_BYTES;
 import static org.zerionproject.core.api.sync.Group.Visibility.SHARED;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_IDS;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_LENGTH;
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH;
 import static org.zerionproject.sync.ZppSendScheduler.RANK_AUTOMATIC;
 import static org.zerionproject.sync.ZppSendScheduler.RANK_REPLY;
 import static org.zerionproject.sync.ZppSendScheduler.RANK_USER;
@@ -415,6 +416,7 @@ public class ZppOutgoingSource implements EventListener {
 	private boolean enqueueMessage(Message m, boolean userOriginated)
 			throws IOException {
 		MessageId id = m.getId();
+		if (m.getRawLength() > MAX_ONE_RECORD_MESSAGE_LENGTH) return false;
 		try {
 			byte[] record = codec.encodeMessage(m);
 			if (record.length > ZmmConstants.MAX_RECORD_BYTES) return false;

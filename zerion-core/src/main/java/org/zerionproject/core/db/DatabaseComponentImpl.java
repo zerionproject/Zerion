@@ -94,6 +94,7 @@ import javax.inject.Inject;
 import static java.util.Collections.singletonList;
 import static org.zerionproject.core.api.sync.Group.Visibility.INVISIBLE;
 import static org.zerionproject.core.api.sync.Group.Visibility.SHARED;
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH;
 import static org.zerionproject.core.api.sync.validation.MessageState.DELIVERED;
 import static org.zerionproject.core.api.sync.validation.MessageState.UNKNOWN;
 import static org.zerionproject.core.db.DatabaseConstants.MAX_OFFERED_MESSAGES;
@@ -553,6 +554,12 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		T txn = unbox(transaction);
 		if (!db.containsContact(txn, c))
 			throw new NoSuchContactException();
+		Collection<MessageId> neverFit = db.getRequestedMessagesLongerThan(txn,
+				c, MAX_ONE_RECORD_MESSAGE_LENGTH);
+		if (!neverFit.isEmpty()) {
+			for (MessageId m : neverFit) db.setMessageShared(txn, m, false);
+			db.lowerRequestedFlag(txn, c, neverFit);
+		}
 		Collection<MessageId> ids =
 				db.getRequestedMessagesToSend(txn, c, capacity, maxLatency);
 		if (ids.isEmpty()) return null;
