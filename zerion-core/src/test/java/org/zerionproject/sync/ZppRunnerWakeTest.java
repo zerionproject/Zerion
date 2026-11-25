@@ -532,6 +532,47 @@ public class ZppRunnerWakeTest {
 	}
 
 	@Test(timeout = 60_000)
+	public void onADenseLinkOnlyUserRecordsCarryTheFastRatePastTheWindow()
+			throws Exception {
+		ScriptedConnection conn = connection();
+		AtomicReference<ZppSendScheduler> opened = new AtomicReference<>();
+		ZppConnectionRunnerImpl runner = new ZppConnectionRunnerImpl(records,
+				capturing(opened), stepPacing(true), now::get, sink);
+		Thread t = run(runner, conn);
+		try {
+			await(() -> conn.sent.size() == 1, "the link parameters frame");
+			conn.deliver(ZmmRecord.encode(ZmmConstants.TYPE_LINK_PARAMS,
+					ZppLinkParams.encode(true)));
+			await(() -> opened.get() != null, "the outgoing source");
+			ZppSendScheduler scheduler = opened.get();
+			await(scheduler::isRanked, "the paced order");
+			scheduler.enqueueRecord(text(1), true, false,
+					ZppSendScheduler.RANK_USER, false, null);
+			scheduler.enqueueRecord(text(2), true, false,
+					ZppSendScheduler.RANK_USER, false, null);
+			scheduler.enqueueRecord(text(3), false, false,
+					ZppSendScheduler.RANK_AUTOMATIC, false, null);
+
+			now.addAndGet(61_000L);
+			await(() -> count("sent-real") == 2, "a user record");
+			now.addAndGet(STEP_BETWEEN_MS);
+			await(() -> count("sent-real") == 3,
+					"the next user record at the active spacing");
+			now.addAndGet(STEP_BETWEEN_MS);
+			holds(() -> count("sent-real") == 3, STEP_SETTLE_MS,
+					"a queued reply does not carry the fast rate on");
+			now.addAndGet(STEP_IDLE_MAX_MS);
+			await(() -> count("sent-real") == 4, "the reply at an idle slot");
+			assertEquals(3, ZmmRecord.getPayload(conn.sent.get(
+					conn.sent.size() - 1))[0]);
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+	}
+
+	@Test(timeout = 60_000)
 	public void onADenseLinkAReceiptOpensTheWindowOnlyWithTheSharedRation()
 			throws Exception {
 		ScriptedConnection conn = connection();

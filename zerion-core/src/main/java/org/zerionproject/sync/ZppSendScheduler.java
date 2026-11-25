@@ -1,6 +1,8 @@
 package org.zerionproject.sync;
 
 import org.briarproject.nullsafety.NotNullByDefault;
+import org.zerionproject.core.util.ByteUtils;
+import org.zerionproject.message.ZmmConstants;
 import org.zerionproject.message.ZmmRecord;
 
 import java.io.IOException;
@@ -39,6 +41,8 @@ public class ZppSendScheduler {
 		final boolean userOriginated;
 		final boolean opensWindow;
 		final int rank;
+		final long fragmentOf;
+		final boolean lastFragment;
 		@javax.annotation.Nullable
 		final Runnable onSent;
 
@@ -52,6 +56,16 @@ public class ZppSendScheduler {
 			this.opensWindow = opensWindow;
 			this.rank = rank;
 			this.onSent = onSent;
+			if (record != null && record.length >= 12
+					&& ZmmRecord.getType(record)
+					== ZmmConstants.TYPE_FRAGMENT) {
+				fragmentOf = ByteUtils.readUint32(record, 4);
+				lastFragment = ByteUtils.readUint16(record, 8) + 1
+						>= ByteUtils.readUint16(record, 10);
+			} else {
+				fragmentOf = -1L;
+				lastFragment = true;
+			}
 		}
 
 		@javax.annotation.Nullable
@@ -71,7 +85,8 @@ public class ZppSendScheduler {
 	private final AtomicLong coverFrames = new AtomicLong();
 	private final AtomicInteger userQueued = new AtomicInteger();
 	private volatile boolean ranked = false;
-	private volatile BooleanSupplier userWaiting = () -> false;
+	@javax.annotation.Nullable
+	private Entry started;
 	private volatile boolean lastRealUserOriginated = false;
 	private volatile boolean lastRealOpenedWindow = false;
 
@@ -101,13 +116,12 @@ public class ZppSendScheduler {
 		return ranked;
 	}
 
-	public void setUserWaiting(BooleanSupplier userWaiting) {
-		this.userWaiting = userWaiting;
+	public int getUserDepth() {
+		return userQueued.get();
 	}
 
-	public int getUrgentDepth() {
-		int depth = control.size() + userQueued.get();
-		return userWaiting.getAsBoolean() ? depth + 1 : depth;
+	public int getControlDepth() {
+		return control.size();
 	}
 
 	public void enqueueControl(byte[] record) {
@@ -229,9 +243,23 @@ public class ZppSendScheduler {
 			outgoing.remove(first);
 			return first;
 		}
-		first = firstByRank(bulk);
-		if (first != null) bulk.remove(first);
+		first = nextOfStarted();
+		if (first == null) first = firstByRank(bulk);
+		if (first == null) return null;
+		bulk.remove(first);
+		started = first.lastFragment ? null : first;
 		return first;
+	}
+
+	@javax.annotation.Nullable
+	private Entry nextOfStarted() {
+		Entry from = started;
+		if (from == null) return null;
+		for (Entry e : bulk) {
+			if (e.fragmentOf == from.fragmentOf) return e;
+		}
+		started = null;
+		return null;
 	}
 
 	@javax.annotation.Nullable

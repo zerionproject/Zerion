@@ -334,6 +334,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			AtomicBoolean echoDue,
 			@Nullable ZtpReadTimeoutControl readTimeout) {
 		long lastSentAt = NEVER;
+		DensePace pace = new DensePace();
 		Boolean announced = null;
 		boolean timeoutRaised = false;
 		try {
@@ -372,8 +373,9 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 							scheduler.lastRealFrameOpenedWindow(), sentAt);
 					noteMarkedSend(gate, realSent,
 							scheduler.lastRealFrameWasUserOriginated());
-					boolean active = isActive(scheduler.getUrgentDepth(),
-							clock.lastRealMs, sentAt, pacing.idleAfterMs());
+					boolean active = pace.next(scheduler.getUserDepth(),
+							scheduler.getControlDepth(), clock.lastRealMs,
+							sentAt, pacing.idleAfterMs());
 					long activeDelay = computeInterval(pacing.activeIntervalMs(),
 							pacing.activeIntervalMs() / JITTER_DIVISOR, random);
 					long delay = active ? activeDelay
@@ -436,6 +438,18 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	static void noteMarkedSend(ReceiveActivityGate gate, boolean realSent,
 			boolean userOriginated) {
 		if (realSent && userOriginated) gate.noteLocalSend();
+	}
+
+	static final class DensePace {
+
+		private boolean sustained = false;
+
+		boolean next(int userDepth, int controlDepth, long lastRealMs,
+				long now, long idleAfterMs) {
+			boolean inWindow = isActive(0, lastRealMs, now, idleAfterMs);
+			sustained = inWindow || (sustained && userDepth > 0);
+			return sustained || controlDepth > 0;
+		}
 	}
 
 	static final class LinkState {
