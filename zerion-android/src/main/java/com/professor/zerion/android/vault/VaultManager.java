@@ -799,6 +799,10 @@ public class VaultManager
 		return lockRequests.get();
 	}
 
+	public void cancelUnlockPending() {
+		pendingUnlocks.decrementAndGet();
+	}
+
 	public boolean isUnlockInProgress() {
 		return unlockRunning || pendingUnlocks.get() > 0;
 	}

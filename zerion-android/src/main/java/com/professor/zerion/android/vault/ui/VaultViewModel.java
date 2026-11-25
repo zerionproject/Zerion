@@ -1835,8 +1835,16 @@ public class VaultViewModel extends AndroidViewModel {
 				Arrays.fill(firstUnlockEntry, '\0');
 				firstUnlockEntry = null;
 			}
+			unlockConfirmation.postValue(false);
 		}
-		unlockConfirmation.postValue(false);
+	}
+
+	private void showUnlockConfirmation(boolean asked, long epoch) {
+		synchronized (unlockConfirmationLock) {
+			unlockConfirmation.postValue(asked
+					&& unlockConfirmationEpoch == epoch
+					&& firstUnlockEntry != null);
+		}
 	}
 
 	private boolean keepFirstUnlockEntry(char[] entry, long epoch) {
@@ -1861,59 +1869,72 @@ public class VaultViewModel extends AndroidViewModel {
 			epoch = unlockConfirmationEpoch;
 		}
 
-		dbExecutor.execute(() -> {
-			boolean confirmNeeded = false;
-			try {
-				VaultManager.UnlockResult result = firstEntry == null
-						? vaultManager.unlock(password, pendingMark)
-						: vaultManager.confirmAndUnlock(firstEntry, password,
-								pendingMark);
-				if (result == VaultManager.UnlockResult.OPENED) {
-					if (vaultManager.isUnlocked()) {
-						errorMessage.postValue(null);
-						vaultState.postValue(VaultState.UNLOCKED);
-						loadVaultItems();
-					} else {
-						vaultState.postValue(VaultState.LOCKED);
-					}
-				} else if (result
-						== VaultManager.UnlockResult.CONFIRM_NEEDED) {
-					confirmNeeded = keepFirstUnlockEntry(password, epoch);
+		try {
+			dbExecutor.execute(() -> unlockNow(password, firstEntry,
+					pendingMark, epoch));
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+			Arrays.fill(password, '\0');
+			if (firstEntry != null) Arrays.fill(firstEntry, '\0');
+			vaultManager.cancelUnlockPending();
+			errorMessage.postValue(text(R.string.vault_msg_unlock_failed));
+			showUnlockConfirmation(false, epoch);
+			isLoading.postValue(false);
+		}
+	}
+
+	private void unlockNow(char[] password, @Nullable char[] firstEntry,
+			long pendingMark, long epoch) {
+		boolean confirmNeeded = false;
+		try {
+			VaultManager.UnlockResult result = firstEntry == null
+					? vaultManager.unlock(password, pendingMark)
+					: vaultManager.confirmAndUnlock(firstEntry, password,
+							pendingMark);
+			if (result == VaultManager.UnlockResult.OPENED) {
+				if (vaultManager.isUnlocked()) {
 					errorMessage.postValue(null);
-				} else if (result
-						== VaultManager.UnlockResult.ENTRIES_DIFFER) {
-					errorMessage.postValue(
-							text(R.string.vault_unlock_entries_differ));
-				} else if (result == VaultManager.UnlockResult
-						.NOT_CONFIRMED_ON_STORAGE) {
-					errorMessage.postValue(
-							text(R.string.vault_unlock_not_confirmed));
-				} else if (result == VaultManager.UnlockResult
-						.NEW_PASSWORD_REFUSED) {
-					errorMessage.postValue(
-							text(R.string.vault_password_rule));
+					vaultState.postValue(VaultState.UNLOCKED);
+					loadVaultItems();
 				} else {
-					errorMessage.postValue(text(R.string.vault_unlock_failed));
+					vaultState.postValue(VaultState.LOCKED);
 				}
-			} catch (SecurityException e) {
-				String m = e.getMessage();
-				errorMessage.postValue(m != null
-						&& m.startsWith(VaultManager.TOO_MANY_ATTEMPTS)
-						? text(R.string.vault_msg_too_many_attempts)
-						: text(R.string.vault_unlock_failed));
-			} catch (com.professor.zerion.android.vault.crypto.Argon2
-					.NativeRequiredException e) {
+			} else if (result
+					== VaultManager.UnlockResult.CONFIRM_NEEDED) {
+				confirmNeeded = keepFirstUnlockEntry(password, epoch);
+				errorMessage.postValue(null);
+			} else if (result
+					== VaultManager.UnlockResult.ENTRIES_DIFFER) {
 				errorMessage.postValue(
-						text(R.string.vault_msg_unlock_needs_native));
-			} catch (Exception e) {
-				errorMessage.postValue(text(R.string.vault_msg_unlock_failed));
-			} finally{
-				Arrays.fill(password, '\0');
-				if (firstEntry != null) Arrays.fill(firstEntry, '\0');
-				unlockConfirmation.postValue(confirmNeeded);
-				isLoading.postValue(false);
+						text(R.string.vault_unlock_entries_differ));
+			} else if (result == VaultManager.UnlockResult
+					.NOT_CONFIRMED_ON_STORAGE) {
+				errorMessage.postValue(
+						text(R.string.vault_unlock_not_confirmed));
+			} else if (result == VaultManager.UnlockResult
+					.NEW_PASSWORD_REFUSED) {
+				errorMessage.postValue(
+						text(R.string.vault_password_rule));
+			} else {
+				errorMessage.postValue(text(R.string.vault_unlock_failed));
 			}
-		});
+		} catch (SecurityException e) {
+			String m = e.getMessage();
+			errorMessage.postValue(m != null
+					&& m.startsWith(VaultManager.TOO_MANY_ATTEMPTS)
+					? text(R.string.vault_msg_too_many_attempts)
+					: text(R.string.vault_unlock_failed));
+		} catch (com.professor.zerion.android.vault.crypto.Argon2
+				.NativeRequiredException e) {
+			errorMessage.postValue(
+					text(R.string.vault_msg_unlock_needs_native));
+		} catch (Exception e) {
+			errorMessage.postValue(text(R.string.vault_msg_unlock_failed));
+		} finally{
+			Arrays.fill(password, '\0');
+			if (firstEntry != null) Arrays.fill(firstEntry, '\0');
+			showUnlockConfirmation(confirmNeeded, epoch);
+			isLoading.postValue(false);
+		}
 	}
 
 	@Nullable
