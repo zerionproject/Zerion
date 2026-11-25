@@ -238,21 +238,25 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 			peerDials.remove(cid.getInt());
 			return;
 		}
-		Boolean alice = computeAlice(cid);
-		if (alice == null) {
-			return;
-		}
-		if (alice) peerDials.remove(cid.getInt());
-		else peerDials.add(cid.getInt());
 		Map<Long, SecretKey> tagKeys = new LinkedHashMap<>();
-		long[] epochs = {keys.getEpoch(), keys.getPendingEpoch()};
-		for (long e : epochs) {
-			SecretKey root = keys.getKey(e);
-			if (root != null) {
-				tagKeys.put(e, sessionFactory.deriveRecvTagKey(root, e, alice));
+		try {
+			Boolean alice = computeAlice(cid);
+			if (alice == null) {
+				return;
 			}
+			if (alice) peerDials.remove(cid.getInt());
+			else peerDials.add(cid.getInt());
+			long[] epochs = {keys.getEpoch(), keys.getPendingEpoch()};
+			for (long e : epochs) {
+				SecretKey root = keys.getKey(e);
+				if (root != null) {
+					tagKeys.put(e,
+							sessionFactory.deriveRecvTagKey(root, e, alice));
+				}
+			}
+		} finally {
+			keys.clear();
 		}
-		keys.clear();
 		long recvHighWater = counter.currentRecvHighWater(cid.getInt());
 		recogniser.register(cid.getInt(), tagKeys, recvHighWater);
 	}
