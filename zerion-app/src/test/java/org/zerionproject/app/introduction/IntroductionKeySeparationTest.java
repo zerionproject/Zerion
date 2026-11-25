@@ -47,7 +47,9 @@ import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_PRE_MASTER_KEY;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ROOT_KEY_V2;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_SHARED_SECRET_V2;
+import static org.zerionproject.app.introduction.IntroduceeState.AWAIT_ACTIVATE;
 import static org.zerionproject.app.introduction.IntroduceeState.AWAIT_AUTH;
+import static org.zerionproject.app.introduction.IntroduceeState.REMOTE_ACCEPTED;
 import static org.zerionproject.app.introduction.IntroduceeState.START;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_MASTER_KEY;
 import static org.zerionproject.app.introduction.KeySchedule.ANNOUNCEMENT_ID;
@@ -673,6 +675,86 @@ public class IntroductionKeySeparationTest extends BrambleTestCase {
 		for (Party p : net.parties()) {
 			assertSeparated(p);
 			assertTrue(announces(only(p.sent(ACCEPT))));
+		}
+	}
+
+	@Test
+	public void aSessionStoredByTheEarlierCodeBeforeTheActivateCompletesAsItBegan()
+			throws Exception {
+		for (boolean bothUpdate : new boolean[] {true, false}) {
+			IntroductionTestNet net = net(EARLIER_VERSION, EARLIER_VERSION);
+			List<Party> updated = new ArrayList<>();
+			net.setHook((to, type) -> {
+				if (to == null || type != ACTIVATE) return;
+				if (!bothUpdate && to != net.bob()) return;
+				if (updated.contains(to)) return;
+				IntroduceeSession s = to.session();
+				assertNotNull(s);
+				assertEquals(AWAIT_ACTIVATE, s.getState());
+				assertNotNull(s.getLocal().macKey);
+				assertNotNull(s.getRemote().macKey);
+				to.setKeyScheduleVersion(CURRENT_VERSION);
+				updated.add(to);
+			});
+			net.introduceAndAccept(net.alice());
+			assertEquals(bothUpdate ? 2 : 1, updated.size());
+			assertCompleted(net);
+			for (Party p : net.parties()) {
+				assertEarlier(p);
+				assertFalse(announces(only(p.sent(ACCEPT))));
+			}
+		}
+	}
+
+	@Test
+	public void aRemoteAcceptStoredBeforeTheUpdateGivesTheSeparatedForm()
+			throws Exception {
+		for (boolean earlierIsAlice : new boolean[] {true, false}) {
+			IntroductionTestNet net = net(
+					earlierIsAlice ? EARLIER_VERSION : CURRENT_VERSION,
+					earlierIsAlice ? CURRENT_VERSION : EARLIER_VERSION);
+			Party updating = earlierIsAlice ? net.alice() : net.bob();
+			Party current = net.other(updating);
+			net.introduce();
+			current.accept();
+			net.run();
+			IntroduceeSession stored = updating.session();
+			assertNotNull(stored);
+			assertEquals(REMOTE_ACCEPTED, stored.getState());
+			updating.setKeyScheduleVersion(CURRENT_VERSION);
+			updating.accept();
+			net.run();
+			assertCompleted(net);
+			for (Party p : net.parties()) {
+				assertSeparated(p);
+				assertTrue(announces(only(p.sent(ACCEPT))));
+			}
+		}
+	}
+
+	@Test
+	public void strippingTheAnnouncementTowardAnEarlierIntroduceeFailsTheIntroduction()
+			throws Exception {
+		for (boolean earlierIsAlice : new boolean[] {true, false}) {
+			for (boolean earlierFirst : new boolean[] {true, false}) {
+				IntroductionTestNet net = net(
+						earlierIsAlice ? EARLIER_VERSION : CURRENT_VERSION,
+						earlierIsAlice ? CURRENT_VERSION : EARLIER_VERSION);
+				Party earlier = earlierIsAlice ? net.alice() : net.bob();
+				Party current = net.other(earlier);
+				net.setRewrite((to, properties) -> to == earlier
+						? KeySchedule.withoutAnnouncement(properties)
+						: properties);
+				net.introduceAndAccept(earlierFirst ? earlier : current);
+				assertTrue(announces(only(current.sent(ACCEPT))));
+				assertFalse(announces(only(earlier.received(ACCEPT))));
+				assertFailedWithoutAContact(net);
+				for (Party p : net.parties()) assertEarlier(p);
+				List<Boolean> checks = new ArrayList<>(authMacChecks(earlier));
+				checks.addAll(authMacChecks(current));
+				assertFalse(checks.isEmpty());
+				assertFalse(checks.contains(Boolean.TRUE));
+			}
 		}
 	}
 }
