@@ -271,6 +271,9 @@ interface Database<T> {
 	Collection<MessageId> getRequestedMessagesToSend(T txn, ContactId c,
 			long capacity, long maxLatency) throws DbException;
 
+	Collection<MessageId> getRequestedMessagesLongerThan(T txn, ContactId c,
+			int length) throws DbException;
+
 	Settings getSettings(T txn, String namespace) throws DbException;
 
 	@Nullable
