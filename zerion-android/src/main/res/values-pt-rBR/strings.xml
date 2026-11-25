@@ -3017,4 +3017,9 @@
 		<item quantity="many">%d membros com uma versão mais antiga não veem a mensagem fixada.</item>
 		<item quantity="other">%d membros com uma versão mais antiga não veem a mensagem fixada.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirme a senha do seu cofre</string>
+	<string name="vault_unlock_confirm_message">Uma versão anterior salvou este cofre sem a senha dele. Digite sua senha mais uma vez. Depois disso, o Zerion volta a proteger o cofre com ela.</string>
+	<string name="vault_unlock_entries_differ">As duas entradas não são iguais. Comece de novo.</string>
+	<string name="vault_unlock_not_confirmed">O Zerion não conseguiu confirmar o cofre no armazenamento. Tente novamente.</string>
+	<string name="vault_password_rule">Use pelo menos 8 letras, dígitos ou símbolos. Emojis não contam.</string>
 </resources>

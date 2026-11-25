@@ -2841,4 +2841,9 @@
 	<plurals name="grouptr_pin_kept_older">
 		<item quantity="other">%d ahli pada versi lebih lama tidak melihat mesej yang disematkan.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Sahkan kata laluan bilik kebal anda</string>
+	<string name="vault_unlock_confirm_message">Versi terdahulu telah menyimpan bilik kebal ini tanpa kata laluannya. Taip kata laluan anda sekali lagi. Selepas itu, Zerion melindungi bilik kebal dengannya semula.</string>
+	<string name="vault_unlock_entries_differ">Dua entri itu tidak sama. Mula semula.</string>
+	<string name="vault_unlock_not_confirmed">Zerion tidak dapat mengesahkan bilik kebal dalam storan. Cuba lagi.</string>
+	<string name="vault_password_rule">Gunakan sekurang-kurangnya 8 huruf, digit atau simbol. Emoji tidak dikira.</string>
 </resources>

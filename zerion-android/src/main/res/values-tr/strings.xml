@@ -2963,4 +2963,9 @@
 		<item quantity="one">Eski bir sürümdeki %d üye sabitlenmiş mesajı görmüyor.</item>
 		<item quantity="other">Eski bir sürümdeki %d üye sabitlenmiş mesajı görmüyor.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Kasa parolanızı onaylayın</string>
+	<string name="vault_unlock_confirm_message">Önceki bir sürüm bu kasayı parolası olmadan kaydetti. Parolanızı bir kez daha yazın. Zerion bundan sonra kasayı yeniden bu parolayla korur.</string>
+	<string name="vault_unlock_entries_differ">İki giriş aynı değil. Baştan başlayın.</string>
+	<string name="vault_unlock_not_confirmed">Zerion kasayı depolama alanında doğrulayamadı. Yeniden deneyin.</string>
+	<string name="vault_password_rule">En az 8 harf, rakam veya simge kullanın. Emojiler sayılmaz.</string>
 </resources>

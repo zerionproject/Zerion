@@ -2956,4 +2956,9 @@
 		<item quantity="one">%d meðlimur á eldri útgáfu sér ekki festu skilaboðin.</item>
 		<item quantity="other">%d meðlimir á eldri útgáfu sjá ekki festu skilaboðin.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Staðfestu lykilorð hvelfingarinnar</string>
+	<string name="vault_unlock_confirm_message">Eldri útgáfa vistaði þessa hvelfingu án lykilorðsins. Sláðu lykilorðið þitt inn einu sinni enn. Zerion ver síðan hvelfinguna með því á ný.</string>
+	<string name="vault_unlock_entries_differ">Innslættirnir tveir eru ekki eins. Byrjaðu aftur.</string>
+	<string name="vault_unlock_not_confirmed">Zerion gat ekki staðfest hvelfinguna í gagnageymslu. Reyndu aftur.</string>
+	<string name="vault_password_rule">Notaðu að minnsta kosti 8 bókstafi, tölustafi eða tákn. Emoji teljast ekki með.</string>
 </resources>

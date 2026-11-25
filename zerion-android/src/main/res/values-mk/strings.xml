@@ -2942,4 +2942,9 @@
 		<item quantity="one">%d член со постара верзија не ја гледа закачената порака.</item>
 		<item quantity="other">%d членови со постара верзија не ја гледаат закачената порака.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Потврди ја лозинката за сефот</string>
+	<string name="vault_unlock_confirm_message">Претходна верзија го зачувала овој сеф без неговата лозинка. Внеси ја лозинката уште еднаш. Потоа Zerion повторно ќе го заштити сефот со неа.</string>
+	<string name="vault_unlock_entries_differ">Двата внеса не се исти. Почни одново.</string>
+	<string name="vault_unlock_not_confirmed">Zerion не можеше да го потврди зачувувањето на сефот. Обиди се повторно.</string>
+	<string name="vault_password_rule">Користи најмалку 8 букви, цифри или симболи. Емоџијата не се бројат.</string>
 </resources>

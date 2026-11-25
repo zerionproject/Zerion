@@ -2961,4 +2961,9 @@
 		<item quantity="one">%d medlem på en eldre versjon ser ikke den festede meldingen.</item>
 		<item quantity="other">%d medlemmer på en eldre versjon ser ikke den festede meldingen.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Bekreft passordet til hvelvet</string>
+	<string name="vault_unlock_confirm_message">En tidligere versjon lagret dette hvelvet uten passordet. Skriv inn passordet ditt en gang til. Deretter beskytter Zerion hvelvet med det igjen.</string>
+	<string name="vault_unlock_entries_differ">De to inntastingene er ikke like. Start på nytt.</string>
+	<string name="vault_unlock_not_confirmed">Zerion kunne ikke bekrefte hvelvet på lagringsplassen. Prøv igjen.</string>
+	<string name="vault_password_rule">Bruk minst 8 bokstaver, sifre eller symboler. Emojier teller ikke.</string>
 </resources>

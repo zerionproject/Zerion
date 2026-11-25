@@ -1227,4 +1227,9 @@
 	<string name="link_host_other_alphabet_mark">(letras de otro alfabeto)</string>
 	<string name="vault_msg_saved_earlier_version_kept">Tus cambios se guardaron, pero no se pudo quitar la versión anterior. Puedes eliminarla de la lista.</string>
 	<string name="vault_doc_password_needed_to_save">Este documento está protegido con una contraseña. Introduce esa contraseña para guardar tus cambios.</string>
+	<string name="vault_unlock_confirm_title">Confirma la contraseña de tu baúl</string>
+	<string name="vault_unlock_confirm_message">Una versión anterior guardó este baúl sin su contraseña. Escribe tu contraseña una vez más. Después, Zerion vuelve a proteger el baúl con ella.</string>
+	<string name="vault_unlock_entries_differ">Las dos entradas no son iguales. Empieza de nuevo.</string>
+	<string name="vault_unlock_not_confirmed">Zerion no pudo confirmar el baúl en el almacenamiento. Inténtalo de nuevo.</string>
+	<string name="vault_password_rule">Usa al menos 8 letras, cifras o símbolos. Los emojis no cuentan.</string>
 </resources>

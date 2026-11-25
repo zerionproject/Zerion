@@ -3056,4 +3056,9 @@
 		<item quantity="many">%d člena so staršou verziou nevidí pripnutú správu.</item>
 		<item quantity="other">%d členov so staršou verziou nevidí pripnutú správu.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Potvrďte heslo k trezoru</string>
+	<string name="vault_unlock_confirm_message">Staršia verzia uložila tento trezor bez jeho hesla. Zadajte heslo ešte raz. Zerion ním potom trezor znova ochráni.</string>
+	<string name="vault_unlock_entries_differ">Tieto dva zápisy nie sú rovnaké. Začnite znova.</string>
+	<string name="vault_unlock_not_confirmed">Zerion nemohol potvrdiť uloženie trezoru v úložisku. Skúste to znova.</string>
+	<string name="vault_password_rule">Použite aspoň 8 písmen, číslic alebo symbolov. Emoji sa nepočítajú.</string>
 </resources>

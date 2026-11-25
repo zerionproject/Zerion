@@ -3003,4 +3003,9 @@
 		<item quantity="many">%d חברים בגרסה ישנה יותר לא רואים את ההודעה המוצמדת.</item>
 		<item quantity="other">%d חברים בגרסה ישנה יותר לא רואים את ההודעה המוצמדת.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">אישור סיסמת הכספת</string>
+	<string name="vault_unlock_confirm_message">גרסה קודמת שמרה את הכספת הזו ללא הסיסמה שלה. יש להקליד את הסיסמה פעם נוספת. לאחר מכן Zerion יגן שוב על הכספת באמצעותה.</string>
+	<string name="vault_unlock_entries_differ">שתי ההקלדות אינן זהות. יש להתחיל מחדש.</string>
+	<string name="vault_unlock_not_confirmed">ל-Zerion לא הייתה אפשרות לאשר את שמירת הכספת באחסון. יש לנסות שוב.</string>
+	<string name="vault_password_rule">יש להשתמש ב-8 אותיות, ספרות או סמלים לפחות. אמוג\'י אינם נספרים.</string>
 </resources>

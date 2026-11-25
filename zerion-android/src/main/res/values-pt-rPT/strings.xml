@@ -3015,4 +3015,9 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 		<item quantity="many">%d membros com uma versão mais antiga não veem a mensagem afixada.</item>
 		<item quantity="other">%d membros com uma versão mais antiga não veem a mensagem afixada.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirme a palavra-passe do seu cofre</string>
+	<string name="vault_unlock_confirm_message">Uma versão anterior guardou este cofre sem a respetiva palavra-passe. Introduza a sua palavra-passe mais uma vez. Depois disso, o Zerion volta a proteger o cofre com ela.</string>
+	<string name="vault_unlock_entries_differ">As duas introduções não são iguais. Comece de novo.</string>
+	<string name="vault_unlock_not_confirmed">O Zerion não conseguiu confirmar o cofre no armazenamento. Tente novamente.</string>
+	<string name="vault_password_rule">Use pelo menos 8 letras, dígitos ou símbolos. Os emojis não contam.</string>
 </resources>

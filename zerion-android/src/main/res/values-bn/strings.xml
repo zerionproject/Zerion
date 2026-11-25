@@ -2961,4 +2961,9 @@
 		<item quantity="one">পুরোনো সংস্করণের %d জন সদস্য পিন করা বার্তাটি দেখতে পান না।</item>
 		<item quantity="other">পুরোনো সংস্করণের %d জন সদস্য পিন করা বার্তাটি দেখতে পান না।</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">আপনার Vault পাসওয়ার্ড নিশ্চিত করুন</string>
+	<string name="vault_unlock_confirm_message">আগের একটি সংস্করণ এই Vault পাসওয়ার্ড ছাড়াই সংরক্ষণ করেছিল। আপনার পাসওয়ার্ড আরও একবার লিখুন। এরপর Zerion আবার সেই পাসওয়ার্ড দিয়ে Vault সুরক্ষিত করবে।</string>
+	<string name="vault_unlock_entries_differ">দুটি এন্ট্রি এক নয়। আবার শুরু করুন।</string>
+	<string name="vault_unlock_not_confirmed">Zerion স্টোরেজে Vault নিশ্চিত করতে পারেনি। আবার চেষ্টা করুন।</string>
+	<string name="vault_password_rule">অন্তত ৮টি অক্ষর, সংখ্যা বা চিহ্ন ব্যবহার করুন। ইমোজি গণনা করা হয় না।</string>
 </resources>

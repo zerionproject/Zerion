@@ -3007,4 +3007,9 @@
 		<item quantity="few">%d membri cu o versiune mai veche nu văd mesajul fixat.</item>
 		<item quantity="other">%d de membri cu o versiune mai veche nu văd mesajul fixat.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirmați parola seifului</string>
+	<string name="vault_unlock_confirm_message">O versiune anterioară a salvat acest seif fără parola lui. Introduceți parola încă o dată. Apoi Zerion protejează din nou seiful cu ea.</string>
+	<string name="vault_unlock_entries_differ">Cele două introduceri nu sunt identice. Începeți din nou.</string>
+	<string name="vault_unlock_not_confirmed">Zerion nu a putut confirma seiful în spațiul de stocare. Încercați din nou.</string>
+	<string name="vault_password_rule">Folosiți cel puțin 8 litere, cifre sau simboluri. Emoji nu se iau în calcul.</string>
 </resources>

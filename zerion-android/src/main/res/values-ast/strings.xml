@@ -2889,4 +2889,9 @@
 		<item quantity="one">%d miembru con una versión anterior nun ve\'l mensaxe fixáu.</item>
 		<item quantity="other">%d miembros con una versión anterior nun ven el mensaxe fixáu.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirma la contraseña de la caxa fuerte</string>
+	<string name="vault_unlock_confirm_message">Una versión anterior guardó esta caxa fuerte ensin la so contraseña. Escribi la contraseña otra vuelta. Dempués, Zerion protexe la caxa fuerte con ella de nueves.</string>
+	<string name="vault_unlock_entries_differ">Les dos entraes nun son iguales. Volvi empezar.</string>
+	<string name="vault_unlock_not_confirmed">Zerion nun pudo confirmar la caxa fuerte nel almacenamientu. Volvi tentalo.</string>
+	<string name="vault_password_rule">Usa polo menos 8 lletres, cifres o símbolos. Los emojis nun cuenten.</string>
 </resources>

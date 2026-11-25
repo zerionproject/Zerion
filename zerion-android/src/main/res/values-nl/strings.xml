@@ -2962,4 +2962,9 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="grouptr_my_safety_code_in_group">Mijn veiligheidscode in deze groep</string>
 	<string name="grouptr_my_safety_code_message">%1$s\n\nJe hebt in elke nieuwe groep een andere code.</string>
 	<string name="grouptr_member_safety_code_group_message">%2$s\n\nAls %1$s dezelfde code ziet onder Mijn veiligheidscode in deze groep, komen de berichten onder deze naam van die persoon.</string>
+	<string name="vault_unlock_confirm_title">Bevestig het wachtwoord van je kluis</string>
+	<string name="vault_unlock_confirm_message">Een eerdere versie heeft deze kluis zonder het wachtwoord opgeslagen. Typ je wachtwoord nog een keer. Daarna beveiligt Zerion de kluis er weer mee.</string>
+	<string name="vault_unlock_entries_differ">De twee invoeren zijn niet gelijk. Begin opnieuw.</string>
+	<string name="vault_unlock_not_confirmed">Zerion kon de kluis niet bevestigen in de opslag. Probeer het opnieuw.</string>
+	<string name="vault_password_rule">Gebruik minimaal 8 letters, cijfers of symbolen. Emoji tellen niet mee.</string>
 </resources>

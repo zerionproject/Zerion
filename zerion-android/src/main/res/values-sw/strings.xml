@@ -2951,4 +2951,9 @@ Umepoteza nenosiri.</string>
 		<item quantity="one">Mwanachama %d kwenye toleo la zamani haoni ujumbe uliobandikwa.</item>
 		<item quantity="other">Wanachama %d kwenye toleo la zamani hawaoni ujumbe uliobandikwa.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Thibitisha nenosiri la Hazina yako</string>
+	<string name="vault_unlock_confirm_message">Toleo la awali lilihifadhi Hazina hii bila nenosiri lake. Andika nenosiri lako mara moja zaidi. Kisha Zerion italinda Hazina kwa nenosiri hilo tena.</string>
+	<string name="vault_unlock_entries_differ">Maingizo hayo mawili hayafanani. Anza upya.</string>
+	<string name="vault_unlock_not_confirmed">Zerion haikuweza kuthibitisha Hazina kwenye hifadhi. Jaribu tena.</string>
+	<string name="vault_password_rule">Tumia angalau herufi, tarakimu au alama 8. Emoji hazihesabiwi.</string>
 </resources>

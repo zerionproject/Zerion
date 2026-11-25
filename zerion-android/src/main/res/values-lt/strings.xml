@@ -3056,4 +3056,9 @@
 		<item quantity="many">%d nario su senesne versija nemato prisegtos žinutės.</item>
 		<item quantity="other">%d narių su senesne versija nemato prisegtos žinutės.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Patvirtinkite saugyklos slaptažodį</string>
+	<string name="vault_unlock_confirm_message">Ankstesnė versija išsaugojo šią saugyklą be jos slaptažodžio. Įveskite slaptažodį dar kartą. Tada Zerion vėl apsaugos saugyklą šiuo slaptažodžiu.</string>
+	<string name="vault_unlock_entries_differ">Du įvedimai nesutampa. Pradėkite iš naujo.</string>
+	<string name="vault_unlock_not_confirmed">Zerion nepavyko patvirtinti saugyklos atmintyje. Bandykite dar kartą.</string>
+	<string name="vault_password_rule">Naudokite bent 8 raides, skaitmenis arba simbolius. Jaustukai neskaičiuojami.</string>
 </resources>

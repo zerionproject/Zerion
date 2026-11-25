@@ -2936,4 +2936,9 @@
 		<item quantity="one">%d jäsen vanhemmalla versiolla ei näe kiinnitettyä viestiä.</item>
 		<item quantity="other">%d jäsentä vanhemmalla versiolla ei näe kiinnitettyä viestiä.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Vahvista holvin salasana</string>
+	<string name="vault_unlock_confirm_message">Aiempi versio tallensi tämän holvin ilman sen salasanaa. Kirjoita salasanasi vielä kerran. Sen jälkeen Zerion suojaa holvin sillä uudelleen.</string>
+	<string name="vault_unlock_entries_differ">Syötteet eivät ole samat. Aloita alusta.</string>
+	<string name="vault_unlock_not_confirmed">Zerion ei voinut vahvistaa holvia tallennustilassa. Yritä uudelleen.</string>
+	<string name="vault_password_rule">Käytä vähintään 8 kirjainta, numeroa tai symbolia. Emojeja ei lasketa.</string>
 </resources>

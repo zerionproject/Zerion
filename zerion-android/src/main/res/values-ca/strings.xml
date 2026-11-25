@@ -2959,4 +2959,9 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 		<item quantity="one">%d membre amb una versió anterior no veu el missatge fixat.</item>
 		<item quantity="other">%d membres amb una versió anterior no veuen el missatge fixat.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirma la contrasenya de la caixa forta</string>
+	<string name="vault_unlock_confirm_message">Una versió anterior va desar aquesta caixa forta sense la seva contrasenya. Escriu la contrasenya una vegada més. Després, Zerion torna a protegir la caixa forta amb ella.</string>
+	<string name="vault_unlock_entries_differ">Les dues entrades no són iguals. Torna a començar.</string>
+	<string name="vault_unlock_not_confirmed">Zerion no ha pogut confirmar la caixa forta a l\'emmagatzematge. Torna-ho a provar.</string>
+	<string name="vault_password_rule">Fes servir almenys 8 lletres, xifres o símbols. Els emojis no compten.</string>
 </resources>

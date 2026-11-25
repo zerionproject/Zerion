@@ -3036,4 +3036,9 @@
 		<item quantity="many">%d ezel gant ur stumm koshoc\'h ne wel ket ar gemennadenn spilhennet.</item>
 		<item quantity="other">%d ezel gant ur stumm koshoc\'h ne wel ket ar gemennadenn spilhennet.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Kadarnait ger-tremen ho kofr-kreñv</string>
+	<string name="vault_unlock_confirm_message">Gant ur stumm koshoc\'h eo bet enrollet ar c\'hofr-kreñv-mañ hep e c\'her-tremen. Skrivit ho ker-tremen ur wech ouzhpenn. Goude-se e vo gwarezet ar c\'hofr-kreñv gantañ en-dro gant Zerion.</string>
+	<string name="vault_unlock_entries_differ">N\'eo ket heñvel an daou enmont. Krogit en-dro.</string>
+	<string name="vault_unlock_not_confirmed">N\'eo ket bet gouest Zerion da gadarnaat ar c\'hofr-kreñv er c\'hadaviñ. Klaskit en-dro.</string>
+	<string name="vault_password_rule">Implijit 8 lizherenn, sifr pe arouez da nebeutañ. Ne gont ket an emojioù.</string>
 </resources>

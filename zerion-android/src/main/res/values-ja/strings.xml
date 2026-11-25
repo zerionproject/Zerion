@@ -2914,4 +2914,9 @@
 	<plurals name="grouptr_pin_kept_older">
 		<item quantity="other">古いバージョンのメンバー %d 人には、ピン留めされたメッセージが表示されません。</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">保管庫のパスワードを確認</string>
+	<string name="vault_unlock_confirm_message">以前のバージョンでは、この保管庫がパスワードなしで保存されていました。パスワードをもう一度入力してください。その後、Zerion はそのパスワードで保管庫を再び保護します。</string>
+	<string name="vault_unlock_entries_differ">2 回の入力が一致しません。最初からやり直してください。</string>
+	<string name="vault_unlock_not_confirmed">Zerion はストレージ上の保管庫を確認できませんでした。もう一度お試しください。</string>
+	<string name="vault_password_rule">8 文字以上の文字、数字、記号を使用してください。絵文字は数に含まれません。</string>
 </resources>

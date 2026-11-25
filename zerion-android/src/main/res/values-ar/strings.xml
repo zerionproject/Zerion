@@ -3161,4 +3161,9 @@
 		<item quantity="many">عدد الأعضاء بإصدار أقدم الذين لا يرون الرسالة المثبّتة: %d</item>
 		<item quantity="other">عدد الأعضاء بإصدار أقدم الذين لا يرون الرسالة المثبّتة: %d</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">تأكيد كلمة مرور الخزنة</string>
+	<string name="vault_unlock_confirm_message">حفظ إصدار سابق هذه الخزنة بدون كلمة مرورها. اكتب كلمة مرورك مرة أخرى. بعدها يحمي Zerion الخزنة بها من جديد.</string>
+	<string name="vault_unlock_entries_differ">الإدخالان غير متطابقين. ابدأ من جديد.</string>
+	<string name="vault_unlock_not_confirmed">تعذّر على Zerion تأكيد حفظ الخزنة في التخزين. حاول مرة أخرى.</string>
+	<string name="vault_password_rule">استخدم 8 أحرف أو أرقام أو رموز على الأقل. الرموز التعبيرية لا تُحتسب.</string>
 </resources>

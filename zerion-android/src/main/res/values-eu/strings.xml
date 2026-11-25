@@ -2942,4 +2942,9 @@
 		<item quantity="one">Bertsio zaharragoko kide %d-ek ez du mezu ainguratua ikusten.</item>
 		<item quantity="other">Bertsio zaharragoko %d kidek ez dute mezu ainguratua ikusten.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Berretsi kutxaren pasahitza</string>
+	<string name="vault_unlock_confirm_message">Aurreko bertsio batek kutxa hau pasahitzik gabe gorde zuen. Idatzi zure pasahitza beste behin. Ondoren, Zerion-ek kutxa pasahitz horrekin babestuko du berriro.</string>
+	<string name="vault_unlock_entries_differ">Bi sarrerak ez dira berdinak. Hasi berriro.</string>
+	<string name="vault_unlock_not_confirmed">Zerion-ek ezin izan du kutxa biltegian berretsi. Saiatu berriro.</string>
+	<string name="vault_password_rule">Erabili gutxienez 8 letra, digitu edo ikur. Emojiek ez dute balio.</string>
 </resources>

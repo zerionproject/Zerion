@@ -2915,4 +2915,9 @@
 	<plurals name="grouptr_pin_kept_older">
 		<item quantity="other">%d 位使用舊版本的成員看不到置頂訊息。</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">確認您的保險庫密碼</string>
+	<string name="vault_unlock_confirm_message">較舊的版本在儲存此保險庫時未使用其密碼。請再輸入一次您的密碼。之後 Zerion 會再次以該密碼保護保險庫。</string>
+	<string name="vault_unlock_entries_differ">兩次輸入不一致。請重新開始。</string>
+	<string name="vault_unlock_not_confirmed">Zerion 無法確認保險庫已儲存到儲存空間。請再試一次。</string>
+	<string name="vault_password_rule">請使用至少 8 個字母、數字或符號。表情符號不計入。</string>
 </resources>

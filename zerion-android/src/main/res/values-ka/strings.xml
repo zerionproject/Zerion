@@ -2958,4 +2958,9 @@
 		<item quantity="one">უფრო ძველი ვერსიის %d წევრი ვერ ხედავს ჩამაგრებულ შეტყობინებას.</item>
 		<item quantity="other">უფრო ძველი ვერსიის %d წევრი ვერ ხედავს ჩამაგრებულ შეტყობინებას.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">დაადასტურეთ სეიფის პაროლი</string>
+	<string name="vault_unlock_confirm_message">ადრინდელმა ვერსიამ ეს სეიფი პაროლის გარეშე შეინახა. შეიყვანეთ თქვენი პაროლი კიდევ ერთხელ. ამის შემდეგ Zerion სეიფს ისევ ამ პაროლით დაიცავს.</string>
+	<string name="vault_unlock_entries_differ">ორი ჩანაწერი ერთნაირი არ არის. დაიწყეთ თავიდან.</string>
+	<string name="vault_unlock_not_confirmed">Zerion-მა ვერ დაადასტურა სეიფი მეხსიერებაში. სცადეთ ხელახლა.</string>
+	<string name="vault_password_rule">გამოიყენეთ მინიმუმ 8 ასო, ციფრი ან სიმბოლო. ემოჯი არ ითვლება.</string>
 </resources>

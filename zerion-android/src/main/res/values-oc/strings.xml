@@ -2941,4 +2941,9 @@
 		<item quantity="one">%d membre amb una version mai vièlha vei pas lo messatge espinglat.</item>
 		<item quantity="other">%d membres amb una version mai vièlha veson pas lo messatge espinglat.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirmatz lo senhal de vòstre còfre</string>
+	<string name="vault_unlock_confirm_message">Una version anteriora enregistrèt aqueste còfre sens son senhal. Picatz vòstre senhal un còp de mai. Puèi Zerion torna protegir lo còfre amb el.</string>
+	<string name="vault_unlock_entries_differ">Las doas picadas son pas identicas. Tornatz començar.</string>
+	<string name="vault_unlock_not_confirmed">Zerion a pas pogut confirmar lo còfre dins l’emmagazinatge. Tornatz ensajar.</string>
+	<string name="vault_password_rule">Utilizatz almens 8 letras, chifras o simbòls. Los emojis comptan pas.</string>
 </resources>

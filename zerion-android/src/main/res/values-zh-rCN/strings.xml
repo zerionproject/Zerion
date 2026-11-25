@@ -2917,4 +2917,9 @@
 	<plurals name="grouptr_pin_kept_older">
 		<item quantity="other">%d 位使用旧版本的成员看不到置顶消息。</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">确认你的保险库密码</string>
+	<string name="vault_unlock_confirm_message">较早的版本在保存此保险库时未使用其密码。请再输入一次你的密码。之后 Zerion 会再次用该密码保护保险库。</string>
+	<string name="vault_unlock_entries_differ">两次输入不一致。请重新开始。</string>
+	<string name="vault_unlock_not_confirmed">Zerion 无法确认保险库已保存到存储中。请重试。</string>
+	<string name="vault_password_rule">请使用至少 8 个字母、数字或符号。表情符号不计入。</string>
 </resources>

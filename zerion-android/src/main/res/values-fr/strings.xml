@@ -3010,4 +3010,9 @@ copies des messages que vous envoyez.
 		<item quantity="many">%d membres sur une version plus ancienne ne voient pas le message épinglé.</item>
 		<item quantity="other">%d membres sur une version plus ancienne ne voient pas le message épinglé.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirmez le mot de passe de votre coffre</string>
+	<string name="vault_unlock_confirm_message">Une version antérieure a enregistré ce coffre sans son mot de passe. Saisissez votre mot de passe une fois de plus. Zerion protège ensuite de nouveau le coffre avec celui-ci.</string>
+	<string name="vault_unlock_entries_differ">Les deux saisies ne sont pas identiques. Recommencez.</string>
+	<string name="vault_unlock_not_confirmed">Zerion n\'a pas pu confirmer le coffre dans le stockage. Réessayez.</string>
+	<string name="vault_password_rule">Utilisez au moins 8 lettres, chiffres ou symboles. Les emojis ne comptent pas.</string>
 </resources>

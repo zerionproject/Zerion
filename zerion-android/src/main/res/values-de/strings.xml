@@ -2968,4 +2968,9 @@
 		<item quantity="one">%d Mitglied mit einer älteren Version sieht die angeheftete Nachricht nicht.</item>
 		<item quantity="other">%d Mitglieder mit einer älteren Version sehen die angeheftete Nachricht nicht.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Tresor-Passwort bestätigen</string>
+	<string name="vault_unlock_confirm_message">Eine frühere Version hat diesen Tresor ohne sein Passwort gespeichert. Gib dein Passwort noch einmal ein. Zerion schützt den Tresor danach wieder damit.</string>
+	<string name="vault_unlock_entries_differ">Die beiden Eingaben sind nicht gleich. Beginne von vorn.</string>
+	<string name="vault_unlock_not_confirmed">Zerion konnte den Tresor im Speicher nicht bestätigen. Versuche es erneut.</string>
+	<string name="vault_password_rule">Verwende mindestens 8 Buchstaben, Ziffern oder Symbole. Emojis zählen nicht.</string>
 </resources>

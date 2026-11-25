@@ -2958,4 +2958,9 @@
 		<item quantity="one">%d medlem med en äldre version ser inte det fästa meddelandet.</item>
 		<item quantity="other">%d medlemmar med en äldre version ser inte det fästa meddelandet.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Bekräfta lösenordet till ditt valv</string>
+	<string name="vault_unlock_confirm_message">En tidigare version sparade det här valvet utan dess lösenord. Skriv ditt lösenord en gång till. Sedan skyddar Zerion valvet med det igen.</string>
+	<string name="vault_unlock_entries_differ">De två inmatningarna är inte lika. Börja om.</string>
+	<string name="vault_unlock_not_confirmed">Zerion kunde inte bekräfta valvet i lagringen. Försök igen.</string>
+	<string name="vault_password_rule">Använd minst 8 bokstäver, siffror eller symboler. Emojier räknas inte.</string>
 </resources>

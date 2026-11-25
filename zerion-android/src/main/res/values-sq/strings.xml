@@ -2959,4 +2959,9 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 		<item quantity="one">%d anëtar me version më të vjetër nuk e sheh mesazhin e fiksuar.</item>
 		<item quantity="other">%d anëtarë me version më të vjetër nuk e shohin mesazhin e fiksuar.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Konfirmo fjalëkalimin e kasafortës</string>
+	<string name="vault_unlock_confirm_message">Një version i mëparshëm e ruajti këtë kasafortë pa fjalëkalimin e saj. Shkruaje fjalëkalimin edhe një herë. Pastaj Zerion e mbron sërish kasafortën me të.</string>
+	<string name="vault_unlock_entries_differ">Dy shkrimet nuk janë të njëjta. Fillo nga e para.</string>
+	<string name="vault_unlock_not_confirmed">Zerion nuk mundi ta konfirmojë kasafortën në hapësirën e ruajtjes. Provo sërish.</string>
+	<string name="vault_password_rule">Përdor të paktën 8 shkronja, shifra ose simbole. Emoji-t nuk llogariten.</string>
 </resources>

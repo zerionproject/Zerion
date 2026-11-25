@@ -2890,4 +2890,9 @@
 		<item quantity="one">Köhnə versiyadakı %d üzv sabitlənmiş mesajı görmür.</item>
 		<item quantity="other">Köhnə versiyadakı %d üzv sabitlənmiş mesajı görmür.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Seyf parolunuzu təsdiqləyin</string>
+	<string name="vault_unlock_confirm_message">Əvvəlki versiya bu seyfi parolsuz saxlayıb. Parolunuzu bir daha yazın. Bundan sonra Zerion seyfi yenidən həmin parolla qoruyacaq.</string>
+	<string name="vault_unlock_entries_differ">İki daxiletmə eyni deyil. Yenidən başlayın.</string>
+	<string name="vault_unlock_not_confirmed">Zerion seyfin yaddaşda saxlandığını təsdiqləyə bilmədi. Yenidən cəhd edin.</string>
+	<string name="vault_password_rule">Ən azı 8 hərf, rəqəm və ya simvol istifadə edin. Emoji sayılmır.</string>
 </resources>

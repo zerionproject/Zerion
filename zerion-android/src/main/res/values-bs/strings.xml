@@ -2939,4 +2939,9 @@
 		<item quantity="few">%d člana sa starijom verzijom ne vide zakačenu poruku.</item>
 		<item quantity="other">%d članova sa starijom verzijom ne vidi zakačenu poruku.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Potvrdi lozinku sefa</string>
+	<string name="vault_unlock_confirm_message">Ranija verzija je sačuvala ovaj sef bez njegove lozinke. Upiši svoju lozinku još jednom. Zerion će zatim sef ponovo zaštititi njom.</string>
+	<string name="vault_unlock_entries_differ">Dva unosa nisu ista. Počni ponovo.</string>
+	<string name="vault_unlock_not_confirmed">Zerion nije mogao potvrditi sef u pohrani. Pokušaj ponovo.</string>
+	<string name="vault_password_rule">Koristi najmanje 8 slova, cifara ili simbola. Emoji se ne računaju.</string>
 </resources>

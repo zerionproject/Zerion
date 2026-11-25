@@ -3056,4 +3056,9 @@
 		<item quantity="many">%d członków ze starszą wersją nie widzi przypiętej wiadomości.</item>
 		<item quantity="other">%d członka ze starszą wersją nie widzi przypiętej wiadomości.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Potwierdź hasło do sejfu</string>
+	<string name="vault_unlock_confirm_message">Wcześniejsza wersja zapisała ten sejf bez jego hasła. Wpisz hasło jeszcze raz. Następnie Zerion ponownie zabezpieczy nim sejf.</string>
+	<string name="vault_unlock_entries_differ">Oba wpisy nie są takie same. Zacznij od nowa.</string>
+	<string name="vault_unlock_not_confirmed">Zerion nie mógł potwierdzić zapisu sejfu w pamięci. Spróbuj ponownie.</string>
+	<string name="vault_password_rule">Użyj co najmniej 8 liter, cyfr lub symboli. Emoji się nie liczą.</string>
 </resources>

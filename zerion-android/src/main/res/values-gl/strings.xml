@@ -2952,4 +2952,9 @@
 		<item quantity="one">%d membro cunha versión anterior non ve a mensaxe fixada.</item>
 		<item quantity="other">%d membros cunha versión anterior non ven a mensaxe fixada.</item>
 	</plurals>
+	<string name="vault_unlock_confirm_title">Confirma o contrasinal do cofre</string>
+	<string name="vault_unlock_confirm_message">Unha versión anterior gardou este cofre sen o seu contrasinal. Escribe o teu contrasinal unha vez máis. Despois, Zerion volve protexer o cofre con el.</string>
+	<string name="vault_unlock_entries_differ">As dúas entradas non son iguais. Comeza de novo.</string>
+	<string name="vault_unlock_not_confirmed">Zerion non puido confirmar o cofre no almacenamento. Téntao de novo.</string>
+	<string name="vault_password_rule">Usa polo menos 8 letras, cifras ou símbolos. Os emojis non contan.</string>
 </resources>
