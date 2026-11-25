@@ -514,8 +514,18 @@ queues a larger record, which the peer would drop and the sync layer would send
 again forever. From 3.0.19 a stored message whose record can never fit is also
 not reported as sent: it is marked not shared after it is first requested
 (`ZppOutgoingSource.stopOffering`), so it is not offered again on any
-connection and stays visible to its sender; a message stored this way by an
-earlier release still shows as sent. Unpaced offers, acknowledgements and
+connection and stays visible to its sender. A requested message whose raw
+length is over 994,186 bytes (`SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH`,
+the largest message whose record fits) is always handed to the connection,
+whatever room the batch has (`JdbcDatabase.getRequestedMessagesToSend`), so
+it reaches this path; that covers messages of several megabytes stored by
+3.0.15 to 3.0.18. Such an old message keeps showing as Sent to its sender
+after it is no longer offered: the app has no stored state for a private
+message or a group copy that was not sent. When something is due but nothing
+could be sent, the sender waits 10 seconds before it tries again instead of
+trying at once (`ZppOutgoingSource.setNextSendTime`), and a message waiting
+for room in the bulk lane leaves as soon as the last frame of an earlier
+message has gone. Unpaced offers, acknowledgements and
 requests carry at most 32,767 ids, so they fit one record too. Messages
 created from 3.0.19 keep their body at or below 993,752 bytes
 (`SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH`, the largest body whose
