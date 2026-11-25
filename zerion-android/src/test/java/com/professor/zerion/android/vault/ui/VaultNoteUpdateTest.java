@@ -440,6 +440,34 @@ public class VaultNoteUpdateTest {
 		assertArrayEquals(bytes("milk"), rig.vault.raw(old.id));
 	}
 
+	@Test
+	public void aProtectedNoteSaveThatRunsOutOfMemoryStillEndsInAResult()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		VaultItem old = protectedNote(rig, vm);
+		byte[] before = rig.vault.raw(old.id);
+		doThrow(new OutOfMemoryError("injected"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		long request = vm.newNoteSaveRequest();
+		char[] typed = "pw".toCharArray();
+
+		vm.saveNoteWithPassword(request, "Diary", "second entry", typed,
+				old.id);
+		idle();
+
+		NoteSaveResult result = result(vm);
+		assertEquals(request, result.request);
+		assertEquals(NoteSaveResult.Outcome.FAILED, result.outcome);
+		assertEquals(rig.app.getString(R.string.vault_msg_save_note_failed),
+				result.message);
+		assertFalse(vm.isNoteSaveRunning(request));
+		assertEquals(Boolean.FALSE, vm.getIsLoading().getValue());
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertArrayEquals(before, rig.vault.raw(old.id));
+		assertArrayEquals(new char[typed.length], typed);
+	}
+
 	private static NoteSaveResult result(VaultViewModel vm) {
 		Event<NoteSaveResult> latest = vm.getNoteSaveResult().getValue();
 		assertNotNull("the save ended without a result", latest);

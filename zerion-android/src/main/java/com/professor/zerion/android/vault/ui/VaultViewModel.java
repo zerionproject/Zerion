@@ -2757,6 +2757,8 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				result = storeProtectedNoteNow(request, title, content,
 						ownPassword, existingNoteId);
+			} catch (OutOfMemoryError e) {
+				result = null;
 			} finally {
 				Arrays.fill(ownPassword, '\0');
 				reportNoteSave(result != null ? result
