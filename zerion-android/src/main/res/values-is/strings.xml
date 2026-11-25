@@ -2961,5 +2961,8 @@
 	<string name="vault_unlock_confirm_message">Eldri útgáfa vistaði þessa hvelfingu án lykilorðsins. Sláðu lykilorðið þitt inn einu sinni enn. Zerion ver síðan hvelfinguna með því á ný.</string>
 	<string name="vault_unlock_entries_differ">Innslættirnir tveir eru ekki eins. Byrjaðu aftur.</string>
 	<string name="vault_unlock_not_confirmed">Zerion gat ekki staðfest hvelfinguna í gagnageymslu. Reyndu aftur.</string>
+	<string name="vault_unlock_new_password_title">Veldu nýtt lykilorð fyrir hvelfinguna</string>
+	<string name="vault_unlock_new_password_message">Zerion getur ekki lengur varið þessa hvelfingu með núverandi lykilorði hennar, til dæmis af því að það er eingöngu úr tjáningartáknum. Veldu nýtt lykilorð með að minnsta kosti 8 bókstöfum, tölustöfum eða táknum og sláðu það inn tvisvar.</string>
+	<string name="vault_unlock_new_password_again">Sláðu nýja lykilorðið inn einu sinni enn. Zerion ver síðan hvelfinguna með því.</string>
 	<string name="vault_password_rule">Notaðu að minnsta kosti 8 bókstafi, tölustafi eða tákn. Emoji teljast ekki með.</string>
 </resources>

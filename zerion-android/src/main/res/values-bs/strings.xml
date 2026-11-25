@@ -2944,5 +2944,8 @@
 	<string name="vault_unlock_confirm_message">Ranija verzija je sačuvala ovaj sef bez njegove lozinke. Upiši svoju lozinku još jednom. Zerion će zatim sef ponovo zaštititi njom.</string>
 	<string name="vault_unlock_entries_differ">Dva unosa nisu ista. Počni ponovo.</string>
 	<string name="vault_unlock_not_confirmed">Zerion nije mogao potvrditi sef u pohrani. Pokušaj ponovo.</string>
+	<string name="vault_unlock_new_password_title">Odaberi novu lozinku sefa</string>
+	<string name="vault_unlock_new_password_message">Zerion više ne može zaštititi ovaj sef njegovom trenutnom lozinkom, na primjer zato što se sastoji samo od emojija. Odaberi novu lozinku od najmanje 8 slova, cifara ili simbola i upiši je dvaput.</string>
+	<string name="vault_unlock_new_password_again">Upiši novu lozinku još jednom. Zerion će zatim sef zaštititi njom.</string>
 	<string name="vault_password_rule">Koristi najmanje 8 slova, cifara ili simbola. Emoji se ne računaju.</string>
 </resources>

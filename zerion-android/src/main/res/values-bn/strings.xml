@@ -2966,5 +2966,8 @@
 	<string name="vault_unlock_confirm_message">আগের একটি সংস্করণ এই Vault পাসওয়ার্ড ছাড়াই সংরক্ষণ করেছিল। আপনার পাসওয়ার্ড আরও একবার লিখুন। এরপর Zerion আবার সেই পাসওয়ার্ড দিয়ে Vault সুরক্ষিত করবে।</string>
 	<string name="vault_unlock_entries_differ">দুটি এন্ট্রি এক নয়। আবার শুরু করুন।</string>
 	<string name="vault_unlock_not_confirmed">Zerion স্টোরেজে Vault নিশ্চিত করতে পারেনি। আবার চেষ্টা করুন।</string>
+	<string name="vault_unlock_new_password_title">Vault-এর জন্য নতুন পাসওয়ার্ড বেছে নিন</string>
+	<string name="vault_unlock_new_password_message">Zerion এই Vault আর এর বর্তমান পাসওয়ার্ড দিয়ে সুরক্ষিত রাখতে পারে না, যেমন পাসওয়ার্ডটি শুধু ইমোজি দিয়ে তৈরি হলে। কমপক্ষে 8টি অক্ষর, সংখ্যা বা চিহ্ন দিয়ে একটি নতুন পাসওয়ার্ড বেছে নিন এবং সেটি দুবার লিখুন।</string>
+	<string name="vault_unlock_new_password_again">নতুন পাসওয়ার্ডটি আরও একবার লিখুন। এরপর Zerion সেই পাসওয়ার্ড দিয়ে Vault সুরক্ষিত করবে।</string>
 	<string name="vault_password_rule">অন্তত ৮টি অক্ষর, সংখ্যা বা চিহ্ন ব্যবহার করুন। ইমোজি গণনা করা হয় না।</string>
 </resources>

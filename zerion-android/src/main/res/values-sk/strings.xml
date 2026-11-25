@@ -3061,5 +3061,8 @@
 	<string name="vault_unlock_confirm_message">Staršia verzia uložila tento trezor bez jeho hesla. Zadajte heslo ešte raz. Zerion ním potom trezor znova ochráni.</string>
 	<string name="vault_unlock_entries_differ">Tieto dva zápisy nie sú rovnaké. Začnite znova.</string>
 	<string name="vault_unlock_not_confirmed">Zerion nemohol potvrdiť uloženie trezoru v úložisku. Skúste to znova.</string>
+	<string name="vault_unlock_new_password_title">Zvoľte nové heslo k trezoru</string>
+	<string name="vault_unlock_new_password_message">Zerion už nemôže chrániť tento trezor jeho súčasným heslom, napríklad preto, že sa skladá len z emoji. Zvoľte nové heslo s aspoň 8 písmenami, číslicami alebo symbolmi a zadajte ho dvakrát.</string>
+	<string name="vault_unlock_new_password_again">Zadajte nové heslo ešte raz. Zerion ním potom trezor ochráni.</string>
 	<string name="vault_password_rule">Použite aspoň 8 písmen, číslic alebo symbolov. Emoji sa nepočítajú.</string>
 </resources>

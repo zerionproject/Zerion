@@ -1803,6 +1803,9 @@
 	<string name="vault_unlock_confirm_message">An earlier version saved this vault without its password. Type your password once more. Zerion then protects the vault with it again.</string>
 	<string name="vault_unlock_entries_differ">The two entries are not the same. Start again.</string>
 	<string name="vault_unlock_not_confirmed">Zerion could not confirm the vault on storage. Try again.</string>
+	<string name="vault_unlock_new_password_title">Choose a new vault password</string>
+	<string name="vault_unlock_new_password_message">Zerion can no longer protect this vault with its current password, for example because it is made only of emoji. Choose a new password of at least 8 letters, digits or symbols and type it twice.</string>
+	<string name="vault_unlock_new_password_again">Type the new password once more. Zerion then protects the vault with it.</string>
 	<string name="vault_password_rule">Use at least 8 letters, digits or symbols. Emoji do not count.</string>
 	<string name="vault_locked">Vault locked</string>
 	<string name="vault_auto_lock">Vault auto-locked due to inactivity</string>

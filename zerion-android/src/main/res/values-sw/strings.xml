@@ -2956,5 +2956,8 @@ Umepoteza nenosiri.</string>
 	<string name="vault_unlock_confirm_message">Toleo la awali lilihifadhi Hazina hii bila nenosiri lake. Andika nenosiri lako mara moja zaidi. Kisha Zerion italinda Hazina kwa nenosiri hilo tena.</string>
 	<string name="vault_unlock_entries_differ">Maingizo hayo mawili hayafanani. Anza upya.</string>
 	<string name="vault_unlock_not_confirmed">Zerion haikuweza kuthibitisha Hazina kwenye hifadhi. Jaribu tena.</string>
+	<string name="vault_unlock_new_password_title">Chagua nenosiri jipya la Hazina</string>
+	<string name="vault_unlock_new_password_message">Zerion haiwezi tena kulinda Hazina hii kwa nenosiri lake la sasa, kwa mfano kwa sababu lina emoji pekee. Chagua nenosiri jipya lenye angalau herufi, tarakimu au alama 8 na uliandike mara mbili.</string>
+	<string name="vault_unlock_new_password_again">Andika nenosiri jipya mara moja zaidi. Kisha Zerion italinda Hazina kwa nenosiri hilo.</string>
 	<string name="vault_password_rule">Tumia angalau herufi, tarakimu au alama 8. Emoji hazihesabiwi.</string>
 </resources>

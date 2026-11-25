@@ -2968,5 +2968,8 @@
 	<string name="vault_unlock_confirm_message">Önceki bir sürüm bu kasayı parolası olmadan kaydetti. Parolanızı bir kez daha yazın. Zerion bundan sonra kasayı yeniden bu parolayla korur.</string>
 	<string name="vault_unlock_entries_differ">İki giriş aynı değil. Baştan başlayın.</string>
 	<string name="vault_unlock_not_confirmed">Zerion kasayı depolama alanında doğrulayamadı. Yeniden deneyin.</string>
+	<string name="vault_unlock_new_password_title">Yeni bir kasa parolası seçin</string>
+	<string name="vault_unlock_new_password_message">Zerion bu kasayı artık mevcut parolasıyla koruyamıyor, örneğin parola yalnızca emojilerden oluştuğu için. En az 8 harf, rakam veya simgeden oluşan yeni bir parola seçin ve iki kez yazın.</string>
+	<string name="vault_unlock_new_password_again">Yeni parolayı bir kez daha yazın. Zerion bundan sonra kasayı bu parolayla korur.</string>
 	<string name="vault_password_rule">En az 8 harf, rakam veya simge kullanın. Emojiler sayılmaz.</string>
 </resources>

@@ -2894,5 +2894,8 @@
 	<string name="vault_unlock_confirm_message">Una versión anterior guardó esta caxa fuerte ensin la so contraseña. Escribi la contraseña otra vuelta. Dempués, Zerion protexe la caxa fuerte con ella de nueves.</string>
 	<string name="vault_unlock_entries_differ">Les dos entraes nun son iguales. Volvi empezar.</string>
 	<string name="vault_unlock_not_confirmed">Zerion nun pudo confirmar la caxa fuerte nel almacenamientu. Volvi tentalo.</string>
+	<string name="vault_unlock_new_password_title">Escueyi una contraseña nueva pa la caxa fuerte</string>
+	<string name="vault_unlock_new_password_message">Zerion yá nun pue protexer esta caxa fuerte cola so contraseña actual, por exemplu porque namás tien emojis. Escueyi una contraseña nueva de polo menos 8 lletres, cifres o símbolos y escríbila dos vegaes.</string>
+	<string name="vault_unlock_new_password_again">Escribi la contraseña nueva otra vuelta. Dempués, Zerion protexe la caxa fuerte con ella.</string>
 	<string name="vault_password_rule">Usa polo menos 8 lletres, cifres o símbolos. Los emojis nun cuenten.</string>
 </resources>

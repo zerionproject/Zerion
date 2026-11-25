@@ -2957,5 +2957,8 @@
 	<string name="vault_unlock_confirm_message">Unha versión anterior gardou este cofre sen o seu contrasinal. Escribe o teu contrasinal unha vez máis. Despois, Zerion volve protexer o cofre con el.</string>
 	<string name="vault_unlock_entries_differ">As dúas entradas non son iguais. Comeza de novo.</string>
 	<string name="vault_unlock_not_confirmed">Zerion non puido confirmar o cofre no almacenamento. Téntao de novo.</string>
+	<string name="vault_unlock_new_password_title">Escolle un contrasinal novo para o cofre</string>
+	<string name="vault_unlock_new_password_message">Zerion xa non pode protexer este cofre co seu contrasinal actual, por exemplo porque só contén emojis. Escolle un contrasinal novo de polo menos 8 letras, díxitos ou símbolos e escríbeo dúas veces.</string>
+	<string name="vault_unlock_new_password_again">Escribe o contrasinal novo unha vez máis. Despois, Zerion protexe o cofre con el.</string>
 	<string name="vault_password_rule">Usa polo menos 8 letras, cifras ou símbolos. Os emojis non contan.</string>
 </resources>

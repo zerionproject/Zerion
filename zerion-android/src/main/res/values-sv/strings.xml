@@ -2963,5 +2963,8 @@
 	<string name="vault_unlock_confirm_message">En tidigare version sparade det här valvet utan dess lösenord. Skriv ditt lösenord en gång till. Sedan skyddar Zerion valvet med det igen.</string>
 	<string name="vault_unlock_entries_differ">De två inmatningarna är inte lika. Börja om.</string>
 	<string name="vault_unlock_not_confirmed">Zerion kunde inte bekräfta valvet i lagringen. Försök igen.</string>
+	<string name="vault_unlock_new_password_title">Välj ett nytt lösenord till ditt valv</string>
+	<string name="vault_unlock_new_password_message">Zerion kan inte längre skydda det här valvet med dess nuvarande lösenord, till exempel för att det bara består av emojier. Välj ett nytt lösenord med minst 8 bokstäver, siffror eller symboler och skriv det två gånger.</string>
+	<string name="vault_unlock_new_password_again">Skriv det nya lösenordet en gång till. Sedan skyddar Zerion valvet med det.</string>
 	<string name="vault_password_rule">Använd minst 8 bokstäver, siffror eller symboler. Emojier räknas inte.</string>
 </resources>

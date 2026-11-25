@@ -2959,5 +2959,8 @@
 	<string name="vault_unlock_confirm_message">По-стара версия е запазила този трезор без паролата му. Въведи паролата си още веднъж. След това Zerion отново ще защити трезора с нея.</string>
 	<string name="vault_unlock_entries_differ">Двете въвеждания не съвпадат. Започни отначало.</string>
 	<string name="vault_unlock_not_confirmed">Zerion не успя да потвърди трезора в хранилището. Опитай отново.</string>
+	<string name="vault_unlock_new_password_title">Избери нова парола за трезора</string>
+	<string name="vault_unlock_new_password_message">Zerion вече не може да защити този трезор с текущата му парола, например защото тя се състои само от емоджита. Избери нова парола от поне 8 букви, цифри или символи и я въведи два пъти.</string>
+	<string name="vault_unlock_new_password_again">Въведи новата парола още веднъж. След това Zerion ще защити трезора с нея.</string>
 	<string name="vault_password_rule">Използвай поне 8 букви, цифри или символи. Емоджитата не се броят.</string>
 </resources>

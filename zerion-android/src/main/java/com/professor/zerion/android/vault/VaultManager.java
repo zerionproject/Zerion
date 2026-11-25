@@ -43,7 +43,8 @@ public class VaultManager
 		CONFIRM_NEEDED,
 		ENTRIES_DIFFER,
 		NOT_CONFIRMED_ON_STORAGE,
-		NEW_PASSWORD_REFUSED
+		NEW_PASSWORD_REFUSED,
+		NEW_PASSWORD_REQUIRED
 	}
 
 	public static final int MIN_PASSWORD_LENGTH = 8;
@@ -675,10 +676,16 @@ public class VaultManager
 				? typedLength : 0];
 	}
 
-	private static boolean mayRecoverUnder(VaultHeader header,
-			char[] typed) {
-		return header.version < VaultHeader.VERSION_KEYSTORE_FACTOR
-				|| acceptsNewPassword(typed);
+	private static boolean needsNewPassword(VaultHeader header,
+			OpenedVault opened, char[] typed) {
+		if (opened.clearedForm) {
+			return header.version >= VaultHeader.VERSION_KEYSTORE_FACTOR
+					&& !acceptsNewPassword(typed);
+		}
+		char[] normal = PasswordNormalizer.normalize(typed);
+		boolean empty = normal.length == 0;
+		java.util.Arrays.fill(normal, '\0');
+		return empty;
 	}
 
 	private static boolean couldHaveBeenSet(char[] typed) {
@@ -835,18 +842,25 @@ public class VaultManager
 
 	public synchronized UnlockResult unlock(char[] password)
 			throws Exception {
-		return unlockVaultMarked(password, null, lockRequests.get());
+		return unlockVaultMarked(password, null, null, lockRequests.get());
 	}
 
 	public synchronized UnlockResult confirmAndUnlock(char[] firstEntry,
 			char[] password) throws Exception {
-		return unlockVaultMarked(password, firstEntry, lockRequests.get());
+		return unlockVaultMarked(password, firstEntry, null,
+				lockRequests.get());
+	}
+
+	public synchronized UnlockResult chooseNewPassword(char[] opener,
+			@Nullable char[] firstEntry, char[] password) throws Exception {
+		return unlockVaultMarked(password, firstEntry, opener,
+				lockRequests.get());
 	}
 
 	public UnlockResult unlock(char[] password, long pendingMark)
 			throws Exception {
 		try {
-			return unlockVaultMarked(password, null, pendingMark);
+			return unlockVaultMarked(password, null, null, pendingMark);
 		} finally {
 			pendingUnlocks.decrementAndGet();
 		}
@@ -855,17 +869,29 @@ public class VaultManager
 	public UnlockResult confirmAndUnlock(char[] firstEntry, char[] password,
 			long pendingMark) throws Exception {
 		try {
-			return unlockVaultMarked(password, firstEntry, pendingMark);
+			return unlockVaultMarked(password, firstEntry, null, pendingMark);
+		} finally {
+			pendingUnlocks.decrementAndGet();
+		}
+	}
+
+	public UnlockResult chooseNewPassword(char[] opener,
+			@Nullable char[] firstEntry, char[] password, long pendingMark)
+			throws Exception {
+		try {
+			return unlockVaultMarked(password, firstEntry, opener,
+					pendingMark);
 		} finally {
 			pendingUnlocks.decrementAndGet();
 		}
 	}
 
 	private synchronized UnlockResult unlockVaultMarked(char[] password,
-			@Nullable char[] firstEntry, long mark) throws Exception {
+			@Nullable char[] firstEntry, @Nullable char[] opener, long mark)
+			throws Exception {
 		unlockRunning = true;
 		try {
-			return unlockVaultLocked(password, firstEntry, mark);
+			return unlockVaultLocked(password, firstEntry, opener, mark);
 		} finally {
 			unlockRunning = false;
 		}
@@ -890,7 +916,8 @@ public class VaultManager
 	}
 
 	private UnlockResult unlockVaultLocked(char[] password,
-			@Nullable char[] firstEntry, long mark) throws Exception {
+			@Nullable char[] firstEntry, @Nullable char[] opener, long mark)
+			throws Exception {
 		if (!vaultExists()) {
 			throw new IllegalStateException("No vault exists");
 		}
@@ -910,24 +937,37 @@ public class VaultManager
 				loadVaultHeader();
 			}
 
+			if (opener != null && !acceptsNewPassword(password)) {
+				return UnlockResult.NEW_PASSWORD_REFUSED;
+			}
 			if (firstEntry != null && !sameNormalForm(firstEntry, password)) {
 				return UnlockResult.ENTRIES_DIFFER;
 			}
+			if (opener != null && firstEntry == null) {
+				return UnlockResult.CONFIRM_NEEDED;
+			}
 
-			OpenedVault opened = openForUnlock(currentHeader, password);
+			char[] key = opener != null ? opener : password;
+			OpenedVault opened = openForUnlock(currentHeader, key);
 			if (opened == null) {
 				return registerFailedUnlock();
 			}
-			if (opened.clearedForm
-					&& !mayRecoverUnder(currentHeader, password)) {
+			boolean newPasswordNeeded =
+					needsNewPassword(currentHeader, opened, key);
+			if (newPasswordNeeded && opener == null) {
 				SecureMemory.shred(opened.masterKey);
-				return UnlockResult.NEW_PASSWORD_REFUSED;
+				return UnlockResult.NEW_PASSWORD_REQUIRED;
 			}
+			if (!newPasswordNeeded && opener != null) {
+				SecureMemory.shred(opened.masterKey);
+				return registerFailedUnlock();
+			}
+			boolean sealAgain = opener != null || opened.clearedForm;
 			if (opened.clearedForm && firstEntry == null) {
 				SecureMemory.shred(opened.masterKey);
 				return UnlockResult.CONFIRM_NEEDED;
 			}
-			if (opened.clearedForm
+			if (sealAgain
 					&& !resealClearedForm(opened.masterKey, password)) {
 				SecureMemory.shred(opened.masterKey);
 				unlockThrottle.recordFailure();
@@ -938,7 +978,7 @@ public class VaultManager
 			if (previous != null && previous != opened.masterKey) {
 				SecureMemory.shred(previous);
 			}
-			if (!opened.clearedForm) {
+			if (!sealAgain) {
 				if (needsRewrap(currentHeader, opened.legacyForm)) {
 					rewrapHeader(opened.masterKey, password,
 							opened.legacyForm);
