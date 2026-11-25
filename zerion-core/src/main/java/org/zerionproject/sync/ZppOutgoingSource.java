@@ -81,7 +81,9 @@ public class ZppOutgoingSource implements EventListener {
 	private final AtomicBoolean ackWaiting = new AtomicBoolean(false);
 	private final AtomicBoolean requestWaiting = new AtomicBoolean(false);
 	private final AtomicBoolean offerWaiting = new AtomicBoolean(false);
-	private volatile boolean startingUp = true;
+	private final AtomicBoolean userOfferDue = new AtomicBoolean(false);
+	private final Set<MessageId> claimedOffers =
+			ConcurrentHashMap.newKeySet();
 	private final AtomicLong nextSendTime = new AtomicLong(Long.MAX_VALUE);
 	private final AtomicLong messageIdCounter = new AtomicLong(0);
 	private volatile boolean stopped = false;
@@ -112,7 +114,6 @@ public class ZppOutgoingSource implements EventListener {
 	}
 
 	public void start() {
-		scheduler.setUserWaiting(() -> localMessages.hasWanted(contactId));
 		eventBus.addListener(this);
 		generateAck();
 		generateBatch();
@@ -123,6 +124,8 @@ public class ZppOutgoingSource implements EventListener {
 	public void stop() {
 		stopped = true;
 		eventBus.removeListener(this);
+		localMessages.restoreOffers(claimedOffers);
+		claimedOffers.clear();
 		cancelRetransmit();
 	}
 
@@ -179,7 +182,6 @@ public class ZppOutgoingSource implements EventListener {
 	private void runGenerateBatch() {
 		if (stopped) return;
 		generateBatchQueued.set(false);
-		boolean paced = scheduler.isRanked();
 		if (!proceedOrDefer(this::generateBatch)) return;
 		long capacity = batchCapacity();
 		try {
@@ -193,26 +195,16 @@ public class ZppOutgoingSource implements EventListener {
 					});
 			if (b != null) {
 				long now = clock.currentTimeMillis();
-				boolean wake = false;
 				for (Message m : b) {
-					if (!inFlight.add(m.getId())) {
-						localMessages.forgetWanted(contactId, m.getId());
-						continue;
-					}
-					boolean unannounced = isUnannounced(m, now);
+					if (!inFlight.add(m.getId())) continue;
 					boolean fresh = isFresh(m, now);
-					boolean user = localMessages.takeUserTraffic(contactId,
-							m.getId());
-					enqueueMessage(m, fresh, unannounced,
-							user || unannounced ? RANK_USER : RANK_AUTOMATIC);
-					if (user && startingUp) wake = true;
+					boolean user = localMessages.takeUserTraffic(m.getId());
+					enqueueMessage(m, fresh,
+							user ? RANK_USER : RANK_AUTOMATIC);
 				}
-				if (wake && paced) scheduler.wake();
 				generateBatch();
-			} else {
-				startingUp = false;
-				if (scheduler.getBulkDepth() > 0) retryWhenBulkLaneHasRoom();
-				else localMessages.forgetWanted(contactId);
+			} else if (scheduler.getBulkDepth() > 0) {
+				retryWhenBulkLaneHasRoom();
 			}
 		} catch (DbException | IOException e) {
 		}
@@ -238,7 +230,7 @@ public class ZppOutgoingSource implements EventListener {
 		if (stopped) return;
 		generateOfferQueued.set(false);
 		boolean paced = scheduler.isRanked();
-		boolean urgent = paced && localMessages.hasUnannounced();
+		boolean urgent = userOfferDue.getAndSet(false) && paced;
 		if (paced && !urgent && offerWaiting.get()) return;
 		if (!urgent && !proceedOrDefer(this::generateOffer)) return;
 		try {
@@ -255,16 +247,19 @@ public class ZppOutgoingSource implements EventListener {
 				}
 				if (!ids.isEmpty()) {
 					byte[] offer = codec.encodeOffer(new Offer(ids));
-					boolean opens = announcesUserMessage(ids);
-					if (paced && !opens) {
+					List<MessageId> claimed = claimFirstOffers(ids);
+					if (!claimed.isEmpty()) {
+						claimedOffers.addAll(claimed);
+						enqueue(offer, false, true, RANK_USER,
+								() -> claimedOffers.removeAll(claimed));
+					} else if (paced) {
 						offerWaiting.set(true);
 						enqueue(offer, false, false, RANK_AUTOMATIC, () -> {
 							offerWaiting.set(false);
 							generateOffer();
 						});
 					} else {
-						enqueue(offer, false, opens,
-								opens ? RANK_USER : RANK_AUTOMATIC, null);
+						enqueue(offer, false, false, RANK_AUTOMATIC, null);
 					}
 				}
 				generateOffer();
@@ -304,17 +299,12 @@ public class ZppOutgoingSource implements EventListener {
 		return localMessages.takeFirstSend(m.getId());
 	}
 
-	boolean isUnannounced(Message m, long now) {
-		if (m.getTimestamp() - now > FRESH_MESSAGE_MS) return false;
-		return localMessages.takeFirstOffer(m.getId());
-	}
-
-	boolean announcesUserMessage(Collection<MessageId> offered) {
-		boolean announces = false;
+	List<MessageId> claimFirstOffers(Collection<MessageId> offered) {
+		List<MessageId> claimed = new ArrayList<>();
 		for (MessageId id : offered) {
-			if (localMessages.takeFirstOffer(id)) announces = true;
+			if (localMessages.takeFirstOffer(id)) claimed.add(id);
 		}
-		return announces;
+		return claimed;
 	}
 
 	int idsPerFrame() {
@@ -346,11 +336,11 @@ public class ZppOutgoingSource implements EventListener {
 		}
 	}
 
-	private void enqueueMessage(Message m, boolean userOriginated,
-			boolean opensWindow, int rank) throws IOException {
+	private void enqueueMessage(Message m, boolean userOriginated, int rank)
+			throws IOException {
 		MessageId id = m.getId();
 		try {
-			enqueue(codec.encodeMessage(m), userOriginated, opensWindow, rank,
+			enqueue(codec.encodeMessage(m), userOriginated, false, rank,
 					() -> inFlight.remove(id));
 		} catch (IOException | RuntimeException e) {
 			inFlight.remove(id);
@@ -407,7 +397,12 @@ public class ZppOutgoingSource implements EventListener {
 			}
 		} else if (e instanceof MessageSharedEvent) {
 			MessageSharedEvent m = (MessageSharedEvent) e;
-			if (m.getGroupVisibility().get(contactId) == TRUE) generateOffer();
+			if (m.getGroupVisibility().get(contactId) == TRUE) {
+				if (localMessages.isUnannounced(m.getMessageId())) {
+					userOfferDue.set(true);
+				}
+				generateOffer();
+			}
 		} else if (e instanceof GroupVisibilityUpdatedEvent) {
 			GroupVisibilityUpdatedEvent g = (GroupVisibilityUpdatedEvent) e;
 			if (g.getVisibility() == SHARED

@@ -313,7 +313,7 @@ public class ProvokedTrafficPacingTest {
 	}
 
 	@Test
-	public void aBodyRequestedWithoutAnOfferStillOpensTheWindowOnce()
+	public void aBodyRequestedWithoutAnOfferOpensNoWindow()
 			throws Exception {
 		Exchange x = new Exchange();
 		Message chosen = x.message(10);
@@ -325,8 +325,8 @@ public class ProvokedTrafficPacingTest {
 		x.offer(chosen);
 		x.request(chosen);
 
-		assertEquals(Arrays.asList("body user opens", "offer", "body"),
-				x.queued);
+		assertEquals(Arrays.asList("body user", "offer", "body"), x.queued);
+		assertEquals(0, x.wakes.get());
 	}
 
 	@Test
