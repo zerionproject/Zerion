@@ -9,12 +9,18 @@ import android.widget.TextView;
 
 import com.professor.zerion.R;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowDialog;
 import org.robolectric.shadows.ShadowPackageManager;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -28,6 +34,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(AndroidJUnit4.class)
@@ -41,6 +53,24 @@ public class BrowserGuardTorBrowserTest {
 	private static final String BANK_APP = "com.example.bank";
 	private static final String BANK_HOST = "bank.example";
 	private static final String BANK_LINK = "https://bank.example/login";
+	private static final String OTHER_CERT =
+			"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
+
+	private final Map<String, String> signers = new HashMap<>();
+
+	@Before
+	public void signersAreKnownToTheTest() {
+		BrowserGuard.signerCheck = (pm, pkg, certSha256) -> {
+			String signer = signers.get(pkg);
+			return signer != null && Arrays.equals(
+					BrowserGuard.certBytes(signer), certSha256);
+		};
+	}
+
+	@After
+	public void theSystemCheckIsBack() {
+		BrowserGuard.signerCheck = BrowserGuard.SYSTEM_SIGNER_CHECK;
+	}
 
 	private static FragmentActivity host() {
 		FragmentActivity a = Robolectric.buildActivity(FragmentActivity.class)
@@ -100,8 +130,16 @@ public class BrowserGuardTorBrowserTest {
 		return org.robolectric.shadows.ShadowToast.getTextOfLatestToast();
 	}
 
-	private static void installTorBrowser(FragmentActivity a, String pkg) {
+	private void installTorBrowser(FragmentActivity a, String pkg) {
+		installSignedBy(a, pkg, BrowserGuard.TOR_BROWSER.equals(pkg)
+				? BrowserGuard.TOR_BROWSER_CERT_SHA256
+				: BrowserGuard.TOR_BROWSER_ALPHA_CERT_SHA256);
+	}
+
+	private void installSignedBy(FragmentActivity a, String pkg,
+			String certSha256) {
 		installViewer(a, pkg, "http", "https");
+		signers.put(pkg, certSha256);
 	}
 
 	private static void installedFrom(FragmentActivity a, String installer) {
@@ -308,6 +346,142 @@ public class BrowserGuardTorBrowserTest {
 		assertNotNull(i);
 		assertEquals(BROWSER, i.getPackage());
 		assertEquals("https://example.org/page", i.getDataString());
+	}
+
+	@Test
+	public void aTorBrowserNameWithAnotherSignerIsTreatedAsNoTorBrowser() {
+		FragmentActivity a = host();
+		installViewer(a, BROWSER, "http", "https");
+		installSignedBy(a, BrowserGuard.TOR_BROWSER, OTHER_CERT);
+		assertFalse(BrowserGuard.isTorBrowser(a, BrowserGuard.TOR_BROWSER));
+		assertNull(BrowserGuard.torBrowserPackage(a));
+		assertFalse(BrowserGuard.hasTorBrowser(a));
+		AlertDialog d = dialog(a, "https://example.org/page");
+		assertEquals(a.getString(R.string.browser_warning_open),
+				button(d, DialogInterface.BUTTON_POSITIVE));
+		assertEquals(a.getString(R.string.browser_tor_get),
+				button(d, DialogInterface.BUTTON_NEGATIVE));
+		String text = message(d);
+		assertTrue(text, text.contains(
+				a.getString(R.string.browser_warning_message)));
+		assertFalse(text, text.contains(
+				a.getString(R.string.browser_tor_message)));
+		Intent i = click(a, d, DialogInterface.BUTTON_POSITIVE);
+		assertNotNull(i);
+		assertEquals(BROWSER, i.getPackage());
+	}
+
+	@Test
+	public void aTorBrowserNameWithAnotherSignerNeverReceivesTheLink() {
+		FragmentActivity a = host();
+		installSignedBy(a, BrowserGuard.TOR_BROWSER, OTHER_CERT);
+		assertNull(BrowserGuard.defaultBrowserPackage(a));
+		assertNull(click(a, dialog(a, "https://example.org/page"),
+				DialogInterface.BUTTON_POSITIVE));
+		assertEquals(a.getString(R.string.updates_no_browser), toast());
+		installViewer(a, BROWSER, "http", "https");
+		noBrowserIsTheDefault(a);
+		assertNull(BrowserGuard.defaultBrowserPackage(a));
+		assertNull(click(a, dialog(a, "https://example.org/page"),
+				DialogInterface.BUTTON_POSITIVE));
+		assertEquals(a.getString(R.string.updates_no_browser), toast());
+		makeDefaultBrowser(a, BrowserGuard.TOR_BROWSER,
+				BrowserGuard.TOR_BROWSER, BROWSER);
+		assertNull(BrowserGuard.defaultBrowserPackage(a));
+	}
+
+	@Test
+	public void theAlphaNameWithTheStableCertificateIsNotTorBrowser() {
+		FragmentActivity a = host();
+		installViewer(a, BROWSER, "http", "https");
+		installSignedBy(a, BrowserGuard.TOR_BROWSER_ALPHA,
+				BrowserGuard.TOR_BROWSER_CERT_SHA256);
+		assertNull(BrowserGuard.torBrowserPackage(a));
+		Intent i = click(a, dialog(a, "https://example.org/page"),
+				DialogInterface.BUTTON_POSITIVE);
+		assertNotNull(i);
+		assertEquals(BROWSER, i.getPackage());
+		installSignedBy(a, BrowserGuard.TOR_BROWSER,
+				BrowserGuard.TOR_BROWSER_ALPHA_CERT_SHA256);
+		assertNull(BrowserGuard.torBrowserPackage(a));
+	}
+
+	@Test
+	public void theAlphaWithItsOwnCertificateIsTorBrowser() {
+		FragmentActivity a = host();
+		installViewer(a, BROWSER, "http", "https");
+		installTorBrowser(a, BrowserGuard.TOR_BROWSER_ALPHA);
+		assertTrue(BrowserGuard.isTorBrowser(a,
+				BrowserGuard.TOR_BROWSER_ALPHA));
+		AlertDialog d = dialog(a, "https://example.org/page");
+		assertTrue(message(d).startsWith(
+				a.getString(R.string.browser_tor_message)));
+		Intent i = click(a, d, DialogInterface.BUTTON_POSITIVE);
+		assertNotNull(i);
+		assertEquals(BrowserGuard.TOR_BROWSER_ALPHA, i.getPackage());
+	}
+
+	@Test
+	public void aTorBrowserWhoseSignerChangesAfterTheDialogIsNotUsed() {
+		FragmentActivity a = host();
+		installViewer(a, BROWSER, "http", "https");
+		installTorBrowser(a, BrowserGuard.TOR_BROWSER);
+		AlertDialog d = dialog(a, "https://example.org/page");
+		assertEquals(a.getString(R.string.browser_tor_open),
+				button(d, DialogInterface.BUTTON_POSITIVE));
+		signers.put(BrowserGuard.TOR_BROWSER, OTHER_CERT);
+		assertNull("nothing is started",
+				click(a, d, DialogInterface.BUTTON_POSITIVE));
+		AlertDialog warning = (AlertDialog) ShadowDialog.getLatestDialog();
+		assertNotSame(d, warning);
+		assertTrue(message(warning).contains(
+				a.getString(R.string.browser_warning_message)));
+		Intent i = click(a, warning, DialogInterface.BUTTON_POSITIVE);
+		assertNotNull(i);
+		assertEquals(BROWSER, i.getPackage());
+	}
+
+	@Test
+	public void theSystemIsAskedForThePinnedCertificateOfThatPackage() {
+		android.content.pm.PackageManager pm =
+				mock(android.content.pm.PackageManager.class);
+		android.content.Context ctx = new android.content.ContextWrapper(
+				host()) {
+			@Override
+			public android.content.pm.PackageManager getPackageManager() {
+				return pm;
+			}
+		};
+		int sha256 = android.content.pm.PackageManager.CERT_INPUT_SHA256;
+		byte[] stable = BrowserGuard.certBytes(
+				BrowserGuard.TOR_BROWSER_CERT_SHA256);
+		byte[] alpha = BrowserGuard.certBytes(
+				BrowserGuard.TOR_BROWSER_ALPHA_CERT_SHA256);
+		assertEquals(32, stable.length);
+		assertEquals(0x20, stable[0]);
+		assertEquals((byte) 0xc8, stable[31]);
+		assertEquals(32, alpha.length);
+		assertEquals(0x15, alpha[0]);
+		assertEquals((byte) 0xe1, alpha[31]);
+		BrowserGuard.signerCheck = BrowserGuard.SYSTEM_SIGNER_CHECK;
+		when(pm.hasSigningCertificate(eq(BrowserGuard.TOR_BROWSER),
+				aryEq(stable), eq(sha256))).thenReturn(true);
+		when(pm.hasSigningCertificate(eq(BrowserGuard.TOR_BROWSER_ALPHA),
+				aryEq(stable), eq(sha256))).thenReturn(true);
+		when(pm.hasSigningCertificate(eq(BROWSER), any(byte[].class),
+				anyInt())).thenReturn(true);
+		assertTrue(BrowserGuard.isTorBrowser(ctx, BrowserGuard.TOR_BROWSER));
+		assertFalse(BrowserGuard.isTorBrowser(ctx,
+				BrowserGuard.TOR_BROWSER_ALPHA));
+		assertFalse(BrowserGuard.isTorBrowser(ctx, BROWSER));
+		when(pm.hasSigningCertificate(eq(BrowserGuard.TOR_BROWSER_ALPHA),
+				aryEq(alpha), eq(sha256))).thenReturn(true);
+		assertTrue(BrowserGuard.isTorBrowser(ctx,
+				BrowserGuard.TOR_BROWSER_ALPHA));
+		when(pm.hasSigningCertificate(eq(BrowserGuard.TOR_BROWSER),
+				any(byte[].class), anyInt()))
+				.thenThrow(new SecurityException());
+		assertFalse(BrowserGuard.isTorBrowser(ctx, BrowserGuard.TOR_BROWSER));
 	}
 
 	@Test

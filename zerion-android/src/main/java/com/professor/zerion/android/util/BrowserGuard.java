@@ -25,7 +25,11 @@ import javax.annotation.Nullable;
 public final class BrowserGuard {
 
 	static final String TOR_BROWSER = "org.torproject.torbrowser";
+	static final String TOR_BROWSER_CERT_SHA256 =
+			"20061f045e737c67375c17794cfedb436a03cec6bacb7cb9f96642205ca2cec8";
 	static final String TOR_BROWSER_ALPHA = "org.torproject.torbrowser_alpha";
+	static final String TOR_BROWSER_ALPHA_CERT_SHA256 =
+			"15f760b41acbe4783e667102c9f67119be2af62fab07763f9d57f01e5e1074e1";
 	static final String PLAY_STORE = "com.android.vending";
 	static final String TOR_BROWSER_PLAY =
 			"market://details?id=" + TOR_BROWSER;
@@ -40,6 +44,16 @@ public final class BrowserGuard {
 	static final String TOR_BROWSER_DOWNLOAD =
 			"https://www.torproject.org/download/#android";
 	private static final String PROBE_URL = "https://www.torproject.org/";
+
+	interface SignerCheck {
+		boolean signedBy(PackageManager pm, String pkg, byte[] certSha256);
+	}
+
+	static final SignerCheck SYSTEM_SIGNER_CHECK = (pm, pkg, certSha256) ->
+			pm.hasSigningCertificate(pkg, certSha256,
+					PackageManager.CERT_INPUT_SHA256);
+
+	static SignerCheck signerCheck = SYSTEM_SIGNER_CHECK;
 
 	private BrowserGuard() {
 	}
@@ -319,9 +333,39 @@ public final class BrowserGuard {
 		Intent probe = new Intent(Intent.ACTION_VIEW, Uri.parse(PROBE_URL));
 		probe.addCategory(Intent.CATEGORY_BROWSABLE);
 		for (String pkg : new String[] {TOR_BROWSER, TOR_BROWSER_ALPHA}) {
-			if (handles(ctx, pkg, probe)) return pkg;
+			if (isTorBrowser(ctx, pkg) && handles(ctx, pkg, probe)) return pkg;
 		}
 		return null;
+	}
+
+	static boolean isTorBrowser(Context ctx, String pkg) {
+		String cert = TOR_BROWSER.equals(pkg) ? TOR_BROWSER_CERT_SHA256
+				: TOR_BROWSER_ALPHA.equals(pkg) ? TOR_BROWSER_ALPHA_CERT_SHA256
+				: null;
+		if (cert == null) return false;
+		try {
+			return signerCheck.signedBy(ctx.getPackageManager(), pkg,
+					certBytes(cert));
+		} catch (RuntimeException e) {
+			return false;
+		}
+	}
+
+	static byte[] certBytes(String hex) {
+		byte[] out = new byte[hex.length() / 2];
+		for (int i = 0; i < out.length; i++) {
+			out[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2),
+					16);
+		}
+		return out;
+	}
+
+	private static boolean usesTorBrowserName(String pkg) {
+		return TOR_BROWSER.equals(pkg) || TOR_BROWSER_ALPHA.equals(pkg);
+	}
+
+	private static boolean isTrustedBrowser(Context ctx, String pkg) {
+		return !usesTorBrowserName(pkg) || isTorBrowser(ctx, pkg);
 	}
 
 	@Nullable
@@ -335,7 +379,8 @@ public final class BrowserGuard {
 		}
 		if (chosen == null || chosen.activityInfo == null) return null;
 		String pkg = chosen.activityInfo.packageName;
-		return pkg != null && opensAnyWebLink(ctx, pkg) ? pkg : null;
+		return pkg != null && isTrustedBrowser(ctx, pkg)
+				&& opensAnyWebLink(ctx, pkg) ? pkg : null;
 	}
 
 	private static Intent anyWebLink(String scheme) {
@@ -362,6 +407,7 @@ public final class BrowserGuard {
 		for (ResolveInfo handler : handlers) {
 			if (handler.activityInfo == null
 					|| handler.activityInfo.packageName == null
+					|| !isTrustedBrowser(ctx, handler.activityInfo.packageName)
 					|| !opensAnyWebLink(ctx,
 					handler.activityInfo.packageName)) {
 				return false;
@@ -440,7 +486,8 @@ public final class BrowserGuard {
 		i.addCategory(Intent.CATEGORY_BROWSABLE);
 		i.setSelector(null);
 		i.setComponent(null);
-		if (promised != null && !handles(ctx, promised, i)) {
+		if (promised != null && (!isTorBrowser(ctx, promised)
+				|| !handles(ctx, promised, i))) {
 			showDialog(ctx, url, true);
 			return;
 		}
