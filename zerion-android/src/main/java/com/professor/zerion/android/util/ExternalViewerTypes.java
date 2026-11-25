@@ -125,6 +125,8 @@ public final class ExternalViewerTypes {
 
 	static final int MAX_WALKED_DIRECTORIES = 64;
 
+	static final int MAX_END_RECORDS = 256;
+
 	private static final int END_RECORD_BYTES = 22;
 
 	private static final int ENTRY_HEADER_BYTES = 46;
@@ -243,10 +245,11 @@ public final class ExternalViewerTypes {
 		}
 
 		boolean holdsProgram() throws IOException {
+			int endRecords = 0;
 			for (int i = tail.length - END_RECORD_BYTES; i >= 0; i--) {
-				if (signed(tail, i, 5, 6) && endRecordHoldsProgram(i)) {
-					return true;
-				}
+				if (!signed(tail, i, 5, 6)) continue;
+				if (++endRecords > MAX_END_RECORDS) return true;
+				if (endRecordHoldsProgram(i)) return true;
 			}
 			return false;
 		}

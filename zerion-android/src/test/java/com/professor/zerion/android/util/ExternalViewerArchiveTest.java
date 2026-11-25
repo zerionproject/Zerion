@@ -267,18 +267,26 @@ public class ExternalViewerArchiveTest {
 	@Test
 	public void manyEndRecordsThatLeadNowhereCostAlmostNothing()
 			throws Exception {
-		int records = 2_500;
-		byte[][] parts = new byte[records + 1][];
-		parts[0] = filler(1024 * 1024);
-		for (int i = 0; i < records; i++) {
-			parts[i + 1] = endRecord(1, 1024 * 1024, i * 256L);
+		int most = ExternalViewerTypes.MAX_END_RECORDS;
+		for (int records : new int[] {most, most + 1, 2_500}) {
+			byte[][] parts = new byte[records + 1][];
+			parts[0] = filler(1024 * 1024);
+			for (int i = 0; i < records; i++) {
+				parts[i + 1] = endRecord(1, 1024 * 1024, i * 256L);
+			}
+			byte[] content = join(parts);
+			CountingSource counted = new CountingSource(content);
+			boolean refused = records > most;
+			assertEquals(String.valueOf(records), refused,
+					ExternalViewerTypes.isProgram(counted));
+			long examined = Math.min(records, most);
+			assertTrue("read " + counted.bytesRead,
+					counted.bytesRead <= 8 + TAIL + examined * 12L);
+			assertTrue("reads " + counted.reads,
+					counted.reads <= 2 + examined * 3L);
+			assertEquals(String.valueOf(records), refused ? null : ZIP,
+					opened(ZIP, content));
 		}
-		byte[] content = join(parts);
-		CountingSource counted = new CountingSource(content);
-		assertFalse(ExternalViewerTypes.isProgram(counted));
-		assertTrue("read " + counted.bytesRead,
-				counted.bytesRead <= 8 + TAIL + records * 12L);
-		assertEquals(ZIP, opened(ZIP, content));
 	}
 
 	@Test
