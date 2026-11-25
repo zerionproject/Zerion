@@ -2871,7 +2871,7 @@ public class ConversationActivity extends ZerionActivity
 						attachmentItem.getHeader());
 			} else if (attachmentItem.isVideo()) {
 				if (messageItem.isIncoming() && ImageViewHolder.videoOpened(
-						messageItem.getId(), attachmentItem.getMessageId())) {
+						messageItem.getId(), attachmentItem)) {
 					int position = adapter.getPositionOfMessage(
 							messageItem.getId());
 					if (position != RecyclerView.NO_POSITION) {

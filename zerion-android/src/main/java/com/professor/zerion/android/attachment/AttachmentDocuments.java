@@ -2,7 +2,10 @@ package com.professor.zerion.android.attachment;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -60,26 +63,117 @@ public final class AttachmentDocuments {
 			}
 		}
 		if (isPdf(data)) return false;
-		int i = 0;
-		if (data.length >= 3 && (data[0] & 0xFF) == 0xEF
-				&& (data[1] & 0xFF) == 0xBB && (data[2] & 0xFF) == 0xBF) {
-			i = 3;
-		}
-		while (i < data.length && (data[i] == ' ' || data[i] == '\t'
-				|| data[i] == '\n' || data[i] == '\r' || data[i] == 0x0C)) {
-			i++;
-		}
+		int i = skipLeading(data, 0);
 		for (String start : STRUCTURED_STARTS) {
 			if (startsWithIgnoringCase(data, i, start)) return false;
 		}
 		return !startsMarkup(data, i);
 	}
 
+	private static final Set<String> METADATA_ROOTS = new HashSet<>(
+			Arrays.asList("svg", "html", "xhtml", "head", "body", "xml",
+					"gpx", "kml", "kmz", "xmpmeta", "rdf", "plist", "rss",
+					"feed"));
+
+	private static final int MAX_NAME = 128;
+	private static final int MAX_TAG = 4096;
+
+	private static int skipLeading(byte[] data, int from) {
+		int i = from;
+		while (i < data.length) {
+			long next = codePointAt(data, i);
+			int cp = (int) next;
+			int length = (int) (next >>> 32);
+			if (length == 0) {
+				int b = data[i] & 0xFF;
+				if (b != 0xA0 && b != 0x85) return i;
+				i++;
+				continue;
+			}
+			if (!skippable(cp)) return i;
+			i += length;
+		}
+		return i;
+	}
+
+	private static boolean skippable(int cp) {
+		return Character.isWhitespace(cp) || Character.isSpaceChar(cp)
+				|| Character.getType(cp) == Character.FORMAT || cp == 0x85;
+	}
+
+	private static long codePointAt(byte[] data, int i) {
+		int b = data[i] & 0xFF;
+		int length;
+		int cp;
+		if (b < 0x80) {
+			return (1L << 32) | b;
+		} else if ((b & 0xE0) == 0xC0) {
+			length = 2;
+			cp = b & 0x1F;
+		} else if ((b & 0xF0) == 0xE0) {
+			length = 3;
+			cp = b & 0x0F;
+		} else if ((b & 0xF8) == 0xF0) {
+			length = 4;
+			cp = b & 0x07;
+		} else {
+			return 0L;
+		}
+		if (i + length > data.length) return 0L;
+		for (int k = 1; k < length; k++) {
+			int c = data[i + k] & 0xFF;
+			if ((c & 0xC0) != 0x80) return 0L;
+			cp = (cp << 6) | (c & 0x3F);
+		}
+		return ((long) length << 32) | (cp & 0xFFFFFFFFL);
+	}
+
 	private static boolean startsMarkup(byte[] data, int at) {
 		if (data.length - at < 2 || data[at] != '<') return false;
 		int c = data[at + 1] & 0xFF;
-		return c == '?' || c == '!' || (c >= 'a' && c <= 'z')
-				|| (c >= 'A' && c <= 'Z');
+		if (c == '?' || c == '!') return true;
+		StringBuilder name = new StringBuilder();
+		int i = at + 1;
+		while (i < data.length && name.length() < MAX_NAME) {
+			long next = codePointAt(data, i);
+			int length = (int) (next >>> 32);
+			if (length == 0) break;
+			int cp = (int) next;
+			if (cp == '>' || cp == '/' || cp == '<' || cp == '='
+					|| skippable(cp)) {
+				break;
+			}
+			name.appendCodePoint(cp);
+			i += length;
+		}
+		if (name.length() == 0) return false;
+		int first = name.codePointAt(0);
+		if (!Character.isLetter(first) && first != '_' && first != ':') {
+			return false;
+		}
+		String root = name.toString().toLowerCase(Locale.ROOT);
+		if (root.indexOf(':') >= 0 || METADATA_ROOTS.contains(root)) {
+			return true;
+		}
+		return declaresNamespace(data, i);
+	}
+
+	private static boolean declaresNamespace(byte[] data, int from) {
+		int end = Math.min(data.length, from + MAX_TAG);
+		for (int i = from; i < end; i++) {
+			if (data[i] == '>') return false;
+			if (startsWithIgnoringCase(data, i, "xmlns")) {
+				int j = i + 5;
+				while (j < end && (data[j] == ' ' || data[j] == '\t'
+						|| data[j] == '\n' || data[j] == '\r')) {
+					j++;
+				}
+				if (j < end && (data[j] == '=' || data[j] == ':')) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private static boolean startsWithIgnoringCase(byte[] data, int at,

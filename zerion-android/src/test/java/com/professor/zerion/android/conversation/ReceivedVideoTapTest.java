@@ -89,10 +89,13 @@ public class ReceivedVideoTapTest {
 		return item;
 	}
 
+	private static AttachmentHeader header() {
+		return new AttachmentHeader(new GroupId(getRandomId()),
+				new MessageId(getRandomId()), "video/mp4");
+	}
+
 	private static AttachmentItem video() {
-		return AttachmentItemsForTests.available(new AttachmentHeader(
-				new GroupId(getRandomId()), new MessageId(getRandomId()),
-				"video/mp4"), "mp4");
+		return AttachmentItemsForTests.available(header(), "mp4");
 	}
 
 	private boolean playerStarted() {
@@ -135,5 +138,20 @@ public class ReceivedVideoTapTest {
 		idle();
 		assertEquals("a second tap drew the bubble again", 1,
 				redrawn.size());
+	}
+
+	@Test
+	public void aTapOnAVideoThatHasNotArrivedLeavesItUnopened() {
+		AttachmentItem[] notThere = {
+				AttachmentItemsForTests.loading(header()),
+				AttachmentItemsForTests.missing(header())};
+		for (AttachmentItem video : notThere) {
+			ConversationMessageItem message = videoMessage(false, video);
+			activity.onAttachmentClicked(new View(activity), message, video);
+			idle();
+			assertTrue("a video that had not arrived counts as opened",
+					ImageViewHolder.videoOpened(message.getId(),
+							video.getMessageId()));
+		}
 	}
 }

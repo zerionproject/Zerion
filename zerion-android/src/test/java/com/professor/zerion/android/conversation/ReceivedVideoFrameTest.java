@@ -46,6 +46,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.robolectric.Shadows.shadowOf;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
@@ -124,6 +126,8 @@ public class ReceivedVideoFrameTest {
 		when(reader.getAttachment(any(AttachmentHeader.class))).thenAnswer(
 				inv -> new Attachment(inv.getArgument(0),
 						new ByteArrayInputStream(VIDEO)));
+		when(reader.getStoredSize(any(AttachmentHeader.class)))
+				.thenReturn((long) VIDEO.length);
 	}
 
 	@After
@@ -171,7 +175,8 @@ public class ReceivedVideoFrameTest {
 	}
 
 	@Test
-	public void aReceivedVideoIsNotParsedWhenTheChatShowsIt() {
+	public void aReceivedVideoIsNotParsedWhenTheChatShowsIt()
+			throws Exception {
 		MessageId message = new MessageId(getRandomId());
 		ImageViewHolder h = holder(message);
 		show(h, message, video(new MessageId(getRandomId())), true);
@@ -191,6 +196,22 @@ public class ReceivedVideoFrameTest {
 		ImageView image = h.itemView.findViewById(R.id.imageView);
 		assertEquals("Video, " + expected,
 				String.valueOf(image.getContentDescription()));
+		verify(reader, never()).getAttachment(any(AttachmentHeader.class));
+	}
+
+	@Test
+	public void aReceivedVideoWithoutAStoredSizeShowsNoSize()
+			throws Exception {
+		when(reader.getStoredSize(any(AttachmentHeader.class)))
+				.thenReturn(-1L);
+		MessageId message = new MessageId(getRandomId());
+		ImageViewHolder h = holder(message);
+		show(h, message, video(new MessageId(getRandomId())), true);
+
+		assertEquals(View.GONE, sizeLabel(h).getVisibility());
+		assertEquals(R.drawable.ic_video, shownResource(h));
+		verify(reader, never()).getAttachment(any(AttachmentHeader.class));
+		assertEquals(0, CountingRetriever.sources);
 	}
 
 	@Test
@@ -282,6 +303,23 @@ public class ReceivedVideoFrameTest {
 
 		ImageViewHolder.forgetOpenedVideos();
 		assertTrue(ImageViewHolder.videoOpened(kept, attachment));
+	}
+
+	@Test
+	public void onlyAVideoThatHasArrivedCanBeMarkedAsOpened() {
+		MessageId message = new MessageId(getRandomId());
+		AttachmentHeader header = new AttachmentHeader(
+				new GroupId(getRandomId()), new MessageId(getRandomId()),
+				"video/mp4");
+		assertFalse(ImageViewHolder.videoOpened(message,
+				AttachmentItemsForTests.loading(header)));
+		assertFalse(ImageViewHolder.videoOpened(message,
+				AttachmentItemsForTests.missing(header)));
+		assertEquals(0, OpenedVideos.size());
+		assertTrue(ImageViewHolder.videoOpened(message,
+				AttachmentItemsForTests.available(header, "mp4")));
+		assertFalse(ImageViewHolder.videoOpened(message,
+				header.getMessageId()));
 	}
 
 	@Test

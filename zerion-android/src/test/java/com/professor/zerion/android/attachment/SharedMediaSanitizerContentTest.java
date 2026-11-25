@@ -373,7 +373,9 @@ public class SharedMediaSanitizerContentTest {
 				"<!-- drawn by Someone --><svg><metadata>x</metadata></svg>",
 				"<?xpacket begin=\"\" id=\"W5M0\"?><x:xmpmeta/>",
 				" \n<gpx creator=\"Someone\"></gpx>",
-				"<kml><Document><name>Home</name></Document></kml>"};
+				"<kml><Document><name>Home</name></Document></kml>",
+				"\u00A0<svg><metadata>x</metadata></svg>",
+				"<rdf:RDF><dc:creator>Someone</dc:creator></rdf:RDF>"};
 		for (String document : documents) {
 			byte[] data = ascii(document);
 			try {
@@ -390,7 +392,9 @@ public class SharedMediaSanitizerContentTest {
 			assertArrayEquals(data, kept.getData());
 		}
 		for (String words : new String[] {"ordinary words\n",
-				"<3 and < 5 are still words\n"}) {
+				"<3 and < 5 are still words\n",
+				"<p align=\"center\">a readme</p>\n",
+				"<nick> hi\n"}) {
 			byte[] text = ascii(words);
 			assertArrayEquals(text, new SharedMediaSanitizer(ctx).sanitize(
 					stage(text), "text/plain", text, MAX).getData());

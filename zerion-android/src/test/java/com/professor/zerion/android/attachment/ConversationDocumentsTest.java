@@ -197,7 +197,7 @@ public class ConversationDocumentsTest {
 						+ "meta/\"><dc:creator>Someone</dc:creator></x:xmpmeta>"},
 				{"route.txt", "text/plain", "<gpx version=\"1.1\" creator=\""
 						+ "Someone\"><wpt lat=\"52.1\" lon=\"4.3\"/></gpx>"},
-				{"places.txt", "text/plain", "﻿ \t\r\n<kml><Document>"
+				{"places.txt", "text/plain", "\uFEFF \t\r\n<kml><Document>"
 						+ "<name>Home</name></Document></kml>"},
 				{"sheet.txt", "text/x-markdown", "<Workbook xmlns=\"urn:"
 						+ "schemas-microsoft-com:office:spreadsheet\"><Author>"
@@ -205,7 +205,33 @@ public class ConversationDocumentsTest {
 				{"letter.txt", "text/plain", "<?mso-application progid=\""
 						+ "Word.Document\"?><w:wordDocument/>"},
 				{"entity.txt", "text/markdown",
-						"<!ENTITY author \"Someone\">"}};
+						"<!ENTITY author \"Someone\">"},
+				{"drawing.txt", "text/plain", "\u00A0<svg><title>Someone"
+						+ "</title></svg>"},
+				{"drawing.txt", "text/plain", "\uFEFF\uFEFF<svg/>"},
+				{"places.txt", "text/plain", "\u2028<kml/>"},
+				{"route.txt", "text/plain",
+						"\u2029 \u3000<gpx creator=\"x\"/>"},
+				{"page.txt", "text/plain", "\u200B\u2060\u00A0\n<HTML>"},
+				{"drawing.txt", "text/plain", "<:svg/>"},
+				{"photo.txt", "text/plain", "<rdf:RDF><dc:creator>Someone"
+						+ "</dc:creator></rdf:RDF>"},
+				{"photo.txt", "text/plain", "<RDF/>"},
+				{"photo.txt", "text/plain", "<xmpmeta/>"},
+				{"settings.txt", "text/plain", "<plist version=\"1.0\">"
+						+ "<dict/></plist>"},
+				{"head.txt", "text/plain", "<head><meta name=\"author\" "
+						+ "content=\"Someone\"></head>"},
+				{"body.txt", "text/plain", "<Body>x</Body>"},
+				{"data.txt", "text/plain",
+						"<xml><author>Someone</author></xml>"},
+				{"places.txt", "text/plain", "<kmz/>"},
+				{"note.txt", "text/plain", "<_x:meta>Someone</_x:meta>"},
+				{"note.txt", "text/plain", "<_doc xmlns=\"urn:x\">"
+						+ "Someone</_doc>"},
+				{"note.txt", "text/plain", "<\u00F1ame xmlns:a=\"urn:x\"/>"},
+				{"note.txt", "text/plain", "<\u00E9t:\u00E9 a=\"1\"/>"},
+				{"note.txt", "text/plain", "<! anything>"}};
 		for (String[] c : cases) {
 			sent = null;
 			org.mockito.Mockito.clearInvocations(creator);
@@ -231,12 +257,19 @@ public class ConversationDocumentsTest {
 				"<3 thanks for yesterday",
 				"< 5 minutes left",
 				"<- the arrow points left",
-				"﻿ \n<= 10 items",
+				"\uFEFF \n<= 10 items",
 				"<1> first point\n<2> second point",
 				"<",
 				"<<< read this first",
 				"a list\n<!-- a comment further down -->\n<?xml later ?>\n"
-						+ "<gpx> and <kml> are only named here"};
+						+ "<gpx> and <kml> are only named here",
+				"<p align=\"center\">\n  <img src=\"logo.png\">\n</p>\n\n"
+						+ "# Project\n",
+				"<nick> hi there\n<other> hello\n",
+				"<b>Shopping</b>\n- milk\n- bread\n",
+				"\u00A0<3 still a note",
+				"<_note> remember this",
+				"<\u00F1and\u00FA> is a bird"};
 		for (String text : texts) {
 			sent = null;
 			byte[] bytes = text.getBytes(StandardCharsets.UTF_8);

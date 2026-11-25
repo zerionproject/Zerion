@@ -26,6 +26,7 @@ import static org.zerionproject.core.util.IoUtils.copyAndClose;
 import static org.zerionproject.app.api.attachment.MediaConstants.MSG_KEY_CONTENT_TYPE;
 import static org.zerionproject.app.api.attachment.MediaConstants.MSG_KEY_DESCRIPTOR_LENGTH;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class AttachmentReaderImplTest extends BrambleMockTestCase {
 
@@ -125,5 +126,49 @@ public class AttachmentReaderImplTest extends BrambleMockTestCase {
 		byte[] data = out.toByteArray();
 
 		assertArrayEquals(expectedData, data);
+	}
+
+	private long storedSize(BdfDictionary meta) throws Exception {
+		Transaction txn = new Transaction(null, true);
+		context.checking(new DbExpectations() {{
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
+			oneOf(clientHelper)
+					.getMessageMetadataAsDictionary(txn, message.getId());
+			will(returnValue(meta));
+		}});
+		return attachmentReader.getStoredSize(header);
+	}
+
+	@Test
+	public void testStoredSizeComesFromTheManifestWithoutTheContent()
+			throws Exception {
+		assertEquals(4_000_000L, storedSize(BdfDictionary.of(
+				new BdfEntry(MSG_KEY_CONTENT_TYPE, contentType),
+				new BdfEntry("messageType", 3),
+				new BdfEntry("totalSize", 4_000_000L))));
+	}
+
+	@Test
+	public void testNoStoredSizeForASingleMessageAttachment()
+			throws Exception {
+		assertEquals(-1L, storedSize(BdfDictionary.of(
+				new BdfEntry(MSG_KEY_CONTENT_TYPE, contentType),
+				new BdfEntry(MSG_KEY_DESCRIPTOR_LENGTH, 12))));
+	}
+
+	@Test
+	public void testNoStoredSizeForAnUnknownOrWrongEntry() throws Exception {
+		assertEquals(-1L, storedSize(new BdfDictionary()));
+		assertEquals(-1L, storedSize(BdfDictionary.of(
+				new BdfEntry(MSG_KEY_CONTENT_TYPE, "image/png"),
+				new BdfEntry("messageType", 3),
+				new BdfEntry("totalSize", 4_000_000L))));
+		assertEquals(-1L, storedSize(BdfDictionary.of(
+				new BdfEntry(MSG_KEY_CONTENT_TYPE, contentType),
+				new BdfEntry("messageType", 3),
+				new BdfEntry("totalSize", 11L * 1024 * 1024))));
+		assertEquals(-1L, storedSize(BdfDictionary.of(
+				new BdfEntry(MSG_KEY_CONTENT_TYPE, contentType),
+				new BdfEntry("messageType", 3))));
 	}
 }

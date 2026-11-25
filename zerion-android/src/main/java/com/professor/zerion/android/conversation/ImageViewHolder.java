@@ -99,6 +99,11 @@ public class ImageViewHolder extends ViewHolder {
 		OpenedVideos.removeIf(key -> ofAny(prefixes, key));
 	}
 
+	public static boolean videoOpened(MessageId item, AttachmentItem video) {
+		if (video.getState() != AVAILABLE) return false;
+		return videoOpened(item, video.getMessageId());
+	}
+
 	public static boolean videoOpened(MessageId item, MessageId attachment) {
 		return OpenedVideos.add(videoKey(item, attachment));
 	}
@@ -349,11 +354,10 @@ public class ImageViewHolder extends ViewHolder {
 		iconTint(false);
 		imageView.setImageResource(R.drawable.ic_video);
 		imageView.setScaleType(FIT_CENTER);
-		showVideoSize(a, 0, bound);
+		showVideoSize(a, bound);
 	}
 
-	private void showVideoSize(AttachmentItem a, int attemptNumber,
-			Object token) {
+	private void showVideoSize(AttachmentItem a, Object token) {
 		if (token != bound) return;
 		TextView label = videoSize;
 		AttachmentReader reader = attachmentReader;
@@ -367,22 +371,12 @@ public class ImageViewHolder extends ViewHolder {
 		previewExecutor.execute(() -> {
 			if (token != bound) return;
 			try {
-				long size;
-				Attachment attachment = reader.getAttachment(a.getHeader());
-				try (InputStream is = attachment.getStream()) {
-					size = countBytes(is);
-				}
+				long size = reader.getStoredSize(a.getHeader());
 				if (size <= 0) return;
 				VIDEO_SIZES.put(key, size);
 				imageView.post(() -> {
 					if (token == bound) showVideoSize(label, a, size);
 				});
-			} catch (AttachmentNotYetAvailableException e) {
-				if (attemptNumber < MAX_THUMBNAIL_RETRY_ATTEMPTS) {
-					imageView.postDelayed(() -> showVideoSize(a,
-							attemptNumber + 1, token),
-							THUMBNAIL_RETRY_DELAY_MS);
-				}
 			} catch (Exception ignored) {
 			}
 		});
@@ -394,18 +388,6 @@ public class ImageViewHolder extends ViewHolder {
 		label.setVisibility(View.VISIBLE);
 		imageView.setContentDescription(AttachmentKinds.describe(
 				imageView.getContext(), a.getMimeType(), size));
-	}
-
-	static long countBytes(InputStream in) throws IOException {
-		byte[] buffer = new byte[8192];
-		long total = 0;
-		try {
-			int n;
-			while ((n = in.read(buffer)) != -1) total += n;
-			return total;
-		} finally {
-			Arrays.fill(buffer, (byte) 0);
-		}
 	}
 
 	private void loadVideoThumbnail(AttachmentItem a, Radii r) {
