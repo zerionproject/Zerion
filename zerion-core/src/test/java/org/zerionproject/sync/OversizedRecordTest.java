@@ -44,7 +44,7 @@ public class OversizedRecordTest {
 		}, () -> true) {
 			@Override
 			public void enqueueRecord(byte[] record, boolean userOriginated,
-					boolean bulkLane, Runnable onSent) {
+					boolean opensWindow, boolean bulkLane, Runnable onSent) {
 				queued.add(record);
 			}
 		};

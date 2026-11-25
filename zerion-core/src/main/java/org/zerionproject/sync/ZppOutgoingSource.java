@@ -176,7 +176,8 @@ public class ZppOutgoingSource implements EventListener {
 				long now = clock.currentTimeMillis();
 				for (Message m : b) {
 					if (!inFlight.add(m.getId())) continue;
-					enqueueMessage(m, isFresh(m, now));
+					boolean unannounced = isUnannounced(m, now);
+					enqueueMessage(m, isFresh(m, now), unannounced);
 				}
 				generateBatch();
 			} else if (scheduler.getBulkDepth() > 0) {
@@ -219,7 +220,8 @@ public class ZppOutgoingSource implements EventListener {
 					if (!inFlight.contains(id)) ids.add(id);
 				}
 				if (!ids.isEmpty()) {
-					enqueue(codec.encodeOffer(new Offer(ids)), false);
+					byte[] offer = codec.encodeOffer(new Offer(ids));
+					enqueue(offer, false, announcesUserMessage(ids), null);
 				}
 				generateOffer();
 			}
@@ -248,13 +250,27 @@ public class ZppOutgoingSource implements EventListener {
 		return localMessages.takeFirstSend(m.getId());
 	}
 
+	boolean isUnannounced(Message m, long now) {
+		if (m.getTimestamp() - now > FRESH_MESSAGE_MS) return false;
+		return localMessages.takeFirstOffer(m.getId());
+	}
+
+	boolean announcesUserMessage(Collection<MessageId> offered) {
+		boolean announces = false;
+		for (MessageId id : offered) {
+			if (localMessages.takeFirstOffer(id)) announces = true;
+		}
+		return announces;
+	}
+
 	private void enqueue(byte[] syncRecord, boolean userOriginated)
 			throws IOException {
-		enqueue(syncRecord, userOriginated, null);
+		enqueue(syncRecord, userOriginated, userOriginated, null);
 	}
 
 	private void enqueue(byte[] syncRecord, boolean userOriginated,
-			@Nullable Runnable onSent) throws IOException {
+			boolean opensWindow, @Nullable Runnable onSent)
+			throws IOException {
 		if (syncRecord.length > ZmmConstants.MAX_RECORD_BYTES) {
 			if (onSent != null) onSent.run();
 			return;
@@ -265,16 +281,16 @@ public class ZppOutgoingSource implements EventListener {
 		boolean bulkLane = frames.size() > 1;
 		int last = frames.size() - 1;
 		for (int i = 0; i <= last; i++) {
-			scheduler.enqueueRecord(frames.get(i), userOriginated, bulkLane,
-					i == last ? onSent : null);
+			scheduler.enqueueRecord(frames.get(i), userOriginated,
+					opensWindow, bulkLane, i == last ? onSent : null);
 		}
 	}
 
-	private void enqueueMessage(Message m, boolean userOriginated)
-			throws IOException {
+	private void enqueueMessage(Message m, boolean userOriginated,
+			boolean opensWindow) throws IOException {
 		MessageId id = m.getId();
 		try {
-			enqueue(codec.encodeMessage(m), userOriginated,
+			enqueue(codec.encodeMessage(m), userOriginated, opensWindow,
 					() -> inFlight.remove(id));
 		} catch (IOException | RuntimeException e) {
 			inFlight.remove(id);

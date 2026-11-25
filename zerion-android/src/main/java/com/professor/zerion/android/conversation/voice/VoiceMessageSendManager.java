@@ -11,6 +11,7 @@ import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.zerionproject.core.api.sync.event.MessagesSentEvent;
 import org.zerionproject.app.api.conversation.ConversationManager;
 import org.zerionproject.app.api.messaging.MessagingManager;
@@ -37,6 +38,7 @@ public class VoiceMessageSendManager implements EventListener {
 	private final PrivateMessageFactory privateMessageFactory;
 	private final ConversationManager conversationManager;
 	private final VoiceChunkAssembler assembler;
+	private final UserMessageMarker userMessages;
 
 	private static final int MAX_PENDING_MEMOS = 64;
 
@@ -65,7 +67,9 @@ public class VoiceMessageSendManager implements EventListener {
 			MessagingManager messagingManager,
 			PrivateMessageFactory privateMessageFactory,
 			ConversationManager conversationManager,
-			VoiceChunkAssembler assembler) {
+			VoiceChunkAssembler assembler,
+			UserMessageMarker userMessages) {
+		this.userMessages = userMessages;
 		this.dbExecutor = dbExecutor;
 		this.db = db;
 		this.messagingManager = messagingManager;
@@ -169,6 +173,7 @@ public class VoiceMessageSendManager implements EventListener {
 					}
 					messagingManager.addLocalMessage(txn, pm);
 					MessageId id = pm.getMessage().getId();
+					userMessages.noteLaterPart(id);
 					if (!last) {
 						synchronized (lock) {
 							inFlight.put(id, memoId);

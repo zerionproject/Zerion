@@ -32,16 +32,18 @@ public class ZppSendScheduler {
 		@javax.annotation.Nullable
 		final Supplier<byte[]> builder;
 		final boolean userOriginated;
+		final boolean opensWindow;
 		@javax.annotation.Nullable
 		final Runnable onSent;
 
 		Entry(@javax.annotation.Nullable byte[] record,
 				@javax.annotation.Nullable Supplier<byte[]> builder,
-				boolean userOriginated,
+				boolean userOriginated, boolean opensWindow,
 				@javax.annotation.Nullable Runnable onSent) {
 			this.record = record;
 			this.builder = builder;
 			this.userOriginated = userOriginated;
+			this.opensWindow = opensWindow;
 			this.onSent = onSent;
 		}
 
@@ -61,6 +63,7 @@ public class ZppSendScheduler {
 	private final AtomicLong realFrames = new AtomicLong();
 	private final AtomicLong coverFrames = new AtomicLong();
 	private volatile boolean lastRealUserOriginated = false;
+	private volatile boolean lastRealOpenedWindow = false;
 
 	@javax.annotation.Nullable
 	private volatile Runnable wakeListener;
@@ -81,12 +84,12 @@ public class ZppSendScheduler {
 	}
 
 	public void enqueueControl(byte[] record) {
-		control.add(new Entry(record, null, false, null));
+		control.add(new Entry(record, null, false, false, null));
 		wake();
 	}
 
 	public void enqueueControlWhenDue(Supplier<byte[]> builder) {
-		control.add(new Entry(null, builder, false, null));
+		control.add(new Entry(null, builder, false, false, null));
 		wake();
 	}
 
@@ -123,15 +126,26 @@ public class ZppSendScheduler {
 
 	public void enqueueRecord(byte[] record, boolean userOriginated,
 			boolean bulkLane, @javax.annotation.Nullable Runnable onSent) {
-		(bulkLane ? bulk : outgoing).add(
-				new Entry(record, null, userOriginated, onSent));
-		if (!userOriginated && !wakeOnAnyEnqueue) return;
+		enqueueRecord(record, userOriginated, userOriginated, bulkLane,
+				onSent);
+	}
+
+	public void enqueueRecord(byte[] record, boolean userOriginated,
+			boolean opensWindow, boolean bulkLane,
+			@javax.annotation.Nullable Runnable onSent) {
+		(bulkLane ? bulk : outgoing).add(new Entry(record, null,
+				userOriginated, opensWindow, onSent));
+		if (!opensWindow && !wakeOnAnyEnqueue) return;
 		Runnable listener = wakeListener;
 		if (listener != null) listener.run();
 	}
 
 	public boolean lastRealFrameWasUserOriginated() {
 		return lastRealUserOriginated;
+	}
+
+	public boolean lastRealFrameOpenedWindow() {
+		return lastRealOpenedWindow;
 	}
 
 	public boolean tick() throws IOException {
@@ -154,6 +168,7 @@ public class ZppSendScheduler {
 		}
 		if (record != null && bytes != null) {
 			lastRealUserOriginated = record.userOriginated;
+			lastRealOpenedWindow = record.opensWindow;
 			sink.send(bytes);
 			realFrames.incrementAndGet();
 			Runnable onSent = record.onSent;

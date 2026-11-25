@@ -4,9 +4,11 @@ import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -23,6 +25,7 @@ public class LocalMessageLog implements UserMessageMarker {
 
 	private final LongSupplier clock;
 	private final Map<MessageId, Long> added = new LinkedHashMap<>();
+	private final Set<MessageId> unannounced = new HashSet<>();
 
 	@Inject
 	public LocalMessageLog() {
@@ -39,11 +42,17 @@ public class LocalMessageLog implements UserMessageMarker {
 		expire(now);
 		added.remove(id);
 		added.put(id, now);
+		unannounced.add(id);
 		if (added.size() > MAX_ENTRIES) {
 			Iterator<MessageId> it = added.keySet().iterator();
-			it.next();
+			unannounced.remove(it.next());
 			it.remove();
 		}
+	}
+
+	@Override
+	public synchronized void noteLaterPart(MessageId id) {
+		unannounced.remove(id);
 	}
 
 	public synchronized boolean isRecentLocal(MessageId id) {
@@ -52,9 +61,16 @@ public class LocalMessageLog implements UserMessageMarker {
 		return added.containsKey(id);
 	}
 
+	public synchronized boolean takeFirstOffer(MessageId id) {
+		long now = clock.getAsLong();
+		expire(now);
+		return unannounced.remove(id);
+	}
+
 	public synchronized boolean takeFirstSend(MessageId id) {
 		long now = clock.getAsLong();
 		expire(now);
+		unannounced.remove(id);
 		return added.remove(id) != null;
 	}
 
@@ -62,8 +78,9 @@ public class LocalMessageLog implements UserMessageMarker {
 		Iterator<Map.Entry<MessageId, Long>> it = added.entrySet().iterator();
 		while (it.hasNext()) {
 			Map.Entry<MessageId, Long> e = it.next();
-			if (now - e.getValue() > FRESH_MESSAGE_MS) it.remove();
-			else break;
+			if (now - e.getValue() <= FRESH_MESSAGE_MS) break;
+			unannounced.remove(e.getKey());
+			it.remove();
 		}
 	}
 }

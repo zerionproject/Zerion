@@ -364,7 +364,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 					echoDue.set(false);
 					receivedSinceSend.set(0);
 					afterFrame(clock, gate, realSent,
-							scheduler.lastRealFrameWasUserOriginated(), sentAt);
+							scheduler.lastRealFrameOpenedWindow(), sentAt);
 					boolean active = isActive(scheduler.getQueueDepth(),
 							clock.lastRealMs, sentAt, pacing.idleAfterMs());
 					long activeDelay = computeInterval(pacing.activeIntervalMs(),

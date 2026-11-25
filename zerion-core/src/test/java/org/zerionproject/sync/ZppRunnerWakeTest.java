@@ -451,6 +451,128 @@ public class ZppRunnerWakeTest {
 		assertFalse(t.isAlive());
 	}
 
+	@Test(timeout = 60_000)
+	public void onADenseLinkOnlyARecordThatOpensTheWindowMakesItActive()
+			throws Exception {
+		ScriptedConnection conn = connection();
+		AtomicReference<ZppSendScheduler> opened = new AtomicReference<>();
+		ZppConnectionRunnerImpl runner = new ZppConnectionRunnerImpl(records,
+				capturing(opened), stepPacing(true), now::get, sink);
+		assertTrue(runner.grantsOpeningWindow(1, now.get()));
+		Thread t = run(runner, conn);
+		try {
+			await(() -> conn.sent.size() == 1, "the link parameters frame");
+			conn.deliver(ZmmRecord.encode(ZmmConstants.TYPE_LINK_PARAMS,
+					ZppLinkParams.encode(true)));
+			await(() -> opened.get() != null, "the outgoing source");
+			ZppSendScheduler scheduler = opened.get();
+
+			scheduler.enqueueRecord(text(1), true, false, false, null);
+			now.addAndGet(STEP_IDLE_MAX_MS);
+			await(() -> count("sent-real") == 2, "the body at an idle slot");
+			int frames = conn.sent.size();
+			now.addAndGet(STEP_BETWEEN_MS);
+			holds(() -> conn.sent.size() == frames, STEP_SETTLE_MS,
+					"a body that opens no window leaves the link idle");
+
+			scheduler.enqueueRecord(text(2), false, true, false, null);
+			await(() -> count("sent-real") == 3, "the offer after the wake");
+			int after = conn.sent.size();
+			now.addAndGet(STEP_BETWEEN_MS);
+			await(() -> conn.sent.size() > after,
+					"an active slot after the offer");
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+	}
+
+	@Test(timeout = 60_000)
+	public void onASparseLinkTheMarkedBodyStillCountsAsThisSidesSend()
+			throws Exception {
+		ScriptedConnection conn = connection();
+		AtomicReference<ZppSendScheduler> opened = new AtomicReference<>();
+		ZppConnectionRunnerImpl runner = new ZppConnectionRunnerImpl(records,
+				capturing(opened), stepPacing(false), now::get, sink);
+		Thread t = run(runner, conn);
+		try {
+			await(() -> conn.sent.size() == 1, "the link parameters frame");
+			conn.deliver(tolerantPeerParams());
+			await(() -> opened.get() != null, "the outgoing source");
+			ZppSendScheduler scheduler = opened.get();
+			assertTrue(runner.gateFor(1).admitReceipt());
+			assertFalse(runner.gateFor(1).admitReceipt());
+
+			scheduler.enqueueRecord(text(1), false, true, false, null);
+			await(() -> count("sent-real") == 2, "the offer");
+			holds(() -> scheduler.getQueueDepth() == 0, 100, "sent");
+			assertFalse("an offer is no send of this side on a sparse link",
+					runner.gateFor(1).admitReceipt());
+
+			scheduler.enqueueRecord(text(2), true, false, false, null);
+			await(() -> count("sent-real") == 3, "the body");
+			await(() -> runner.gateFor(1).admitReceipt(),
+					"the reply window the body opens");
+			assertTrue(runner.gateFor(1).admitReceipt());
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+	}
+
+	private static final long STEP_ACTIVE_MS = 30;
+	private static final long STEP_IDLE_MS = 600;
+	private static final long STEP_IDLE_MAX_MS = 800;
+	private static final long STEP_BETWEEN_MS = 100;
+	private static final long STEP_SETTLE_MS = 1_500;
+
+	private static ZppPacing stepPacing(boolean cover) {
+		return new ZppPacing() {
+			@Override
+			public long activeIntervalMs() {
+				return STEP_ACTIVE_MS;
+			}
+
+			@Override
+			public long idleIntervalMs() {
+				return STEP_IDLE_MS;
+			}
+
+			@Override
+			public long idleAfterMs() {
+				return 60_000L;
+			}
+
+			@Override
+			public boolean coverTraffic() {
+				return cover;
+			}
+		};
+	}
+
+	private static ZppConnectionRegistry capturing(
+			AtomicReference<ZppSendScheduler> opened) {
+		return new ZppConnectionRegistry() {
+			@Override
+			public void onConnectionOpened(int contactId,
+					ZppSendScheduler scheduler, int maxRecordBytes) {
+				opened.set(scheduler);
+			}
+
+			@Override
+			public void onConnectionClosed(int contactId,
+					ZppSendScheduler scheduler) {
+			}
+		};
+	}
+
+	private static byte[] text(int value) {
+		return ZmmRecord.encode(ZmmConstants.TYPE_TEXT,
+				new byte[] {(byte) value});
+	}
+
 	private List<String> afterEvent(String event) {
 		synchronized (events) {
 			int i = events.indexOf(event);
