@@ -335,6 +335,8 @@ class IntroduceeProtocolEngine
 						transportProperties, localMlDsaPubKey, mlKemPub,
 						mlKemPriv);
 			case REMOTE_DECLINED:
+				IntroduceeSession.wipe(privateKey);
+				IntroduceeSession.wipe(mlKemPriv);
 				return IntroduceeSession.clear(s, START, sent.getId(),
 						localTimestamp, s.getLastRemoteMessageId());
 			case REMOTE_ACCEPTED:
@@ -410,7 +412,7 @@ class IntroduceeProtocolEngine
 			throws DbException {
 		byte[] mac;
 		byte[] signature;
-		SecretKey masterKey, aliceMacKey, bobMacKey;
+		SecretKey masterKey = null, aliceMacKey = null, bobMacKey = null;
 		byte[] kemCiphertext = null;
 		byte[] ownKemSecret = null;
 		boolean hybrid = INTRODUCTION_HYBRID_KEM_ENABLED
@@ -450,6 +452,10 @@ class IntroduceeProtocolEngine
 				}
 			}
 		} catch (GeneralSecurityException e) {
+			if (masterKey != null) masterKey.clear();
+			if (aliceMacKey != null) aliceMacKey.clear();
+			if (bobMacKey != null) bobMacKey.clear();
+			IntroduceeSession.wipe(ownKemSecret);
 			return abort(txn, s, s.getLastRemoteMessageId());
 		}
 		if (s.getState() != AWAIT_AUTH) throw new AssertionError();
@@ -532,20 +538,27 @@ class IntroduceeProtocolEngine
 				byte[] peerKemSecret = crypto.decapsulateMlKem(
 						s.getLocal().mlKemEphemeralPrivateKey,
 						m.getKemCiphertext());
-				SecretKey peerPreMaster = crypto.derivePreMasterKey(s,
-						peerKemSecret);
-				SecretKey peerMacKey = crypto.deriveMacKey(peerPreMaster,
-						!s.getLocal().alice);
-				crypto.verifyAuthMacWithKey(m.getMac(), s, localAuthor.getId(),
-						peerMacKey);
-				crypto.verifySignatureWithKey(m.getSignature(), s, peerMacKey);
-				byte[] ownSs = s.getLocal().ownKemSecret;
-				byte[] aliceSs = s.getLocal().alice ? ownSs : peerKemSecret;
-				byte[] bobSs = s.getLocal().alice ? peerKemSecret : ownSs;
-				SecretKey finalMaster = crypto.deriveFinalMasterKey(s,
-						aliceSs, bobSs);
-				java.util.Arrays.fill(peerKemSecret, (byte) 0);
-				s = withFinalKeys(crypto, s, finalMaster);
+				SecretKey peerPreMaster = null;
+				SecretKey peerMacKey = null;
+				try {
+					peerPreMaster = crypto.derivePreMasterKey(s, peerKemSecret);
+					peerMacKey = crypto.deriveMacKey(peerPreMaster,
+							!s.getLocal().alice);
+					crypto.verifyAuthMacWithKey(m.getMac(), s,
+							localAuthor.getId(), peerMacKey);
+					crypto.verifySignatureWithKey(m.getSignature(), s,
+							peerMacKey);
+					byte[] ownSs = s.getLocal().ownKemSecret;
+					byte[] aliceSs = s.getLocal().alice ? ownSs : peerKemSecret;
+					byte[] bobSs = s.getLocal().alice ? peerKemSecret : ownSs;
+					SecretKey finalMaster = crypto.deriveFinalMasterKey(s,
+							aliceSs, bobSs);
+					s = withFinalKeys(crypto, s, finalMaster);
+				} finally {
+					IntroduceeSession.wipe(peerKemSecret);
+					if (peerMacKey != null) peerMacKey.clear();
+					if (peerPreMaster != null) peerPreMaster.clear();
+				}
 			} else {
 				crypto.verifyAuthMac(m.getMac(), s, localAuthor.getId());
 				crypto.verifySignature(m.getSignature(), s);
@@ -562,12 +575,13 @@ class IntroduceeProtocolEngine
 
 		Map<TransportId, KeySetId> keys = null;
 		try {
+			byte[] root = requireNonNull(s.getMasterKey());
 			ContactId contactId = contactManager.addContact(txn,
 					s.getRemote().author, localAuthor.getId(),
-					new SecretKey(s.getMasterKey()), false,
+					new SecretKey(root.clone()), false,
 					s.getRemote().mlDsaPubKey);
 			keys = keyManager.addRotationKeys(txn, contactId,
-					new SecretKey(s.getMasterKey()), timestamp,
+					new SecretKey(root.clone()), timestamp,
 					s.getLocal().alice, false);
 			transportPropertyManager.addRemoteProperties(txn, contactId,
 					KeySchedule.withoutAnnouncement(requireNonNull(
