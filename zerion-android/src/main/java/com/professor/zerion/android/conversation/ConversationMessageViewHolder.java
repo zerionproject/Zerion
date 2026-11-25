@@ -226,6 +226,8 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 			} else if (stateKey.equals("msg")) {
 				voiceHolder.bindEncryptedVoice(messageText, item.getGroupId(),
 						item.getTime(), item.isIncoming());
+			} else if (item.isIncoming()) {
+				voiceHolder.bindReceived(item.getAttachments().get(0));
 			} else {
 				voiceHolder.bind(item.getAttachments().get(0));
 			}
