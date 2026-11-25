@@ -211,6 +211,15 @@ public class GroupPostSizeLimitTest {
 		assertNull(JpegFit.fit((quality, scale) -> new byte[2], 78, 1));
 	}
 
+	@Test
+	public void anImageTheCodecCannotWriteIsAReadFailureNotTooLarge() {
+		try {
+			JpegFit.fit((quality, scale) -> null, 78, 1);
+			org.junit.Assert.fail();
+		} catch (java.io.IOException expected) {
+		}
+	}
+
 	private void sendBody(byte[] body) throws Exception {
 		Method m = GroupTrConversationActivity.class.getDeclaredMethod(
 				"sendBodyAsync", byte[].class);

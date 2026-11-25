@@ -85,6 +85,7 @@ import static org.zerionproject.core.api.record.Record.RECORD_HEADER_BYTES;
 import static org.zerionproject.core.api.sync.Group.Visibility.INVISIBLE;
 import static org.zerionproject.core.api.sync.Group.Visibility.SHARED;
 import static org.zerionproject.core.api.sync.Group.Visibility.VISIBLE;
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH;
 import static org.zerionproject.core.api.sync.SyncConstants.MESSAGE_HEADER_LENGTH;
 import static org.zerionproject.core.api.sync.validation.MessageState.DELIVERED;
 import static org.zerionproject.core.api.sync.validation.MessageState.PENDING;
@@ -3335,6 +3336,10 @@ abstract class JdbcDatabase implements Database<Connection> {
 			List<MessageId> ids = new ArrayList<>();
 			while (rs.next()) {
 				int length = rs.getInt(1);
+				if (length > MAX_ONE_RECORD_MESSAGE_LENGTH) {
+					ids.add(new MessageId(rs.getBytes(2)));
+					continue;
+				}
 				if (capacity < RECORD_HEADER_BYTES + length) continue;
 				ids.add(new MessageId(rs.getBytes(2)));
 				capacity -= RECORD_HEADER_BYTES + length;
