@@ -1,10 +1,17 @@
 package org.zerionproject.app.api.introduction;
 
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
 
 public interface IntroductionConstants {
 
 	int MAX_INTRODUCTION_TEXT_LENGTH = MAX_MESSAGE_BODY_LENGTH - 1024;
+
+	int INTRODUCTION_REQUEST_OVERHEAD_BYTES = 16 * 1024;
+
+	int MAX_DELIVERABLE_INTRODUCTION_TEXT_LENGTH =
+			MAX_DELIVERABLE_MESSAGE_BODY_LENGTH
+					- INTRODUCTION_REQUEST_OVERHEAD_BYTES;
 
 	String LABEL_SESSION_ID = "org.zerionproject.app.introduction/SESSION_ID";
 

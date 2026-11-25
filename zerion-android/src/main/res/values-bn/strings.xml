@@ -1258,6 +1258,7 @@
 	<string name="grouptr_error_save">সেটিং সংরক্ষণ করা যায়নি।</string>
 	<string name="grouptr_error_respond">আমন্ত্রণে সাড়া দেওয়া যায়নি।</string>
 	<string name="grouptr_post_too_long">বার্তাটি খুব দীর্ঘ।</string>
+	<string name="grouptr_post_too_large">এটি গ্রুপে পাঠানোর জন্য খুব বড়। সীমা প্রায় 1 MB।</string>
 	<string name="settings_save_failed">সেটিং সংরক্ষণ করা যায়নি।</string>
 	<string name="grouptr_open">খুলুন</string>
 	<string name="grouptr_input_hint">বার্তা</string>
@@ -1317,7 +1318,6 @@
 	<string name="grouptr_voice_play_failed">ভয়েস মেমো চালানো যায়নি।</string>
 	<string name="grouptr_attach_picker_failed">ফাইল নির্বাচক খোলা যায়নি।</string>
 	<string name="grouptr_attach_read_failed">ছবিটি পড়া যায়নি।</string>
-	<string name="grouptr_attach_video_too_large">ভিডিও খুব বড় (সর্বোচ্চ ৮ MB)।</string>
 	<string name="grouptr_attach_unknown_type">অসমর্থিত ফাইলের ধরন।</string>
 	<string name="grouptr_video">ভিডিও</string>
 	<string name="grouptr_image">ছবি</string>

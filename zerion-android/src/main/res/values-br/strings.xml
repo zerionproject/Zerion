@@ -852,6 +852,7 @@
 	<string name="grouptr_error_save">N\'eus ket bet gallet enrollañ an arventenn.</string>
 	<string name="grouptr_error_respond">N\'eus ket bet gallet respont d\'ar bedadenn.</string>
 	<string name="grouptr_post_too_long">Re hir eo ar gemennadenn.</string>
+	<string name="grouptr_post_too_large">Re vras eo evit bezañ kaset d\'ur strollad. Tro 1 MB eo ar vevenn.</string>
 	<string name="settings_save_failed">N\'eus ket bet gallet enrollañ an arventenn.</string>
 	<string name="grouptr_open">Digeriñ</string>
 	<string name="grouptr_input_hint">Kemennadenn</string>
@@ -914,7 +915,6 @@
 	<string name="grouptr_voice_play_failed">N\'eus ket bet gallet lenn ar gemennadenn mouezh.</string>
 	<string name="grouptr_attach_picker_failed">N\'eus ket bet gallet digeriñ an dibaber.</string>
 	<string name="grouptr_attach_read_failed">N\'eus ket bet gallet lenn ar skeudenn.</string>
-	<string name="grouptr_attach_video_too_large">Re vras eo ar video (8 MB d\'ar muiañ).</string>
 	<string name="grouptr_attach_unknown_type">Seurt restr n\'eo ket skoret.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Skeudenn</string>

@@ -1084,6 +1084,7 @@
 	<string name="grouptr_error_save">Kan instelling niet opslaan.</string>
 	<string name="grouptr_error_respond">Kan niet op uitnodiging reageren.</string>
 	<string name="grouptr_post_too_long">Bericht is te lang.</string>
+	<string name="grouptr_post_too_large">Dit is te groot om naar een groep te sturen. De limiet is ongeveer 1 MB.</string>
 	<string name="settings_save_failed">Kan instelling niet opslaan.</string>
 	<string name="grouptr_open">Openen</string>
 	<string name="grouptr_input_hint">Bericht</string>
@@ -1139,7 +1140,6 @@
 	<string name="grouptr_voice_play_failed">Kan spraakmemo niet afspelen.</string>
 	<string name="grouptr_attach_picker_failed">Kan kiezer niet openen.</string>
 	<string name="grouptr_attach_read_failed">Kan de afbeelding niet lezen.</string>
-	<string name="grouptr_attach_video_too_large">Video te groot (max. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Niet-ondersteund bestandstype.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Afbeelding</string>

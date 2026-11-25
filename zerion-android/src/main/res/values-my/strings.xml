@@ -1224,6 +1224,7 @@
 	<string name="grouptr_error_save">ဆက်တင်ကို သိမ်း၍ မရပါ။</string>
 	<string name="grouptr_error_respond">ဖိတ်ကြားချက်ကို တုံ့ပြန်၍ မရပါ။</string>
 	<string name="grouptr_post_too_long">မက်ဆေ့ချ် ရှည်လွန်းသည်။</string>
+	<string name="grouptr_post_too_large">ဤအရာသည် အဖွဲ့သို့ ပို့ရန် ကြီးလွန်းသည်။ ကန့်သတ်ချက်မှာ ခန့်မှန်းခြေ 1 MB ဖြစ်သည်။</string>
 	<string name="settings_save_failed">ဆက်တင်ကို သိမ်း၍ မရပါ။</string>
 	<string name="grouptr_open">ဖွင့်မည်</string>
 	<string name="grouptr_input_hint">မက်ဆေ့ချ်</string>
@@ -1282,7 +1283,6 @@
 	<string name="grouptr_voice_play_failed">အသံ မှတ်စုကို ဖွင့်၍ မရပါ။</string>
 	<string name="grouptr_attach_picker_failed">ဖိုင်ရွေးချယ်ရေး စခရင်ကို ဖွင့်၍ မရပါ။</string>
 	<string name="grouptr_attach_read_failed">ရုပ်ပုံကို ဖတ်၍ မရပါ။</string>
-	<string name="grouptr_attach_video_too_large">ဗီဒီယို ကြီးလွန်းသည် (အများဆုံး 8 MB)။</string>
 	<string name="grouptr_attach_unknown_type">ပံ့ပိုးမထားသော ဖိုင်အမျိုးအစား။</string>
 	<string name="grouptr_video">ဗီဒီယို</string>
 	<string name="grouptr_image">ရုပ်ပုံ</string>

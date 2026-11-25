@@ -1059,6 +1059,7 @@
 	<string name="grouptr_error_save">Не удалось сохранить настройку.</string>
 	<string name="grouptr_error_respond">Не удалось ответить на приглашение.</string>
 	<string name="grouptr_post_too_long">Сообщение слишком длинное.</string>
+	<string name="grouptr_post_too_large">Это слишком велико для отправки в группу. Ограничение около 1 МБ.</string>
 	<string name="settings_save_failed">Не удалось сохранить настройку.</string>
 	<string name="grouptr_open">Открыть</string>
 	<string name="grouptr_input_hint">Сообщение</string>
@@ -1113,7 +1114,6 @@
 	<string name="grouptr_voice_play_failed">Не удалось воспроизвести голосовую заметку.</string>
 	<string name="grouptr_attach_picker_failed">Не удалось открыть выбор файлов.</string>
 	<string name="grouptr_attach_read_failed">Не удалось прочитать изображение.</string>
-	<string name="grouptr_attach_video_too_large">Видео слишком большое (макс. 8 МБ).</string>
 	<string name="grouptr_attach_unknown_type">Неподдерживаемый тип файла.</string>
 	<string name="grouptr_video">Видео</string>
 	<string name="grouptr_image">Изображение</string>

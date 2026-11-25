@@ -26,6 +26,7 @@ import static org.zerionproject.core.api.sync.RecordTypes.OFFER;
 import static org.zerionproject.core.api.sync.RecordTypes.PRIORITY;
 import static org.zerionproject.core.api.sync.RecordTypes.REQUEST;
 import static org.zerionproject.core.api.sync.RecordTypes.VERSIONS;
+import static org.zerionproject.core.api.sync.SyncConstants.MESSAGE_FRAGMENT_PAYLOAD_BYTES;
 import static org.zerionproject.core.api.sync.SyncConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.api.UniqueId.LENGTH;
 
@@ -59,7 +60,8 @@ class SyncRecordWriterImpl implements SyncRecordWriter {
 
 	private static final int FRAGMENT_HEADER_LEN = LENGTH + 4;
 	private static final int FRAGMENT_THRESHOLD_BYTES = 900;
-	private static final int FRAGMENT_PAYLOAD_BYTES = 768;
+	private static final int FRAGMENT_PAYLOAD_BYTES =
+			MESSAGE_FRAGMENT_PAYLOAD_BYTES;
 
 	@Override
 	public void writeMessage(Message m) throws IOException {

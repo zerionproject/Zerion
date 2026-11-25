@@ -1310,6 +1310,7 @@
 	<string name="grouptr_error_save">Поставката не може да се зачува.</string>
 	<string name="grouptr_error_respond">Не може да се одговори на поканата.</string>
 	<string name="grouptr_post_too_long">Пораката е предолга.</string>
+	<string name="grouptr_post_too_large">Ова е преголемо за испраќање во група. Ограничувањето е околу 1 MB.</string>
 	<string name="settings_save_failed">Поставката не може да се зачува.</string>
 	<string name="grouptr_open">Отвори</string>
 	<string name="grouptr_input_hint">Порака</string>
@@ -1369,7 +1370,6 @@
 	<string name="grouptr_voice_play_failed">Гласовната порака не може да се пушти.</string>
 	<string name="grouptr_attach_picker_failed">Изборникот не може да се отвори.</string>
 	<string name="grouptr_attach_read_failed">Сликата не може да се прочита.</string>
-	<string name="grouptr_attach_video_too_large">Видеото е преголемо (најмногу 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Неподдржан тип датотека.</string>
 	<string name="grouptr_video">Видео</string>
 	<string name="grouptr_image">Слика</string>

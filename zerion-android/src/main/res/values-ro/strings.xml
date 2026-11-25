@@ -1380,6 +1380,7 @@
 	<string name="grouptr_error_save">Setarea nu a putut fi salvată.</string>
 	<string name="grouptr_error_respond">Nu s-a putut răspunde la invitație.</string>
 	<string name="grouptr_post_too_long">Mesajul este prea lung.</string>
+	<string name="grouptr_post_too_large">Acesta este prea mare pentru a fi trimis unui grup. Limita este de aproximativ 1 MB.</string>
 	<string name="settings_save_failed">Setarea nu a putut fi salvată.</string>
 	<string name="grouptr_open">Deschideți</string>
 	<string name="grouptr_input_hint">Mesaj</string>
@@ -1440,7 +1441,6 @@
 	<string name="grouptr_voice_play_failed">Mesajul vocal nu a putut fi redat.</string>
 	<string name="grouptr_attach_picker_failed">Selectorul nu a putut fi deschis.</string>
 	<string name="grouptr_attach_read_failed">Imaginea nu a putut fi citită.</string>
-	<string name="grouptr_attach_video_too_large">Videoclip prea mare (max. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Tip de fișier neacceptat.</string>
 	<string name="grouptr_video">Videoclip</string>
 	<string name="grouptr_image">Imagine</string>

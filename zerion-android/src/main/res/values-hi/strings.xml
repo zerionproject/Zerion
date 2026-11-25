@@ -1334,6 +1334,7 @@
 	<string name="grouptr_error_save">सेटिंग सहेजी नहीं जा सकी।</string>
 	<string name="grouptr_error_respond">आमंत्रण का जवाब नहीं दिया जा सका।</string>
 	<string name="grouptr_post_too_long">संदेश बहुत लंबा है।</string>
+	<string name="grouptr_post_too_large">यह किसी समूह को भेजने के लिए बहुत बड़ा है। सीमा लगभग 1 MB है।</string>
 	<string name="settings_save_failed">सेटिंग सहेजी नहीं जा सकी।</string>
 	<string name="grouptr_open">खोलें</string>
 	<string name="grouptr_input_hint">संदेश</string>
@@ -1393,7 +1394,6 @@
 	<string name="grouptr_voice_play_failed">वॉइस मेमो नहीं चल सका।</string>
 	<string name="grouptr_attach_picker_failed">फ़ाइल चुनने वाली स्क्रीन नहीं खुल सकी।</string>
 	<string name="grouptr_attach_read_failed">छवि पढ़ी नहीं जा सकी।</string>
-	<string name="grouptr_attach_video_too_large">वीडियो बहुत बड़ा है (अधिकतम 8 MB)।</string>
 	<string name="grouptr_attach_unknown_type">यह फ़ाइल प्रकार समर्थित नहीं है।</string>
 	<string name="grouptr_video">वीडियो</string>
 	<string name="grouptr_image">छवि</string>

@@ -802,6 +802,7 @@
 	<string name="grouptr_error_save">Nun se pudo guardar la preferencia.</string>
 	<string name="grouptr_error_respond">Nun se pudo responder a la invitación.</string>
 	<string name="grouptr_post_too_long">El mensaxe ye enforma llargu.</string>
+	<string name="grouptr_post_too_large">Esto ye enforma grande pa unviase a un grupu. La llende ye de 1 MB aproximao.</string>
 	<string name="settings_save_failed">Nun se pudo guardar la preferencia.</string>
 	<string name="grouptr_open">Abrir</string>
 	<string name="grouptr_input_hint">Mensaxe</string>
@@ -861,7 +862,6 @@
 	<string name="grouptr_voice_play_failed">Nun se pudo reproducir la nota de voz.</string>
 	<string name="grouptr_attach_picker_failed">Nun se pudo abrir el selector.</string>
 	<string name="grouptr_attach_read_failed">Nun se pudo lleer la imaxe.</string>
-	<string name="grouptr_attach_video_too_large">El vídeu ye enforma grande (máx. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Tipu de ficheru non compatible.</string>
 	<string name="grouptr_video">Vídeu</string>
 	<string name="grouptr_image">Imaxe</string>

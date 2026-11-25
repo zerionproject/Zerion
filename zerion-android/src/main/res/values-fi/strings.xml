@@ -1211,6 +1211,7 @@
 	<string name="grouptr_error_save">Asetusta ei voitu tallentaa.</string>
 	<string name="grouptr_error_respond">Kutsuun ei voitu vastata.</string>
 	<string name="grouptr_post_too_long">Viesti on liian pitkä.</string>
+	<string name="grouptr_post_too_large">Tämä on liian suuri lähetettäväksi ryhmään. Raja on noin 1 Mt.</string>
 	<string name="settings_save_failed">Asetusta ei voitu tallentaa.</string>
 	<string name="grouptr_open">Avaa</string>
 	<string name="grouptr_input_hint">Viesti</string>
@@ -1270,7 +1271,6 @@
 	<string name="grouptr_voice_play_failed">Ääniviestiä ei voitu toistaa.</string>
 	<string name="grouptr_attach_picker_failed">Valitsinta ei voitu avata.</string>
 	<string name="grouptr_attach_read_failed">Kuvaa ei voitu lukea.</string>
-	<string name="grouptr_attach_video_too_large">Video on liian suuri (enintään 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Tiedostotyyppiä ei tueta.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Kuva</string>

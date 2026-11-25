@@ -1085,6 +1085,7 @@
 	<string name="grouptr_error_save">Einstellung konnte nicht gespeichert werden.</string>
 	<string name="grouptr_error_respond">Auf die Einladung konnte nicht geantwortet werden.</string>
 	<string name="grouptr_post_too_long">Nachricht ist zu lang.</string>
+	<string name="grouptr_post_too_large">Das ist zu groß, um es an eine Gruppe zu senden. Die Grenze liegt bei etwa 1 MB.</string>
 	<string name="settings_save_failed">Einstellung konnte nicht gespeichert werden.</string>
 	<string name="grouptr_open">Öffnen</string>
 	<string name="grouptr_input_hint">Nachricht</string>
@@ -1139,7 +1140,6 @@
 	<string name="grouptr_voice_play_failed">Sprachmemo konnte nicht abgespielt werden.</string>
 	<string name="grouptr_attach_picker_failed">Auswahl konnte nicht geöffnet werden.</string>
 	<string name="grouptr_attach_read_failed">Bild konnte nicht gelesen werden.</string>
-	<string name="grouptr_attach_video_too_large">Video zu groß (max. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Nicht unterstützter Dateityp.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Bild</string>

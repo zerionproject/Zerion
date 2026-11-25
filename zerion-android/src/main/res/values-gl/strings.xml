@@ -1337,6 +1337,7 @@
 	<string name="grouptr_error_save">Non se puido gardar o axuste.</string>
 	<string name="grouptr_error_respond">Non se puido responder ao convite.</string>
 	<string name="grouptr_post_too_long">A mensaxe é demasiado longa.</string>
+	<string name="grouptr_post_too_large">Isto é demasiado grande para envialo a un grupo. O límite é de aproximadamente 1 MB.</string>
 	<string name="settings_save_failed">Non se puido gardar o axuste.</string>
 	<string name="grouptr_open">Abrir</string>
 	<string name="grouptr_input_hint">Mensaxe</string>
@@ -1396,7 +1397,6 @@
 	<string name="grouptr_voice_play_failed">Non se puido reproducir a nota de voz.</string>
 	<string name="grouptr_attach_picker_failed">Non se puido abrir o selector.</string>
 	<string name="grouptr_attach_read_failed">Non se puido ler a imaxe.</string>
-	<string name="grouptr_attach_video_too_large">Vídeo demasiado grande (máx. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Tipo de ficheiro non compatible.</string>
 	<string name="grouptr_video">Vídeo</string>
 	<string name="grouptr_image">Imaxe</string>

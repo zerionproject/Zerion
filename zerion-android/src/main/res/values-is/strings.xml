@@ -1344,6 +1344,7 @@
 	<string name="grouptr_error_save">Ekki tókst að vista stillingu.</string>
 	<string name="grouptr_error_respond">Ekki tókst að svara boðinu.</string>
 	<string name="grouptr_post_too_long">Skilaboðin eru of löng.</string>
+	<string name="grouptr_post_too_large">Þetta er of stórt til að senda í hóp. Hámarkið er um 1 MB.</string>
 	<string name="settings_save_failed">Ekki tókst að vista stillingu.</string>
 	<string name="grouptr_open">Opna</string>
 	<string name="grouptr_input_hint">Skilaboð</string>
@@ -1403,7 +1404,6 @@
 	<string name="grouptr_voice_play_failed">Ekki tókst að spila raddskilaboðin.</string>
 	<string name="grouptr_attach_picker_failed">Ekki tókst að opna valgluggann.</string>
 	<string name="grouptr_attach_read_failed">Ekki tókst að lesa myndina.</string>
-	<string name="grouptr_attach_video_too_large">Myndskeiðið er of stórt (hámark 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Skráartegund er ekki studd.</string>
 	<string name="grouptr_video">Myndskeið</string>
 	<string name="grouptr_image">Mynd</string>

@@ -1286,6 +1286,7 @@
 	<string name="grouptr_error_save">Nastavení se nepodařilo uložit.</string>
 	<string name="grouptr_error_respond">Na pozvánku se nepodařilo odpovědět.</string>
 	<string name="grouptr_post_too_long">Zpráva je příliš dlouhá.</string>
+	<string name="grouptr_post_too_large">Toto je příliš velké pro odeslání do skupiny. Limit je přibližně 1 MB.</string>
 	<string name="settings_save_failed">Nastavení se nepodařilo uložit.</string>
 	<string name="grouptr_open">Otevřít</string>
 	<string name="grouptr_input_hint">Zpráva</string>
@@ -1347,7 +1348,6 @@
 	<string name="grouptr_voice_play_failed">Hlasovou zprávu se nepodařilo přehrát.</string>
 	<string name="grouptr_attach_picker_failed">Výběr souboru se nepodařilo otevřít.</string>
 	<string name="grouptr_attach_read_failed">Obrázek se nepodařilo načíst.</string>
-	<string name="grouptr_attach_video_too_large">Video je příliš velké (max. 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Nepodporovaný typ souboru.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Obrázek</string>

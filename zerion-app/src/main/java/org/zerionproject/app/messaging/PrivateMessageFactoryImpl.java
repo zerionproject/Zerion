@@ -21,7 +21,7 @@ import javax.inject.Inject;
 
 import static org.zerionproject.core.util.StringUtils.utf8IsTooLong;
 import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
-import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH;
 import static java.util.Collections.singletonList;
 import static org.zerionproject.app.messaging.MessagingConstants.BODY_SALT_LENGTH;
 import static org.zerionproject.app.messaging.MessagingConstants.VIEW_ONCE_FLAG;
@@ -44,7 +44,7 @@ class PrivateMessageFactoryImpl implements PrivateMessageFactory {
 	@Override
 	public PrivateMessage createLegacyPrivateMessage(GroupId groupId,
 			long timestamp, String text) throws FormatException {
-		if (utf8IsTooLong(text, MAX_PRIVATE_MESSAGE_TEXT_LENGTH))
+		if (utf8IsTooLong(text, MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH))
 			throw new IllegalArgumentException();
 		BdfList body = BdfList.of(text);
 		Message m = clientHelper.createMessage(groupId, timestamp, body);
@@ -134,7 +134,8 @@ class PrivateMessageFactoryImpl implements PrivateMessageFactory {
 			List<AttachmentHeader> headers) {
 		if (text == null) {
 			if (headers.isEmpty()) throw new IllegalArgumentException();
-		} else if (utf8IsTooLong(text, MAX_PRIVATE_MESSAGE_TEXT_LENGTH)) {
+		} else if (utf8IsTooLong(text,
+				MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH)) {
 			throw new IllegalArgumentException();
 		}
 	}

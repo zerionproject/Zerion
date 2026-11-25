@@ -1032,6 +1032,7 @@
 	<string name="grouptr_error_save">設定を保存できませんでした。</string>
 	<string name="grouptr_error_respond">招待に応答できませんでした。</string>
 	<string name="grouptr_post_too_long">メッセージが長すぎます。</string>
+	<string name="grouptr_post_too_large">グループに送信するには大きすぎます。上限は約 1 MB です。</string>
 	<string name="settings_save_failed">設定を保存できませんでした。</string>
 	<string name="grouptr_open">開く</string>
 	<string name="grouptr_input_hint">メッセージ</string>
@@ -1086,7 +1087,6 @@
 	<string name="grouptr_voice_play_failed">ボイスメモを再生できませんでした。</string>
 	<string name="grouptr_attach_picker_failed">ピッカーを開けませんでした。</string>
 	<string name="grouptr_attach_read_failed">画像を読み取れませんでした。</string>
-	<string name="grouptr_attach_video_too_large">動画が大きすぎます（最大 8 MB）。</string>
 	<string name="grouptr_attach_unknown_type">サポートされていないファイル形式です。</string>
 	<string name="grouptr_video">動画</string>
 	<string name="grouptr_image">画像</string>

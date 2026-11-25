@@ -997,6 +997,7 @@
 	<string name="grouptr_error_save">Tidak dapat menyimpan tetapan.</string>
 	<string name="grouptr_error_respond">Tidak dapat membalas jemputan.</string>
 	<string name="grouptr_post_too_long">Mesej terlalu panjang.</string>
+	<string name="grouptr_post_too_large">Ini terlalu besar untuk dihantar ke kumpulan. Hadnya lebih kurang 1 MB.</string>
 	<string name="settings_save_failed">Tidak dapat menyimpan tetapan.</string>
 	<string name="grouptr_open">Buka</string>
 	<string name="grouptr_input_hint">Mesej</string>
@@ -1055,7 +1056,6 @@
 	<string name="grouptr_voice_play_failed">Tidak dapat memainkan memo suara.</string>
 	<string name="grouptr_attach_picker_failed">Tidak dapat membuka pemilih.</string>
 	<string name="grouptr_attach_read_failed">Tidak dapat membaca imej.</string>
-	<string name="grouptr_attach_video_too_large">Video terlalu besar (maks 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Jenis fail tidak disokong.</string>
 	<string name="grouptr_video">Video</string>
 	<string name="grouptr_image">Imej</string>

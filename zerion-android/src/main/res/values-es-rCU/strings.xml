@@ -1236,4 +1236,5 @@
 	<string name="vault_unlock_new_password_message">Zerion ya no puede proteger este baúl con su contraseña actual, por ejemplo porque solo contiene emojis. Elige una contraseña nueva de al menos 8 letras, dígitos o símbolos y escríbela dos veces.</string>
 	<string name="vault_unlock_new_password_again">Escribe la contraseña nueva una vez más. Después, Zerion protege el baúl con ella.</string>
 	<string name="vault_password_rule">Usa al menos 8 letras, cifras o símbolos. Los emojis no cuentan.</string>
+	<string name="grouptr_post_too_large">Esto es demasiado grande para enviarlo a un grupo. El límite es de aproximadamente 1 MB.</string>
 </resources>

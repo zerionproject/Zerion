@@ -27,7 +27,7 @@ import javax.inject.Provider;
 import androidx.core.app.RemoteInput;
 
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
-import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH;
 import static org.zerionproject.core.util.StringUtils.utf8IsTooLong;
 
 public class NotificationQuickReplyReceiver extends BroadcastReceiver {
@@ -80,7 +80,8 @@ public class NotificationQuickReplyReceiver extends BroadcastReceiver {
 
 		String text = replyText.toString();
 		if (lockManager.isLocked()
-				|| utf8IsTooLong(text, MAX_PRIVATE_MESSAGE_TEXT_LENGTH)) {
+				|| utf8IsTooLong(text,
+						MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH)) {
 			notSent(ctx, contactIdInt);
 			return;
 		}

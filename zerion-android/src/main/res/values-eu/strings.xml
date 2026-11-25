@@ -1192,6 +1192,7 @@
 	<string name="grouptr_error_save">Ezin izan da ezarpena gorde.</string>
 	<string name="grouptr_error_respond">Ezin izan zaio gonbidapenari erantzun.</string>
 	<string name="grouptr_post_too_long">Mezua luzeegia da.</string>
+	<string name="grouptr_post_too_large">Hau handiegia da talde batera bidaltzeko. Muga 1 MB ingurukoa da.</string>
 	<string name="settings_save_failed">Ezin izan da ezarpena gorde.</string>
 	<string name="grouptr_open">Ireki</string>
 	<string name="grouptr_input_hint">Mezua</string>
@@ -1251,7 +1252,6 @@
 	<string name="grouptr_voice_play_failed">Ezin izan da ahots-oharra erreproduzitu.</string>
 	<string name="grouptr_attach_picker_failed">Ezin izan da hautatzailea ireki.</string>
 	<string name="grouptr_attach_read_failed">Ezin izan da irudia irakurri.</string>
-	<string name="grouptr_attach_video_too_large">Bideoa handiegia da (gehienez 8 MB).</string>
 	<string name="grouptr_attach_unknown_type">Fitxategi mota ez da onartzen.</string>
 	<string name="grouptr_video">Bideoa</string>
 	<string name="grouptr_image">Irudia</string>

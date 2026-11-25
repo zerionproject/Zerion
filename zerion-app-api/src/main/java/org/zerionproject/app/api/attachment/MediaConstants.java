@@ -1,5 +1,7 @@
 package org.zerionproject.app.api.attachment;
 
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH;
+
 public interface MediaConstants {
 
 	String MSG_KEY_CONTENT_TYPE = "contentType";
@@ -14,4 +16,6 @@ public interface MediaConstants {
 	int ATTACHMENT_DESCRIPTOR_OVERHEAD = 100;
 	int MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 	int MAX_IMAGE_SIZE = MAX_ATTACHMENT_SIZE - ATTACHMENT_DESCRIPTOR_OVERHEAD;
+	int MAX_DELIVERABLE_IMAGE_SIZE = MAX_DELIVERABLE_MESSAGE_BODY_LENGTH
+			- ATTACHMENT_DESCRIPTOR_OVERHEAD;
 }

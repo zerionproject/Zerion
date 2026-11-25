@@ -1081,6 +1081,7 @@
 	<string name="grouptr_error_save">تعذّر حفظ الإعداد.</string>
 	<string name="grouptr_error_respond">تعذّر الرد على الدعوة.</string>
 	<string name="grouptr_post_too_long">الرسالة طويلة جدًا.</string>
+	<string name="grouptr_post_too_large">هذا كبير جدًا لإرساله إلى مجموعة. الحد هو حوالي 1 ميغابايت.</string>
 	<string name="settings_save_failed">تعذّر حفظ الإعداد.</string>
 	<string name="grouptr_open">فتح</string>
 	<string name="grouptr_input_hint">رسالة</string>
@@ -1135,7 +1136,6 @@
 	<string name="grouptr_voice_play_failed">تعذّر تشغيل المذكرة الصوتية.</string>
 	<string name="grouptr_attach_picker_failed">تعذّر فتح المُنتقي.</string>
 	<string name="grouptr_attach_read_failed">تعذّرت قراءة الصورة.</string>
-	<string name="grouptr_attach_video_too_large">الفيديو كبير جدًا (بحد أقصى 8 ميغابايت).</string>
 	<string name="grouptr_attach_unknown_type">نوع ملف غير مدعوم.</string>
 	<string name="grouptr_video">فيديو</string>
 	<string name="grouptr_image">صورة</string>

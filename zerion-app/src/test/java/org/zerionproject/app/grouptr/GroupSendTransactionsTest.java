@@ -47,7 +47,7 @@ public class GroupSendTransactionsTest {
 		node.addContact(b);
 		node.addContact(c);
 
-		node.manager.sendGroupPost(groupId, getRandomBytes(1_000_000), 0L);
+		node.manager.sendGroupPost(groupId, getRandomBytes(512 * 1024), 0L);
 
 		assertEquals(3, node.sent.size());
 		assertEquals("copies of the post stored under one write lock", 1,
@@ -109,7 +109,7 @@ public class GroupSendTransactionsTest {
 		assertNull(node.manager.getLatestPostSummary(groupId));
 
 		node.manager.sendGroupPostReporting(groupId, GroupTrBody.encodeImage(
-				new byte[1024 * 1024], "image/jpeg"), 0L);
+				new byte[512 * 1024], "image/jpeg"), 0L);
 
 		GroupTrPostSummary remembered =
 				node.manager.getLatestPostSummary(groupId);
@@ -156,7 +156,7 @@ public class GroupSendTransactionsTest {
 		assertNull(node.manager.getLatestPostSummary(groupId));
 
 		GroupTrSendResult result = node.manager.sendGroupPostReporting(
-				groupId, GroupTrBody.encodeImage(new byte[1024 * 1024],
+				groupId, GroupTrBody.encodeImage(new byte[512 * 1024],
 						"image/jpeg"), 0L);
 
 		assertEquals(2, result.getMembers());
