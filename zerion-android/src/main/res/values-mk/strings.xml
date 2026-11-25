@@ -2947,5 +2947,8 @@
 	<string name="vault_unlock_confirm_message">Претходна верзија го зачувала овој сеф без неговата лозинка. Внеси ја лозинката уште еднаш. Потоа Zerion повторно ќе го заштити сефот со неа.</string>
 	<string name="vault_unlock_entries_differ">Двата внеса не се исти. Почни одново.</string>
 	<string name="vault_unlock_not_confirmed">Zerion не можеше да го потврди зачувувањето на сефот. Обиди се повторно.</string>
+	<string name="vault_unlock_new_password_title">Избери нова лозинка за сефот</string>
+	<string name="vault_unlock_new_password_message">Zerion повеќе не може да го заштити овој сеф со неговата тековна лозинка, на пример затоа што се состои само од емоџија. Избери нова лозинка од најмалку 8 букви, цифри или симболи и внеси ја двапати.</string>
+	<string name="vault_unlock_new_password_again">Внеси ја новата лозинка уште еднаш. Потоа Zerion ќе го заштити сефот со неа.</string>
 	<string name="vault_password_rule">Користи најмалку 8 букви, цифри или симболи. Емоџијата не се бројат.</string>
 </resources>

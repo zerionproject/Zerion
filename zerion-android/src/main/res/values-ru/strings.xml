@@ -3066,5 +3066,8 @@
 	<string name="vault_unlock_confirm_message">Более ранняя версия сохранила это хранилище без его пароля. Введите пароль ещё раз. После этого Zerion снова защитит хранилище этим паролем.</string>
 	<string name="vault_unlock_entries_differ">Два ввода не совпадают. Начните заново.</string>
 	<string name="vault_unlock_not_confirmed">Zerion не удалось подтвердить, что хранилище сохранено на устройстве. Повторите попытку.</string>
+	<string name="vault_unlock_new_password_title">Выберите новый пароль хранилища</string>
+	<string name="vault_unlock_new_password_message">Zerion больше не может защищать это хранилище текущим паролем, например потому, что он состоит только из эмодзи. Выберите новый пароль не короче 8 букв, цифр или символов и введите его дважды.</string>
+	<string name="vault_unlock_new_password_again">Введите новый пароль ещё раз. После этого Zerion защитит хранилище этим паролем.</string>
 	<string name="vault_password_rule">Используйте не менее 8 букв, цифр или символов. Эмодзи не учитываются.</string>
 </resources>

@@ -2947,5 +2947,8 @@
 	<string name="vault_unlock_confirm_message">Aurreko bertsio batek kutxa hau pasahitzik gabe gorde zuen. Idatzi zure pasahitza beste behin. Ondoren, Zerion-ek kutxa pasahitz horrekin babestuko du berriro.</string>
 	<string name="vault_unlock_entries_differ">Bi sarrerak ez dira berdinak. Hasi berriro.</string>
 	<string name="vault_unlock_not_confirmed">Zerion-ek ezin izan du kutxa biltegian berretsi. Saiatu berriro.</string>
+	<string name="vault_unlock_new_password_title">Aukeratu kutxaren pasahitz berria</string>
+	<string name="vault_unlock_new_password_message">Zerion-ek ezin du kutxa hau bere uneko pasahitzarekin babestu jada, adibidez emojiz soilik osatuta dagoelako. Aukeratu gutxienez 8 letra, digitu edo ikurreko pasahitz berria eta idatzi bi aldiz.</string>
+	<string name="vault_unlock_new_password_again">Idatzi pasahitz berria beste behin. Ondoren, Zerion-ek kutxa pasahitz horrekin babestuko du.</string>
 	<string name="vault_password_rule">Erabili gutxienez 8 letra, digitu edo ikur. Emojiek ez dute balio.</string>
 </resources>

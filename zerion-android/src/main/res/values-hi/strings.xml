@@ -2959,5 +2959,8 @@
 	<string name="vault_unlock_confirm_message">पिछले एक संस्करण ने इस तिजोरी को इसके पासवर्ड के बिना सहेजा था। अपना पासवर्ड एक बार और डालें। इसके बाद Zerion तिजोरी को फिर से उसी पासवर्ड से सुरक्षित करेगा।</string>
 	<string name="vault_unlock_entries_differ">दोनों प्रविष्टियां एक जैसी नहीं हैं। फिर से शुरू करें।</string>
 	<string name="vault_unlock_not_confirmed">Zerion स्टोरेज में तिजोरी की पुष्टि नहीं कर सका। फिर कोशिश करें।</string>
+	<string name="vault_unlock_new_password_title">तिजोरी के लिए नया पासवर्ड चुनें</string>
+	<string name="vault_unlock_new_password_message">Zerion अब इस तिजोरी को इसके मौजूदा पासवर्ड से सुरक्षित नहीं रख सकता, उदाहरण के लिए क्योंकि यह केवल इमोजी से बना है। कम से कम 8 अक्षरों, अंकों या चिह्नों वाला नया पासवर्ड चुनें और उसे दो बार डालें।</string>
+	<string name="vault_unlock_new_password_again">नया पासवर्ड एक बार और डालें। इसके बाद Zerion तिजोरी को उसी पासवर्ड से सुरक्षित करेगा।</string>
 	<string name="vault_password_rule">कम से कम 8 अक्षर, अंक या चिह्न इस्तेमाल करें। इमोजी नहीं गिने जाते।</string>
 </resources>

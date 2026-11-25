@@ -2967,5 +2967,8 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="vault_unlock_confirm_message">Egy korábbi verzió a jelszava nélkül mentette ezt a széfet. Írja be még egyszer a jelszavát. Ezután a Zerion újra ezzel védi a széfet.</string>
 	<string name="vault_unlock_entries_differ">A két beírás nem egyezik. Kezdje újra.</string>
 	<string name="vault_unlock_not_confirmed">A Zerion nem tudta megerősíteni a széf mentését a tárhelyen. Próbálja újra.</string>
+	<string name="vault_unlock_new_password_title">Válasszon új jelszót a széfhez</string>
+	<string name="vault_unlock_new_password_message">A Zerion már nem tudja a jelenlegi jelszavával védeni ezt a széfet, például mert az csak emojikból áll. Válasszon legalább 8 betűből, számjegyből vagy szimbólumból álló új jelszót, és írja be kétszer.</string>
+	<string name="vault_unlock_new_password_again">Írja be még egyszer az új jelszót. Ezután a Zerion ezzel védi a széfet.</string>
 	<string name="vault_password_rule">Használjon legalább 8 betűt, számjegyet vagy szimbólumot. Az emojik nem számítanak.</string>
 </resources>

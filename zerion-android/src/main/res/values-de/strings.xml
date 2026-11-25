@@ -2973,5 +2973,8 @@
 	<string name="vault_unlock_confirm_message">Eine frühere Version hat diesen Tresor ohne sein Passwort gespeichert. Gib dein Passwort noch einmal ein. Zerion schützt den Tresor danach wieder damit.</string>
 	<string name="vault_unlock_entries_differ">Die beiden Eingaben sind nicht gleich. Beginne von vorn.</string>
 	<string name="vault_unlock_not_confirmed">Zerion konnte den Tresor im Speicher nicht bestätigen. Versuche es erneut.</string>
+	<string name="vault_unlock_new_password_title">Neues Tresor-Passwort wählen</string>
+	<string name="vault_unlock_new_password_message">Zerion kann diesen Tresor nicht mehr mit seinem aktuellen Passwort schützen, zum Beispiel weil es nur aus Emojis besteht. Wähle ein neues Passwort mit mindestens 8 Buchstaben, Ziffern oder Symbolen und gib es zweimal ein.</string>
+	<string name="vault_unlock_new_password_again">Gib das neue Passwort noch einmal ein. Zerion schützt den Tresor danach damit.</string>
 	<string name="vault_password_rule">Verwende mindestens 8 Buchstaben, Ziffern oder Symbole. Emojis zählen nicht.</string>
 </resources>

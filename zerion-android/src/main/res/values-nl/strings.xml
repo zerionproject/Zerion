@@ -2967,5 +2967,8 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="vault_unlock_confirm_message">Een eerdere versie heeft deze kluis zonder het wachtwoord opgeslagen. Typ je wachtwoord nog een keer. Daarna beveiligt Zerion de kluis er weer mee.</string>
 	<string name="vault_unlock_entries_differ">De twee invoeren zijn niet gelijk. Begin opnieuw.</string>
 	<string name="vault_unlock_not_confirmed">Zerion kon de kluis niet bevestigen in de opslag. Probeer het opnieuw.</string>
+	<string name="vault_unlock_new_password_title">Kies een nieuw wachtwoord voor je kluis</string>
+	<string name="vault_unlock_new_password_message">Zerion kan deze kluis niet langer beveiligen met het huidige wachtwoord, bijvoorbeeld omdat het alleen uit emoji bestaat. Kies een nieuw wachtwoord van minimaal 8 letters, cijfers of symbolen en typ het twee keer.</string>
+	<string name="vault_unlock_new_password_again">Typ het nieuwe wachtwoord nog een keer. Daarna beveiligt Zerion de kluis ermee.</string>
 	<string name="vault_password_rule">Gebruik minimaal 8 letters, cijfers of symbolen. Emoji tellen niet mee.</string>
 </resources>

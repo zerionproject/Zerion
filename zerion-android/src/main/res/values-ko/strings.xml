@@ -2910,5 +2910,8 @@
 	<string name="vault_unlock_confirm_message">이전 버전에서 이 보관함이 비밀번호 없이 저장되었습니다. 비밀번호를 한 번 더 입력하세요. 그러면 Zerion이 그 비밀번호로 보관함을 다시 보호합니다.</string>
 	<string name="vault_unlock_entries_differ">두 입력이 서로 다릅니다. 처음부터 다시 시작하세요.</string>
 	<string name="vault_unlock_not_confirmed">Zerion이 저장소에서 보관함을 확인하지 못했습니다. 다시 시도하세요.</string>
+	<string name="vault_unlock_new_password_title">보관함의 새 비밀번호 선택</string>
+	<string name="vault_unlock_new_password_message">Zerion은 더 이상 현재 비밀번호로 이 보관함을 보호할 수 없습니다. 예를 들어 비밀번호가 이모지로만 이루어진 경우입니다. 문자, 숫자 또는 기호 8자 이상으로 된 새 비밀번호를 선택하고 두 번 입력하세요.</string>
+	<string name="vault_unlock_new_password_again">새 비밀번호를 한 번 더 입력하세요. 그러면 Zerion이 그 비밀번호로 보관함을 보호합니다.</string>
 	<string name="vault_password_rule">문자, 숫자 또는 기호를 8자 이상 사용하세요. 이모지는 글자 수에 포함되지 않습니다.</string>
 </resources>

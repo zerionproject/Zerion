@@ -2963,5 +2963,8 @@
 	<string name="vault_unlock_confirm_message">ადრინდელმა ვერსიამ ეს სეიფი პაროლის გარეშე შეინახა. შეიყვანეთ თქვენი პაროლი კიდევ ერთხელ. ამის შემდეგ Zerion სეიფს ისევ ამ პაროლით დაიცავს.</string>
 	<string name="vault_unlock_entries_differ">ორი ჩანაწერი ერთნაირი არ არის. დაიწყეთ თავიდან.</string>
 	<string name="vault_unlock_not_confirmed">Zerion-მა ვერ დაადასტურა სეიფი მეხსიერებაში. სცადეთ ხელახლა.</string>
+	<string name="vault_unlock_new_password_title">აირჩიეთ სეიფის ახალი პაროლი</string>
+	<string name="vault_unlock_new_password_message">Zerion ვეღარ დაიცავს ამ სეიფს მისი მიმდინარე პაროლით, მაგალითად, რადგან ის მხოლოდ ემოჯებისგან შედგება. აირჩიეთ ახალი პაროლი, სულ მცირე 8 ასოთი, ციფრით ან სიმბოლოთი, და შეიყვანეთ ორჯერ.</string>
+	<string name="vault_unlock_new_password_again">შეიყვანეთ ახალი პაროლი კიდევ ერთხელ. ამის შემდეგ Zerion სეიფს ამ პაროლით დაიცავს.</string>
 	<string name="vault_password_rule">გამოიყენეთ მინიმუმ 8 ასო, ციფრი ან სიმბოლო. ემოჯი არ ითვლება.</string>
 </resources>

@@ -3061,5 +3061,8 @@
 	<string name="vault_unlock_confirm_message">Ankstesnė versija išsaugojo šią saugyklą be jos slaptažodžio. Įveskite slaptažodį dar kartą. Tada Zerion vėl apsaugos saugyklą šiuo slaptažodžiu.</string>
 	<string name="vault_unlock_entries_differ">Du įvedimai nesutampa. Pradėkite iš naujo.</string>
 	<string name="vault_unlock_not_confirmed">Zerion nepavyko patvirtinti saugyklos atmintyje. Bandykite dar kartą.</string>
+	<string name="vault_unlock_new_password_title">Pasirinkite naują saugyklos slaptažodį</string>
+	<string name="vault_unlock_new_password_message">Zerion nebegali apsaugoti šios saugyklos dabartiniu jos slaptažodžiu, pavyzdžiui, nes jį sudaro tik jaustukai. Pasirinkite naują slaptažodį iš bent 8 raidžių, skaitmenų ar simbolių ir įveskite jį du kartus.</string>
+	<string name="vault_unlock_new_password_again">Įveskite naują slaptažodį dar kartą. Tada Zerion apsaugos saugyklą šiuo slaptažodžiu.</string>
 	<string name="vault_password_rule">Naudokite bent 8 raides, skaitmenis arba simbolius. Jaustukai neskaičiuojami.</string>
 </resources>

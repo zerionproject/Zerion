@@ -3012,5 +3012,8 @@
 	<string name="vault_unlock_confirm_message">O versiune anterioară a salvat acest seif fără parola lui. Introduceți parola încă o dată. Apoi Zerion protejează din nou seiful cu ea.</string>
 	<string name="vault_unlock_entries_differ">Cele două introduceri nu sunt identice. Începeți din nou.</string>
 	<string name="vault_unlock_not_confirmed">Zerion nu a putut confirma seiful în spațiul de stocare. Încercați din nou.</string>
+	<string name="vault_unlock_new_password_title">Alegeți o parolă nouă pentru seif</string>
+	<string name="vault_unlock_new_password_message">Zerion nu mai poate proteja acest seif cu parola sa actuală, de exemplu pentru că este formată doar din emoji. Alegeți o parolă nouă de cel puțin 8 litere, cifre sau simboluri și introduceți-o de două ori.</string>
+	<string name="vault_unlock_new_password_again">Introduceți parola nouă încă o dată. Apoi Zerion protejează seiful cu ea.</string>
 	<string name="vault_password_rule">Folosiți cel puțin 8 litere, cifre sau simboluri. Emoji nu se iau în calcul.</string>
 </resources>

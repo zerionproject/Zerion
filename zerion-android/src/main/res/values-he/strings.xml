@@ -3008,5 +3008,8 @@
 	<string name="vault_unlock_confirm_message">גרסה קודמת שמרה את הכספת הזו ללא הסיסמה שלה. יש להקליד את הסיסמה פעם נוספת. לאחר מכן Zerion יגן שוב על הכספת באמצעותה.</string>
 	<string name="vault_unlock_entries_differ">שתי ההקלדות אינן זהות. יש להתחיל מחדש.</string>
 	<string name="vault_unlock_not_confirmed">ל-Zerion לא הייתה אפשרות לאשר את שמירת הכספת באחסון. יש לנסות שוב.</string>
+	<string name="vault_unlock_new_password_title">בחירת סיסמה חדשה לכספת</string>
+	<string name="vault_unlock_new_password_message">Zerion כבר לא יכול להגן על הכספת הזו בסיסמה הנוכחית שלה, למשל כי היא מורכבת מאמוג\'י בלבד. יש לבחור סיסמה חדשה של 8 אותיות, ספרות או סמלים לפחות ולהקליד אותה פעמיים.</string>
+	<string name="vault_unlock_new_password_again">יש להקליד את הסיסמה החדשה פעם נוספת. לאחר מכן Zerion יגן על הכספת באמצעותה.</string>
 	<string name="vault_password_rule">יש להשתמש ב-8 אותיות, ספרות או סמלים לפחות. אמוג\'י אינם נספרים.</string>
 </resources>

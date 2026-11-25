@@ -3166,5 +3166,8 @@
 	<string name="vault_unlock_confirm_message">حفظ إصدار سابق هذه الخزنة بدون كلمة مرورها. اكتب كلمة مرورك مرة أخرى. بعدها يحمي Zerion الخزنة بها من جديد.</string>
 	<string name="vault_unlock_entries_differ">الإدخالان غير متطابقين. ابدأ من جديد.</string>
 	<string name="vault_unlock_not_confirmed">تعذّر على Zerion تأكيد حفظ الخزنة في التخزين. حاول مرة أخرى.</string>
+	<string name="vault_unlock_new_password_title">اختر كلمة مرور جديدة للخزنة</string>
+	<string name="vault_unlock_new_password_message">لم يعد بإمكان Zerion حماية هذه الخزنة بكلمة مرورها الحالية، مثلًا لأنها مكونة من رموز تعبيرية فقط. اختر كلمة مرور جديدة من 8 أحرف أو أرقام أو رموز على الأقل واكتبها مرتين.</string>
+	<string name="vault_unlock_new_password_again">اكتب كلمة المرور الجديدة مرة أخرى. بعدها يحمي Zerion الخزنة بها.</string>
 	<string name="vault_password_rule">استخدم 8 أحرف أو أرقام أو رموز على الأقل. الرموز التعبيرية لا تُحتسب.</string>
 </resources>
