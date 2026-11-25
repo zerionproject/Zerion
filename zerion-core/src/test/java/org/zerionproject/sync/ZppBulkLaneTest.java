@@ -205,8 +205,9 @@ public class ZppBulkLaneTest {
 
 		source.eventOccurred(new MessageRequestedEvent(CONTACT));
 		long batchCapacity = (RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2L;
-		assertEquals("an empty lane allows the whole lane",
-				Math.min(batchCapacity, 512L * FRAME_RECORD_BYTES),
+		assertEquals("an empty lane allows the whole lane or one whole record",
+				Math.min(batchCapacity, Math.max(512L * FRAME_RECORD_BYTES,
+						ZmmConstants.MAX_RECORD_BYTES)),
 				capacity.get());
 
 		for (int i = 0; i < 512; i++) {

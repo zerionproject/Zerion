@@ -524,7 +524,7 @@ public class ZppUserTrafficPacingTest {
 	}
 
 	@Test
-	public void aPartCutOffByAReconnectStaysTheUsersAndEndsFastInAWindow()
+	public void aPartCutOffByAReconnectGoesFastInAWindowForItsUnusedFrames()
 			throws Exception {
 		Link link = new Link(true);
 		link.runUntil(NOW + MINUTE);
@@ -547,13 +547,26 @@ public class ZppUserTrafficPacingTest {
 		int windowAt = link.frames.size();
 		link.slot();
 		while (link.busy()) link.slot();
-		int last = link.frames.size() - 1;
-		for (Frame f : link.frames.subList(windowAt, last)) {
-			assertEquals("the rest of the part goes fast to its end",
-					ACTIVE_MS, f.gapAfter);
+		int parts = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
+				OversizedRecordTest.codec().encodeMessage(part), 0,
+				FRAME_BYTES).size();
+		assertEquals("the user's frames add up to the part once", parts,
+				link.count("user"));
+		int lastUser = windowAt;
+		for (int i = windowAt + 1; i < link.frames.size(); i++) {
+			if (link.frames.get(i).kind.equals("user")) lastUser = i;
 		}
-		assertFalse("sent in full, the part is not the user's any more",
-				link.log.isUserTraffic(part.getId()));
+		assertTrue(lastUser - windowAt > 200);
+		for (Frame f : link.frames.subList(windowAt, lastUser)) {
+			assertEquals("fast while the budget lasts", ACTIVE_MS,
+					f.gapAfter);
+		}
+		for (Frame f : link.frames.subList(lastUser, link.frames.size())) {
+			assertEquals(IDLE_MS, f.gapAfter);
+		}
+		assertEquals("the frames the first send used go at the cadence",
+				50, link.count("body"));
+		assertFalse(link.log.isUserTraffic(part.getId()));
 	}
 
 	@Test
@@ -595,6 +608,130 @@ public class ZppUserTrafficPacingTest {
 
 		assertEquals("offer", link.lastKind());
 		assertFalse(link.log.isUnannounced(chosen.getId()));
+	}
+
+	@Test
+	public void cuttingAPartBeforeItsLastFrameAtEveryOpeningUsesUpItsBudget()
+			throws Exception {
+		Link link = new Link(true);
+		Message part = link.message(300 * FRAME_BYTES);
+		link.log.noteUserPart(part.getId());
+		long end = NOW + 2 * 60 * MINUTE;
+		long fastMs = 0;
+		int windows = 0;
+		long lastOpen = NOW;
+		while (link.now[0] < end) {
+			link.reconnect();
+			int before = link.activations.size();
+			link.open();
+			if (link.activations.size() > before) {
+				windows++;
+				lastOpen = link.now[0];
+			}
+			link.request(part);
+			int guard = 0;
+			while (link.scheduler.getQueueDepth() > 1 && guard++ < 5000) {
+				link.slot();
+				if (link.lastGap() == ACTIVE_MS) fastMs += ACTIVE_MS;
+			}
+			link.requested.remove(part);
+			link.now[0] = Math.max(link.now[0] + 30_000L,
+					lastOpen + OPENING_WINDOW_INTERVAL_MS);
+		}
+
+		assertTrue(windows >= 10);
+		assertTrue("fast for " + fastMs + " ms with " + windows + " windows",
+				fastMs <= windows * WINDOW_MS + 2 * WINDOW_MS);
+		assertFalse("the cut sends used up the part's budget",
+				link.log.isUserTraffic(part.getId()));
+	}
+
+	@Test
+	public void aControlFrameBesideOneReplyLeavesTheContinuationAlone()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message header = link.message(200);
+		link.log.noteUserMessage(header.getId());
+		List<Message> all = new ArrayList<>();
+		all.add(header);
+		for (int i = 0; i < 3; i++) {
+			Message chunk = link.message(300 * FRAME_BYTES);
+			link.log.noteUserPart(chunk.getId());
+			all.add(chunk);
+		}
+		Message[] sent = all.toArray(new Message[0]);
+		long offeredAt = link.now[0];
+		link.offer(sent);
+		link.slot();
+		link.request(sent);
+		boolean injected = false;
+		while (link.busy()) {
+			if (!injected && link.now[0] - offeredAt > 5 * MINUTE) {
+				injected = true;
+				link.scheduler.enqueueControl(ZmmRecord.encode(
+						ZmmConstants.TYPE_ROOT_EVOLUTION, new byte[] {1}));
+				link.ackDue();
+			}
+			link.slot();
+		}
+
+		assertTrue(injected);
+		int last = link.frames.size() - 1;
+		for (Frame f : link.frames.subList(0, last)) {
+			assertEquals("the gap after the frame at +" + (f.at - offeredAt),
+					ACTIVE_MS, f.gapAfter);
+		}
+	}
+
+	@Test
+	public void aStartedAutomaticRecordAndAFloodDoNotStallTheUsersTransfer()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message old = new Message(new MessageId(getRandomId()), link.group,
+				NOW - DAY, new byte[100 * FRAME_BYTES]);
+		link.request(old);
+		link.slot();
+		link.slot();
+		Message header = link.message(200);
+		link.log.noteUserMessage(header.getId());
+		Message part = link.message(300 * FRAME_BYTES);
+		link.log.noteUserPart(part.getId());
+		link.offer(header);
+		link.request(header, part);
+
+		long start = link.now[0];
+		int slots = 0;
+		while (link.now[0] - start < 30 * MINUTE) {
+			link.ackDue();
+			if (++slots % 13 == 0) {
+				link.source.eventOccurred(
+						new MessageRequestedEvent(link.contact));
+			}
+			link.slot();
+		}
+
+		assertFalse("the user's transfer completed",
+				link.busyWithUsersData());
+		assertEquals("and so did the started record", 0,
+				link.scheduler.getBulkDepth());
+	}
+
+	@Test
+	public void aMessageLargerThanTheBulkLaneLeavesWhenTheLaneIsEmpty()
+			throws Exception {
+		Link link = new Link(true);
+		link.runUntil(NOW + MINUTE);
+		Message large = link.message(900_000);
+
+		link.request(large);
+		int guard = 0;
+		while (link.busy() && guard++ < 2_000) link.slot();
+
+		assertTrue(link.requested.isEmpty());
+		assertEquals(0, link.scheduler.getQueueDepth());
+		assertTrue(link.count("body") > 512);
 	}
 
 	@Test
@@ -694,7 +831,7 @@ public class ZppUserTrafficPacingTest {
 	}
 
 	@Test
-	public void aMarkOfAPartLastsUntilSentInFullAcknowledgedOrADayOld() {
+	public void aMarkOfAPartLastsForItsFramesUntilAcknowledgedOrADayOld() {
 		long[] now = {NOW};
 		LocalMessageLog log = new LocalMessageLog(() -> now[0]);
 		MessageId part = new MessageId(getRandomId());
@@ -703,10 +840,17 @@ public class ZppUserTrafficPacingTest {
 		assertFalse("and is no message of its own on a sparse link",
 				log.takeFirstSend(part));
 		assertTrue(log.isUserTraffic(part));
-		assertTrue("asking does not use it up", log.isUserTraffic(part));
-		log.noteSentInFull(part);
-		assertFalse("a part sent in full is not the user's any more",
+		assertEquals(3, log.userFramesLeft(part, 3));
+		assertEquals("asking does not use it up", 3,
+				log.userFramesLeft(part, 3));
+		log.noteUserFrameSent(part);
+		log.noteUserFrameSent(part);
+		assertTrue(log.isUserTraffic(part));
+		assertEquals(1, log.userFramesLeft(part, 3));
+		log.noteUserFrameSent(part);
+		assertFalse("a part whose frames all left is not the user's any more",
 				log.isUserTraffic(part));
+		assertEquals(0, log.userFramesLeft(part, 3));
 
 		MessageId acked = new MessageId(getRandomId());
 		log.noteUserPart(acked);
@@ -881,8 +1025,7 @@ public class ZppUserTrafficPacingTest {
 		private final Clock wall;
 		private final ZppConnectionRunnerImpl.SlotClock slots;
 		private final ZppConnectionRunnerImpl.ReceiveActivityGate ration;
-		private final ZppConnectionRunnerImpl.DensePace pace =
-				new ZppConnectionRunnerImpl.DensePace();
+		private ZppConnectionRunnerImpl.DensePace pace;
 		private final boolean dense;
 		private ZppSendScheduler scheduler;
 		private ZppOutgoingSource source;
@@ -916,6 +1059,7 @@ public class ZppUserTrafficPacingTest {
 		}
 
 		private void connect() throws Exception {
+			pace = new ZppConnectionRunnerImpl.DensePace();
 			scheduler = new ZppSendScheduler(record -> {
 				frames.add(new Frame(now[0], ZppRunnerLabels.kind(labels,
 						record)));
@@ -1073,6 +1217,11 @@ public class ZppUserTrafficPacingTest {
 			source.eventOccurred(new MessageToAckEvent(contact));
 		}
 
+		private void ackDue() {
+			acksDue.add(now[0]);
+			source.eventOccurred(new MessageToAckEvent(contact));
+		}
+
 		private void peerOffers(int count) {
 			peerOffers(count, now[0]);
 		}
@@ -1126,6 +1275,7 @@ public class ZppUserTrafficPacingTest {
 			ZppConnectionRunnerImpl.afterFrame(slots, ration, real,
 					scheduler.lastRealFrameOpenedWindow(), now[0]);
 			boolean active = pace.next(scheduler.lastFrameWasUsers(),
+					scheduler.lastFrameWasControl(),
 					scheduler.getUserDepth(),
 					scheduler.getControlDepth(), slots.lastRealMs, now[0],
 					WINDOW_MS);

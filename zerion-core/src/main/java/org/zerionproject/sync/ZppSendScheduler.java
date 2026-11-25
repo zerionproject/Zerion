@@ -90,6 +90,7 @@ public class ZppSendScheduler {
 	private boolean owedUser = false;
 	private boolean tookBulk = false;
 	private volatile boolean lastUserFrame = false;
+	private volatile boolean lastControlFrame = false;
 	private volatile boolean lastRealUserOriginated = false;
 	private volatile boolean lastRealOpenedWindow = false;
 
@@ -207,6 +208,10 @@ public class ZppSendScheduler {
 		return lastUserFrame;
 	}
 
+	public boolean lastFrameWasControl() {
+		return lastControlFrame;
+	}
+
 	public boolean tick() throws IOException {
 		return tickSparse(true) == Sent.REAL;
 	}
@@ -215,11 +220,13 @@ public class ZppSendScheduler {
 		byte[] bytes = null;
 		Entry record = null;
 		boolean users = false;
+		boolean controlled = false;
 		if (pqReady.getAsBoolean()) {
 			while (bytes == null) {
 				users = false;
 				tookBulk = false;
 				record = control.poll();
+				controlled = record != null;
 				if (record == null && !held.getAsBoolean()) {
 					record = ranked ? pollRanked() : outgoing.poll();
 					if (record == null && !ranked) record = bulk.poll();
@@ -235,6 +242,7 @@ public class ZppSendScheduler {
 			}
 		}
 		lastUserFrame = users && record != null && bytes != null;
+		lastControlFrame = controlled && record != null && bytes != null;
 		if (record != null && bytes != null) {
 			lastRealUserOriginated = record.userOriginated;
 			lastRealOpenedWindow = record.opensWindow;
@@ -255,12 +263,14 @@ public class ZppSendScheduler {
 		Entry small = firstByRank(outgoing);
 		if (small == null || (owedUser && small.rank != RANK_USER)) {
 			Entry big = nextOfStarted();
+			boolean ahead = big != null && userQueued.get() > 0;
 			if (big == null) big = firstByRank(bulk);
-			if (big != null && (small == null || big.rank == RANK_USER)) {
+			if (big != null && (small == null || big.rank == RANK_USER
+					|| ahead)) {
 				bulk.remove(big);
 				tookBulk = true;
 				started = big.lastFragment ? null : big;
-				if (big.rank == RANK_USER) owedUser = false;
+				if (big.rank == RANK_USER || ahead) owedUser = false;
 				return big;
 			}
 		}

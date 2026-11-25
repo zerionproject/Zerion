@@ -205,9 +205,7 @@ public class ZppOutgoingSource implements EventListener {
 				long now = clock.currentTimeMillis();
 				for (Message m : b) {
 					if (!inFlight.add(m.getId())) continue;
-					boolean fresh = isFresh(m, now);
-					boolean user = localMessages.isUserTraffic(m.getId());
-					enqueueMessage(m, fresh, user);
+					enqueueMessage(m, isFresh(m, now));
 				}
 				generateBatch();
 			} else if (scheduler.getBulkDepth() > 0) {
@@ -220,6 +218,9 @@ public class ZppOutgoingSource implements EventListener {
 	private long batchCapacity() {
 		long room = (long) (MAX_LANE_DEPTH - scheduler.getBulkDepth())
 				* maxRecordBytes;
+		if (scheduler.getBulkDepth() == 0) {
+			room = Math.max(room, ZmmConstants.MAX_RECORD_BYTES);
+		}
 		return Math.max(maxRecordBytes, Math.min(BATCH_CAPACITY, room));
 	}
 
@@ -378,15 +379,30 @@ public class ZppOutgoingSource implements EventListener {
 		};
 	}
 
-	private void enqueueMessage(Message m, boolean userOriginated,
-			boolean user) throws IOException {
+	private void enqueueMessage(Message m, boolean userOriginated)
+			throws IOException {
 		MessageId id = m.getId();
 		try {
-			enqueue(codec.encodeMessage(m), userOriginated, false,
-					user ? RANK_USER : RANK_AUTOMATIC, null, () -> {
-						inFlight.remove(id);
-						if (user) localMessages.noteSentInFull(id);
-					});
+			byte[] record = codec.encodeMessage(m);
+			Runnable onSent = () -> inFlight.remove(id);
+			if (record.length > ZmmConstants.MAX_RECORD_BYTES) {
+				onSent.run();
+				return;
+			}
+			List<byte[]> frames = ZmmFragmenter.fragment(
+					ZmmConstants.TYPE_SYNC, record,
+					messageIdCounter.getAndIncrement(), maxRecordBytes);
+			int users = localMessages.userFramesLeft(id, frames.size());
+			Runnable sentByUser = () -> localMessages.noteUserFrameSent(id);
+			boolean bulkLane = frames.size() > 1;
+			int last = frames.size() - 1;
+			for (int i = 0; i <= last; i++) {
+				boolean user = i < users;
+				scheduler.enqueueRecord(frames.get(i), userOriginated, false,
+						user ? RANK_USER : RANK_AUTOMATIC, bulkLane,
+						both(user ? sentByUser : null,
+								i == last ? onSent : null));
+			}
 		} catch (IOException | RuntimeException e) {
 			inFlight.remove(id);
 			throw e;
