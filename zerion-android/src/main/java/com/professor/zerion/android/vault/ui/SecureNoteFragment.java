@@ -43,6 +43,8 @@ public class SecureNoteFragment extends BaseFragment {
 	private static final String STATE_SAVE_REQUEST = "save_request";
 	private static final String STATE_LEAVING_AFTER_SAVE =
 			"leaving_after_save";
+	private static final String STATE_OPENED_WITH_PASSWORD =
+			"opened_with_password";
 	private static final long NO_SAVE = 0L;
 
 	private VaultViewModel viewModel;
@@ -57,6 +59,9 @@ public class SecureNoteFragment extends BaseFragment {
 	private TextInputLayout titleLayout;
 	private TextInputLayout notePasswordLayout;
 	private TextInputEditText notePasswordInput;
+	private TextInputLayout notePasswordConfirmLayout;
+	private TextInputEditText notePasswordConfirmInput;
+	private boolean openedWithPassword = false;
 	private SwitchMaterial lockNoteSwitch;
 	private ExtendedFloatingActionButton saveFab;
 	private FrameLayout progressOverlay;
@@ -97,6 +102,8 @@ public class SecureNoteFragment extends BaseFragment {
 					NO_SAVE);
 			leavingAfterSave = savedInstanceState.getBoolean(
 					STATE_LEAVING_AFTER_SAVE, false);
+			openedWithPassword = savedInstanceState.getBoolean(
+					STATE_OPENED_WITH_PASSWORD, false);
 		}
 	}
 
@@ -105,6 +112,7 @@ public class SecureNoteFragment extends BaseFragment {
 		super.onSaveInstanceState(outState);
 		outState.putLong(STATE_SAVE_REQUEST, saveRequest);
 		outState.putBoolean(STATE_LEAVING_AFTER_SAVE, leavingAfterSave);
+		outState.putBoolean(STATE_OPENED_WITH_PASSWORD, openedWithPassword);
 	}
 
 	@Override
@@ -118,6 +126,10 @@ public class SecureNoteFragment extends BaseFragment {
 		titleLayout = view.findViewById(R.id.note_title_layout);
 		notePasswordLayout = view.findViewById(R.id.note_password_layout);
 		notePasswordInput = view.findViewById(R.id.note_password_input);
+		notePasswordConfirmLayout =
+				view.findViewById(R.id.note_password_confirm_layout);
+		notePasswordConfirmInput =
+				view.findViewById(R.id.note_password_confirm_input);
 		lockNoteSwitch = view.findViewById(R.id.lock_note_switch);
 		saveFab = view.findViewById(R.id.save_note_fab);
 		progressOverlay = view.findViewById(R.id.progress_overlay);
@@ -125,6 +137,7 @@ public class SecureNoteFragment extends BaseFragment {
 		IncognitoInputHelper.configureForVault(titleInput);
 		IncognitoInputHelper.configureForVault(contentInput);
 		IncognitoInputHelper.configurePasswordField(notePasswordInput);
+		IncognitoInputHelper.configurePasswordField(notePasswordConfirmInput);
 
 		return view;
 	}
@@ -230,9 +243,24 @@ public class SecureNoteFragment extends BaseFragment {
 	private void setupListeners() {
 		lockNoteSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			notePasswordLayout.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+			showPasswordConfirmation();
 			if (!isChecked) {
 				notePasswordInput.setText("");
+				notePasswordConfirmInput.setText("");
 			}
+		});
+
+		notePasswordConfirmInput.addTextChangedListener(new TextWatcher() {
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				notePasswordConfirmLayout.setError(null);
+			}
+
+			@Override
+			public void afterTextChanged(Editable s) {}
 		});
 
 		notePasswordInput.addTextChangedListener(new TextWatcher() {
@@ -363,7 +391,9 @@ public class SecureNoteFragment extends BaseFragment {
 										contentInput.setText(content);
 										addTextWatchers();
 										hasChanges = false;
+										openedWithPassword = true;
 										lockNoteSwitch.setChecked(true);
+										showPasswordConfirmation();
 										contentReady = true;
 										showSaveAvailability();
 									}
@@ -409,6 +439,17 @@ public class SecureNoteFragment extends BaseFragment {
 				notePasswordLayout.setError(getString(
 						R.string.vault_error_password_short));
 				return;
+			}
+			if (needsPasswordConfirmation()) {
+				char[] confirm = readChars(notePasswordConfirmInput);
+				boolean same = java.util.Arrays.equals(password, confirm);
+				java.util.Arrays.fill(confirm, '\0');
+				if (!same) {
+					java.util.Arrays.fill(password, '\0');
+					notePasswordConfirmLayout.setError(getString(
+							R.string.vault_password_mismatch));
+					return;
+				}
 			}
 		}
 
@@ -567,6 +608,7 @@ public class SecureNoteFragment extends BaseFragment {
 		setInputsEnabled(enabled);
 		lockNoteSwitch.setEnabled(enabled);
 		notePasswordInput.setEnabled(enabled);
+		notePasswordConfirmInput.setEnabled(enabled);
 		showSaveAvailability();
 	}
 
@@ -613,8 +655,18 @@ public class SecureNoteFragment extends BaseFragment {
 				titleInput.setText("");
 				contentInput.setText("");
 				notePasswordInput.setText("");
+				notePasswordConfirmInput.setText("");
 			}
 		}
+	}
+
+	private boolean needsPasswordConfirmation() {
+		return lockNoteSwitch.isChecked() && !openedWithPassword;
+	}
+
+	private void showPasswordConfirmation() {
+		notePasswordConfirmLayout.setVisibility(needsPasswordConfirmation()
+				? View.VISIBLE : View.GONE);
 	}
 
 	@Override
