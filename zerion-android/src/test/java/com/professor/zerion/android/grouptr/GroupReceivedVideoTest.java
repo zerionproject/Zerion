@@ -285,6 +285,14 @@ public class GroupReceivedVideoTest {
 
 		GroupTrMediaCache.evictGroup(other.getGroupId());
 		assertFalse(GroupTrMediaCache.isVideoOpened(other));
+
+		GroupTrPost deleted = videoPost(false);
+		adapter.setPosts(Collections.singletonList(deleted));
+		adapter.videoOpened(deleted);
+		assertTrue(GroupTrMediaCache.isVideoOpened(deleted));
+		adapter.removePost(deleted);
+		assertFalse("a deleted post kept its open",
+				GroupTrMediaCache.isVideoOpened(deleted));
 	}
 
 	private static void runIo() {

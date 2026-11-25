@@ -255,12 +255,14 @@ public class ReceivedVideoFrameTest {
 		ImageViewHolder.videoOpened(first, attachment);
 
 		ImageViewHolder h = holder(first);
-		show(h, second, video(new MessageId(getRandomId())), true);
+		show(h, second, video(attachment), true);
 		assertEquals("the tile went by the message it was made for", 0,
 				CountingRetriever.sources);
 
-		show(h, first, video(attachment), true);
-		assertEquals(1, CountingRetriever.sources);
+		ImageViewHolder other = holder(second);
+		show(other, first, video(attachment), true);
+		assertEquals("the tile went by the message it was made for", 1,
+				CountingRetriever.sources);
 	}
 
 	@Test
