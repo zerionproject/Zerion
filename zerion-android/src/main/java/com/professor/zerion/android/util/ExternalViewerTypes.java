@@ -106,7 +106,9 @@ public final class ExternalViewerTypes {
 			"vnd.android", "x-dex", "java-archive", "executable", "x-elf",
 			"msdownload", "msdos-program", "x-sharedlib", "x509", "pkcs",
 			"pkix", "pem-file", "x-pem", "wifi-config", "vnd.wfa", "oma.drm",
-			"android-drm", "mobileconfig", "aspen-config"};
+			"android-drm", "mobileconfig", "aspen-config", "passpoint",
+			"openvpn", "ovpn", "wireguard", "strongswan", "pgp-key",
+			"keyring", "x-jar", "/jar"};
 
 	private static final byte[] PACKAGE_MANIFEST = {'A', 'n', 'd', 'r', 'o',
 			'i', 'd', 'M', 'a', 'n', 'i', 'f', 'e', 's', 't', '.', 'x', 'm',
