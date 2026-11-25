@@ -59,6 +59,7 @@ public class ZppOutgoingSource implements EventListener {
 	private static final int MAX_LANE_DEPTH = 512;
 	private static final long BACKPRESSURE_RETRY_MS = 2_000L;
 	private static final long BULK_ROOM_RETRY_MS = 10_000L;
+	private static final long DUE_NOW_RETRY_MS = 10_000L;
 	static final long FRESH_MESSAGE_MS = 10 * 60_000L;
 	private static final int REPLY_OVERHEAD_BYTES = 96;
 	static final int MAX_IDS_PER_RECORD = Math.min(MAX_MESSAGE_IDS,
@@ -82,6 +83,7 @@ public class ZppOutgoingSource implements EventListener {
 	private final AtomicBoolean generateOfferQueued = new AtomicBoolean(false);
 	private final AtomicBoolean generateRequestQueued = new AtomicBoolean(false);
 	private final AtomicBoolean bulkRoomRetryQueued = new AtomicBoolean(false);
+	private final AtomicBoolean waitingForRoom = new AtomicBoolean(false);
 	private final AtomicBoolean ackWaiting = new AtomicBoolean(false);
 	private final AtomicBoolean requestWaiting = new AtomicBoolean(false);
 	private final AtomicBoolean offerWaiting = new AtomicBoolean(false);
@@ -223,10 +225,15 @@ public class ZppOutgoingSource implements EventListener {
 				stopOffering(neverFit);
 				generateBatch();
 			} else if (scheduler.getBulkDepth() > 0) {
+				waitingForRoom.set(true);
 				retryWhenBulkLaneHasRoom();
 			}
 		} catch (DbException | IOException e) {
 		}
+	}
+
+	private void roomFreed() {
+		if (waitingForRoom.getAndSet(false)) generateBatch();
 	}
 
 	@DatabaseExecutor
@@ -411,7 +418,10 @@ public class ZppOutgoingSource implements EventListener {
 		try {
 			byte[] record = codec.encodeMessage(m);
 			if (record.length > ZmmConstants.MAX_RECORD_BYTES) return false;
-			Runnable onSent = () -> inFlight.remove(id);
+			Runnable onSent = () -> {
+				inFlight.remove(id);
+				roomFreed();
+			};
 			List<byte[]> frames = ZmmFragmenter.fragment(
 					ZmmConstants.TYPE_SYNC, record,
 					messageIdCounter.getAndIncrement(), maxRecordBytes);
@@ -487,7 +497,10 @@ public class ZppOutgoingSource implements EventListener {
 
 	private void setNextSendTime(long time) {
 		long old = nextSendTime.getAndSet(time);
-		if (time < old && time != Long.MAX_VALUE) scheduleRetransmit(time);
+		if (time < old && time != Long.MAX_VALUE) {
+			long now = clock.currentTimeMillis();
+			scheduleRetransmit(time > now ? time : now + DUE_NOW_RETRY_MS);
+		}
 	}
 
 	private void scheduleRetransmit(long absoluteTime) {
