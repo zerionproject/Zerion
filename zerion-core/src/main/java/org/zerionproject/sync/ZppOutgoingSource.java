@@ -88,6 +88,7 @@ public class ZppOutgoingSource implements EventListener {
 	private final Set<MessageId> claimedOffers = new HashSet<>();
 	@GuardedBy("claimLock")
 	private boolean claimsReturned = false;
+	private final Set<Reservation> reservations = new HashSet<>();
 	private final AtomicLong nextSendTime = new AtomicLong(Long.MAX_VALUE);
 	private final AtomicLong messageIdCounter = new AtomicLong(0);
 	private volatile boolean stopped = false;
@@ -132,6 +133,10 @@ public class ZppOutgoingSource implements EventListener {
 			claimsReturned = true;
 			localMessages.restoreOffers(claimedOffers);
 			claimedOffers.clear();
+		}
+		synchronized (reservations) {
+			for (Reservation r : reservations) r.release();
+			reservations.clear();
 		}
 		cancelRetransmit();
 	}
@@ -392,20 +397,64 @@ public class ZppOutgoingSource implements EventListener {
 			List<byte[]> frames = ZmmFragmenter.fragment(
 					ZmmConstants.TYPE_SYNC, record,
 					messageIdCounter.getAndIncrement(), maxRecordBytes);
-			int users = localMessages.userFramesLeft(id, frames.size());
-			Runnable sentByUser = () -> localMessages.noteUserFrameSent(id);
+			Reservation reservation = reserve(id, frames.size());
+			int users = reservation == null ? 0 : reservation.left;
 			boolean bulkLane = frames.size() > 1;
 			int last = frames.size() - 1;
 			for (int i = 0; i <= last; i++) {
 				boolean user = i < users;
+				Runnable sent = i == last ? onSent : null;
 				scheduler.enqueueRecord(frames.get(i), userOriginated, false,
 						user ? RANK_USER : RANK_AUTOMATIC, bulkLane,
-						both(user ? sentByUser : null,
-								i == last ? onSent : null));
+						user ? ZppSendScheduler.charged(reservation, sent)
+								: sent);
 			}
 		} catch (IOException | RuntimeException e) {
 			inFlight.remove(id);
 			throw e;
+		}
+	}
+
+	@Nullable
+	private Reservation reserve(MessageId id, int frames) {
+		int left = localMessages.reserveUserFrames(id, frames);
+		if (left == 0) return null;
+		Reservation r = new Reservation(id, left);
+		synchronized (reservations) {
+			if (stopped) {
+				r.release();
+				return null;
+			}
+			reservations.add(r);
+		}
+		return r;
+	}
+
+	private final class Reservation implements Runnable {
+
+		private final MessageId id;
+		@GuardedBy("reservations")
+		private int left;
+
+		private Reservation(MessageId id, int left) {
+			this.id = id;
+			this.left = left;
+		}
+
+		@Override
+		public void run() {
+			boolean reserved;
+			synchronized (reservations) {
+				reserved = left > 0;
+				if (reserved && --left == 0) reservations.remove(this);
+			}
+			localMessages.noteUserFrameSent(id, reserved);
+		}
+
+		@GuardedBy("reservations")
+		private void release() {
+			if (left > 0) localMessages.releaseUserFrames(id, left);
+			left = 0;
 		}
 	}
 
