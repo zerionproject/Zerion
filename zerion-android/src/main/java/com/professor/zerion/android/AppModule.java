@@ -759,10 +759,12 @@ public class AppModule {
 			org.briarproject.android.dontkillmelib.wakelock
 					.AndroidWakeLockManager wakeLocks,
 			org.zerionproject.core.api.system.TaskScheduler scheduler,
-			com.professor.zerion.android.mesh.MeshLinkKeys linkKeys) {
+			com.professor.zerion.android.mesh.MeshLinkKeys linkKeys,
+			LifecycleManager lifecycleManager) {
 		MeshManager manager = new MeshManager(context, crypto,
 				identityManager, db, settingsManager, clock, router,
 				nameGuard, wakeLocks, scheduler);
+		lifecycleManager.registerOpenDatabaseHook(linkKeys);
 		manager.setLinkKeys(linkKeys);
 		manager.setSenderLinkKeys(linkKeys);
 		return manager;

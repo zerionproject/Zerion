@@ -31,7 +31,8 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		byte[] linkKeyFor(byte[] peerIdentitySigPub);
 
 		@javax.annotation.Nullable
-		default byte[] sendingLinkKeyFor(byte[] peerIdentitySigPub) {
+		default byte[] sendingLinkKeyFor(byte[] peerIdentitySigPub)
+				throws GeneralSecurityException {
 			return null;
 		}
 	}
@@ -168,7 +169,7 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 				ttlSeconds, sendTimestamp, preferOneTime, linkKey);
 	}
 
-	public byte[] send(MeshForwarder forwarder,
+	private byte[] send(MeshForwarder forwarder,
 			AsyncPrekeyBundle recipientBundle, int messageType,
 			byte[] payload, long ttlSeconds, long sendTimestamp,
 			boolean preferOneTime,

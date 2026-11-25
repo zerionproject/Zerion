@@ -12,6 +12,7 @@ import org.zerionproject.transport.mesh.MeshLink;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +23,7 @@ import javax.annotation.Nullable;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class AsyncMeshSenderAuthTest {
 
@@ -101,6 +103,41 @@ public class AsyncMeshSenderAuthTest {
 
 		assertEquals(signed.length, keyed.length);
 		assertEquals(signed.length, cover.length);
+	}
+
+	@Test
+	public void noEnvelopeLeavesWhenTheLinkKeyLookupRefuses()
+			throws Exception {
+		Recipient r = new Recipient(null);
+		AsyncMeshDelivery.SenderLinkKeys refusing =
+				new AsyncMeshDelivery.SenderLinkKeys() {
+					@Override
+					@Nullable
+					public byte[] linkKeyFor(byte[] peerIdentitySigPub) {
+						return null;
+					}
+
+					@Override
+					@Nullable
+					public byte[] sendingLinkKeyFor(byte[] peerIdentitySigPub)
+							throws GeneralSecurityException {
+						throw new GeneralSecurityException();
+					}
+				};
+		AsyncMeshDelivery sDelivery = new AsyncMeshDelivery(crypto, sealer,
+				senderStore, (a, b, c, d) -> true, sender, new SystemClock(),
+				refusing);
+		List<byte[]> captured = new ArrayList<>();
+		MeshForwarder sForwarder = capturing(sDelivery, captured);
+
+		try {
+			sDelivery.send(sForwarder, r.bundle, 9, "refused".getBytes(),
+					3600L, System.currentTimeMillis(), true);
+			fail("an envelope was sealed");
+		} catch (GeneralSecurityException expected) {
+		}
+
+		assertTrue(captured.isEmpty());
 	}
 
 	private AsyncMeshDelivery.SenderLinkKeys keysFor(byte[] peer,
