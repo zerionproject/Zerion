@@ -6,6 +6,7 @@ import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.event.ContactAddedEvent;
 import org.zerionproject.core.api.contact.event.ContactConnectionKeysEvent;
+import org.zerionproject.core.api.contact.event.ContactKeysReplacedEvent;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.SecretKey;
@@ -54,6 +55,8 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 			.B4OnionRotation> onionRotation;
 	@Nullable
 	private final RootKeyStore rootKeyStore;
+	@Nullable
+	private final RootEvolutionManager evolutions;
 
 	static final long INBOUND_SEARCH_GAP = 1L << 14;
 	static final long INBOUND_SEARCH_INTERVAL_MS = 10_000L;
@@ -71,10 +74,10 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 			@DatabaseExecutor Executor dbExecutor,
 			javax.inject.Provider<org.zerionproject.core.plugin.tor
 					.B4OnionRotation> onionRotation,
-			RootKeyStore rootKeyStore) {
+			RootKeyStore rootKeyStore, RootEvolutionManager evolutions) {
 		this(new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE), contactManager,
 				pcsStateManager, sessionFactory, counter, db, eventBus,
-				dbExecutor, onionRotation, rootKeyStore);
+				dbExecutor, onionRotation, rootKeyStore, evolutions);
 	}
 
 	ZtpSessionProviderImpl(ZwfTagRecogniser recogniser,
@@ -85,7 +88,7 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 			javax.inject.Provider<org.zerionproject.core.plugin.tor
 					.B4OnionRotation> onionRotation) {
 		this(recogniser, contactManager, pcsStateManager, sessionFactory,
-				counter, db, eventBus, dbExecutor, onionRotation, null);
+				counter, db, eventBus, dbExecutor, onionRotation, null, null);
 	}
 
 	ZtpSessionProviderImpl(ZwfTagRecogniser recogniser,
@@ -95,8 +98,10 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 			Executor dbExecutor,
 			javax.inject.Provider<org.zerionproject.core.plugin.tor
 					.B4OnionRotation> onionRotation,
-			@Nullable RootKeyStore rootKeyStore) {
+			@Nullable RootKeyStore rootKeyStore,
+			@Nullable RootEvolutionManager evolutions) {
 		this.rootKeyStore = rootKeyStore;
+		this.evolutions = evolutions;
 		this.onionRotation = onionRotation;
 		this.contactManager = contactManager;
 		this.pcsStateManager = pcsStateManager;
@@ -206,7 +211,11 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 			ContactId cid = ((ContactRemovedEvent) e).getContactId();
 			recogniser.remove(cid.getInt());
 			peerDials.remove(cid.getInt());
+			if (evolutions != null) evolutions.forget(cid);
 			dbExecutor.execute(this::rotateOnionAfterContactRemoval);
+		} else if (e instanceof ContactKeysReplacedEvent) {
+			ContactId cid = ((ContactKeysReplacedEvent) e).getContactId();
+			if (evolutions != null) evolutions.forget(cid);
 		} else if (e instanceof ContactConnectionKeysEvent) {
 			ContactId cid = ((ContactConnectionKeysEvent) e).getContactId();
 			if (!((ContactConnectionKeysEvent) e).isOutOfSync()) {

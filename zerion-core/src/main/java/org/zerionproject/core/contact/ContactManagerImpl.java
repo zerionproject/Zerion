@@ -287,6 +287,8 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		s.putBoolean(org.zerionproject.transport.RootKeyStore
 				.NOT_RENEWING_KEY_PREFIX + c.getInt(), false);
 		db.mergeSettings(txn, s, CONNECTION_KEYS_NAMESPACE);
+		txn.attach(new org.zerionproject.core.api.contact.event
+				.ContactKeysReplacedEvent(c));
 		txn.attach(new ContactConnectionKeysEvent(c, false));
 		txn.attach(new org.zerionproject.core.api.contact.event
 				.ContactKeyRenewalEvent(c, false));

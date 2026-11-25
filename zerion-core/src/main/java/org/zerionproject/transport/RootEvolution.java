@@ -400,8 +400,10 @@ public class RootEvolution implements ZwfControlHandler {
 			closed = true;
 			boolean waiting = expected || awaitingHello;
 			boolean alone = !manager.hasOtherConnection(contactId, this);
-			if (waiting && alone) manager.stalled(contactId);
-			if (first) {
+			boolean gone = (first || waiting)
+					&& !store.hasContact(contactId);
+			if (waiting && alone && !gone) manager.stalled(contactId);
+			if (first && !gone) {
 				boolean renewalOwed = peerEnforces ? waiting
 						: awaitingHello && helloOverdue;
 				boolean peerSaidPaused = !helloSeen

@@ -225,6 +225,15 @@ public class RootKeyStore {
 		return snapshots.get() > 0;
 	}
 
+	public boolean hasContact(ContactId c) {
+		try {
+			db.transaction(true, txn -> db.getContact(txn, c));
+			return true;
+		} catch (DbException e) {
+			return false;
+		}
+	}
+
 	public boolean isPaused(long now) {
 		try {
 			long until = db.transactionWithResult(true, txn ->

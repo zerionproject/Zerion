@@ -515,6 +515,58 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void replacingAContactsKeysIsAnnouncedAndAddingANewContactIsNot()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+
+		context.checking(new DbExpectations() {{
+			existingContactPairing(this, txn, p, none(), marked());
+			clears(this, txn, PendingContactFlags.RE_ADD);
+			reKeys(this, txn);
+		}});
+
+		assertEquals(0, keysReplacedIn(txn));
+		assertEquals(contactId, contactManager.addContact(txn, p, remote,
+				local, rootKey, timestamp, alice, verified, active, null));
+		assertEquals(1, keysReplacedIn(txn));
+
+		Transaction added = new Transaction(null, false);
+		context.checking(new DbExpectations() {{
+			oneOf(db).addContact(added, remote, local, null, verified, true,
+					false, (byte[]) null);
+			will(returnValue(contactId));
+			oneOf(keyManager).addRotationKeys(added, contactId, rootKey,
+					timestamp, alice, active);
+			oneOf(pcsStateManager).initializePairingRoot(added, contactId,
+					rootKey);
+			oneOf(db).getContact(added, contactId);
+			will(returnValue(contact));
+		}});
+		assertEquals(contactId, contactManager.addContact(added, remote, local,
+				rootKey, timestamp, alice, verified, active));
+		assertEquals(0, keysReplacedIn(added));
+	}
+
+	private int keysReplacedIn(Transaction txn) {
+		int n = 0;
+		for (org.zerionproject.core.api.db.CommitAction a : txn.getActions()) {
+			if (!(a instanceof org.zerionproject.core.api.db.EventAction)) {
+				continue;
+			}
+			org.zerionproject.core.api.event.Event e =
+					((org.zerionproject.core.api.db.EventAction) a).getEvent();
+			if (e instanceof org.zerionproject.core.api.contact.event
+					.ContactKeysReplacedEvent) {
+				assertEquals(contactId, ((org.zerionproject.core.api.contact
+						.event.ContactKeysReplacedEvent) e).getContactId());
+				n++;
+			}
+		}
+		return n;
+	}
+
+	@Test
 	public void aReAddReplacesTheKeysWhenThePeerReplacesThemToo()
 			throws Exception {
 		Transaction txn = new Transaction(null, false);

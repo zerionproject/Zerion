@@ -287,6 +287,18 @@ public class RootEvolutionManager {
 		stalledBeside.add(c.getInt());
 	}
 
+	public void forget(ContactId c) {
+		int id = c.getInt();
+		lastEvolution.remove(id);
+		answers.remove(id);
+		pendingDialFailures.remove(id);
+		unauthenticatedDials.remove(id);
+		stalledAt.remove(id);
+		stalledBeside.remove(id);
+		peerPauses.remove(id);
+		pausedInRun.remove(id);
+	}
+
 	void peerGreeted(ContactId c, boolean paused) {
 		long now = now();
 		peerPauses.values().removeIf(p -> p.isOverAt(now));

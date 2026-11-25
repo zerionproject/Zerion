@@ -8,6 +8,7 @@ import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.identity.Identity;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.sync.MessageFactory;
 import org.zerionproject.core.db.HyperSqlDatabaseForTests;
 import org.zerionproject.core.test.BrambleTestCase;
@@ -361,6 +362,56 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 		assertTrue(store.storePending(contact, 1, getSecretKey(), true));
 		db.transaction(false, txn -> db.removeContact(txn, contact));
 		assertNull(store.load(contact));
+	}
+
+	@Test
+	public void aConnectionEndingAfterItsContactWasRemovedStoresNothing()
+			throws Exception {
+		RootEvolutionTestBed bed = new RootEvolutionTestBed();
+		RootKeyStore store = new RootKeyStore(db);
+		RootEvolutionManager manager = new RootEvolutionManager(store,
+				bed.crypto, bed.mlKem, () -> 5_000_000L);
+		String stalls = RootKeyStore.STALLS_KEY_PREFIX + contact.getInt();
+		String since = RootKeyStore.STALLED_SINCE_KEY_PREFIX + contact.getInt();
+		String notRenewing =
+				RootKeyStore.NOT_RENEWING_KEY_PREFIX + contact.getInt();
+		assertTrue(store.hasContact(contact));
+		store.setPeerEnforces(contact, true);
+
+		RootEvolution counted = new RootEvolution(manager, contact, true);
+		counted.start(ZwfControlHandler.eager(p -> {
+		}));
+		counted.onPeerStreamAuthenticated(0);
+		counted.close();
+		assertArrayEquals("a connection that ended before the greeting of a"
+				+ " contact that is still there was not counted",
+				new long[] {1, 5_000_000L}, store.stalls(contact));
+		assertTrue(manager.recentlyStalled(contact.getInt()));
+
+		RootEvolution open = new RootEvolution(manager, contact, true);
+		open.start(ZwfControlHandler.eager(p -> {
+		}));
+		open.onPeerStreamAuthenticated(0);
+		db.transaction(false, txn -> {
+			db.removeContact(txn, contact);
+			Settings forgotten = new Settings();
+			forgotten.putInt(stalls, 0);
+			forgotten.putLong(since, 0);
+			forgotten.putBoolean(notRenewing, false);
+			db.mergeSettings(txn, forgotten, RootKeyStore.SETTINGS_NAMESPACE);
+		});
+		manager.forget(contact);
+		assertFalse(store.hasContact(contact));
+		open.close();
+		open.close();
+
+		Settings s = db.transactionWithResult(true, txn ->
+				db.getSettings(txn, RootKeyStore.SETTINGS_NAMESPACE));
+		assertEquals("a stalled connection was stored for a removed contact",
+				0, s.getInt(stalls, -1));
+		assertEquals(0, s.getLong(since, -1));
+		assertFalse(s.getBoolean(notRenewing, true));
+		assertFalse(manager.recentlyStalled(contact.getInt()));
 	}
 
 	@Test

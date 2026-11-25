@@ -2,6 +2,7 @@ package org.zerionproject.transport;
 
 import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
@@ -1006,6 +1007,58 @@ public class RootEvolutionStallWarningTest {
 		assertEquals("a connection closed for another reason than being"
 						+ " redundant was not counted", 1,
 				alice.store.stalls(BOB)[0]);
+	}
+
+	@Test
+	public void aConnectionClosedBecauseItsContactWasRemovedIsNotCounted()
+			throws Exception {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		ConnectionRegistry registry = registry();
+		AtomicBoolean closed = new AtomicBoolean();
+		RootEvolution only = new RootEvolution(m, BOB, true);
+		SessionConnection session = session(only, closed);
+		only.start(silent());
+		only.onPeerStreamAuthenticated(0);
+		registry.registerOutgoingConnection(BOB, TorConstants.ID, session,
+				priority(1));
+		assertFalse(closed.get());
+		alice.store.remove(BOB);
+		((EventListener) registry).eventOccurred(
+				new ContactRemovedEvent(BOB));
+		assertTrue(closed.get());
+		only.close();
+		only.close();
+		assertEquals("a connection that ended because its contact was removed"
+				+ " was counted", 0, alice.store.stalls(BOB)[0]);
+		assertFalse(alice.store.isNotRenewing(BOB));
+		assertFalse("a removed contact is remembered as stalled",
+				m.recentlyStalled(ALICE_SEES_BOB));
+	}
+
+	@Test
+	public void twoConnectionsToARemovedContactLeaveNothingForAContactAddedLater() {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		RootEvolution first = new RootEvolution(m, BOB, true);
+		RootEvolution second = new RootEvolution(m, BOB, true);
+		first.start(silent());
+		second.start(silent());
+		first.onPeerStreamAuthenticated(0);
+		second.onPeerStreamAuthenticated(0);
+		alice.store.remove(BOB);
+		m.forget(BOB);
+		first.close();
+		second.close();
+		assertEquals(0, alice.store.stalls(BOB)[0]);
+		assertFalse(m.recentlyStalled(ALICE_SEES_BOB));
+
+		alice.resetKeys(ContactRootKeys.atPairing(bed.randomKey()));
+		RootEvolution later = new RootEvolution(m, BOB, true);
+		later.start(silent());
+		later.onPeerStreamAuthenticated(0);
+		later.close();
+		assertEquals("a contact added later was charged with a connection to"
+				+ " the removed one", 0, alice.store.stalls(BOB)[0]);
+		assertFalse(alice.store.isOutOfSync(BOB));
 	}
 
 	private static SecretKey copy(SecretKey k) {
