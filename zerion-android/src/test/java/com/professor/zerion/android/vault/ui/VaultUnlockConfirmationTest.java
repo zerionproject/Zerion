@@ -306,6 +306,38 @@ public class VaultUnlockConfirmationTest {
 	}
 
 	@Test
+	public void aRecoveryPasswordAgainstTheRuleNamesTheRuleAndAsksNothing()
+			throws Exception {
+		when(rig.vault.manager.unlock(any(), anyLong()))
+				.thenReturn(UnlockResult.NEW_PASSWORD_REFUSED);
+
+		vm.unlockVault(TYPED.toCharArray());
+
+		assertEquals(message(R.string.vault_password_rule),
+				vm.getErrorMessage().getValue());
+		assertFalse(asksAgain());
+		assertNull(kept());
+	}
+
+	@Test
+	public void aSecondEntryAgainstTheRuleNamesTheRuleAndStartsAgain()
+			throws Exception {
+		afterConfirming = UnlockResult.NEW_PASSWORD_REFUSED;
+		vm.unlockVault(TYPED.toCharArray());
+		char[] first = kept();
+
+		vm.unlockVault(TYPED.toCharArray());
+
+		assertEquals(message(R.string.vault_password_rule),
+				vm.getErrorMessage().getValue());
+		assertFalse(asksAgain());
+		assertNull(kept());
+		assertWiped(first);
+		assertNotEquals(VaultViewModel.VaultState.UNLOCKED,
+				vm.getVaultState().getValue());
+	}
+
+	@Test
 	public void aRefusedEntryIsStillAnInvalidPassword() throws Exception {
 		when(rig.vault.manager.unlock(any(), anyLong()))
 				.thenReturn(UnlockResult.REFUSED);

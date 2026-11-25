@@ -309,6 +309,8 @@ public class VaultClearedPasswordRecoveryTest {
 				return "asks again";
 			case ENTRIES_DIFFER:
 				return "entries differ";
+			case NEW_PASSWORD_REFUSED:
+				return "password rule";
 			default:
 				return "not confirmed on storage";
 		}
@@ -909,23 +911,56 @@ public class VaultClearedPasswordRecoveryTest {
 		assertArrayEquals(before, headerBytes());
 	}
 
+	private static final char[] SHORT_WHEN_NORMAL =
+			"pass\uD83D\uDE00\uD83D\uDE00".toCharArray();
+	private static final char[] ONE_AND_PICTURES =
+			"a\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\u2764".toCharArray();
+
 	@Test
-	public void recoveryStillTakesAPasswordThatIsShortInItsNormalForm()
+	public void anOlderHeaderStillTakesAPasswordThatIsShortInItsNormalForm()
 			throws Exception {
-		char[] typed = "pass\uD83D\uDE00\uD83D\uDE00".toCharArray();
+		char[] typed = SHORT_WHEN_NORMAL;
 		assertEquals(VaultManager.MIN_PASSWORD_LENGTH, typed.length);
 		assertEquals(4, PasswordNormalizer.normalize(typed).length);
 		assertFalse(VaultManager.acceptsNewPassword(typed.clone()));
-		sealUnderTheEmptyPassword();
+		sealUnderZeros(typed.length);
 		VaultManager m = process();
 
 		assertEquals("opens", twice(m, typed));
 
 		assertEquals("Testnote kept", note(m));
-		assertEquals("version 2, 256 MiB t=3", label(header()));
 		assertEquals("opens", attempt(typed));
 		assertEquals("refused", attempt(CHOSEN));
-		assertEquals("refused", attempt(new char[0]));
+	}
+
+	@Test
+	public void aNewerHeaderIsSealedOnlyUnderAPasswordThatFollowsTheRule()
+			throws Exception {
+		char[][] refused = {SHORT_WHEN_NORMAL, ONE_AND_PICTURES};
+		for (char[] typed : refused) {
+			startOver();
+			assertTrue(typed.length >= VaultManager.MIN_PASSWORD_LENGTH);
+			assertFalse(VaultManager.acceptsNewPassword(typed.clone()));
+			sealUnderTheEmptyPassword();
+			byte[] before = headerBytes();
+			List<String> keys = aliases();
+			VaultManager m = process();
+
+			assertEquals("password rule", attempt(m, typed));
+			assertEquals("password rule", confirm(m, typed, typed));
+
+			assertFalse(m.isUnlocked());
+			assertThrows(SecurityException.class, m::listItems);
+			assertEquals(0, failures());
+			assertArrayEquals(before, headerBytes());
+			assertEquals(keys, aliases());
+
+			assertEquals("opens", twice(m, CHOSEN));
+			assertEquals("Testnote kept", note(m));
+			assertEquals("version 2, 256 MiB t=3", label(header()));
+			assertEquals("refused", attempt(typed));
+			assertEquals("opens", attempt(CHOSEN));
+		}
 	}
 
 	@Test

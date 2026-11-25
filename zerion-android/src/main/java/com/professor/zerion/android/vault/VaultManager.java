@@ -42,7 +42,8 @@ public class VaultManager
 		REFUSED,
 		CONFIRM_NEEDED,
 		ENTRIES_DIFFER,
-		NOT_CONFIRMED_ON_STORAGE
+		NOT_CONFIRMED_ON_STORAGE,
+		NEW_PASSWORD_REFUSED
 	}
 
 	public static final int MIN_PASSWORD_LENGTH = 8;
@@ -674,6 +675,12 @@ public class VaultManager
 				? typedLength : 0];
 	}
 
+	private static boolean mayRecoverUnder(VaultHeader header,
+			char[] typed) {
+		return header.version < VaultHeader.VERSION_KEYSTORE_FACTOR
+				|| acceptsNewPassword(typed);
+	}
+
 	private static boolean couldHaveBeenSet(char[] typed) {
 		if (typed.length < MIN_PASSWORD_LENGTH) return false;
 		char[] normal = PasswordNormalizer.normalize(typed);
@@ -906,6 +913,11 @@ public class VaultManager
 			OpenedVault opened = openForUnlock(currentHeader, password);
 			if (opened == null) {
 				return registerFailedUnlock();
+			}
+			if (opened.clearedForm
+					&& !mayRecoverUnder(currentHeader, password)) {
+				SecureMemory.shred(opened.masterKey);
+				return UnlockResult.NEW_PASSWORD_REFUSED;
 			}
 			if (opened.clearedForm && firstEntry == null) {
 				SecureMemory.shred(opened.masterKey);

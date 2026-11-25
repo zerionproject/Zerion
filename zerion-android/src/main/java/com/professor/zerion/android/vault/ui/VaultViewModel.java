@@ -1888,6 +1888,10 @@ public class VaultViewModel extends AndroidViewModel {
 						.NOT_CONFIRMED_ON_STORAGE) {
 					errorMessage.postValue(
 							text(R.string.vault_unlock_not_confirmed));
+				} else if (result == VaultManager.UnlockResult
+						.NEW_PASSWORD_REFUSED) {
+					errorMessage.postValue(
+							text(R.string.vault_password_rule));
 				} else {
 					errorMessage.postValue(text(R.string.vault_unlock_failed));
 				}
