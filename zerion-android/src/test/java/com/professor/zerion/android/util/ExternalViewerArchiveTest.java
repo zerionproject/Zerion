@@ -242,13 +242,17 @@ public class ExternalViewerArchiveTest {
 	@Test
 	public void anArchiveThatCarriesAPackageIsRefused() throws Exception {
 		for (String name : new String[] {"base.apk", "bundle/base.apk",
-				"splits/config.EN.APK", "x.Apk", ".apk"}) {
+				"splits/config.EN.APK", "x.Apk", ".apk", "base.apks",
+				"app.APKS", "game.xapk", "inner/App.XApk", "app.apkm",
+				"a.ApKm", ".xapk"}) {
 			assertRefused(name, zip("icon.png", name, "manifest.json"));
 			assertRefused(name, join(entry(name),
 					endRecord(1, 46 + name.length(), 0)));
 		}
 		for (String name : new String[] {"notes.apk.txt", "apk", "my-apk",
-				"apk/readme.txt", "base.apks", "base_apk"}) {
+				"apk/readme.txt", "base_apk", "base.apkx", "base.apksx",
+				"xapk", "notes.xapk.md", "base_apkm", "apkm/readme.txt",
+				"a.apkz"}) {
 			assertEquals(name, ZIP, opened(ZIP, zip("icon.png", name)));
 		}
 	}

@@ -14,6 +14,7 @@ import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static org.zerionproject.core.util.StringUtils.isNullOrEmpty;
 import static org.zerionproject.core.util.StringUtils.trim;
+import static com.professor.zerion.android.util.UiUtils.keepLinkActionsInApp;
 import static com.professor.zerion.android.util.UiUtils.makeLinksClickable;
 
 @UiThread
@@ -26,6 +27,7 @@ class ConversationNoticeViewHolder extends ConversationItemViewHolder {
 			boolean isIncoming) {
 		super(v, listener, isIncoming);
 		msgText = v.findViewById(R.id.msgText);
+		keepLinkActionsInApp(msgText);
 	}
 
 	@Override

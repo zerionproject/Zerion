@@ -117,7 +117,9 @@ public final class ExternalViewerTypes {
 	private static final byte[] PACKAGE_CODE = {'c', 'l', 'a', 's', 's', 'e',
 			's', '.', 'd', 'e', 'x'};
 
-	private static final byte[] PACKAGE_SUFFIX = {'.', 'a', 'p', 'k'};
+	private static final byte[][] PACKAGE_SUFFIXES = {{'.', 'a', 'p', 'k'},
+			{'.', 'a', 'p', 'k', 's'}, {'.', 'x', 'a', 'p', 'k'},
+			{'.', 'a', 'p', 'k', 'm'}};
 
 	private static final int ZIP_TAIL = 65_557;
 
@@ -330,9 +332,11 @@ public final class ExternalViewerTypes {
 					&& same(found, at, PACKAGE_CODE)) {
 				return PROGRAM;
 			}
-			if (compared >= PACKAGE_SUFFIX.length && endsInPackageSuffix(
-					found, at + compared - PACKAGE_SUFFIX.length)) {
-				return PROGRAM;
+			for (byte[] suffix : PACKAGE_SUFFIXES) {
+				if (compared >= suffix.length && endsIn(found,
+						at + compared - suffix.length, suffix)) {
+					return PROGRAM;
+				}
 			}
 			return CLEAN;
 		}
@@ -374,10 +378,10 @@ public final class ExternalViewerTypes {
 			return true;
 		}
 
-		private static boolean endsInPackageSuffix(byte[] d, int at) {
-			if (d[at] != PACKAGE_SUFFIX[0]) return false;
-			for (int i = 1; i < PACKAGE_SUFFIX.length; i++) {
-				if ((d[at + i] | 0x20) != PACKAGE_SUFFIX[i]) return false;
+		private static boolean endsIn(byte[] d, int at, byte[] suffix) {
+			if (d[at] != suffix[0]) return false;
+			for (int i = 1; i < suffix.length; i++) {
+				if ((d[at + i] | 0x20) != suffix[i]) return false;
 			}
 			return true;
 		}

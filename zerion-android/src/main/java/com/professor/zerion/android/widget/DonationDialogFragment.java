@@ -70,6 +70,7 @@ public class DonationDialogFragment extends DialogFragment {
 		if (bmp != null) qr.setImageBitmap(bmp);
 
 		TextView urlView = v.findViewById(R.id.donationUrl);
+		com.professor.zerion.android.util.UiUtils.keepLinkActionsInApp(urlView);
 		urlView.setText(DONATION_URL);
 
 		MaterialButton copyButton = v.findViewById(R.id.buttonCopyLink);

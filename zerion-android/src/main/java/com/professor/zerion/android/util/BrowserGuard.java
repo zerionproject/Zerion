@@ -115,7 +115,8 @@ public final class BrowserGuard {
 		for (int i = 0; i < link.writtenHost.length(); i++) {
 			if (link.writtenHost.charAt(i) > 0x7E) return true;
 		}
-		return !link.writtenHost.toLowerCase(Locale.ROOT).equals(link.host);
+		return !link.writtenHost.toLowerCase(Locale.ROOT)
+				.equals(link.spelledHost);
 	}
 
 	public static boolean hasOtherAlphabet(@Nullable String host) {
@@ -149,12 +150,17 @@ public final class BrowserGuard {
 		private static final int HIGHEST_PORT = 65_535;
 		private static final String HEX = "0123456789ABCDEF";
 
+		private static final long NUMBER_TOO_LARGE = 1L << 40;
+
 		private final String writtenHost;
+		private final String spelledHost;
 		private final String host;
 		private final String address;
 
-		private WebLink(String writtenHost, String host, String address) {
+		private WebLink(String writtenHost, String spelledHost, String host,
+				String address) {
 			this.writtenHost = writtenHost;
+			this.spelledHost = spelledHost;
 			this.host = host;
 			this.address = address;
 		}
@@ -176,6 +182,7 @@ public final class BrowserGuard {
 			String hostAndPort =
 					authority.substring(authority.lastIndexOf('@') + 1);
 			String writtenHost;
+			String spelledHost;
 			String host;
 			String port;
 			if (hostAndPort.startsWith("[")) {
@@ -185,6 +192,7 @@ public final class BrowserGuard {
 				if (!literal.matches("[0-9A-Fa-f:.]+")) return null;
 				writtenHost = hostAndPort.substring(0, close + 1);
 				host = "[" + literal.toLowerCase(Locale.ROOT) + "]";
+				spelledHost = host;
 				port = hostAndPort.substring(close + 1);
 			} else {
 				int portStart = hostAndPort.lastIndexOf(':');
@@ -201,11 +209,77 @@ public final class BrowserGuard {
 					return null;
 				}
 				if (!ascii.matches("[A-Za-z0-9.-]+")) return null;
-				host = ascii.toLowerCase(Locale.ROOT);
+				spelledHost = ascii.toLowerCase(Locale.ROOT);
+				if (endsInANumber(spelledHost)) {
+					host = dottedQuad(spelledHost);
+					if (host == null) return null;
+				} else {
+					host = spelledHost;
+				}
 			}
 			if (!isPort(port)) return null;
-			return new WebLink(writtenHost, host, scheme + "://" + host + port
-					+ pathWithHiddenLettersEncoded(url.substring(end)));
+			return new WebLink(writtenHost, spelledHost, host,
+					scheme + "://" + host + port
+							+ pathWithHiddenLettersEncoded(url.substring(end)));
+		}
+
+		private static boolean endsInANumber(String host) {
+			String[] parts = host.split("\\.", -1);
+			int last = parts.length - 1;
+			if (parts[last].isEmpty()) {
+				if (last == 0) return false;
+				last--;
+			}
+			String part = parts[last];
+			if (part.isEmpty()) return false;
+			boolean digitsOnly = true;
+			for (int i = 0; i < part.length() && digitsOnly; i++) {
+				char c = part.charAt(i);
+				digitsOnly = c >= '0' && c <= '9';
+			}
+			return digitsOnly || numberValue(part) >= 0;
+		}
+
+		@Nullable
+		private static String dottedQuad(String host) {
+			String[] parts = host.split("\\.", -1);
+			int count = parts.length;
+			if (parts[count - 1].isEmpty()) count--;
+			if (count < 1 || count > 4) return null;
+			long[] numbers = new long[count];
+			for (int i = 0; i < count; i++) {
+				numbers[i] = numberValue(parts[i]);
+				if (numbers[i] < 0) return null;
+				if (i < count - 1 && numbers[i] > 255) return null;
+			}
+			if (numbers[count - 1] >= 1L << (8 * (5 - count))) return null;
+			long address = numbers[count - 1];
+			for (int i = 0; i < count - 1; i++) {
+				address += numbers[i] << (8 * (3 - i));
+			}
+			return (address >>> 24) + "." + ((address >>> 16) & 0xFF) + "."
+					+ ((address >>> 8) & 0xFF) + "." + (address & 0xFF);
+		}
+
+		private static long numberValue(String part) {
+			if (part.isEmpty()) return -1;
+			int radix = 10;
+			String digits = part;
+			if (part.length() >= 2 && (part.startsWith("0x")
+					|| part.startsWith("0X"))) {
+				radix = 16;
+				digits = part.substring(2);
+			} else if (part.length() >= 2 && part.charAt(0) == '0') {
+				radix = 8;
+				digits = part.substring(1);
+			}
+			long value = 0;
+			for (int i = 0; i < digits.length(); i++) {
+				int digit = HEX.indexOf(Character.toUpperCase(digits.charAt(i)));
+				if (digit < 0 || digit >= radix) return -1;
+				value = Math.min(value * radix + digit, NUMBER_TOO_LARGE);
+			}
+			return value;
 		}
 
 		private static String pathWithHiddenLettersEncoded(String rest) {

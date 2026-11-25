@@ -283,6 +283,45 @@ public class BrowserGuardSchemeTest {
 	}
 
 	@Test
+	public void aNumericHostIsShownAndOpenedAsTheAddressBrowsersReach() {
+		assertShownThenOpened("https://2130706433/", "https://127.0.0.1/",
+				false);
+		assertShownThenOpened("https://0x7f.1/", "https://127.0.0.1/",
+				false);
+		assertShownThenOpened("https://127.1/", "https://127.0.0.1/", false);
+		assertShownThenOpened("http://0300.0250.0.1/login",
+				"http://192.168.0.1/login", false);
+		assertShownThenOpened("https://0X7F.0.0.01.:8443/a",
+				"https://127.0.0.1:8443/a", false);
+		assertEquals("127.0.0.1", BrowserGuard.webHost("https://2130706433/"));
+	}
+
+	@Test
+	public void aDottedQuadAndADomainEndingInLettersOpenUnchanged() {
+		assertShownThenOpened("https://192.168.1.20:8080/a?b#c",
+				"https://192.168.1.20:8080/a?b#c", false);
+		assertShownThenOpened("https://1.2.3.example/x",
+				"https://1.2.3.example/x", false);
+		assertShownThenOpened("https://10.0.0.4a/", "https://10.0.0.4a/",
+				false);
+		assertShownThenOpened("https://0x7f.example/",
+				"https://0x7f.example/", false);
+		assertShownThenOpened("https://0x1g/", "https://0x1g/", false);
+	}
+
+	@Test
+	public void aNumericHostBrowsersRefuseIsNotOpened() {
+		for (String url : new String[] {"https://256.1.1.1/",
+				"https://1.2.3.4.5/", "https://4294967296/",
+				"https://1.2.3.256/", "https://1.16777216/", "https://09/",
+				"https://1..2/", "https://1.2.0xg.4/"}) {
+			assertNull(url, BrowserGuard.webHost(url));
+			assertNull(url, BrowserGuard.opened(url));
+			assertNull(url, openAndConfirm(host(), url));
+		}
+	}
+
+	@Test
 	public void aLinkWhoseHostEndsInSomethingElseThanAPortIsNotOpened() {
 		for (String url : new String[] {"https://example.org:80x/",
 				"https://example.org:123456/", "https://example.org:70000/",

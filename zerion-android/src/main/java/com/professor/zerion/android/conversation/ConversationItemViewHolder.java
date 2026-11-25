@@ -32,6 +32,7 @@ import static android.view.View.VISIBLE;
 import static org.zerionproject.core.util.StringUtils.trim;
 import static com.professor.zerion.android.util.UiUtils.formatDate;
 import static com.professor.zerion.android.util.UiUtils.formatDuration;
+import static com.professor.zerion.android.util.UiUtils.keepLinkActionsInApp;
 import static com.professor.zerion.android.util.UiUtils.makeLinksClickable;
 import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 
@@ -111,6 +112,7 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		defaultBubbleBackground = layout.getBackground();
 		if (isIncoming) SelectedFill.received(layout);
 		text = v.findViewById(R.id.text);
+		keepLinkActionsInApp(text);
 		time = v.findViewById(R.id.time);
 		bomb = v.findViewById(R.id.bomb);
 		replyPreviewContainer = layout.findViewById(R.id.replyPreviewContainer);
