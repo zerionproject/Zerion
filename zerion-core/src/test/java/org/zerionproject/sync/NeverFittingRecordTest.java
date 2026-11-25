@@ -65,6 +65,7 @@ public class NeverFittingRecordTest {
 	private final List<Task> tasks = new ArrayList<>();
 	private long now = START;
 	private int bulkDepth = 0;
+	private long dueAt = -1L;
 
 	private ZppOutgoingSource source() throws Exception {
 		ZppSendScheduler scheduler = new ZppSendScheduler(r -> {
@@ -148,11 +149,6 @@ public class NeverFittingRecordTest {
 	private Collection<Message> batch(long capacity) {
 		List<Message> batch = new ArrayList<>();
 		for (Message m : new ArrayList<>(toSend)) {
-			if (m.getRawLength() > MAX_ONE_RECORD_MESSAGE_LENGTH) {
-				batch.add(m);
-				toSend.remove(m);
-				continue;
-			}
 			if (capacity < RECORD_HEADER_BYTES + m.getRawLength()) continue;
 			batch.add(m);
 			toSend.remove(m);
@@ -162,6 +158,7 @@ public class NeverFittingRecordTest {
 	}
 
 	private long nextSendTime() {
+		if (dueAt != -1L) return dueAt;
 		for (Message m : toSend) {
 			if (!unshared.contains(m.getId())) return 0L;
 		}
@@ -256,19 +253,20 @@ public class NeverFittingRecordTest {
 	}
 
 	@Test
-	public void anOldMessageTooLargeForAnyBatchIsUnsharedWithoutALoop()
-			throws Exception {
-		Message old = message(3 * 1024 * 1024);
-		toSend.add(old);
+	public void aRetransmissionDueLaterFiresAtItsOwnTime() throws Exception {
 		ZppOutgoingSource source = source();
+		long due = now + 30_000L;
+		dueAt = due;
+		source.eventOccurred(new MessageRequestedEvent(contact));
+		dueAt = Long.MAX_VALUE;
+		offerIdsAsked.set(-1);
 
-		source.start();
-		advance(10 * MINUTE);
+		advance(29_999L);
+		assertEquals("not before it is due", -1, offerIdsAsked.get());
+		advance(1L);
 
-		assertEquals(Collections.singletonList(old.getId()), unshared);
-		assertEquals(0, queued.size());
-		assertTrue("database passes: " + batchPasses.get(),
-				batchPasses.get() <= 3);
+		assertEquals(due, now);
+		assertTrue("the retransmission ran", offerIdsAsked.get() > 0);
 	}
 
 	@Test

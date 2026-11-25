@@ -64,6 +64,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
@@ -80,6 +81,7 @@ import static org.zerionproject.core.api.sync.Group.Visibility.INVISIBLE;
 import static org.zerionproject.core.api.sync.Group.Visibility.SHARED;
 import static org.zerionproject.core.api.sync.Group.Visibility.VISIBLE;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_LENGTH;
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH;
 import static org.zerionproject.core.api.sync.validation.MessageState.DELIVERED;
 import static org.zerionproject.core.api.sync.validation.MessageState.UNKNOWN;
 import static org.zerionproject.core.api.transport.TransportConstants.REORDERING_WINDOW_SIZE;
@@ -1099,6 +1101,9 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			will(returnValue(txn));
 			oneOf(database).containsContact(txn, contactId);
 			will(returnValue(true));
+			oneOf(database).getRequestedMessagesLongerThan(txn, contactId,
+					MAX_ONE_RECORD_MESSAGE_LENGTH);
+			will(returnValue(emptyList()));
 			oneOf(database).getRequestedMessagesToSend(txn, contactId,
 					BATCH_CAPACITY, maxLatency);
 			will(returnValue(ids));
@@ -1121,6 +1126,43 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 
 		db.transaction(false, transaction ->
 				assertEquals(messages, db.generateRequestedBatch(transaction,
+						contactId, BATCH_CAPACITY, maxLatency)));
+	}
+
+	@Test
+	public void testRequestedMessagesThatCanNeverFitAreUnsharedUnread()
+			throws Exception {
+		List<MessageId> neverFit = new ArrayList<>();
+		for (int i = 0; i < 20; i++) neverFit.add(new MessageId(getRandomId()));
+		Collection<MessageId> fits = singletonList(messageId);
+		context.checking(new Expectations() {{
+			oneOf(database).startTransaction();
+			will(returnValue(txn));
+			oneOf(database).containsContact(txn, contactId);
+			will(returnValue(true));
+			oneOf(database).getRequestedMessagesLongerThan(txn, contactId,
+					MAX_ONE_RECORD_MESSAGE_LENGTH);
+			will(returnValue(neverFit));
+			for (MessageId m : neverFit) {
+				oneOf(database).setMessageShared(txn, m, false);
+			}
+			oneOf(database).lowerRequestedFlag(txn, contactId, neverFit);
+			oneOf(database).getRequestedMessagesToSend(txn, contactId,
+					BATCH_CAPACITY, maxLatency);
+			will(returnValue(fits));
+			oneOf(database).getMessage(txn, messageId);
+			will(returnValue(message));
+			oneOf(database).updateRetransmissionData(txn, contactId,
+					messageId, maxLatency);
+			oneOf(database).lowerRequestedFlag(txn, contactId, fits);
+			oneOf(database).commitTransaction(txn);
+			oneOf(eventBus).broadcast(with(any(MessagesSentEvent.class)));
+		}});
+		DatabaseComponent db = createDatabaseComponent(database, eventBus,
+				eventExecutor, shutdownManager);
+
+		db.transaction(false, transaction -> assertEquals(
+				singletonList(message), db.generateRequestedBatch(transaction,
 						contactId, BATCH_CAPACITY, maxLatency)));
 	}
 
