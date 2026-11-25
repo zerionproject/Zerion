@@ -3015,5 +3015,8 @@ copies des messages que vous envoyez.
 	<string name="vault_unlock_confirm_message">Une version antérieure a enregistré ce coffre sans son mot de passe. Saisissez votre mot de passe une fois de plus. Zerion protège ensuite de nouveau le coffre avec celui-ci.</string>
 	<string name="vault_unlock_entries_differ">Les deux saisies ne sont pas identiques. Recommencez.</string>
 	<string name="vault_unlock_not_confirmed">Zerion n\'a pas pu confirmer le coffre dans le stockage. Réessayez.</string>
+	<string name="vault_unlock_new_password_title">Choisissez un nouveau mot de passe pour le coffre</string>
+	<string name="vault_unlock_new_password_message">Zerion ne peut plus protéger ce coffre avec son mot de passe actuel, par exemple parce qu\'il ne contient que des emojis. Choisissez un nouveau mot de passe d\'au moins 8 lettres, chiffres ou symboles et saisissez-le deux fois.</string>
+	<string name="vault_unlock_new_password_again">Saisissez le nouveau mot de passe une fois de plus. Zerion protège ensuite le coffre avec celui-ci.</string>
 	<string name="vault_password_rule">Utilisez au moins 8 lettres, chiffres ou symboles. Les emojis ne comptent pas.</string>
 </resources>

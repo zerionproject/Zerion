@@ -2964,5 +2964,8 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="vault_unlock_confirm_message">Una versió anterior va desar aquesta caixa forta sense la seva contrasenya. Escriu la contrasenya una vegada més. Després, Zerion torna a protegir la caixa forta amb ella.</string>
 	<string name="vault_unlock_entries_differ">Les dues entrades no són iguals. Torna a començar.</string>
 	<string name="vault_unlock_not_confirmed">Zerion no ha pogut confirmar la caixa forta a l\'emmagatzematge. Torna-ho a provar.</string>
+	<string name="vault_unlock_new_password_title">Tria una contrasenya nova per a la caixa forta</string>
+	<string name="vault_unlock_new_password_message">Zerion ja no pot protegir aquesta caixa forta amb la contrasenya actual, per exemple perquè només conté emojis. Tria una contrasenya nova d\'almenys 8 lletres, xifres o símbols i escriu-la dues vegades.</string>
+	<string name="vault_unlock_new_password_again">Escriu la contrasenya nova una vegada més. Després, Zerion protegeix la caixa forta amb ella.</string>
 	<string name="vault_password_rule">Fes servir almenys 8 lletres, xifres o símbols. Els emojis no compten.</string>
 </resources>

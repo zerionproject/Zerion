@@ -2846,5 +2846,8 @@
 	<string name="vault_unlock_confirm_message">Versi terdahulu telah menyimpan bilik kebal ini tanpa kata laluannya. Taip kata laluan anda sekali lagi. Selepas itu, Zerion melindungi bilik kebal dengannya semula.</string>
 	<string name="vault_unlock_entries_differ">Dua entri itu tidak sama. Mula semula.</string>
 	<string name="vault_unlock_not_confirmed">Zerion tidak dapat mengesahkan bilik kebal dalam storan. Cuba lagi.</string>
+	<string name="vault_unlock_new_password_title">Pilih kata laluan baharu untuk bilik kebal</string>
+	<string name="vault_unlock_new_password_message">Zerion tidak lagi dapat melindungi bilik kebal ini dengan kata laluan semasanya, contohnya kerana kata laluan itu hanya terdiri daripada emoji. Pilih kata laluan baharu dengan sekurang-kurangnya 8 huruf, digit atau simbol dan taipnya dua kali.</string>
+	<string name="vault_unlock_new_password_again">Taip kata laluan baharu sekali lagi. Selepas itu, Zerion melindungi bilik kebal dengannya.</string>
 	<string name="vault_password_rule">Gunakan sekurang-kurangnya 8 huruf, digit atau simbol. Emoji tidak dikira.</string>
 </resources>

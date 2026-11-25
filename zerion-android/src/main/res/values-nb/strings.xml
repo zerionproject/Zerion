@@ -2966,5 +2966,8 @@
 	<string name="vault_unlock_confirm_message">En tidligere versjon lagret dette hvelvet uten passordet. Skriv inn passordet ditt en gang til. Deretter beskytter Zerion hvelvet med det igjen.</string>
 	<string name="vault_unlock_entries_differ">De to inntastingene er ikke like. Start på nytt.</string>
 	<string name="vault_unlock_not_confirmed">Zerion kunne ikke bekrefte hvelvet på lagringsplassen. Prøv igjen.</string>
+	<string name="vault_unlock_new_password_title">Velg et nytt passord for hvelvet</string>
+	<string name="vault_unlock_new_password_message">Zerion kan ikke lenger beskytte dette hvelvet med det nåværende passordet, for eksempel fordi det bare består av emojier. Velg et nytt passord med minst 8 bokstaver, sifre eller symboler, og skriv det inn to ganger.</string>
+	<string name="vault_unlock_new_password_again">Skriv inn det nye passordet en gang til. Deretter beskytter Zerion hvelvet med det.</string>
 	<string name="vault_password_rule">Bruk minst 8 bokstaver, sifre eller symboler. Emojier teller ikke.</string>
 </resources>

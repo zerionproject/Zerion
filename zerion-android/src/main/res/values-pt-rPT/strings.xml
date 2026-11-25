@@ -3020,5 +3020,8 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 	<string name="vault_unlock_confirm_message">Uma versão anterior guardou este cofre sem a respetiva palavra-passe. Introduza a sua palavra-passe mais uma vez. Depois disso, o Zerion volta a proteger o cofre com ela.</string>
 	<string name="vault_unlock_entries_differ">As duas introduções não são iguais. Comece de novo.</string>
 	<string name="vault_unlock_not_confirmed">O Zerion não conseguiu confirmar o cofre no armazenamento. Tente novamente.</string>
+	<string name="vault_unlock_new_password_title">Escolha uma nova palavra-passe para o cofre</string>
+	<string name="vault_unlock_new_password_message">O Zerion já não consegue proteger este cofre com a palavra-passe atual, por exemplo porque é composta apenas por emojis. Escolha uma nova palavra-passe com pelo menos 8 letras, dígitos ou símbolos e introduza-a duas vezes.</string>
+	<string name="vault_unlock_new_password_again">Introduza a nova palavra-passe mais uma vez. Depois disso, o Zerion protege o cofre com ela.</string>
 	<string name="vault_password_rule">Use pelo menos 8 letras, dígitos ou símbolos. Os emojis não contam.</string>
 </resources>

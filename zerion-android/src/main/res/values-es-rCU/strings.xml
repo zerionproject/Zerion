@@ -1232,5 +1232,8 @@
 	<string name="vault_unlock_confirm_message">Una versión anterior guardó este baúl sin su contraseña. Escribe tu contraseña una vez más. Después, Zerion vuelve a proteger el baúl con ella.</string>
 	<string name="vault_unlock_entries_differ">Las dos entradas no son iguales. Empieza de nuevo.</string>
 	<string name="vault_unlock_not_confirmed">Zerion no pudo confirmar el baúl en el almacenamiento. Inténtalo de nuevo.</string>
+	<string name="vault_unlock_new_password_title">Elige una contraseña nueva para tu baúl</string>
+	<string name="vault_unlock_new_password_message">Zerion ya no puede proteger este baúl con su contraseña actual, por ejemplo porque solo contiene emojis. Elige una contraseña nueva de al menos 8 letras, dígitos o símbolos y escríbela dos veces.</string>
+	<string name="vault_unlock_new_password_again">Escribe la contraseña nueva una vez más. Después, Zerion protege el baúl con ella.</string>
 	<string name="vault_password_rule">Usa al menos 8 letras, cifras o símbolos. Los emojis no cuentan.</string>
 </resources>

@@ -2941,5 +2941,8 @@
 	<string name="vault_unlock_confirm_message">Aiempi versio tallensi tämän holvin ilman sen salasanaa. Kirjoita salasanasi vielä kerran. Sen jälkeen Zerion suojaa holvin sillä uudelleen.</string>
 	<string name="vault_unlock_entries_differ">Syötteet eivät ole samat. Aloita alusta.</string>
 	<string name="vault_unlock_not_confirmed">Zerion ei voinut vahvistaa holvia tallennustilassa. Yritä uudelleen.</string>
+	<string name="vault_unlock_new_password_title">Valitse holville uusi salasana</string>
+	<string name="vault_unlock_new_password_message">Zerion ei voi enää suojata tätä holvia sen nykyisellä salasanalla, esimerkiksi koska se koostuu pelkistä emojeista. Valitse uusi salasana, jossa on vähintään 8 kirjainta, numeroa tai symbolia, ja kirjoita se kahdesti.</string>
+	<string name="vault_unlock_new_password_again">Kirjoita uusi salasana vielä kerran. Sen jälkeen Zerion suojaa holvin sillä.</string>
 	<string name="vault_password_rule">Käytä vähintään 8 kirjainta, numeroa tai symbolia. Emojeja ei lasketa.</string>
 </resources>

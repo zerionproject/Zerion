@@ -2946,5 +2946,8 @@
 	<string name="vault_unlock_confirm_message">Una version anteriora enregistrèt aqueste còfre sens son senhal. Picatz vòstre senhal un còp de mai. Puèi Zerion torna protegir lo còfre amb el.</string>
 	<string name="vault_unlock_entries_differ">Las doas picadas son pas identicas. Tornatz començar.</string>
 	<string name="vault_unlock_not_confirmed">Zerion a pas pogut confirmar lo còfre dins l’emmagazinatge. Tornatz ensajar.</string>
+	<string name="vault_unlock_new_password_title">Causissètz un senhal nòu per vòstre còfre</string>
+	<string name="vault_unlock_new_password_message">Zerion pòt pas mai protegir aqueste còfre amb son senhal actual, per exemple perque es fach sonque d\'emojis. Causissètz un senhal nòu d\'almens 8 letras, chifras o simbòls e picatz-lo doas còps.</string>
+	<string name="vault_unlock_new_password_again">Picatz lo senhal nòu un còp de mai. Puèi Zerion protegís lo còfre amb el.</string>
 	<string name="vault_password_rule">Utilizatz almens 8 letras, chifras o simbòls. Los emojis comptan pas.</string>
 </resources>

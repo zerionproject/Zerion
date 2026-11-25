@@ -311,6 +311,8 @@ public class VaultClearedPasswordRecoveryTest {
 				return "entries differ";
 			case NEW_PASSWORD_REFUSED:
 				return "password rule";
+			case NEW_PASSWORD_REQUIRED:
+				return "new password";
 			default:
 				return "not confirmed on storage";
 		}
@@ -334,6 +336,13 @@ public class VaultClearedPasswordRecoveryTest {
 
 	private String twice(char[] typed) throws Exception {
 		return twice(process(), typed);
+	}
+
+	private String choose(VaultManager m, char[] opener, char[] first,
+			char[] typed) throws Exception {
+		nextAttempt();
+		return word(m.chooseNewPassword(opener.clone(),
+				first == null ? null : first.clone(), typed.clone()));
 	}
 
 	private String attempt(char[] typed) throws Exception {
@@ -946,8 +955,9 @@ public class VaultClearedPasswordRecoveryTest {
 			List<String> keys = aliases();
 			VaultManager m = process();
 
-			assertEquals("password rule", attempt(m, typed));
-			assertEquals("password rule", confirm(m, typed, typed));
+			assertEquals("new password", attempt(m, typed));
+			assertEquals("new password", confirm(m, typed, typed));
+			assertEquals("password rule", choose(m, typed, null, typed));
 
 			assertFalse(m.isUnlocked());
 			assertThrows(SecurityException.class, m::listItems);
@@ -955,12 +965,135 @@ public class VaultClearedPasswordRecoveryTest {
 			assertArrayEquals(before, headerBytes());
 			assertEquals(keys, aliases());
 
-			assertEquals("opens", twice(m, CHOSEN));
+			assertEquals("asks again", choose(m, typed, null, CHOSEN));
+			assertEquals("opens", choose(m, typed, CHOSEN, CHOSEN));
 			assertEquals("Testnote kept", note(m));
 			assertEquals("version 2, 256 MiB t=3", label(header()));
 			assertEquals("refused", attempt(typed));
 			assertEquals("opens", attempt(CHOSEN));
 		}
+	}
+
+	private static final char[] ONE_EMOJI = "😀".toCharArray();
+	private static final char[] EIGHT_EMOJI = ("😀😀"
+			+ "😀😀😀😀"
+			+ "😀😀").toCharArray();
+
+	@Test
+	public void oneEmojiNoLongerOpensAVaultSealedUnderTheEmptyPassword()
+			throws Exception {
+		char[][] typed = {ONE_EMOJI, EIGHT_EMOJI};
+		for (char[] entry : typed) {
+			startOver();
+			assertEquals(0, PasswordNormalizer.normalize(entry).length);
+			sealUnderTheEmptyPassword();
+			byte[] before = headerBytes();
+			List<String> keys = aliases();
+			VaultManager m = process();
+
+			assertEquals("new password", attempt(m, entry));
+
+			assertFalse(m.isUnlocked());
+			assertThrows(SecurityException.class, m::listItems);
+			assertEquals(0, failures());
+			assertArrayEquals(before, headerBytes());
+			assertEquals(keys, aliases());
+			assertEquals("new password", attempt(process(), entry));
+			assertArrayEquals(before, headerBytes());
+		}
+	}
+
+	@Test
+	public void theOwnerChoosesAValidPasswordTwiceAndThenOpensWithIt()
+			throws Exception {
+		sealUnderTheEmptyPassword();
+		byte[] before = headerBytes();
+		VaultManager m = process();
+		assertEquals("new password", attempt(m, ONE_EMOJI));
+
+		assertEquals("password rule", choose(m, ONE_EMOJI, null, ONE_EMOJI));
+		assertEquals("password rule",
+				choose(m, ONE_EMOJI, null, SHORT_WHEN_NORMAL));
+		assertEquals("password rule", choose(m, ONE_EMOJI, null, SHORT));
+		assertEquals(Collections.emptyList(), derivations);
+		assertEquals("asks again", choose(m, ONE_EMOJI, null, CHOSEN));
+		assertEquals(Collections.emptyList(), derivations);
+		assertEquals("entries differ",
+				choose(m, ONE_EMOJI, CHOSEN, SAME_LENGTH));
+		assertEquals(Collections.emptyList(), derivations);
+		assertFalse(m.isUnlocked());
+		assertEquals(0, failures());
+		assertArrayEquals(before, headerBytes());
+
+		assertEquals("opens", choose(m, ONE_EMOJI, CHOSEN, CHOSEN));
+
+		assertEquals(Arrays.asList("empty", "typed"), derivations);
+		assertTrue(m.isUnlocked());
+		assertEquals("Testnote kept", note(m));
+		assertEquals("version 2, 256 MiB t=3", label(header()));
+		assertEquals(0, failures());
+		m.lockVault();
+		assertEquals("refused", attempt(ONE_EMOJI));
+		assertEquals("refused", attempt(EIGHT_EMOJI));
+		assertEquals("refused", attempt(new char[0]));
+		assertEquals("opens", attempt(CHOSEN));
+	}
+
+	@Test
+	public void anOrdinaryVaultIsNotAskedForANewPassword() throws Exception {
+		VaultManager first = process();
+		first.createVault(PASSWORD.clone());
+		first.addItem(VaultItem.ItemType.NOTE, "Testnote",
+				"kept".getBytes(StandardCharsets.UTF_8));
+		first.lockVault();
+		byte[] before = headerBytes();
+		VaultManager m = process();
+
+		assertEquals("refused", attempt(m, ONE_EMOJI));
+		assertEquals(1, failures());
+		assertEquals("refused", attempt(m, EIGHT_EMOJI));
+		assertEquals(2, failures());
+		assertEquals("refused", choose(m, PASSWORD, CHOSEN, CHOSEN));
+		assertEquals(3, failures());
+		assertEquals("refused", choose(m, ONE_EMOJI, CHOSEN, CHOSEN));
+		assertEquals(4, failures());
+		assertArrayEquals(before, headerBytes());
+		assertFalse(m.isUnlocked());
+
+		assertEquals("opens", attempt(m, PASSWORD));
+		assertEquals(0, failures());
+		assertArrayEquals(before, headerBytes());
+	}
+
+	@Test
+	public void choosingANewPasswordWaitsForTheThrottle() throws Exception {
+		sealUnderTheEmptyPassword();
+		byte[] before = headerBytes();
+		VaultManager m = process();
+		assertEquals("refused", attempt(m, SHORT));
+		assertEquals(1, failures());
+		derivations.clear();
+
+		SecurityException waiting = assertThrows(SecurityException.class,
+				() -> m.chooseNewPassword(ONE_EMOJI.clone(), CHOSEN.clone(),
+						CHOSEN.clone()));
+
+		assertTrue(waiting.getMessage()
+				.startsWith(VaultManager.TOO_MANY_ATTEMPTS));
+		assertEquals(Collections.emptyList(), derivations);
+		assertEquals(1, failures());
+		assertArrayEquals(before, headerBytes());
+	}
+
+	@Test
+	public void aVaultSealedUnderZerosKeepsItsRecovery() throws Exception {
+		sealUnderZeros(CHOSEN.length);
+		VaultManager m = process();
+
+		assertEquals("refused", attempt(m, ONE_EMOJI));
+		assertEquals("asks again", attempt(m, CHOSEN));
+		assertEquals("opens", confirm(m, CHOSEN, CHOSEN));
+		assertEquals("Testnote kept", note(m));
 	}
 
 	@Test
