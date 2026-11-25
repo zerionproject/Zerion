@@ -30,15 +30,25 @@ import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_SIGN
 
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ACTIVATE_MAC;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ALICE_ACTIVATE_KEY;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ALICE_ACTIVATE_KEY_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ALICE_AUTH_MAC_KEY_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ALICE_AUTH_NONCE_KEY_V2;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ALICE_MAC_KEY;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_AUTH_MAC;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_AUTH_NONCE;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_AUTH_SECRET_V2;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_AUTH_SIGN;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_BOB_ACTIVATE_KEY;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_BOB_ACTIVATE_KEY_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_BOB_AUTH_MAC_KEY_V2;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_BOB_AUTH_NONCE_KEY_V2;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_BOB_MAC_KEY;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_FINAL_SECRET_V2;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_MASTER_KEY;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_PRE_MASTER_KEY;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ROOT_KEY_V2;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_SESSION_ID;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_SHARED_SECRET_V2;
 import static org.zerionproject.app.api.introduction.IntroductionManager.MAJOR_VERSION;
 import static org.zerionproject.app.introduction.IntroduceeSession.Local;
 
@@ -172,6 +182,101 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 			boolean alice) {
 		return crypto.deriveKey(alice ? LABEL_ALICE_ACTIVATE_KEY
 				: LABEL_BOB_ACTIVATE_KEY, finalMasterKey);
+	}
+
+	@Override
+	public SeparatedAuthKeys deriveSeparatedAuthKeys(IntroduceeSession s,
+			byte[] kemSecret, boolean alice) throws GeneralSecurityException {
+		SecretKey sharedSecret = deriveSeparatedSharedSecret(s);
+		try {
+			return deriveSeparatedAuthKeys(sharedSecret, kemSecret, alice);
+		} finally {
+			sharedSecret.clear();
+		}
+	}
+
+	@Override
+	public SeparatedSessionKeys deriveSeparatedSessionKeys(
+			IntroduceeSession s, byte[] aliceKemSecret, byte[] bobKemSecret)
+			throws GeneralSecurityException {
+		SecretKey sharedSecret = deriveSeparatedSharedSecret(s);
+		try {
+			return deriveSeparatedSessionKeys(sharedSecret, aliceKemSecret,
+					bobKemSecret);
+		} finally {
+			sharedSecret.clear();
+		}
+	}
+
+	@SuppressWarnings("ConstantConditions")
+	private SecretKey deriveSeparatedSharedSecret(IntroduceeSession s)
+			throws GeneralSecurityException {
+		Local local = s.getLocal();
+		Remote remote = s.getRemote();
+		int localVersion, remoteVersion;
+		try {
+			localVersion = KeySchedule.announced(local.transportProperties);
+			remoteVersion = KeySchedule.announced(remote.transportProperties);
+		} catch (FormatException e) {
+			throw new GeneralSecurityException();
+		}
+		if (!KeySchedule.separated(localVersion, remoteVersion)) {
+			throw new GeneralSecurityException();
+		}
+		return deriveSeparatedSharedSecret(local.ephemeralPublicKey,
+				local.ephemeralPrivateKey, remote.ephemeralPublicKey,
+				local.alice, local.alice ? localVersion : remoteVersion,
+				local.alice ? remoteVersion : localVersion);
+	}
+
+	SecretKey deriveSeparatedSharedSecret(PublicKey publicKey,
+			PrivateKey privateKey, PublicKey remotePublicKey, boolean alice,
+			int aliceVersion, int bobVersion) throws GeneralSecurityException {
+		if (!KeySchedule.separated(aliceVersion, bobVersion)
+				|| aliceVersion > KeySchedule.MAX_VERSION
+				|| bobVersion > KeySchedule.MAX_VERSION) {
+			throw new GeneralSecurityException();
+		}
+		KeyPair keyPair = new KeyPair(publicKey, privateKey);
+		return crypto.deriveSharedSecret(
+				LABEL_SHARED_SECRET_V2,
+				remotePublicKey,
+				keyPair,
+				new byte[] {MAJOR_VERSION},
+				alice ? publicKey.getEncoded() : remotePublicKey.getEncoded(),
+				alice ? remotePublicKey.getEncoded() : publicKey.getEncoded(),
+				new byte[] {(byte) aliceVersion},
+				new byte[] {(byte) bobVersion}
+		);
+	}
+
+	SeparatedAuthKeys deriveSeparatedAuthKeys(SecretKey sharedSecret,
+			byte[] kemSecret, boolean alice) {
+		SecretKey authSecret = crypto.deriveKey(LABEL_AUTH_SECRET_V2,
+				sharedSecret, kemSecret);
+		try {
+			return new SeparatedAuthKeys(
+					crypto.deriveKey(alice ? LABEL_ALICE_AUTH_MAC_KEY_V2
+							: LABEL_BOB_AUTH_MAC_KEY_V2, authSecret),
+					crypto.deriveKey(alice ? LABEL_ALICE_AUTH_NONCE_KEY_V2
+							: LABEL_BOB_AUTH_NONCE_KEY_V2, authSecret));
+		} finally {
+			authSecret.clear();
+		}
+	}
+
+	SeparatedSessionKeys deriveSeparatedSessionKeys(SecretKey sharedSecret,
+			byte[] aliceKemSecret, byte[] bobKemSecret) {
+		SecretKey finalSecret = crypto.deriveKey(LABEL_FINAL_SECRET_V2,
+				sharedSecret, aliceKemSecret, bobKemSecret);
+		try {
+			return new SeparatedSessionKeys(
+					crypto.deriveKey(LABEL_ROOT_KEY_V2, finalSecret),
+					crypto.deriveKey(LABEL_ALICE_ACTIVATE_KEY_V2, finalSecret),
+					crypto.deriveKey(LABEL_BOB_ACTIVATE_KEY_V2, finalSecret));
+		} finally {
+			finalSecret.clear();
+		}
 	}
 
 	@Override
