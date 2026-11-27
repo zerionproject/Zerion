@@ -8,7 +8,7 @@
 
 Zerion is a private messenger with an encrypted vault and optional self-custodial Bitcoin and Monero wallets. There is no phone number, no account and no Zerion server: online messaging runs between the two devices' Tor onion services, every message carries a fresh post-quantum encapsulation, and traffic within a connection is shaped into fixed-size frames at a paced, cover-filled cadence. It is free software under the GPLv3.
 
-This README describes the current release, **3.0.18**. Release history is in [CHANGELOG.md](CHANGELOG.md); the exact values for the current release (version, artifact hash, channels, platform status) are in [docs/release-manifest.json](docs/release-manifest.json).
+This README describes the current release, **3.0.19**. Release history is in [CHANGELOG.md](CHANGELOG.md); the exact values for the current release (version, artifact hash, channels, platform status) are in [docs/release-manifest.json](docs/release-manifest.json).
 
 ## Architecture
 
@@ -80,7 +80,7 @@ Every pair of contacts whose apps both support it moves from the open onion serv
 
 | Platform | Status | Version |
 |---|---|---|
-| Android 10 and later | AVAILABLE | 3.0.18 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest); [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion) carries 3.0.14 until the newer bundle passes review; [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.18 |
+| Android 10 and later | AVAILABLE | 3.0.19 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest); [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion) carries 3.0.14 until the newer bundle passes review; [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.18 |
 | Windows 10 and 11 (x64) | AVAILABLE | 1.0.1, [Zerion Desktop](https://github.com/zerionproject/Zerion-Desktop/releases/latest), a separate codebase |
 | Linux (x64, aarch64 Flatpak) | AVAILABLE | 1.0.1, Zerion Desktop |
 | macOS | IN DEVELOPMENT | none published |
@@ -90,7 +90,7 @@ APK signing certificate SHA-256: `D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D98
 
 ## Security reviews
 
-Zerion has received independent focused security reviews (the Monero wallet native integration and the Bitcoin wallet with the dormant PayJoin component, both by ZeroTrace; the 3.0.6 transport properties; one reported ratchet issue) and internal assessments. It has not received an independent security assessment or penetration test of the whole product. The full history with dates, scope, outcome and publication status, the terms used, and the known limitations of the current release are in [SECURITY.md](SECURITY.md). [docs/protocol/SECURITY_CLAIMS.md](docs/protocol/SECURITY_CLAIMS.md) lists every security claim with the code and test behind it.
+Zerion has received independent focused security reviews (the Monero wallet native integration and the Bitcoin wallet with the dormant PayJoin component, both by ZeroTrace; the 3.0.6 transport properties; one reported ratchet issue) and internal assessments. In October and November 2026 Cure53 carried out an independent security assessment of the whole product; it reported twenty findings, none rated High or Critical, all fixed in 3.0.19, and the report will be published after Cure53 has verified the fixes. The full history with dates, scope, outcome and publication status, the terms used, and the known limitations of the current release are in [SECURITY.md](SECURITY.md). [docs/protocol/SECURITY_CLAIMS.md](docs/protocol/SECURITY_CLAIMS.md) lists every security claim with the code and test behind it.
 
 ## Build
 

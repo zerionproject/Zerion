@@ -17,7 +17,7 @@ In scope: the Android application, its cryptography, the Tor and I2P integration
 - **Independent focused security review**: an external party reviewing a defined subsystem or component.
 - **Independent security assessment**: an external engagement whose scope is the product as a whole.
 
-Zerion has received independent focused reviews. Zerion has **not** received an independent security assessment of the whole product. No document of the project may say otherwise until such an assessment has been completed and published.
+Zerion has received independent focused reviews and, in October and November 2026, an independent security assessment of the whole product by Cure53. It reported twenty findings, none rated High or Critical, and all twenty are fixed in 3.0.19. Cure53 is verifying the fixes; the report will be published after that verification and linked in the table below.
 
 ## Review history
 
@@ -31,8 +31,9 @@ Zerion has received independent focused reviews. Zerion has **not** received an 
 | September 2026 | internal assessment | project | whole Android product (3.0.11), followed by a second internal assessment of the remediated tree | remediation shipped in 3.0.12 (release commit `fecfc69d`); the two assurance findings left open there and a runtime defect found afterwards are fixed in 3.0.13 (`1d26de37`) | not published |
 | September 2026 | release review | project | 3.0.13 setup path and build reproducibility, after the Google Play review of 3.0.13 failed at account creation | first-account key store failure and the build-path dependency of the Argon2 library fixed in 3.0.14 (release commit `7ae2d991`) | not published |
 | October 2026 | internal assessment | project | whole Android product (3.0.14) with two-phone device testing, followed by a review of the remediated tree | 7 High, 84 Medium and the lower-rated findings fixed in 3.0.15 (release commit `0849b088`) | not published |
+| October to November 2026 | independent security assessment | Cure53 (white-box penetration test and source code audit, eight testers, twenty-eight days) | whole product: Android client, messaging protocol and cryptography, Tor and P2P networking, vault and key lifecycle, Bitcoin and Monero wallets, native and build integration | twenty findings, none High or Critical (six Medium, nine Low, five Info); all fixed in 3.0.19 (release commit: the commit of tag `v3.0.19`); fix verification by Cure53 in progress | report to be published after the fix verification |
 
-A release commit is the commit of the release tag (`git rev-parse v3.0.15^{commit}` prints `0849b088...`); it contains the fixes that release names. Later releases and their release commits: 3.0.16 (`e79a2122`), 3.0.17 (`cc2eceed`) and 3.0.18 (`d550478a`); their fixes are listed in [CHANGELOG.md](CHANGELOG.md).
+A release commit is the commit of the release tag (`git rev-parse v3.0.15^{commit}` prints `0849b088...`); it contains the fixes that release names. Later releases and their release commits: 3.0.16 (`e79a2122`), 3.0.17 (`cc2eceed`), 3.0.18 (`d550478a`) and 3.0.19 (`git rev-parse v3.0.19^{commit}`); their fixes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Limitations of 3.0.14, fixed in 3.0.15
 
