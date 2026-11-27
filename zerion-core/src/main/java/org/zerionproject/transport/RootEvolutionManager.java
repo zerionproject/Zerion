@@ -8,7 +8,11 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 
@@ -24,12 +28,32 @@ public class RootEvolutionManager {
 
 	public static final long MIN_EVOLUTION_INTERVAL_MS = 10 * 60_000L;
 
-	public static final int MAX_ANSWERS_PER_INTERVAL = 3;
+	public static final long LIVE_EVOLUTION_INTERVAL_MS = 60 * 60_000L;
+
+	public static final long EVOLUTION_DEADLINE_MS = 30_000L;
+
+	public static final long EVOLUTION_NUDGE_MS = 5_000L;
+
+	public static final long STALL_MEMORY_MS = 60_000L;
+
+	public static final int MAX_ANSWERS_PER_INTERVAL = 6;
 	public static final long ANSWER_INTERVAL_MS = 10 * 60_000L;
 
 	public static final int PENDING_DIAL_FALLBACK_AFTER = 2;
 
 	public static final int OUT_OF_SYNC_AFTER = 6;
+
+	public static final int NOT_RENEWING_AFTER_CONNECTIONS = 6;
+
+	public static final long NOT_RENEWING_AFTER_MS = 60 * 60_000L;
+
+	public static final int NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS = 3;
+
+	public static final long NOT_RENEWING_AFTER_LONG_MS = 24 * 60 * 60_000L;
+
+	public static final int NOT_RENEWING_AFTER_LONG_MS_MIN_CONNECTIONS = 2;
+
+	public static final long PEER_PAUSE_MEMORY_MS = 24 * 60 * 60_000L;
 
 	public interface PeerIdentity {
 
@@ -39,6 +63,29 @@ public class RootEvolutionManager {
 		byte[][] ownKeyAndSignature();
 
 		void learnPeerKey(ContactId c, byte[] mlDsaKey, byte[] signature);
+	}
+
+	private static final class PeerPause {
+
+		private final long saidAt;
+		private final long seenAt;
+
+		private PeerPause(long saidAt, long seenAt) {
+			this.saidAt = saidAt;
+			this.seenAt = seenAt;
+		}
+
+		private boolean holdsAt(long now) {
+			return now >= seenAt && now - saidAt < PEER_PAUSE_MEMORY_MS;
+		}
+
+		private boolean isOverAt(long now) {
+			return now - saidAt >= PEER_PAUSE_MEMORY_MS;
+		}
+
+		private PeerPause seenAt(long now) {
+			return new PeerPause(saidAt, now);
+		}
 	}
 
 	private static final PeerIdentity NO_IDENTITY = new PeerIdentity() {
@@ -74,8 +121,33 @@ public class RootEvolutionManager {
 			new ConcurrentHashMap<>();
 	private final Map<Integer, Integer> unauthenticatedDials =
 			new ConcurrentHashMap<>();
+	private final Map<Integer, Set<RootEvolution>> watchers =
+			new ConcurrentHashMap<>();
+	private final Map<Integer, Long> stalledAt = new ConcurrentHashMap<>();
+	private final Set<Integer> stalledBeside =
+			ConcurrentHashMap.newKeySet();
+	private final Map<Integer, PeerPause> peerPauses =
+			new ConcurrentHashMap<>();
+	private final Set<Integer> pausedInRun = ConcurrentHashMap.newKeySet();
+	private final ScheduledThreadPoolExecutor timer = newTimer();
 	@Nullable
 	private volatile byte[][] identityRecords;
+	private volatile boolean separatedEvolution = true;
+	private volatile boolean enforcing = true;
+	private volatile long deadlineMs = EVOLUTION_DEADLINE_MS;
+	private volatile long liveIntervalMs = LIVE_EVOLUTION_INTERVAL_MS;
+	private volatile long nudgeMs = EVOLUTION_NUDGE_MS;
+
+	private static ScheduledThreadPoolExecutor newTimer() {
+		ScheduledThreadPoolExecutor t = new ScheduledThreadPoolExecutor(1,
+				r -> {
+					Thread thread = new Thread(r, "root-evolution-timer");
+					thread.setDaemon(true);
+					return thread;
+				});
+		t.setRemoveOnCancelPolicy(true);
+		return t;
+	}
 
 	@Inject
 	public RootEvolutionManager(RootKeyStore store, CryptoComponent crypto,
@@ -98,6 +170,93 @@ public class RootEvolutionManager {
 		this.identity = identity;
 	}
 
+	boolean isSeparatedEvolution() {
+		return separatedEvolution;
+	}
+
+	void setSeparatedEvolution(boolean separatedEvolution) {
+		this.separatedEvolution = separatedEvolution;
+	}
+
+	boolean isEnforcing() {
+		return enforcing;
+	}
+
+	void setEnforcing(boolean enforcing) {
+		this.enforcing = enforcing;
+	}
+
+	void setTimings(long deadlineMs, long liveIntervalMs) {
+		this.deadlineMs = deadlineMs;
+		this.liveIntervalMs = liveIntervalMs;
+	}
+
+	void setNudge(long nudgeMs) {
+		this.nudgeMs = nudgeMs;
+	}
+
+	long nudgeMs() {
+		return nudgeMs;
+	}
+
+	void stalled(ContactId c) {
+		stalledAt.put(c.getInt(), now());
+	}
+
+	void healthy(ContactId c) {
+		stalledAt.remove(c.getInt());
+	}
+
+	public boolean recentlyStalled(int contactId) {
+		Long at = stalledAt.get(contactId);
+		if (at == null) return false;
+		long elapsed = now() - at;
+		return elapsed >= 0 && elapsed < STALL_MEMORY_MS;
+	}
+
+	long untilLiveEvolution(ContactId c) {
+		long elapsed = now() - store.evolvedAt(c);
+		if (elapsed < 0 || elapsed >= liveIntervalMs) return liveIntervalMs;
+		return liveIntervalMs - elapsed;
+	}
+
+	long deadlineMs() {
+		return deadlineMs;
+	}
+
+	boolean isDue(ContactId c) {
+		long at = store.evolvedAt(c);
+		long elapsed = now() - at;
+		return at == 0 || elapsed < 0 || elapsed >= MIN_EVOLUTION_INTERVAL_MS;
+	}
+
+	long liveIntervalMs() {
+		return liveIntervalMs;
+	}
+
+	ScheduledFuture<?> after(long delayMs, Runnable task) {
+		return timer.schedule(task, delayMs, TimeUnit.MILLISECONDS);
+	}
+
+	void watch(ContactId c, RootEvolution e) {
+		watchers.computeIfAbsent(c.getInt(),
+				k -> ConcurrentHashMap.newKeySet()).add(e);
+	}
+
+	boolean hasOtherConnection(ContactId c, RootEvolution e) {
+		Set<RootEvolution> set = watchers.get(c.getInt());
+		if (set == null) return false;
+		for (RootEvolution other : set) {
+			if (other != e) return true;
+		}
+		return false;
+	}
+
+	void unwatch(ContactId c, RootEvolution e) {
+		Set<RootEvolution> set = watchers.get(c.getInt());
+		if (set != null) set.remove(e);
+	}
+
 	public ZwfControlHandler newEvolution(ContactId c, boolean alice) {
 		return new RootEvolution(this, c, alice);
 	}
@@ -116,17 +275,100 @@ public class RootEvolutionManager {
 	public void dialEnded(ContactId c, boolean peerAuthenticated) {
 		if (peerAuthenticated) {
 			pendingDialFailures.remove(c.getInt());
-			Integer failed = unauthenticatedDials.remove(c.getInt());
-			if (failed != null && failed >= OUT_OF_SYNC_AFTER) {
-				store.markOutOfSync(c, false);
-			} else if (store.isOutOfSync(c)) {
-				store.markOutOfSync(c, false);
-			}
+			unauthenticatedDials.remove(c.getInt());
 			return;
 		}
 		pendingDialFailures.merge(c.getInt(), 1, Integer::sum);
 		int failed = unauthenticatedDials.merge(c.getInt(), 1, Integer::sum);
 		if (failed == OUT_OF_SYNC_AFTER) store.markOutOfSync(c, true);
+	}
+
+	void stalledBesideAnother(ContactId c) {
+		stalledBeside.add(c.getInt());
+	}
+
+	public void forget(ContactId c) {
+		int id = c.getInt();
+		lastEvolution.remove(id);
+		answers.remove(id);
+		pendingDialFailures.remove(id);
+		unauthenticatedDials.remove(id);
+		stalledAt.remove(id);
+		stalledBeside.remove(id);
+		peerPauses.remove(id);
+		pausedInRun.remove(id);
+	}
+
+	void peerGreeted(ContactId c, boolean paused) {
+		long now = now();
+		peerPauses.values().removeIf(p -> p.isOverAt(now));
+		if (!paused) {
+			peerPauseEnded(c, now);
+			return;
+		}
+		peerPauses.put(c.getInt(), new PeerPause(now, now));
+		pausedInRun.add(c.getInt());
+		stalledBeside.remove(c.getInt());
+	}
+
+	void peerRenews(ContactId c) {
+		peerPauseEnded(c, now());
+	}
+
+	private void peerPauseEnded(ContactId c, long now) {
+		peerPauses.remove(c.getInt());
+		if (!pausedInRun.remove(c.getInt())) return;
+		long[] stalls = store.stalls(c);
+		if (stalls == null || stalls[0] <= 0) return;
+		store.setStalls(c, (int) stalls[0], now);
+	}
+
+	boolean peerPauseRemembered(ContactId c) {
+		long now = now();
+		return peerPauses.computeIfPresent(c.getInt(),
+				(k, p) -> p.holdsAt(now) ? p.seenAt(now) : null) != null;
+	}
+
+	int peerPausesRemembered() {
+		return peerPauses.size();
+	}
+
+	void connectionEnded(ContactId c, boolean renewalOutstanding) {
+		connectionEnded(c, true, renewalOutstanding);
+	}
+
+	void connectionEnded(ContactId c, boolean peerKeysConfirmed,
+			boolean renewalOutstanding) {
+		boolean stalled = stalledBeside.remove(c.getInt())
+				|| renewalOutstanding;
+		if (peerKeysConfirmed && !renewalOutstanding
+				&& store.isOutOfSync(c)) {
+			store.markOutOfSync(c, false);
+		}
+		if (!stalled) return;
+		long now = now();
+		long[] stalls = store.stalls(c);
+		if (stalls == null) return;
+		long count = stalls[0];
+		long since = stalls[1];
+		PeerPause pause = peerPauses.get(c.getInt());
+		boolean pausedSince = pause != null && pause.holdsAt(now)
+				|| pausedInRun.remove(c.getInt());
+		if (count <= 0 || since <= 0 || since > now) count = 0;
+		if (count == 0 || pausedSince) since = now;
+		if (count < Integer.MAX_VALUE) count++;
+		store.setStalls(c, (int) count, since);
+		if (notRenewing(count, since, now)) store.markNotRenewing(c, true);
+	}
+
+	private static boolean notRenewing(long count, long firstStalledAt,
+			long countedAt) {
+		long elapsed = countedAt - firstStalledAt;
+		return count >= NOT_RENEWING_AFTER_CONNECTIONS
+				|| (count >= NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS
+				&& elapsed >= NOT_RENEWING_AFTER_MS)
+				|| (count >= NOT_RENEWING_AFTER_LONG_MS_MIN_CONNECTIONS
+				&& elapsed >= NOT_RENEWING_AFTER_LONG_MS);
 	}
 
 	RootKeyStore getStore() {
@@ -154,25 +396,27 @@ public class RootEvolutionManager {
 	}
 
 	boolean mayOffer(ContactId c, RootEvolution e) {
+		return mayOffer(c, e, false);
+	}
+
+	boolean mayOffer(ContactId c, RootEvolution e, boolean dueNow) {
 		RootEvolution other = offers.get(c.getInt());
 		if (other != null && other != e) return false;
 		Long last = lastEvolution.get(c.getInt());
 		long now = now();
-		if (last != null && now - last < MIN_EVOLUTION_INTERVAL_MS) {
+		if (!dueNow && last != null
+				&& now - last < MIN_EVOLUTION_INTERVAL_MS) {
 			return false;
 		}
-		return !store.isPaused(now);
+		return !store.isPaused(now) && !store.isSnapshotting();
 	}
 
 	boolean mayAnswer(ContactId c) {
 		long now = now();
-		if (store.isPaused(now)) return false;
+		if (store.isPaused(now) || store.isSnapshotting()) return false;
 		Deque<Long> recent = answers.computeIfAbsent(c.getInt(),
 				k -> new ArrayDeque<>());
-		while (!recent.isEmpty()
-				&& now - recent.peekFirst() >= ANSWER_INTERVAL_MS) {
-			recent.pollFirst();
-		}
+		recent.removeIf(at -> at > now || now - at >= ANSWER_INTERVAL_MS);
 		if (recent.size() >= MAX_ANSWERS_PER_INTERVAL) return false;
 		recent.addLast(now);
 		return true;
@@ -186,8 +430,21 @@ public class RootEvolutionManager {
 		offers.remove(c.getInt(), e);
 	}
 
-	void evolved(ContactId c) {
+	void proved(ContactId c) {
 		lastEvolution.put(c.getInt(), now());
+	}
+
+	void evolved(ContactId c) {
+		long now = now();
+		lastEvolution.put(c.getInt(), now);
+		stalledAt.remove(c.getInt());
+		stalledBeside.remove(c.getInt());
+		peerPauses.remove(c.getInt());
+		pausedInRun.remove(c.getInt());
+		store.renewed(c, now);
+		Set<RootEvolution> set = watchers.get(c.getInt());
+		if (set == null) return;
+		for (RootEvolution e : set) e.onEvolved();
 	}
 
 	@Nullable

@@ -68,11 +68,12 @@ public class MeshBundleStore implements ContactHook {
 		AsyncPrekeyBundle bundle;
 		try {
 			bundle = AsyncPrekeyBundle.decode(StringUtils.fromHexString(hex));
-			if (!bundle.verify(crypto)) return null;
 		} catch (FormatException | RuntimeException e) {
 			return null;
 		}
-		if (contactManager == null) return bundle;
+		if (contactManager == null) {
+			return bundle.verify(crypto) ? bundle : null;
+		}
 		byte[] identity;
 		try {
 			identity = identityOf(contactManager.getContact(
@@ -80,7 +81,7 @@ public class MeshBundleStore implements ContactHook {
 		} catch (NoSuchContactException e) {
 			return null;
 		}
-		if (identity == null || !matchesIdentity(bundle, identity)) {
+		if (identity == null || !bundle.verifyFromContact(crypto, identity)) {
 			return null;
 		}
 		return bundle;

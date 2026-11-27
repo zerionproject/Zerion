@@ -1,10 +1,13 @@
 package org.zerionproject.core;
 
 import android.app.Application;
+import android.os.SystemClock;
 
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
 import org.zerionproject.tor.TorBinaryPins;
 import org.zerionproject.tor.TorBinaryVerifier;
+import org.zerionproject.tor.TorStateStore;
+import org.zerionproject.tor.TorWakePolicy;
 import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.core.api.event.EventExecutor;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
@@ -13,6 +16,7 @@ import org.zerionproject.core.api.plugin.TorDirectory;
 import org.zerionproject.core.api.plugin.OnionTargetFactory;
 import org.zerionproject.core.api.plugin.TorSocksPath;
 import org.zerionproject.core.api.plugin.TorSocksPort;
+import org.zerionproject.core.api.system.TaskScheduler;
 import org.zerionproject.core.socks.LocalSockets;
 import org.zerionproject.core.socks.UnixOnionTargetFactory;
 import org.zerionproject.transport.TorControlSocketFactory;
@@ -20,6 +24,7 @@ import org.zerionproject.transport.TorControlSocketFactory;
 import java.io.File;
 import java.util.concurrent.Executor;
 
+import javax.annotation.Nullable;
 import javax.inject.Singleton;
 
 import dagger.Module;
@@ -33,17 +38,29 @@ public class ZerionTorWrapperModule {
 	@Provides
 	@Singleton
 	TorWrapper provideZerionTorWrapper(Application app,
-			AndroidWakeLockManager wakeLockManager,
+			AndroidWakeLockManager wakeLockManager, TorWakePolicy wakePolicy,
 			@IoExecutor Executor ioExecutor,
 			@EventExecutor Executor eventExecutor,
 			@TorDirectory File torDirectory, @TorSocksPort int torSocksPort,
 			@TorControlPort int torControlPort,
 			@TorSocksPath File socksPath,
-			org.zerionproject.transport.TorProcessWatch processWatch) {
-		return new ZerionTorWrapper(app, wakeLockManager, ioExecutor,
-				eventExecutor, architecture(), torDirectory, torSocksPort,
-				torControlPort, controlSocketPath(socksPath.getAbsolutePath()),
-				shippedPins(), processWatch);
+			org.zerionproject.transport.TorProcessWatch processWatch,
+			@Nullable TorStateStore stateStore) {
+		TorWrapper tor = new ZerionTorWrapper(app, wakeLockManager,
+				wakePolicy, ioExecutor, eventExecutor, architecture(),
+				torDirectory, torSocksPort, torControlPort,
+				controlSocketPath(socksPath.getAbsolutePath()), shippedPins(),
+				processWatch);
+		tor.setStateStore(stateStore);
+		return tor;
+	}
+
+	@Provides
+	@Singleton
+	TorWakePolicy provideTorWakePolicy(TaskScheduler taskScheduler,
+			@IoExecutor Executor ioExecutor) {
+		return new TorWakePolicy(taskScheduler, ioExecutor,
+				SystemClock::elapsedRealtime);
 	}
 
 	static String controlSocketPath(String socksPath) {

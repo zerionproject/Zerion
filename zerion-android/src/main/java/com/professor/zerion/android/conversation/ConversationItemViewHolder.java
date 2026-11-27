@@ -13,11 +13,11 @@ import com.professor.zerion.android.selection.RowActions;
 import com.professor.zerion.android.selection.SelectedFill;
 import com.professor.zerion.android.selection.SelectionAction;
 import com.professor.zerion.android.selection.SelectionRows;
+import com.professor.zerion.android.util.BrowserGuard;
 import org.zerionproject.app.api.messaging.LinkPreview;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.core.api.sync.MessageId;
 
-import java.net.URL;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,12 +32,26 @@ import static android.view.View.VISIBLE;
 import static org.zerionproject.core.util.StringUtils.trim;
 import static com.professor.zerion.android.util.UiUtils.formatDate;
 import static com.professor.zerion.android.util.UiUtils.formatDuration;
+import static com.professor.zerion.android.util.UiUtils.keepLinkActionsInApp;
 import static com.professor.zerion.android.util.UiUtils.makeLinksClickable;
 import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 
 @UiThread
 @NotNullByDefault
 abstract class ConversationItemViewHolder extends ViewHolder {
+
+	private static final java.util.concurrent.Executor PREVIEW_DECODER =
+			java.util.concurrent.Executors.newSingleThreadExecutor();
+	private static final int PREVIEW_IMAGE_MAX_SIDE = 512;
+	private static final android.util.LruCache<String, android.graphics.Bitmap>
+			PREVIEW_IMAGES = new android.util.LruCache<>(24);
+	private static final java.util.concurrent.atomic.AtomicInteger
+			PREVIEW_GENERATION = new java.util.concurrent.atomic.AtomicInteger();
+
+	static void clearPreviewImages() {
+		PREVIEW_GENERATION.incrementAndGet();
+		PREVIEW_IMAGES.evictAll();
+	}
 
 	protected final ConversationListener listener;
 	private final View root;
@@ -83,6 +97,10 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		this.selecting = selecting;
 	}
 
+	boolean isSelecting() {
+		return selecting.getAsBoolean();
+	}
+
 	ConversationItemViewHolder(View v, ConversationListener listener,
 			boolean isIncoming) {
 		super(v);
@@ -94,6 +112,7 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		defaultBubbleBackground = layout.getBackground();
 		if (isIncoming) SelectedFill.received(layout);
 		text = v.findViewById(R.id.text);
+		keepLinkActionsInApp(text);
 		time = v.findViewById(R.id.time);
 		bomb = v.findViewById(R.id.bomb);
 		replyPreviewContainer = layout.findViewById(R.id.replyPreviewContainer);
@@ -326,33 +345,73 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 				}
 			}
 			if (linkPreviewDomain != null) {
-				try {
-					String host = new URL(preview.getUrl()).getHost();
-					linkPreviewDomain.setText(host);
-				} catch (Exception e) {
-					linkPreviewDomain.setText(preview.getUrl());
-				}
+				linkPreviewDomain.setText(previewDomainLabel(
+						linkPreviewDomain.getContext(), preview.getUrl()));
 			}
 			if (linkPreviewImage != null) {
-				if (preview.hasImage()) {
-					linkPreviewImage.setVisibility(VISIBLE);
-					com.bumptech.glide.Glide.with(linkPreviewImage)
-							.asBitmap()
-							.load(preview.getImageData())
-							.diskCacheStrategy(com.bumptech.glide.load.engine
-									.DiskCacheStrategy.NONE)
-							.into(linkPreviewImage);
-				} else {
-					com.bumptech.glide.Glide.with(linkPreviewImage)
-							.clear(linkPreviewImage);
-					linkPreviewImage.setVisibility(GONE);
+				ImageView target = linkPreviewImage;
+				byte[] previewImage = preview.getImageData();
+				String key = org.zerionproject.core.util.StringUtils.toHexString(
+						item.getId().getBytes());
+				android.graphics.Bitmap ready = PREVIEW_IMAGES.get(key);
+				if (previewImage == null || previewImage.length == 0) {
+					target.setTag(R.id.linkPreviewImage, null);
+					target.setImageDrawable(null);
+					target.setVisibility(GONE);
+				} else if (ready != null) {
+					target.setTag(R.id.linkPreviewImage, key);
+					target.setImageBitmap(ready);
+					target.setVisibility(VISIBLE);
+				} else if (!key.equals(target.getTag(R.id.linkPreviewImage))) {
+					target.setTag(R.id.linkPreviewImage, key);
+					target.setImageDrawable(null);
+					target.setVisibility(GONE);
+					int generation = PREVIEW_GENERATION.get();
+					PREVIEW_DECODER.execute(() -> {
+						android.graphics.Bitmap bitmap =
+								com.professor.zerion.android.util
+										.ReceivedImageGate.decode(previewImage,
+												PREVIEW_IMAGE_MAX_SIDE);
+						if (bitmap == null) {
+							target.post(() -> {
+								if (key.equals(target.getTag(
+										R.id.linkPreviewImage))) {
+									target.setTag(R.id.linkPreviewImage,
+											null);
+								}
+							});
+							return;
+						}
+						target.post(() -> {
+							if (generation == PREVIEW_GENERATION.get()) {
+								PREVIEW_IMAGES.put(key, bitmap);
+							}
+							if (key.equals(target.getTag(
+									R.id.linkPreviewImage))) {
+								target.setImageBitmap(bitmap);
+								target.setVisibility(VISIBLE);
+							}
+						});
+					});
 				}
 			}
 			linkPreviewCard.setOnClickListener(v ->
 					listener.onLinkClick(preview.getUrl()));
 		} else {
+			if (linkPreviewImage != null) {
+				linkPreviewImage.setTag(R.id.linkPreviewImage, null);
+				linkPreviewImage.setImageDrawable(null);
+			}
 			linkPreviewCard.setVisibility(GONE);
 		}
+	}
+
+	static String previewDomainLabel(Context ctx, String url) {
+		String host = BrowserGuard.webHost(url);
+		if (host == null) return ctx.getString(R.string.link_unsupported);
+		if (!BrowserGuard.hostNeedsAlphabetNote(url)) return host;
+		return host + " "
+				+ ctx.getString(R.string.link_host_other_alphabet_mark);
 	}
 
 	void bindReplyContext(ConversationItem item) {

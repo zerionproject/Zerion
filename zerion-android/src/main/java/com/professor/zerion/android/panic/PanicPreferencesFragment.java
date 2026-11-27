@@ -160,6 +160,8 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 					android.R.drawable.ic_menu_close_clear_cancel);
 
 			purgePref.setEnabled(false);
+			lockPref.setEnabled(false);
+			lockPref.setSummary(R.string.panic_setting_signout_needs_app);
 		} else {
 			try {
 				panicAppPref.setValue(triggerPackageName);
@@ -169,6 +171,8 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 						pm.getApplicationIcon(triggerPackageName));
 
 				purgePref.setEnabled(true);
+				lockPref.setEnabled(true);
+				lockPref.setSummary(R.string.panic_setting_signout_summary);
 			} catch (PackageManager.NameNotFoundException e) {
 				android.app.Activity a = getActivity();
 				if (a != null) {

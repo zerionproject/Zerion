@@ -15,6 +15,7 @@ import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageContext;
 import org.zerionproject.core.api.sync.validation.MessageValidator;
 import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.app.api.messaging.ViewOnceMedia;
 import org.zerionproject.app.attachment.CountingInputStream;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -25,7 +26,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Locale;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
@@ -75,6 +78,8 @@ import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_PREVIEW_IMAGE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TARGET_MESSAGE_ID;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TIMESTAMP;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_VIEW_ONCE;
+import static org.zerionproject.app.messaging.MessagingConstants.VIEW_ONCE_FLAG;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_ID;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_EPOCH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_SENDER_PUBKEY;
@@ -175,12 +180,21 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == MessageTypes.MESSAGE_DELETE) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateMessageDelete(m, list);
+				} else if (messageType == MessageTypes.VIEW_ONCE_OPENED) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateViewOnceOpened(m, list);
+				} else if (messageType == MessageTypes.MESSAGE_PIN) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMessagePin(m, list);
 				} else if (messageType == LINK_PREVIEW_MESSAGE) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateLinkPreviewMessage(m, list);
 				} else if (messageType == MessageTypes.MESH_PREKEY_BUNDLE) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateMeshPrekeyBundle(m, list);
+				} else if (messageType == MessageTypes.MESH_LINK_KEYS) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMeshLinkKeys(m, list);
 				} else if (messageType == GROUP_POST) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGroupPost(m, list);
@@ -258,6 +272,15 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == MessageTypes.GROUP_KEY_PROBE) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateKeyProbe(m, list);
+				} else if (messageType == MessageTypes.GROUP_PIN) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGroupPin(m, list);
+				} else if (messageType == MessageTypes.GROUP_RELAY_REQUEST) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGroupRelayRequest(m, list);
+				} else if (messageType == MessageTypes.GROUP_MEMBER_KEYS) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGroupMemberKeys(m, list);
 				} else {
 					throw new InvalidMessageException();
 				}
@@ -283,7 +306,7 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validatePrivateMessage(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 3, 6);
+		checkSize(body, 3, 7);
 		String text = body.getOptionalString(1);
 		checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
 		VoiceMemoFormatCheck.requireCurrentFormat(text);
@@ -310,7 +333,9 @@ class PrivateMessageValidator implements MessageValidator {
 			replyToId = body.getOptionalRaw(4);
 			if (replyToId != null) checkLength(replyToId, UniqueId.LENGTH);
 		}
-		if (body.size() == 6) checkLength(body.getRaw(5), BODY_SALT_LENGTH);
+		if (body.size() >= 6) checkLength(body.getRaw(5), BODY_SALT_LENGTH);
+		boolean viewOnce = body.size() == 7;
+		if (viewOnce) checkViewOnce(body.getLong(6), text, headers);
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
@@ -324,10 +349,137 @@ class PrivateMessageValidator implements MessageValidator {
 		if (replyToId != null) {
 			meta.put(MSG_KEY_REPLY_TO_ID, replyToId);
 		}
+		if (viewOnce) meta.put(MSG_KEY_VIEW_ONCE, true);
 		if (dependencies.isEmpty()) {
 			return new BdfMessageContext(meta);
 		}
 		return new BdfMessageContext(meta, dependencies);
+	}
+
+	private static void checkViewOnce(long flag, @Nullable String text,
+			BdfList headers) throws FormatException {
+		if (flag != VIEW_ONCE_FLAG) throw new FormatException();
+		if (text != null || headers.size() != 1) throw new FormatException();
+		String contentType = headers.getList(0).getString(1);
+		if (!ViewOnceMedia.isAllowedType(contentType)) {
+			throw new FormatException();
+		}
+	}
+
+	private BdfMessageContext validateViewOnceOpened(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 2);
+		byte[] targetId = body.getRaw(1);
+		checkLength(targetId, UniqueId.LENGTH);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.VIEW_ONCE_OPENED);
+		meta.put(MSG_KEY_TARGET_MESSAGE_ID, targetId);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateMessagePin(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 2);
+		byte[] targetId = body.getOptionalRaw(1);
+		if (targetId != null) checkLength(targetId, UniqueId.LENGTH);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESSAGE_PIN);
+		if (targetId != null) meta.put(MSG_KEY_TARGET_MESSAGE_ID, targetId);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateGroupPin(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 5);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		byte[] targetPostId = body.getOptionalRaw(2);
+		if (targetPostId != null) checkLength(targetPostId, 32);
+		long timestamp = body.getLong(3);
+		byte[] sig = body.getRaw(4);
+		checkLength(sig, 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.GROUP_PIN);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		if (targetPostId != null) {
+			meta.put(MessagingConstants.MSG_KEY_GROUP_TARGET_POST_ID,
+					targetPostId);
+		}
+		meta.put(MessagingConstants.MSG_KEY_GROUP_RECORD_TIMESTAMP,
+				timestamp);
+		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateGroupRelayRequest(Message m,
+			BdfList body) throws FormatException {
+		checkSize(body, 4);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		BdfList members = body.getList(2);
+		checkSize(members, 1, 256);
+		java.util.Set<String> distinct = new java.util.HashSet<>();
+		for (int i = 0; i < members.size(); i++) {
+			byte[] member = members.getRaw(i);
+			checkLength(member, 32);
+			if (!distinct.add(org.zerionproject.core.util.StringUtils
+					.toHexString(member))) {
+				throw new FormatException();
+			}
+		}
+		BdfList inner = body.getList(3);
+		int innerType = inner.getInt(0);
+		BdfMessageContext innerContext;
+		if (innerType == GROUP_POST) {
+			innerContext = validateGroupPost(m, inner);
+		} else if (innerType == MessageTypes.GROUP_POST_DELETE) {
+			innerContext = validateGroupPostDelete(m, inner);
+		} else {
+			throw new FormatException();
+		}
+		BdfDictionary innerMeta = innerContext.getDictionary();
+		if (!java.util.Arrays.equals(innerMeta.getRaw(MSG_KEY_GROUP_ID),
+				groupId)) {
+			throw new FormatException();
+		}
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.GROUP_RELAY_REQUEST);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		meta.put(MSG_KEY_GROUP_SENDER_PUBKEY,
+				innerMeta.getRaw(MSG_KEY_GROUP_SENDER_PUBKEY));
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateGroupMemberKeys(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 6);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		byte[] memberPubKey = body.getRaw(2);
+		checkLength(memberPubKey, 32);
+		byte[] mlDsaPubKey = body.getRaw(3);
+		checkLength(mlDsaPubKey, org.zerionproject.core.api.crypto
+				.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES);
+		long timestamp = body.getLong(4);
+		byte[] sig = body.getRaw(5);
+		checkLength(sig, 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.GROUP_MEMBER_KEYS);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		meta.put(MessagingConstants.MSG_KEY_GROUP_TARGET_PUBKEY, memberPubKey);
+		meta.put(MessagingConstants.MSG_KEY_GROUP_RECORD_TIMESTAMP, timestamp);
+		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
+		return new BdfMessageContext(meta);
 	}
 
 	private BdfMessageContext validateAttachment(Message m, BdfList descriptor,
@@ -548,6 +700,22 @@ class PrivateMessageValidator implements MessageValidator {
 		return new BdfMessageContext(meta);
 	}
 
+	private BdfMessageContext validateMeshLinkKeys(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 3);
+		int length = org.zerionproject.app.api.messaging.MessagingManager
+				.MESH_LINK_KEY_BYTES;
+		if (body.getRaw(1).length != length
+				|| body.getRaw(2).length != length) {
+			throw new FormatException();
+		}
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESH_LINK_KEYS);
+		return new BdfMessageContext(meta);
+	}
+
 	private BdfMessageContext validateLinkPreviewMessage(Message m,
 			BdfList body) throws FormatException {
 		checkSize(body, 5, 6);
@@ -558,11 +726,16 @@ class PrivateMessageValidator implements MessageValidator {
 		}
 		String previewUrl = body.getString(2);
 		checkLength(previewUrl, 1, 2048);
+		checkWebUrl(previewUrl);
 		String previewTitle = body.getString(3);
 		checkLength(previewTitle, 1, 512);
+		previewTitle = displayText(previewTitle, false);
+		if (previewTitle.isEmpty()) throw new FormatException();
 		String previewDescription = body.getOptionalString(4);
 		if (previewDescription != null) {
 			checkLength(previewDescription, 0, 1024);
+			previewDescription = displayText(previewDescription, true);
+			if (previewDescription.isEmpty()) previewDescription = null;
 		}
 		boolean hasImage = body.size() == 6 && body.getRaw(5) != null;
 
@@ -579,6 +752,51 @@ class PrivateMessageValidator implements MessageValidator {
 		}
 		meta.put(MSG_KEY_HAS_PREVIEW_IMAGE, hasImage);
 		return new BdfMessageContext(meta);
+	}
+
+	public static String displayText(String s, boolean keepLineBreaks) {
+		StringBuilder out = new StringBuilder(s.length());
+		int i = 0;
+		while (i < s.length()) {
+			int cp = s.codePointAt(i);
+			i += Character.charCount(cp);
+			int type = Character.getType(cp);
+			if (type == Character.FORMAT || type == Character.UNASSIGNED
+					|| type == Character.PRIVATE_USE
+					|| type == Character.SURROGATE) {
+				continue;
+			}
+			if (type == Character.CONTROL || type == Character.LINE_SEPARATOR
+					|| type == Character.PARAGRAPH_SEPARATOR) {
+				if (keepLineBreaks && (cp == '\n' || cp == 0x2028
+						|| cp == 0x2029)) {
+					out.append('\n');
+				} else if (cp == '\t' || cp == '\n' || cp == '\r') {
+					out.append(' ');
+				}
+				continue;
+			}
+			out.appendCodePoint(cp);
+		}
+		return out.toString().trim();
+	}
+
+	static void checkWebUrl(String url) throws FormatException {
+		for (int i = 0; i < url.length(); i++) {
+			char c = url.charAt(i);
+			if (c < 0x21 || c > 0x7E) throw new FormatException();
+		}
+		String lower = url.toLowerCase(Locale.ROOT);
+		int hostStart;
+		if (lower.startsWith("https://")) hostStart = 8;
+		else if (lower.startsWith("http://")) hostStart = 7;
+		else throw new FormatException();
+		if (url.length() <= hostStart) throw new FormatException();
+		char first = url.charAt(hostStart);
+		if (first == '/' || first == '?' || first == '#'
+				|| Character.isWhitespace(first)) {
+			throw new FormatException();
+		}
 	}
 
 	private BdfMessageContext validateGroupPost(Message m, BdfList body)
@@ -1047,7 +1265,11 @@ class PrivateMessageValidator implements MessageValidator {
 			checkSize(entry, 3);
 			checkLength(entry.getRaw(0), 32);
 			checkLength(entry.getRaw(1), 32);
-			checkLength(entry.getRaw(2), SEALED_BINDING_BYTES);
+			int sealed = entry.getRaw(2).length;
+			if (sealed != SEALED_BINDING_BYTES
+					&& sealed != SEALED_BINDING_V2_BYTES) {
+				throw new FormatException();
+			}
 		}
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
@@ -1062,6 +1284,9 @@ class PrivateMessageValidator implements MessageValidator {
 			.crypto.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES + 8
 			+ 2 * org.zerionproject.core.api.crypto.PostQuantumConstants
 			.HYBRID_SIGNATURE_BYTES + 16;
+	static final int SEALED_BINDING_V2_BYTES = SEALED_BINDING_BYTES
+			- org.zerionproject.core.api.crypto.PostQuantumConstants
+			.HYBRID_SIGNATURE_BYTES;
 
 	static void checkGroupSecret(BdfList secret) throws FormatException {
 		checkSize(secret, 4);
@@ -1082,8 +1307,11 @@ class PrivateMessageValidator implements MessageValidator {
 		checkLength(binding.getRaw(1), org.zerionproject.core.api.crypto
 				.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES);
 		if (binding.getLong(2) < 0L) throw new FormatException();
-		checkLength(binding.getRaw(3), org.zerionproject.core.api.crypto
-				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES);
+		int identitySig = binding.getRaw(3).length;
+		if (identitySig != 0 && identitySig != org.zerionproject.core.api
+				.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
+			throw new FormatException();
+		}
 		checkLength(binding.getRaw(4), org.zerionproject.core.api.crypto
 				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES);
 	}

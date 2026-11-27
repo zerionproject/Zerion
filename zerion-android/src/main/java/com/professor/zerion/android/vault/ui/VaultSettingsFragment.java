@@ -18,6 +18,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
+import com.professor.zerion.android.vault.crypto.VaultKdfTier;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -25,6 +26,7 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
+import androidx.annotation.StringRes;
 import androidx.lifecycle.ViewModelProvider;
 
 @MethodsNotNullByDefault
@@ -217,36 +219,50 @@ public class VaultSettingsFragment extends BaseFragment {
 		IncognitoInputHelper.configurePasswordField(newPasswordInput);
 		IncognitoInputHelper.configurePasswordField(confirmPasswordInput);
 
-		new SecureAlertDialogBuilder(requireContext())
-				.setTitle(R.string.vault_settings_change_master)
-				.setView(dialogView)
-				.setPositiveButton(R.string.vault_settings_change_action,
-						(dialog, which) -> {
+		androidx.appcompat.app.AlertDialog changeDialog =
+				new SecureAlertDialogBuilder(requireContext())
+						.setTitle(R.string.vault_settings_change_master)
+						.setView(dialogView)
+						.setPositiveButton(
+								R.string.vault_settings_change_action, null)
+						.setNegativeButton(android.R.string.cancel, null)
+						.create();
+		changeDialog.setOnShowListener(shown -> changeDialog.getButton(
+				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+				.setOnClickListener(v -> {
 					char[] currentPassword = currentPasswordInput.getPasswordChars();
 					char[] newPassword = newPasswordInput.getPasswordChars();
 					char[] confirmPassword = confirmPasswordInput.getPasswordChars();
-
+					boolean accepted = false;
 					try {
-						if (validatePasswordChange(currentPassword, newPassword, confirmPassword,
-								currentPasswordLayout, newPasswordLayout, confirmPasswordLayout)) {
+						accepted = validatePasswordChange(currentPassword, newPassword, confirmPassword,
+								currentPasswordLayout, newPasswordLayout, confirmPasswordLayout);
+						if (accepted) {
 							changePassword(currentPassword, newPassword);
 						}
 					} finally {
-						currentPasswordInput.clearPassword();
-						newPasswordInput.clearPassword();
-						confirmPasswordInput.clearPassword();
 						java.util.Arrays.fill(currentPassword, '\0');
 						java.util.Arrays.fill(newPassword, '\0');
 						java.util.Arrays.fill(confirmPassword, '\0');
 					}
-				})
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
+					if (accepted) {
+						changeDialog.dismiss();
+					}
+				}));
+		changeDialog.setOnDismissListener(dismissed -> {
+			currentPasswordInput.clearPassword();
+			newPasswordInput.clearPassword();
+			confirmPasswordInput.clearPassword();
+		});
+		changeDialog.show();
 	}
 
 	private boolean validatePasswordChange(char[] current, char[] newPass, char[] confirm,
 			TextInputLayout currentLayout, TextInputLayout newLayout, TextInputLayout confirmLayout) {
 		boolean valid = true;
+		currentLayout.setError(null);
+		newLayout.setError(null);
+		confirmLayout.setError(null);
 
 		if (current.length == 0) {
 			currentLayout.setError(getString(
@@ -257,8 +273,9 @@ public class VaultSettingsFragment extends BaseFragment {
 		if (newPass.length == 0) {
 			newLayout.setError(getString(R.string.vault_enter_new_password));
 			valid = false;
-		} else if (newPass.length < 8) {
-			newLayout.setError(getString(R.string.password_min_8_chars));
+		} else if (!com.professor.zerion.android.vault.VaultManager
+				.acceptsNewPassword(newPass)) {
+			newLayout.setError(getString(R.string.vault_password_rule));
 			valid = false;
 		}
 
@@ -381,7 +398,8 @@ public class VaultSettingsFragment extends BaseFragment {
 		com.google.android.material.textfield.TextInputEditText confirmInput =
 				dialogView.findViewById(R.id.export_password_confirm);
 
-		new SecureAlertDialogBuilder(requireContext())
+		androidx.appcompat.app.AlertDialog exportDialog =
+				new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_export_password_title)
 				.setMessage(R.string.vault_export_password_message)
 				.setView(dialogView)
@@ -389,6 +407,8 @@ public class VaultSettingsFragment extends BaseFragment {
 						(dialog, which) -> {
 					char[] password = readVaultChars(passwordInput);
 					char[] confirm = readVaultChars(confirmInput);
+					clearVaultField(passwordInput);
+					clearVaultField(confirmInput);
 
 					if (password.length == 0) {
 						java.util.Arrays.fill(confirm, '\0');
@@ -403,11 +423,43 @@ public class VaultSettingsFragment extends BaseFragment {
 						return;
 					}
 
+					if (!com.professor.zerion.android.vault.VaultManager
+							.acceptsNewPassword(password)) {
+						java.util.Arrays.fill(password, '\0');
+						java.util.Arrays.fill(confirm, '\0');
+						showToast(getString(R.string.vault_password_rule));
+						return;
+					}
+
 					java.util.Arrays.fill(confirm, '\0');
 					launchExportPicker(password);
 				})
 				.setNegativeButton(android.R.string.cancel, null)
-				.show();
+				.create();
+		exportDialog.setOnDismissListener(dismissed -> {
+			clearVaultField(passwordInput);
+			clearVaultField(confirmInput);
+		});
+		exportDialog.show();
+	}
+
+	private static void clearVaultField(
+			com.google.android.material.textfield.TextInputEditText input) {
+		android.text.Editable e = input.getText();
+		if (e != null) e.clear();
+	}
+
+	private void forgetPendingExportPassword() {
+		if (pendingExportPassword != null) {
+			java.util.Arrays.fill(pendingExportPassword, '\0');
+			pendingExportPassword = null;
+		}
+	}
+
+	@Override
+	public void onDestroyView() {
+		forgetPendingExportPassword();
+		super.onDestroyView();
 	}
 
 	private static char[] readVaultChars(
@@ -506,12 +558,24 @@ public class VaultSettingsFragment extends BaseFragment {
 		com.professor.zerion.android.vault.crypto.Argon2.Argon2Params p =
 				viewModel.vaultKdfParameters();
 		if (p == null) return;
-		int line = p.memoryKb >= com.professor.zerion.android.vault
+		int line = kdfLine(p);
+		keystoreInfo.setText(getString(R.string.vault_settings_info_keystore)
+				+ '\n' + getString(line));
+	}
+
+	@StringRes
+	static int kdfLine(
+			com.professor.zerion.android.vault.crypto.Argon2.Argon2Params p) {
+		if (VaultKdfTier.sameCost(p, VaultKdfTier.TIER_A)) {
+			return R.string.vault_settings_kdf_1gib;
+		}
+		if (VaultKdfTier.sameCost(p, VaultKdfTier.TIER_B)) {
+			return R.string.vault_settings_kdf_512mib;
+		}
+		return p.memoryKb >= com.professor.zerion.android.vault
 				.VaultManager.STRONG_KDF.memoryKb
 				? R.string.vault_settings_kdf_strong
 				: R.string.vault_settings_kdf_reduced;
-		keystoreInfo.setText(getString(R.string.vault_settings_info_keystore)
-				+ '\n' + getString(line));
 	}
 
 	private void updateClipboardTimeoutDisplay() {

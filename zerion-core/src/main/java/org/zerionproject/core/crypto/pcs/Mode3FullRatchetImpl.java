@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import javax.inject.Inject;
 
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MLKEM_CIPHERTEXT_SIZE;
+import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_RECV_ROTATION_INTERVAL;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_SEND_ROTATION_INTERVAL;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULATION_KEY_SIZE;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_CK_PQ_LABEL;
@@ -55,7 +56,7 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 
 	@Override
 	public PqSendResult pqEncapsulateSend(Mode3FullState state,
-			long ownSendsSinceRotation) {
+			long ownSendsSinceRotation, long receivedSinceRotation) {
 		byte[] theirPk = state.getTheirActivePqPk();
 		byte[] ct;
 		byte[] sharedSecret;
@@ -71,8 +72,10 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 			ct = enc.getCiphertext();
 			sharedSecret = enc.getSharedSecret().clone();
 			Arrays.fill(enc.getSharedSecret(), (byte) 0);
-			rotate = ownSendsSinceRotation
+			rotate = (ownSendsSinceRotation
 					>= MODE3_FULL_SEND_ROTATION_INTERVAL - 1
+					|| receivedSinceRotation
+					>= MODE3_FULL_RECV_ROTATION_INTERVAL)
 					&& state.canRotate();
 			kpIdUsed = KpId.of(theirPk);
 		}

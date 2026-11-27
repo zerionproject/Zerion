@@ -7,15 +7,22 @@ import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
 import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.SignaturePublicKey;
+import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.DbCallable;
+import org.zerionproject.core.api.db.DbRunnable;
+import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
+import org.zerionproject.core.api.versioning.ClientVersion;
+import org.zerionproject.core.api.versioning.event.ClientVersionUpdatedEvent;
 import org.zerionproject.core.crypto.async.AsyncPrekeyBundle;
 import org.zerionproject.core.crypto.async.MeshBundleStore;
 import org.zerionproject.core.test.TestUtils;
 import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.app.api.messaging.event.PrekeyBundleReceivedEvent;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,8 +33,13 @@ import java.util.List;
 import java.util.Random;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -43,10 +55,14 @@ public class MeshBundleManagerTest {
 	private final MeshManager meshManager = mock(MeshManager.class);
 	private final MessagingManager messagingManager =
 			mock(MessagingManager.class);
+	private final DatabaseComponent db = mock(DatabaseComponent.class);
 	private final ContactId contactId = new ContactId(3);
+	private final MeshTestSettings settings = new MeshTestSettings();
 
 	private CryptoComponent crypto;
 	private KeyPair contactIdentity;
+	private UnsignedFormsMemory memory;
+	private MeshLinkKeys linkKeys;
 	private EventListener listener;
 
 	@Before
@@ -55,12 +71,33 @@ public class MeshBundleManagerTest {
 		contactIdentity = crypto.generateHybridSignatureKeyPair();
 		when(contactManager.getContact(contactId))
 				.thenReturn(contact(contactId, contactIdentity));
-		new MeshBundleManager(eventBus, store, crypto, contactManager,
-				meshManager, messagingManager, Runnable::run);
+		Transaction txn = new Transaction(null, true);
+		when(db.transactionWithResult(anyBoolean(), any()))
+				.thenAnswer(inv -> ((DbCallable<?, ?>) inv.getArgument(1))
+						.call(txn));
+		doAnswer(inv -> {
+			((DbRunnable<?>) inv.getArgument(1))
+					.run(new Transaction(null, false));
+			return null;
+		}).when(db).transaction(anyBoolean(), any());
+		linkKeys = linkKeys();
+		listener = bundleManager(eventBus, linkKeys);
+	}
+
+	private MeshLinkKeys linkKeys() {
+		memory = new UnsignedFormsMemory(db, settings, contactManager,
+				messagingManager);
+		return new MeshLinkKeys(mock(EventBus.class), settings,
+				contactManager, messagingManager, memory, Runnable::run);
+	}
+
+	private EventListener bundleManager(EventBus bus, MeshLinkKeys keys) {
+		new MeshBundleManager(bus, store, crypto, contactManager,
+				meshManager, messagingManager, keys, Runnable::run);
 		ArgumentCaptor<EventListener> captor =
 				ArgumentCaptor.forClass(EventListener.class);
-		verify(eventBus).addListener(captor.capture());
-		listener = captor.getValue();
+		verify(bus).addListener(captor.capture());
+		return captor.getValue();
 	}
 
 	@Test
@@ -77,6 +114,176 @@ public class MeshBundleManagerTest {
 		listener.eventOccurred(new PrekeyBundleReceivedEvent(contactId,
 				bundle(other).encode()));
 		verify(store, never()).putContactBundle(anyInt(), any());
+	}
+
+	@Test
+	public void aContactsOwnUnsignedBundleIsStored() throws Exception {
+		byte[] encoded = unsignedBundle(contactIdentity).encode();
+		listener.eventOccurred(new PrekeyBundleReceivedEvent(contactId,
+				encoded));
+		verify(store).putContactBundle(contactId.getInt(), encoded);
+	}
+
+	@Test
+	public void anUnsignedBundleForAnotherIdentityIsRejected()
+			throws Exception {
+		KeyPair other = crypto.generateHybridSignatureKeyPair();
+		listener.eventOccurred(new PrekeyBundleReceivedEvent(contactId,
+				unsignedBundle(other).encode()));
+		byte[] encoded = unsignedBundle(contactIdentity).encode();
+		for (int i = 0; i < 20; i++) {
+			byte[] tampered = encoded.clone();
+			tampered[1 + random.nextInt(1984)] ^=
+					(byte) (1 << random.nextInt(8));
+			listener.eventOccurred(new PrekeyBundleReceivedEvent(contactId,
+					tampered));
+		}
+		verify(store, never()).putContactBundle(anyInt(), any());
+	}
+
+	@Test
+	public void anUnsignedBundleGoesToAContactOnMessagingVersion17()
+			throws Exception {
+		when(messagingManager.getContactClientMinorVersion(any(),
+				eq(contactId))).thenReturn(
+				MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		AsyncPrekeyBundle ours =
+				unsignedBundle(crypto.generateHybridSignatureKeyPair());
+		when(meshManager.publishBundle(contactId, false)).thenReturn(ours);
+		listener.eventOccurred(new ContactConnectedEvent(contactId));
+		verify(meshManager).publishBundle(contactId, false);
+		ArgumentCaptor<byte[]> sent = ArgumentCaptor.forClass(byte[].class);
+		verify(messagingManager).sendPrekeyBundle(eq(contactId),
+				sent.capture());
+		assertFalse(AsyncPrekeyBundle.decode(sent.getValue()).isSigned());
+	}
+
+	@Test
+	public void aSignedBundleGoesToAContactOnAnOlderMessagingVersion()
+			throws Exception {
+		when(messagingManager.getContactClientMinorVersion(any(),
+				eq(contactId))).thenReturn(
+				MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION - 1);
+		AsyncPrekeyBundle ours = bundle(crypto.generateHybridSignatureKeyPair());
+		when(meshManager.publishBundle(contactId, true)).thenReturn(ours);
+		listener.eventOccurred(new ContactConnectedEvent(contactId));
+		verify(meshManager).publishBundle(contactId, true);
+		ArgumentCaptor<byte[]> sent = ArgumentCaptor.forClass(byte[].class);
+		verify(messagingManager).sendPrekeyBundle(eq(contactId),
+				sent.capture());
+		assertTrue(AsyncPrekeyBundle.decode(sent.getValue()).isSigned());
+	}
+
+	@Test
+	public void aNewContactGetsNoBundleBeforeItsVersionIsKnown()
+			throws Exception {
+		when(messagingManager.getContactClientMinorVersion(any(),
+				eq(contactId))).thenReturn(-1);
+		publishEitherForm();
+
+		listener.eventOccurred(new ContactConnectedEvent(contactId));
+
+		verify(meshManager, never()).publishBundle(any(), anyBoolean());
+		verify(messagingManager, never()).sendPrekeyBundle(any(), any());
+
+		announceTo(listener, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+
+		verify(meshManager, never()).publishBundle(any(), eq(true));
+		assertFalse(sentBundle().isSigned());
+	}
+
+	@Test
+	public void aContactOn3018GetsItsSignedBundleOnceItsVersionIsKnown()
+			throws Exception {
+		when(messagingManager.getContactClientMinorVersion(any(),
+				eq(contactId))).thenReturn(-1);
+		publishEitherForm();
+		listener.eventOccurred(new ContactConnectedEvent(contactId));
+		verify(messagingManager, never()).sendPrekeyBundle(any(), any());
+
+		announceTo(listener, 13);
+
+		assertTrue(sentBundle().isSigned());
+	}
+
+	@Test
+	public void aContactThatAnnouncedVersion17GetsNoSignedBundleLater()
+			throws Exception {
+		announce(MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		announce(MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION - 1);
+		publishEitherForm();
+
+		listener.eventOccurred(new ContactConnectedEvent(contactId));
+
+		verify(meshManager, never()).publishBundle(any(), eq(true));
+		assertFalse(sentBundle().isSigned());
+	}
+
+	@Test
+	public void whatAContactAnnouncedDecidesItsBundleAfterARestart()
+			throws Exception {
+		announce(MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		when(messagingManager.getContactClientMinorVersion(any(),
+				eq(contactId))).thenReturn(
+				MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION - 1);
+		publishEitherForm();
+
+		EventListener restarted =
+				bundleManager(mock(EventBus.class), linkKeys());
+		restarted.eventOccurred(new ContactConnectedEvent(contactId));
+
+		verify(meshManager, never()).publishBundle(any(), eq(true));
+		assertFalse(sentBundle().isSigned());
+	}
+
+	@Test
+	public void aRemovedContactsNumberGetsTheBundleOfItsOwnVersion()
+			throws Exception {
+		announce(MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		announce(MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION - 1);
+		assertEquals(UnsignedFormsMemory.Form.UNSIGNED,
+				linkKeys.form(contactId));
+		publishEitherForm();
+
+		linkKeys.removingContact(new Transaction(null, false),
+				contact(contactId, contactIdentity));
+		memory.removingContact(new Transaction(null, false),
+				contact(contactId, contactIdentity));
+		listener.eventOccurred(new ContactConnectedEvent(contactId));
+
+		assertTrue(sentBundle().isSigned());
+	}
+
+	private void announce(int minor) throws Exception {
+		when(messagingManager.getContactClientMinorVersion(any(),
+				eq(contactId))).thenReturn(minor);
+		ClientVersion v = new ClientVersion(MessagingManager.CLIENT_ID,
+				MessagingManager.MAJOR_VERSION, minor);
+		memory.remoteVersionStored(new Transaction(null, false), contactId,
+				v);
+		linkKeys.eventOccurred(new ClientVersionUpdatedEvent(contactId, v));
+	}
+
+	private void announceTo(EventListener bundles, int minor)
+			throws Exception {
+		announce(minor);
+		bundles.eventOccurred(new ClientVersionUpdatedEvent(contactId,
+				new ClientVersion(MessagingManager.CLIENT_ID,
+						MessagingManager.MAJOR_VERSION, minor)));
+	}
+
+	private void publishEitherForm() throws Exception {
+		KeyPair ours = crypto.generateHybridSignatureKeyPair();
+		when(meshManager.publishBundle(any(), anyBoolean())).thenAnswer(
+				inv -> inv.<Boolean>getArgument(1) ? bundle(ours)
+						: unsignedBundle(ours));
+	}
+
+	private AsyncPrekeyBundle sentBundle() throws Exception {
+		ArgumentCaptor<byte[]> sent = ArgumentCaptor.forClass(byte[].class);
+		verify(messagingManager).sendPrekeyBundle(eq(contactId),
+				sent.capture());
+		return AsyncPrekeyBundle.decode(sent.getValue());
 	}
 
 	@Test
@@ -112,7 +319,7 @@ public class MeshBundleManagerTest {
 	@Test
 	public void ourBundleIsSentOncePerContactPerHour() throws Exception {
 		AsyncPrekeyBundle ours = bundle(crypto.generateHybridSignatureKeyPair());
-		when(meshManager.publishBundle(any())).thenReturn(ours);
+		when(meshManager.publishBundle(any(), anyBoolean())).thenReturn(ours);
 		listener.eventOccurred(new ContactConnectedEvent(contactId));
 		listener.eventOccurred(new ContactConnectedEvent(contactId));
 		listener.eventOccurred(new ContactConnectedEvent(contactId));
@@ -122,14 +329,14 @@ public class MeshBundleManagerTest {
 		listener.eventOccurred(new ContactConnectedEvent(another));
 		verify(messagingManager, times(1)).sendPrekeyBundle(eq(another),
 				eq(ours.encode()));
-		verify(meshManager).publishBundle(contactId);
-		verify(meshManager).publishBundle(another);
+		verify(meshManager).publishBundle(contactId, true);
+		verify(meshManager).publishBundle(another, true);
 	}
 
 	@Test
 	public void aFailedSendIsNotCountedAsSent() throws Exception {
 		AsyncPrekeyBundle ours = bundle(crypto.generateHybridSignatureKeyPair());
-		when(meshManager.publishBundle(any()))
+		when(meshManager.publishBundle(any(), anyBoolean()))
 				.thenThrow(new org.zerionproject.core.api.db.DbException())
 				.thenReturn(ours);
 		listener.eventOccurred(new ContactConnectedEvent(contactId));
@@ -148,9 +355,7 @@ public class MeshBundleManagerTest {
 				null, null, true, true, false, pub.getMlDsaPublicKey());
 	}
 
-	private AsyncPrekeyBundle bundle(KeyPair identitySig) throws Exception {
-		KeyPair identityAgree = crypto.generateHybridAgreementKeyPair();
-		KeyPair signedPrekey = crypto.generateHybridAgreementKeyPair();
+	private List<AsyncPrekeyBundle.OneTimePrekey> oneTimePrekeys() {
 		List<AsyncPrekeyBundle.OneTimePrekey> oneTime = new ArrayList<>();
 		for (int i = 0; i < 2; i++) {
 			byte[] id = new byte[AsyncPrekeyBundle.ONE_TIME_PREKEY_ID_BYTES];
@@ -159,10 +364,26 @@ public class MeshBundleManagerTest {
 					crypto.generateHybridAgreementKeyPair().getPublic()
 							.getEncoded()));
 		}
+		return oneTime;
+	}
+
+	private AsyncPrekeyBundle bundle(KeyPair identitySig) throws Exception {
+		KeyPair identityAgree = crypto.generateHybridAgreementKeyPair();
+		KeyPair signedPrekey = crypto.generateHybridAgreementKeyPair();
 		return AsyncPrekeyBundle.create(crypto,
 				identitySig.getPublic().getEncoded(), identitySig.getPrivate(),
 				identityAgree.getPublic().getEncoded(), 1L,
 				signedPrekey.getPublic().getEncoded(),
-				System.currentTimeMillis() / 1000 + 86_400L, oneTime);
+				System.currentTimeMillis() / 1000 + 86_400L, oneTimePrekeys());
+	}
+
+	private AsyncPrekeyBundle unsignedBundle(KeyPair identitySig) {
+		KeyPair identityAgree = crypto.generateHybridAgreementKeyPair();
+		KeyPair signedPrekey = crypto.generateHybridAgreementKeyPair();
+		return AsyncPrekeyBundle.createUnsigned(
+				identitySig.getPublic().getEncoded(),
+				identityAgree.getPublic().getEncoded(), 1L,
+				signedPrekey.getPublic().getEncoded(),
+				System.currentTimeMillis() / 1000 + 86_400L, oneTimePrekeys());
 	}
 }

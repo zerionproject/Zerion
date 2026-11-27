@@ -8,11 +8,11 @@ import com.professor.zerion.android.ZerionApplication;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.io.InputStream;
+import android.graphics.Bitmap;
 
 @NotNullByDefault
 class ZerionModelLoaderFactory
-		implements ModelLoaderFactory<AttachmentHeader, InputStream> {
+		implements ModelLoaderFactory<AttachmentHeader, Bitmap> {
 
 	private final ZerionApplication app;
 
@@ -21,7 +21,7 @@ class ZerionModelLoaderFactory
 	}
 
 	@Override
-	public ModelLoader<AttachmentHeader, InputStream> build(
+	public ModelLoader<AttachmentHeader, Bitmap> build(
 			MultiModelLoaderFactory multiFactory) {
 		return new ZerionModelLoader(app);
 	}

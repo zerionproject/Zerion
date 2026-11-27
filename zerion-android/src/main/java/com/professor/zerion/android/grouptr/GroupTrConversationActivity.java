@@ -63,6 +63,7 @@ import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.util.StringUtils;
 import org.zerionproject.app.api.grouptr.GroupTrBody;
 import com.professor.zerion.android.attachment.SaveCleanCopy;
+import com.professor.zerion.android.util.DisplayNames;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
 import org.zerionproject.app.api.grouptr.GroupTrPostDelivery;
@@ -115,8 +116,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 	TextForwarder textForwarder;
 
 	private static final int REQ_RECORD_AUDIO = 4011;
-	private static final long MAX_INLINE_MEDIA_BYTES = 8L * 1024L * 1024L;
-	private static final int MAX_POST_BODY_BYTES = 9_500_000;
+	static final int MAX_POST_BODY_BYTES = GroupTrManager.MAX_POST_BODY_LENGTH;
 	private static final int MAX_IMAGE_DIM = 1600;
 	private static final int IMAGE_JPEG_QUALITY = 78;
 
@@ -129,8 +129,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 	private androidx.recyclerview.widget.RecyclerView postsRecycler;
 	private androidx.recyclerview.widget.LinearLayoutManager layoutManager;
 	private GroupTrPostAdapter postAdapter;
-	private final java.util.Set<String> autoDeleteScheduled =
-			new java.util.HashSet<>();
+	private final java.util.Map<String, Long> autoDeleteScheduled =
+			new java.util.HashMap<>();
 	private TextView emptyState;
 	private TextView titleView;
 	private TextView subtitleView;
@@ -154,7 +154,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 			long ms = recorder.elapsedMs();
 			recordingTimer.setText(formatDuration(ms));
 			if (ms >= com.professor.zerion.android.grouptr.voice
-					.GroupTrVoiceRecorder.MAX_DURATION_MS) {
+					.GroupTrVoiceRecorder.MAX_DURATION_MS
+					|| recorder.limitReached()) {
 				finishVoiceRecording();
 				return;
 			}
@@ -178,6 +179,13 @@ public class GroupTrConversationActivity extends ZerionActivity
 	private boolean statesQueued = false;
 	@Nullable
 	private volatile GroupTrState lastState;
+	@Nullable
+	private volatile byte[] pinnedPostId;
+	@Nullable
+	private String hiddenPinKey;
+	private View pinnedBanner;
+	private TextView pinnedBannerText;
+	private View pinnedBannerClose;
 	private SelectionBar selectionBar;
 	private SwipeToReplyCallback swipeCallback;
 	private final LinkedHashSet<String> selected = new LinkedHashSet<>();
@@ -260,6 +268,23 @@ public class GroupTrConversationActivity extends ZerionActivity
 		postsRecycler.setAdapter(postAdapter);
 		selectionBar = new SelectionBar(this, this);
 		SelectionRows.clearOnEmptyTap(postsRecycler, selectionBar);
+		pinnedBanner = findViewById(R.id.pinnedBanner);
+		pinnedBannerText = findViewById(R.id.pinnedBannerText);
+		pinnedBannerClose = findViewById(R.id.pinnedBannerClose);
+		pinnedBanner.setOnClickListener(v -> {
+			byte[] id = pinnedPostId;
+			if (id != null) onQuoteClicked(id);
+		});
+		pinnedBannerClose.setOnClickListener(v -> {
+			byte[] id = pinnedPostId;
+			if (id == null) return;
+			if (mayPin()) {
+				unpinPost();
+			} else {
+				hiddenPinKey = StringUtils.toHexString(id);
+				pinnedBanner.setVisibility(View.GONE);
+			}
+		});
 		swipeCallback = new SwipeToReplyCallback(position -> {
 			GroupTrPost p = postAdapter.postAt(position);
 			if (p != null && canReplyTo(p)) {
@@ -386,15 +411,20 @@ public class GroupTrConversationActivity extends ZerionActivity
 			waitingForAdmin = groupTrManager.isWaitingForAdmin(gid);
 			List<GroupTrMember> outOfReach =
 					groupTrManager.getMembersOutOfReach(gid);
+			boolean throughOwner = !outOfReach.isEmpty()
+					&& groupTrManager.ownerPassesPostsOn(gid);
 			long seq = stateReads.incrementAndGet();
 			java.util.Map<String, MessageState> states = ownPostStates(gid);
+			byte[] pinned = groupTrManager.getPinnedPostId(gid);
 			GroupTrPostAdapter.Update update = postAdapter.prepare(posts);
 			main.post(() -> {
 				lastState = s;
+				pinnedPostId = pinned;
 				updateHeader(s);
-				bindReachBanner(s, outOfReach);
+				bindReachBanner(s, outOfReach, throughOwner);
 				if (states != null) postAdapter.setDeliveries(states, seq);
 				renderPosts(posts, update, renamed);
+				bindPinnedBanner(posts);
 			});
 		} catch (DbException | RuntimeException ex) {
 			main.post(() -> toast(R.string.grouptr_error_load));
@@ -479,7 +509,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 		java.util.Map<String, byte[]> mlDsa = new java.util.HashMap<>();
 		for (GroupTrMember m : s.getMembers()) {
 			String key = StringUtils.toHexString(m.getPubKey());
-			if (!m.getName().isEmpty()) names.put(key, m.getName());
+			String memberName = DisplayNames.clean(m.getName()).trim();
+			if (!memberName.isEmpty()) names.put(key, memberName);
 			byte[] memberMlDsa = m.getMlDsaPubKey();
 			if (memberMlDsa != null && memberMlDsa.length > 0) {
 				mlDsa.put(key, memberMlDsa);
@@ -489,8 +520,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 			java.util.Map<org.zerionproject.core.api.contact.ContactId,
 					String> contactNames = new java.util.HashMap<>();
 			for (Contact c : contactManager.getContacts()) {
-				String name = c.getAlias() != null ? c.getAlias()
-						: c.getAuthor().getName();
+				String name = DisplayNames.clean(c.getAlias() != null
+						? c.getAlias() : c.getAuthor().getName());
 				contactNames.put(c.getId(), name);
 				if (s.usesGroupKeys()) continue;
 				String key = StringUtils.toHexString(
@@ -537,7 +568,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 	}
 
 	private void bindReachBanner(GroupTrState s,
-			List<GroupTrMember> outOfReach) {
+			List<GroupTrMember> outOfReach, boolean throughOwner) {
 		TextView banner = findViewById(R.id.reachBanner);
 		if (banner == null) return;
 		if (outOfReach.isEmpty() || s.isDissolved()) {
@@ -545,29 +576,36 @@ public class GroupTrConversationActivity extends ZerionActivity
 			return;
 		}
 		int n = outOfReach.size();
-		banner.setText(getResources().getQuantityString(
-				R.plurals.grouptr_reach_banner, n, n));
+		banner.setText(getResources().getQuantityString(throughOwner
+				? R.plurals.grouptr_reach_banner_owner
+				: R.plurals.grouptr_reach_banner, n, n));
 		banner.setVisibility(View.VISIBLE);
 		StringBuilder names = new StringBuilder();
 		for (GroupTrMember m : outOfReach) {
 			if (names.length() > 0) names.append('\n');
-			names.append(m.getName().isEmpty()
+			String memberName = DisplayNames.clean(m.getName()).trim();
+			names.append(memberName.isEmpty()
 					? getString(R.string.grouptr_member_unnamed)
-					: m.getName());
+					: memberName);
 		}
 		String list = names.toString();
+		int explanation = throughOwner
+				? R.string.grouptr_reach_explanation_owner
+				: R.string.grouptr_reach_explanation;
 		banner.setOnClickListener(v -> new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.grouptr_reach_title)
-				.setMessage(getString(R.string.grouptr_reach_explanation,
-						list))
+				.setMessage(getString(explanation, list))
 				.setPositiveButton(android.R.string.ok, null)
+				.setNeutralButton(R.string.grouptr_reach_add_contact,
+						(dialog, which) -> startActivity(new Intent(this,
+								com.professor.zerion.android.contact.add
+										.remote.AddContactActivity.class)))
 				.show());
 	}
 
 	private void updateHeader(GroupTrState s) {
-		String name = s.getName().isEmpty()
-				? getString(R.string.grouptr_unnamed_group)
-				: s.getName();
+		String name = GroupTrListFragment.groupName(getResources(),
+				s.getName());
 		titleView.setText(name);
 		String initial = name.isEmpty() ? "?"
 				: new String(Character.toChars(name.codePointAt(0)))
@@ -764,9 +802,98 @@ public class GroupTrConversationActivity extends ZerionActivity
 			if (save && savableMedia(p) != null) {
 				offered.add(SelectionAction.SAVE);
 			}
+			if (mayPin()) {
+				offered.add(isPinned(p) ? SelectionAction.UNPIN
+						: SelectionAction.PIN);
+			}
 			offered.add(SelectionAction.INFO);
 		}
 		return offered;
+	}
+
+	private boolean mayPin() {
+		return stillMember && GroupTrPins.mayPin(lastState, localPub);
+	}
+
+	private boolean isPinned(GroupTrPost p) {
+		byte[] pinned = pinnedPostId;
+		return pinned != null && p.getPostId() != null
+				&& Arrays.equals(pinned, p.getPostId());
+	}
+
+	@Override
+	public int titleFor(SelectionAction action) {
+		if (action == SelectionAction.PIN) return R.string.action_pin_message;
+		if (action == SelectionAction.UNPIN) {
+			return R.string.action_unpin_message;
+		}
+		return 0;
+	}
+
+	private void bindPinnedBanner(List<GroupTrPost> posts) {
+		byte[] pinned = pinnedPostId;
+		if (pinned == null) {
+			pinnedBanner.setVisibility(View.GONE);
+			return;
+		}
+		String key = StringUtils.toHexString(pinned);
+		if (key.equals(hiddenPinKey)) {
+			pinnedBanner.setVisibility(View.GONE);
+			return;
+		}
+		GroupTrPost target = null;
+		for (GroupTrPost p : posts) {
+			if (p.getPostId() != null && Arrays.equals(p.getPostId(), pinned)) {
+				target = p;
+				break;
+			}
+		}
+		if (target == null) {
+			pinnedBanner.setVisibility(View.GONE);
+			return;
+		}
+		pinnedBannerText.setText(GroupTrPostAdapter.excerpt(this, target));
+		pinnedBannerClose.setContentDescription(getString(mayPin()
+				? R.string.action_unpin_message : R.string.pin_hide_banner));
+		pinnedBanner.setVisibility(View.VISIBLE);
+	}
+
+	private void pinSelectedPost() {
+		List<GroupTrPost> chosen = selectedPosts();
+		finishSelection();
+		if (chosen.size() != 1 || !mayPin()) return;
+		byte[] postId = chosen.get(0).getPostId();
+		if (postId == null) return;
+		byte[] gid = groupId;
+		hiddenPinKey = null;
+		ioExecutor.execute(() -> {
+			try {
+				int keeping = groupTrManager.pinPost(gid, postId);
+				if (keeping > 0) {
+					main.post(() -> Toast.makeText(this, getResources()
+							.getQuantityString(R.plurals.grouptr_pin_kept_older,
+									keeping, keeping), Toast.LENGTH_LONG)
+							.show());
+				}
+			} catch (DbException ex) {
+				main.post(() -> toast(R.string.pin_failed));
+			}
+			requestReload();
+		});
+	}
+
+	private void unpinPost() {
+		finishSelection();
+		if (!mayPin()) return;
+		byte[] gid = groupId;
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.unpinPost(gid);
+			} catch (DbException ex) {
+				main.post(() -> toast(R.string.pin_failed));
+			}
+			requestReload();
+		});
 	}
 
 	private Set<SelectionAction> rowActions(GroupTrPost p) {
@@ -801,6 +928,12 @@ public class GroupTrConversationActivity extends ZerionActivity
 				break;
 			case INFO:
 				showSelectedInfo();
+				break;
+			case PIN:
+				pinSelectedPost();
+				break;
+			case UNPIN:
+				unpinPost();
 				break;
 			default:
 				break;
@@ -1207,7 +1340,11 @@ public class GroupTrConversationActivity extends ZerionActivity
 			} catch (org.zerionproject.app.api.grouptr
 					.GroupTrAuthException refused) {
 				return PendingSends.Result.refused(PendingSends.Notice.of(
-						R.string.grouptr_error_send));
+						refused.getReason() == org.zerionproject.app.api
+								.grouptr.GroupTrAuthException.Reason
+								.POST_TOO_LARGE
+								? R.string.grouptr_post_too_large
+								: R.string.grouptr_error_send));
 			} catch (DbException ex) {
 				return PendingSends.Result.failed(null);
 			}
@@ -1415,7 +1552,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 		long expiry = p.getExpiryTime();
 		if (expiry == Long.MAX_VALUE) return;
 		String key = postKey(p);
-		if (!autoDeleteScheduled.add(key)) return;
+		Long scheduled = autoDeleteScheduled.get(key);
+		if (scheduled != null && scheduled <= expiry) return;
+		autoDeleteScheduled.put(key, expiry);
 		long now = System.currentTimeMillis();
 		long remaining = expiry <= now ? 0L : expiry - now;
 		if (remaining <= 0L) {
@@ -1545,6 +1684,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 	@Nullable
 	private Bitmap extractVideoThumb(byte[] videoBytes) {
+		if (!com.professor.zerion.android.util.MediaMagic.isVideo(videoBytes)) {
+			return null;
+		}
 		MediaMetadataRetriever mmr = new MediaMetadataRetriever();
 		try {
 			mmr.setDataSource(new com.professor.zerion.android.util
@@ -1570,6 +1712,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 				.expiresAt(p.getExpiryTime());
 		boolean shown = isVideo ? MediaViewer.playVideo(this, ioExecutor, item)
 				: MediaViewer.showImage(this, ioExecutor, item);
+		if (shown && isVideo && !isMine(p)) postAdapter.videoOpened(p);
 		if (!shown) {
 			toast(isVideo ? R.string.video_playback_error
 					: R.string.grouptr_attach_read_failed);
@@ -1623,12 +1766,14 @@ public class GroupTrConversationActivity extends ZerionActivity
 				: input.getText().toString().trim();
 		if (text.isEmpty()) return;
 		byte[] body = text.getBytes(StandardCharsets.UTF_8);
-		if (body.length > MAX_POST_BODY_BYTES) {
+		GroupTrPost quoting = replyingTo;
+		byte[] target = quoting == null ? null : quoting.getPostId();
+		int posted = target == null ? body.length
+				: GroupTrBody.encodeReply(target, text).length;
+		if (posted > MAX_POST_BODY_BYTES) {
 			feedback(R.string.grouptr_post_too_long);
 			return;
 		}
-		GroupTrPost quoting = replyingTo;
-		byte[] target = quoting == null ? null : quoting.getPostId();
 		PendingSends.Entry pending = queuePost(
 				new PendingGroupPost.Send(body, target, text));
 		showPendingRows();
@@ -1784,7 +1929,13 @@ public class GroupTrConversationActivity extends ZerionActivity
 			return;
 		}
 		if (mime.startsWith("image/")) {
-			byte[] jpeg = readImageDownscaledJpeg(uri);
+			byte[] jpeg;
+			try {
+				jpeg = readImageDownscaledJpeg(uri);
+			} catch (ImageTooLargeException ex) {
+				main.post(() -> feedback(R.string.grouptr_post_too_large));
+				return;
+			}
 			if (jpeg == null) {
 				main.post(() -> feedback(R.string.grouptr_attach_read_failed));
 				return;
@@ -1794,9 +1945,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 			return;
 		}
 		if (mime.startsWith("video/")) {
-			byte[] data = readUriBytes(uri, MAX_INLINE_MEDIA_BYTES);
+			byte[] data = readUriBytes(uri, MAX_POST_BODY_BYTES);
 			if (data == null) {
-				main.post(() -> feedback(R.string.grouptr_attach_video_too_large));
+				main.post(() -> feedback(R.string.grouptr_post_too_large));
 				return;
 			}
 			com.professor.zerion.android.attachment.SharedMediaSanitizer
@@ -1804,7 +1955,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			try {
 				cleaned = new com.professor.zerion.android.attachment
 						.SharedMediaSanitizer(getApplicationContext())
-						.sanitize(uri, mime, data, MAX_INLINE_MEDIA_BYTES);
+						.sanitize(uri, mime, data, MAX_POST_BODY_BYTES);
 			} catch (IOException | RuntimeException ex) {
 				main.post(() -> {
 					if (ex instanceof com.professor.zerion.android.attachment
@@ -1829,8 +1980,12 @@ public class GroupTrConversationActivity extends ZerionActivity
 		main.post(() -> feedback(R.string.grouptr_attach_unknown_type));
 	}
 
+	static final class ImageTooLargeException extends Exception {
+	}
+
 	@Nullable
-	private byte[] readImageDownscaledJpeg(Uri uri) {
+	private byte[] readImageDownscaledJpeg(Uri uri)
+			throws ImageTooLargeException {
 		ContentResolver cr = getContentResolver();
 		BitmapFactory.Options probe = new BitmapFactory.Options();
 		probe.inJustDecodeBounds = true;
@@ -1855,18 +2010,21 @@ public class GroupTrConversationActivity extends ZerionActivity
 			return null;
 		}
 		if (bitmap == null) return null;
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		boolean ok = bitmap.compress(Bitmap.CompressFormat.JPEG,
-				IMAGE_JPEG_QUALITY, out);
-		bitmap.recycle();
-		if (!ok) return null;
+		byte[] fitted;
 		try {
-			return com.professor.zerion.android.attachment.ImageScrubber
-					.scrub(out.toByteArray());
+			fitted = com.professor.zerion.android.attachment.JpegFit
+					.fitBitmap(bitmap, IMAGE_JPEG_QUALITY, MAX_IMAGE_BYTES);
 		} catch (IOException ex) {
 			return null;
+		} finally {
+			bitmap.recycle();
 		}
+		if (fitted == null) throw new ImageTooLargeException();
+		return fitted;
 	}
+
+	static final int MAX_IMAGE_BYTES = MAX_POST_BODY_BYTES
+			- GroupTrBody.MAX_MIME_LENGTH - 8;
 
 	@Nullable
 	private byte[] readUriBytes(Uri uri, long maxBytes) {
@@ -1908,7 +2066,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 	private void sendBodyAsync(byte[] body) {
 		if (body.length > MAX_POST_BODY_BYTES) {
-			main.post(() -> feedback(R.string.grouptr_attach_video_too_large));
+			main.post(() -> feedback(R.string.grouptr_post_too_large));
 			return;
 		}
 		PendingSends.Entry pending = queuePost(

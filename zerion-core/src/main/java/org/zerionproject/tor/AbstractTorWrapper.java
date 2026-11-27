@@ -56,6 +56,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	private static final String[] EVENTS = {
 			"CIRC",
+			"STREAM",
 			"ORCONN",
 			"STATUS_GENERAL",
 			"STATUS_CLIENT",
@@ -102,6 +103,8 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	private volatile Socket controlConnectionSocket = null;
 	@Nullable
 	private volatile TorControlConnection controlConnection = null;
+	@Nullable
+	private volatile TorStatePersistence statePersistence = null;
 
 	protected abstract int getProcessId();
 
@@ -182,6 +185,26 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	}
 
 	@Override
+	public void setStateStore(@Nullable TorStateStore store) {
+		statePersistence = store == null ? null
+				: new TorStatePersistence(getDataDirectory(), store);
+	}
+
+	File getDataDirectory() {
+		return new File(torDirectory, ".tor");
+	}
+
+	private void restoreState() {
+		TorStatePersistence p = statePersistence;
+		if (p != null) p.restore();
+	}
+
+	private void persistState() {
+		TorStatePersistence p = statePersistence;
+		if (p != null) p.persist();
+	}
+
+	@Override
 	public void start() throws IOException, InterruptedException {
 		if (!state.setStarting()) return;
 		Process process = null;
@@ -197,6 +220,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			if (!assetsAreUpToDate()) installAssets();
 			extract(getConfigInputStream(), configFile);
 			cookieFile.delete();
+			restoreState();
 			if (unixControl != null) {
 				prepareControlSocketDirectory(unixControl);
 			}
@@ -241,7 +265,9 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 			String info = connection.getInfo("status/bootstrap-phase");
 			if (info != null && info.contains("PROGRESS=")) {
-				state.setBootstrapPercentage(parseBootstrapPercentage(info));
+				int percentage = parseBootstrapPercentage(info);
+				state.setBootstrapPercentage(percentage);
+				onBootstrapProgress(percentage);
 			}
 			info = connection.getInfo("status/circuit-established");
 			if ("1".equals(info)) state.setCircuitBuilt(true);
@@ -259,6 +285,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			if (process != null) terminate(process);
 		} finally {
 			torProcess = null;
+			persistState();
 			state.setStartupFailed();
 		}
 	}
@@ -317,7 +344,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	}
 
 	String torrc() {
-		File dataDirectory = new File(torDirectory, ".tor");
+		File dataDirectory = getDataDirectory();
 		StringBuilder strb = new StringBuilder();
 		String unixControl = controlSocketPath;
 		if (unixControl == null) {
@@ -328,6 +355,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		append(strb, "CookieAuthentication", 1);
 		append(strb, "DataDirectory", dataDirectory.getAbsolutePath());
 		append(strb, "DisableNetwork", 1);
+		append(strb, "AvoidDiskWrites", 0);
 		append(strb, "SafeSocks", 1);
 		if (unixControl == null) {
 			strb.append("SocksPort ").append(torSocksPort);
@@ -475,6 +503,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 				if (process != null) terminate(process);
 			} finally {
 				torProcess = null;
+				persistState();
 				state.setStopped();
 			}
 		}
@@ -515,16 +544,26 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	@Override
 	public void circuitStatus(String status, String id, String path) {
 		if (status.equals("BUILT")) state.setCircuitBuilt(true);
+		if (status.equals("LAUNCHED") || status.equals("BUILT")
+				|| status.equals("EXTENDED")) {
+			onTorBriefActivity();
+		}
 	}
 
 	@Override
 	public void streamStatus(String status, String id, String target) {
+		if (status.equals("NEW") || status.equals("SUCCEEDED")) {
+			onTorBriefActivity();
+		}
 	}
 
 	@Override
 	public void orConnStatus(String status, String orName) {
 		if (status.equals("CONNECTED")) state.onOrConnectionConnected();
 		else if (status.equals("CLOSED")) state.onOrConnectionClosed();
+		if (status.equals("CONNECTED") || status.equals("LAUNCHED")) {
+			onTorControlActivity();
+		}
 		if (status.equals("CONNECTED") || status.equals("FAILED")) {
 			String fingerprint = BridgeLines.relayFingerprint(orName);
 			if (fingerprint != null) {
@@ -576,15 +615,41 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	private void handleHsDescriptor(String msg) {
 		String[] parts = msg.split(" ");
 		String action = parts[0];
+		onTorBriefActivity();
 		if (action.equals("UPLOADED")) {
-			if (parts.length >= 2) state.onHsDescriptorUploaded(parts[1]);
+			if (parts.length >= 2) {
+				state.onHsDescriptorUploaded(parts[1]);
+				onHsDescriptorUploadFinished(parts[1], true);
+			}
 		} else if (action.equals("RECEIVED")) {
 			state.onHsDirectoryAnswer();
 		} else if (action.equals("REQUESTED") || action.equals("UPLOAD")) {
 			state.onHsDirectoryRequest();
-		} else if (action.equals("FAILED") && isHsDirectoryReply(parts)) {
-			state.onHsDirectoryAnswer();
+			if (action.equals("UPLOAD") && parts.length >= 2) {
+				onHsDescriptorUpload(parts[1]);
+			}
+		} else if (action.equals("FAILED")) {
+			if (isHsDirectoryReply(parts)) state.onHsDirectoryAnswer();
+			if (parts.length >= 2) {
+				onHsDescriptorUploadFinished(parts[1], false);
+			}
 		}
+	}
+
+	protected void onTorControlActivity() {
+	}
+
+	protected void onTorBriefActivity() {
+	}
+
+	protected void onBootstrapProgress(int percentage) {
+	}
+
+	protected void onHsDescriptorUpload(String onion) {
+	}
+
+	protected void onHsDescriptorUploadFinished(String onion,
+			boolean uploaded) {
 	}
 
 	private static boolean isHsDirectoryReply(String[] parts) {
@@ -600,7 +665,9 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	private void handleClientStatus(String msg) {
 		if (msg.startsWith("BOOTSTRAP PROGRESS=")) {
-			state.setBootstrapPercentage(parseBootstrapPercentage(msg));
+			int percentage = parseBootstrapPercentage(msg);
+			state.setBootstrapPercentage(percentage);
+			onBootstrapProgress(percentage);
 		} else if (msg.startsWith("CIRCUIT_ESTABLISHED")) {
 			state.setCircuitBuilt(true);
 		} else if (msg.startsWith("CIRCUIT_NOT_ESTABLISHED")) {
@@ -652,6 +719,14 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	}
 
 	@Override
+	public void enableReducedConnectionPadding(boolean enable)
+			throws IOException {
+		if (!state.enableReducedConnectionPadding(enable)) return;
+		getControlConnection().setConf("ReducedConnectionPadding",
+				enable ? "1" : "0");
+	}
+
+	@Override
 	public void enableIpv6(boolean enable) throws IOException {
 		if (!state.enableIpv6(enable)) return;
 		getControlConnection().setConf("ClientUseIPv4", enable ? "0" : "1");
@@ -695,6 +770,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		private boolean networkInitialised = false,
 				networkEnabled = false,
 				paddingEnabled = true,
+				reducedPaddingEnabled = false,
 				ipv6Enabled = false,
 				circuitBuilt = false;
 
@@ -780,6 +856,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			networkInitialised = false;
 			networkEnabled = false;
 			paddingEnabled = true;
+			reducedPaddingEnabled = false;
 			ipv6Enabled = false;
 			circuitBuilt = false;
 			bootstrapPercentage = 0;
@@ -817,6 +894,13 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		private synchronized boolean enableConnectionPadding(boolean enable) {
 			if (enable == paddingEnabled) return false;
 			paddingEnabled = enable;
+			return true;
+		}
+
+		private synchronized boolean enableReducedConnectionPadding(
+				boolean enable) {
+			if (enable == reducedPaddingEnabled) return false;
+			reducedPaddingEnabled = enable;
 			return true;
 		}
 

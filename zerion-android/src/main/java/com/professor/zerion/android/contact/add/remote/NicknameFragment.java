@@ -173,9 +173,10 @@ public class NicknameFragment extends BaseFragment {
 	}
 
 	private void showPendingContactListActivity() {
-		Intent intent = new Intent(getActivity(),
-				PendingContactListActivity.class);
-		startActivity(intent);
+		startActivity(com.professor.zerion.android.contact.request
+				.RequestsActivity.intent(requireContext(),
+						com.professor.zerion.android.contact.request
+								.RequestsActivity.TAB_SENT));
 		finish();
 	}
 

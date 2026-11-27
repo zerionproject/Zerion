@@ -19,7 +19,7 @@ public class ContactInfoRecordCapTest {
 						+ "ContactExchangeManagerImpl.java")),
 				StandardCharsets.UTF_8);
 		assertTrue(src.contains("recordReaderFactory.createRecordReader("
-				+ "streamReader,\n\t\t\t\t\t\tMAX_CONTACT_INFO_BYTES)"));
+				+ "streamReader,\n\t\t\t\t\t\t\tMAX_CONTACT_INFO_BYTES)"));
 		assertEquals(64 * 1024,
 				ContactExchangeManagerImpl.MAX_CONTACT_INFO_BYTES);
 		assertTrue(ContactExchangeManagerImpl.MAX_CONTACT_INFO_BYTES

@@ -4,7 +4,6 @@ import org.zerionproject.core.api.UniqueId;
 import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.android.attachment.media.ImageHelper;
-import com.professor.zerion.android.attachment.media.ImageSizeCalculator;
 import org.zerionproject.app.api.attachment.Attachment;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.junit.Test;
@@ -34,8 +33,6 @@ public class AttachmentRetrieverIntegrationTest {
 
 	@Inject
 	ImageHelper imageHelper;
-	@Inject
-	ImageSizeCalculator imageSizeCalculator;
 
 	private final AttachmentRetriever retriever;
 
@@ -45,7 +42,7 @@ public class AttachmentRetrieverIntegrationTest {
 		component.inject(this);
 
 		retriever = new AttachmentRetrieverImpl(null, null, dimensions,
-				imageHelper, imageSizeCalculator);
+				imageHelper);
 	}
 
 	@Test

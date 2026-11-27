@@ -6,13 +6,23 @@
 	android:layout_height="match_parent"
 	android:clipToPadding="false">
 
-	<com.professor.zerion.android.view.ZerionRecyclerView
-		android:id="@+id/list"
+	<LinearLayout
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
-		android:paddingBottom="72dp"
-		android:clipToPadding="false"
-		app:layout_behavior="com.professor.zerion.android.view.SnackbarAwareBehavior"
-		app:scrollToEnd="false" />
+		android:orientation="vertical"
+		app:layout_behavior="com.professor.zerion.android.view.SnackbarAwareBehavior">
+
+		<include layout="@layout/view_contact_requests_entry" />
+
+		<com.professor.zerion.android.view.ZerionRecyclerView
+			android:id="@+id/list"
+			android:layout_width="match_parent"
+			android:layout_height="0dp"
+			android:layout_weight="1"
+			android:paddingBottom="72dp"
+			android:clipToPadding="false"
+			app:scrollToEnd="false" />
+
+	</LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

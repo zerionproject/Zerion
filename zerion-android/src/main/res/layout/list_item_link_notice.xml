@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:orientation="vertical"
+	android:paddingHorizontal="20dp"
+	android:paddingTop="10dp">
+
+	<TextView
+		android:id="@+id/linkNoticeLabel"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="@color/zerion_text_primary"
+		android:textSize="16sp"
+		android:textStyle="bold" />
+
+	<TextView
+		android:id="@+id/linkNoticeText"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="@color/zerion_text_primary"
+		android:textSize="14sp" />
+
+	<com.google.android.material.button.MaterialButton
+		android:id="@+id/linkNoticeDismiss"
+		style="@style/Zerion.Button.Text"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/requests_dismiss" />
+
+</LinearLayout>

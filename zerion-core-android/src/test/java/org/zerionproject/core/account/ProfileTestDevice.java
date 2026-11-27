@@ -184,7 +184,7 @@ final class ProfileTestDevice {
 			}
 		};
 		return new AndroidAccountManager(config, crypto, identityManager,
-				prefs, app, profiles) {
+				prefs, app, profiles, LockoutStores.plaintext()) {
 			@Override
 			protected LoginThrottle createLoginThrottle(File ignored) {
 				if (clock == null) {

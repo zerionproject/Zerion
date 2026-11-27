@@ -23,20 +23,20 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
-TOR_TAG="${TOR_TAG:-tor-0.4.9.14}"
-TOR_COMMIT="${TOR_COMMIT:-8fe2745aee2c35116ff1081f19b2952418b43069}"
+TOR_TAG="${TOR_TAG:-tor-0.4.9.17}"
+TOR_COMMIT="${TOR_COMMIT:-a00b3e0bd288e9ae8eada8af2258a3002dfab6ff}"
 TOR_URL=https://gitlab.torproject.org/tpo/core/tor.git
 
-LIBEVENT_TAG=release-2.1.12-stable
-LIBEVENT_COMMIT=5df3037d10556bfcb675bc73e516978b75fc7bc7
+LIBEVENT_TAG=release-2.1.13-stable
+LIBEVENT_COMMIT=79ddfb460847999b807cba76d04e73891f29c6ee
 LIBEVENT_URL=https://github.com/libevent/libevent.git
 
 OPENSSL_TAG=openssl-3.5.9
 OPENSSL_COMMIT=45e844fa2a14ec92d146bd8f5778ac130b6625fb
 OPENSSL_URL=https://github.com/openssl/openssl.git
 
-ZLIB_TAG=v1.3.2
-ZLIB_COMMIT=da607da739fa6047df13e66a2af6b8bec7c2a498
+ZLIB_TAG=v1.4
+ZLIB_COMMIT=99623ef7097352da7993ba614161fd6a311e046e
 ZLIB_URL=https://github.com/madler/zlib.git
 
 NDK_URL=https://dl.google.com/android/repository/android-ndk-r29-linux.zip

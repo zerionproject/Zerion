@@ -63,7 +63,8 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 			will(returnValue(app));
 		}});
 		accountManager = new AndroidAccountManager(databaseConfig, crypto,
-				identityManager, prefs, app, profileManager) {
+				identityManager, prefs, app, profileManager,
+				LockoutStores.plaintext()) {
 			@Override
 			SharedPreferences getDefaultSharedPreferences() {
 				return defaultPrefs;

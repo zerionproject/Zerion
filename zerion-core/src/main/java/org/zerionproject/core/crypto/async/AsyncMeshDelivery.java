@@ -26,6 +26,17 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		}
 	}
 
+	public interface SenderLinkKeys {
+		@javax.annotation.Nullable
+		byte[] linkKeyFor(byte[] peerIdentitySigPub);
+
+		@javax.annotation.Nullable
+		default byte[] sendingLinkKeyFor(byte[] peerIdentitySigPub)
+				throws GeneralSecurityException {
+			return null;
+		}
+	}
+
 	private static final int RECENTLY_OPENED = 1024;
 	private final java.util.LinkedHashMap<String, Boolean> recentlyOpened =
 			new java.util.LinkedHashMap<String, Boolean>(64, 0.75f, true) {
@@ -37,8 +48,9 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			};
 
 	private static final int RECENTLY_FAILED = 4096;
-	private static final String LABEL_FAILED_OPEN =
-			"org.zerionproject.async/FAILED_OPEN";
+	private static final String LABEL_ENVELOPE_DIGEST =
+			"org.zerionproject.async/ENVELOPE_DIGEST";
+	private static final int ENVELOPE_DIGEST_BYTES = 16;
 	private final java.util.LinkedHashMap<String, Boolean> recentlyFailed =
 			new java.util.LinkedHashMap<String, Boolean>(64, 0.75f, true) {
 				@Override
@@ -94,18 +106,37 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 	private final OpenedListener listener;
 	private final Identity identity;
 	private final org.zerionproject.core.api.system.Clock clock;
+	@javax.annotation.Nullable
+	private final SenderLinkKeys linkKeys;
 	private final SecureRandom random = new SecureRandom();
+	@javax.annotation.Nullable
+	private volatile java.util.function.Consumer<String> openedFromPeer;
 
 	public AsyncMeshDelivery(CryptoComponent crypto, AsyncSealedSender sealer,
 			AsyncPrekeyStore store, OpenedListener listener,
 			Identity identity,
 			org.zerionproject.core.api.system.Clock clock) {
+		this(crypto, sealer, store, listener, identity, clock, null);
+	}
+
+	public AsyncMeshDelivery(CryptoComponent crypto, AsyncSealedSender sealer,
+			AsyncPrekeyStore store, OpenedListener listener,
+			Identity identity,
+			org.zerionproject.core.api.system.Clock clock,
+			@javax.annotation.Nullable SenderLinkKeys linkKeys) {
 		this.crypto = crypto;
 		this.sealer = sealer;
 		this.store = store;
 		this.listener = listener;
 		this.identity = identity;
 		this.clock = clock;
+		this.linkKeys = linkKeys;
+	}
+
+	public void setOpenedFromPeerListener(
+			@javax.annotation.Nullable
+					java.util.function.Consumer<String> listener) {
+		openedFromPeer = listener;
 	}
 
 	public static class Identity {
@@ -131,7 +162,21 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			AsyncPrekeyBundle recipientBundle, int messageType,
 			byte[] payload, long ttlSeconds, long sendTimestamp,
 			boolean preferOneTime) throws GeneralSecurityException {
+		SenderLinkKeys keys = linkKeys;
+		byte[] linkKey = keys == null ? null
+				: keys.sendingLinkKeyFor(recipientBundle.getIdentitySigPub());
+		return send(forwarder, recipientBundle, messageType, payload,
+				ttlSeconds, sendTimestamp, preferOneTime, linkKey);
+	}
+
+	private byte[] send(MeshForwarder forwarder,
+			AsyncPrekeyBundle recipientBundle, int messageType,
+			byte[] payload, long ttlSeconds, long sendTimestamp,
+			boolean preferOneTime,
+			@javax.annotation.Nullable byte[] recipientLinkKey)
+			throws GeneralSecurityException {
 		AsyncSealedSender.SealRequest r = new AsyncSealedSender.SealRequest();
+		r.senderLinkKey = recipientLinkKey;
 		long nowSeconds = clock.currentTimeMillis() / 1000L;
 		if (recipientBundle.getSignedPrekeyExpiry() <= nowSeconds) {
 			throw new GeneralSecurityException("recipient signed prekey expired");
@@ -217,6 +262,7 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			r.ttl = ttlSeconds;
 			r.dedupId = randomBytes(AsyncEnvelope.DEDUP_ID_BYTES);
 			r.sendTimestamp = sendTimestamp;
+			r.senderLinkKey = randomBytes(AsyncSealedSender.LINK_KEY_BYTES);
 			byte[] envelope = sealer.seal(r);
 			forwarder.originate(envelope);
 		} finally {
@@ -251,21 +297,22 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		try {
 			long ttl = env.getTtl();
 			if (ttl < 0 || ttl > MAX_TTL_SECONDS) return;
-			String dedupHex = org.zerionproject.core.util.StringUtils
-					.toHexString(env.getDedupId());
+			byte[] digest = java.util.Arrays.copyOf(
+					crypto.hash(LABEL_ENVELOPE_DIGEST, envelopeBytes),
+					ENVELOPE_DIGEST_BYTES);
+			String envelopeKey =
+					org.zerionproject.core.util.StringUtils.toHexString(digest);
 			synchronized (recentlyOpened) {
-				if (recentlyOpened.containsKey(dedupHex)) return;
+				if (recentlyOpened.containsKey(envelopeKey)) return;
 			}
-			if (store.isSeen(env.getDedupId())) return;
+			synchronized (recentlyFailed) {
+				if (recentlyFailed.containsKey(envelopeKey)) return;
+			}
+			if (store.isEnvelopeOpened(digest)) return;
 			List<AsyncPrekeyStore.PrekeyCandidate> candidates =
 					store.resolveCandidates(env.getPrekeyKind(),
 							env.getPrekeyId(), env.getSignedPrekeyId(), ttl);
 			if (candidates.isEmpty()) return;
-			String failedKey = org.zerionproject.core.util.StringUtils
-					.toHexString(crypto.hash(LABEL_FAILED_OPEN, envelopeBytes));
-			synchronized (recentlyFailed) {
-				if (recentlyFailed.containsKey(failedKey)) return;
-			}
 			if (!takeOpenBudget(fromPeer, candidates.size())) return;
 			AsyncSealedSender.OpenedMessage m = null;
 			AsyncPrekeyStore.PrekeyCandidate used = null;
@@ -276,6 +323,7 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 				o.recipientIdentitySigPub = identity.sigPub;
 				o.recipientIdentityAgreePub = c.published
 						? identity.agreePub : identity.legacyAgreePub;
+				o.senderLinkKeys = linkKeys;
 				try {
 					m = sealer.open(envelopeBytes, o);
 					used = c;
@@ -286,24 +334,29 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			}
 			if (m == null || used == null) {
 				synchronized (recentlyFailed) {
-					recentlyFailed.put(failedKey, Boolean.TRUE);
+					recentlyFailed.put(envelopeKey, Boolean.TRUE);
 				}
 				return;
 			}
 			long now = clock.currentTimeMillis();
 			long expiry = m.getSendTimestamp() + ttl * 1000L;
-			if (now > expiry
-					|| m.getSendTimestamp() > now + CLOCK_SKEW_TOLERANCE_MS) {
+			if (now > expiry) {
+				synchronized (recentlyFailed) {
+					recentlyFailed.put(envelopeKey, Boolean.TRUE);
+				}
 				return;
 			}
+			if (m.getSendTimestamp() > now + CLOCK_SKEW_TOLERANCE_MS) return;
 			synchronized (recentlyOpened) {
-				recentlyOpened.put(dedupHex, Boolean.TRUE);
+				recentlyOpened.put(envelopeKey, Boolean.TRUE);
 			}
 			if (!listener.knowsSender(m.getSenderIdentitySigPub())) return;
 			if (!store.checkAndMarkSeen(m.getSenderIdentitySigPub(),
-					env.getDedupId(), expiry)) {
+					env.getDedupId(), expiry, digest)) {
 				return;
 			}
+			java.util.function.Consumer<String> credit = openedFromPeer;
+			if (credit != null && !fromPeer.isEmpty()) credit.accept(fromPeer);
 			boolean accepted = listener.onOpened(m.getSenderIdentitySigPub(),
 					m.getMessageType(), m.getPayload(), m.getSendTimestamp());
 			if (accepted && used.oneTimeId != null) {

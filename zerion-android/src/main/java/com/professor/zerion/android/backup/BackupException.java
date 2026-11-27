@@ -13,7 +13,8 @@ public class BackupException extends Exception {
 		NOT_SIGNED_IN,
 		IO_ERROR,
 		IMPORT_FAILED,
-		TOO_LARGE
+		TOO_LARGE,
+		WEAK_PASSPHRASE
 	}
 
 	public final Reason reason;

@@ -20,12 +20,18 @@ public final class DecoyConfig {
 	private static final String PREF_ENABLED = "pref_decoy_enabled";
 	private static final String PREF_HASH = "pref_decoy_hash";
 	private static final String PREF_SALT = "pref_decoy_salt";
+	static final String PREF_PARAMS = "pref_decoy_params";
 
 	private static final int SALT_BYTES = 32;
 	private static final int HASH_BYTES = 32;
-	private static final int ARGON2_MEMORY_KB = 64 * 1024;
-	private static final int ARGON2_ITERATIONS = 3;
-	private static final int ARGON2_PARALLELISM = 1;
+	static final int PARAMS_VERSION = 2;
+	static final int ARGON2_MEMORY_KB = 128 * 1024;
+	static final int ARGON2_ITERATIONS = 3;
+	static final int ARGON2_PARALLELISM = 1;
+	static final int LEGACY_MEMORY_KB = 64 * 1024;
+	static final int LEGACY_ITERATIONS = 3;
+	private static final int MAX_MEMORY_KB = 256 * 1024;
+	private static final int MAX_ITERATIONS = 10;
 
 	private DecoyConfig() {
 	}
@@ -44,12 +50,18 @@ public final class DecoyConfig {
 	}
 
 	public static void setUnlockCode(Context ctx, char[] code) {
+		setUnlockCode(prefs(ctx), code);
+	}
+
+	static void setUnlockCode(SharedPreferences p, char[] code) {
 		byte[] salt = new byte[SALT_BYTES];
 		new SecureRandom().nextBytes(salt);
-		byte[] hash = derive(code, salt);
-		prefs(ctx).edit()
+		Argon2.Argon2Params params = currentParams();
+		byte[] hash = derive(code, salt, params);
+		p.edit()
 				.putString(PREF_SALT, b64(salt))
 				.putString(PREF_HASH, b64(hash))
+				.putString(PREF_PARAMS, encodeParams(params))
 				.apply();
 		Arrays.fill(hash, (byte) 0);
 		Arrays.fill(salt, (byte) 0);
@@ -60,14 +72,21 @@ public final class DecoyConfig {
 				.remove(PREF_ENABLED)
 				.remove(PREF_HASH)
 				.remove(PREF_SALT)
+				.remove(PREF_PARAMS)
 				.apply();
 	}
 
 	public static boolean verify(Context ctx, char[] candidate) {
-		SharedPreferences p = prefs(ctx);
+		return verify(prefs(ctx), candidate);
+	}
+
+	static boolean verify(SharedPreferences p, char[] candidate) {
 		String saltB64 = p.getString(PREF_SALT, null);
 		String hashB64 = p.getString(PREF_HASH, null);
 		if (saltB64 == null || hashB64 == null) return false;
+		Argon2.Argon2Params params =
+				decodeParams(p.getString(PREF_PARAMS, null));
+		if (params == null) return false;
 		byte[] salt;
 		byte[] expected;
 		try {
@@ -76,7 +95,7 @@ public final class DecoyConfig {
 		} catch (IllegalArgumentException e) {
 			return false;
 		}
-		byte[] candidateHash = derive(candidate, salt);
+		byte[] candidateHash = derive(candidate, salt, params);
 		boolean ok = MessageDigest.isEqual(candidateHash, expected);
 		Arrays.fill(candidateHash, (byte) 0);
 		Arrays.fill(expected, (byte) 0);
@@ -84,10 +103,47 @@ public final class DecoyConfig {
 		return ok;
 	}
 
-	private static byte[] derive(char[] code, byte[] salt) {
-		Argon2.Argon2Params params = new Argon2.Argon2Params(
-				ARGON2_MEMORY_KB, ARGON2_ITERATIONS,
+	static Argon2.Argon2Params currentParams() {
+		return new Argon2.Argon2Params(ARGON2_MEMORY_KB, ARGON2_ITERATIONS,
 				ARGON2_PARALLELISM, HASH_BYTES);
+	}
+
+	static Argon2.Argon2Params legacyParams() {
+		return new Argon2.Argon2Params(LEGACY_MEMORY_KB, LEGACY_ITERATIONS,
+				ARGON2_PARALLELISM, HASH_BYTES);
+	}
+
+	static String encodeParams(Argon2.Argon2Params params) {
+		return PARAMS_VERSION + "," + params.memoryKb + ","
+				+ params.iterations + "," + params.parallelism;
+	}
+
+	@javax.annotation.Nullable
+	static Argon2.Argon2Params decodeParams(
+			@javax.annotation.Nullable String encoded) {
+		if (encoded == null) return legacyParams();
+		String[] parts = encoded.split(",", -1);
+		if (parts.length != 4) return null;
+		try {
+			if (Integer.parseInt(parts[0]) != PARAMS_VERSION) return null;
+			int memoryKb = Integer.parseInt(parts[1]);
+			int iterations = Integer.parseInt(parts[2]);
+			int parallelism = Integer.parseInt(parts[3]);
+			if (memoryKb < LEGACY_MEMORY_KB || memoryKb > MAX_MEMORY_KB
+					|| iterations < LEGACY_ITERATIONS
+					|| iterations > MAX_ITERATIONS
+					|| parallelism != ARGON2_PARALLELISM) {
+				return null;
+			}
+			return new Argon2.Argon2Params(memoryKb, iterations,
+					parallelism, HASH_BYTES);
+		} catch (NumberFormatException e) {
+			return null;
+		}
+	}
+
+	private static byte[] derive(char[] code, byte[] salt,
+			Argon2.Argon2Params params) {
 		return new Argon2().deriveKey(code, salt, params);
 	}
 

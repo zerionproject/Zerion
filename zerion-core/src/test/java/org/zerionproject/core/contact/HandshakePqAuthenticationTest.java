@@ -264,8 +264,8 @@ public class HandshakePqAuthenticationTest {
 		assertNull(o.secondError);
 		assertNotNull(o.first);
 		assertNotNull(o.second);
-		assertArrayEquals(o.first.getMasterKey().getBytes(),
-				o.second.getMasterKey().getBytes());
+		assertArrayEquals(o.first.getRootKey().getBytes(),
+				o.second.getRootKey().getBytes());
 		assertTrue(o.first.isAlice() != o.second.isAlice());
 		assertTrue(o.first.isMode3Capable() && o.second.isMode3Capable());
 		assertArrayEquals(bobKeys.getPublic().getEncoded(),
@@ -394,7 +394,8 @@ public class HandshakePqAuthenticationTest {
 				assertTrue(types[i] != types[j]);
 			}
 		}
-		assertEquals(4, HandshakeConstants.PROTOCOL_MINOR_VERSION);
+		assertEquals(5, HandshakeConstants.PROTOCOL_MINOR_VERSION);
+		assertEquals(5, HandshakeConstants.KEY_SEPARATION_MINOR_VERSION);
 		assertEquals(3, HandshakeConstants.PQ_AUTH_MINOR_VERSION);
 		assertEquals(4, HandshakeConstants.KCI_MINOR_VERSION);
 	}
@@ -510,8 +511,8 @@ public class HandshakePqAuthenticationTest {
 				party(bobKeys, aliceKeys.getPublic(), "b"), PASS, PASS);
 		assertNull(o.firstError);
 		assertNull(o.secondError);
-		assertArrayEquals(o.first.getMasterKey().getBytes(),
-				o.second.getMasterKey().getBytes());
+		assertArrayEquals(o.first.getRootKey().getBytes(),
+				o.second.getRootKey().getBytes());
 	}
 
 	@Test(timeout = 120_000)

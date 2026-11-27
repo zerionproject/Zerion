@@ -5,6 +5,7 @@ import net.i2p.client.streaming.I2PServerSocket;
 import net.i2p.client.streaming.I2PSocket;
 import net.i2p.client.streaming.I2PSocketManager;
 import net.i2p.client.streaming.I2PSocketManagerFactory;
+import net.i2p.client.streaming.I2PSocketOptions;
 import net.i2p.data.Base64;
 import net.i2p.data.Destination;
 
@@ -32,6 +33,8 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 	private static final int MAX_INBOUND_CONNECTIONS = 64;
 	private static final long ACCEPT_TIMEOUT_MS = 30_000;
 	private static final long SESSION_RETRY_MS = 15_000;
+	private static final long CONNECT_TIMEOUT_MS = 60_000;
+	private static final long READ_TIMEOUT_MS = 60_000;
 
 	private final I2pRouter router;
 	private final Executor ioExecutor;
@@ -146,13 +149,17 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 		if (mgr == null) return DialResult.NOT_CONNECTED;
 		I2PSocket socket;
 		try {
-			socket = mgr.connect(new Destination(peerAddress));
+			I2PSocketOptions options = mgr.buildOptions();
+			options.setConnectTimeout(CONNECT_TIMEOUT_MS);
+			options.setReadTimeout(READ_TIMEOUT_MS);
+			socket = mgr.connect(new Destination(peerAddress), options);
 		} catch (Exception e) {
 			return DialResult.NOT_CONNECTED;
 		}
 		long connectedAt = System.currentTimeMillis();
 		boolean authenticated = false;
 		try {
+			socket.setReadTimeout(READ_TIMEOUT_MS);
 			authenticated = handler.handleOutgoingSession(I2pConstants.ID,
 					contactId, socket.getInputStream(),
 					socket.getOutputStream());
@@ -213,6 +220,7 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 			return;
 		}
 		try {
+			socket.setReadTimeout(READ_TIMEOUT_MS);
 			handler.handleIncoming(I2pConstants.ID, socket.getInputStream(),
 					socket.getOutputStream());
 		} catch (IOException e) {

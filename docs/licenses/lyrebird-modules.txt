@@ -1,8 +1,8 @@
 Licence and notice texts of the lyrebird executable (liblyrebird.so)
 
 Written by packaging/lyrebird-android/build-lyrebird-android.sh from the
-pinned sources: lyrebird 0.9.0 at commit 89d54872b176f936232ff39f7a8189b77d83d65e,
-Go 1.26.9 and the modules of lyrebird's go.sum that the build links
+pinned sources: lyrebird 0.10.0 at commit 59ac7e400c384773f5584dbe366516ad04a33d9f,
+Go 1.26.11 and the modules of lyrebird's go.sum that the build links
 for arm64-v8a and armeabi-v7a. Each file is taken from the module root and
 from every directory between the root and a linked package. Each distinct
 text appears once, after a line of = signs and the list of the files that
@@ -10,75 +10,75 @@ carry it; line endings are normalised to LF.
 
 Linked modules (61):
   filippo.io/edwards25519 v1.2.0
-  github.com/andybalholm/brotli v1.0.6
-  github.com/aws/aws-sdk-go-v2 v1.40.0
-  github.com/aws/aws-sdk-go-v2/config v1.32.1
-  github.com/aws/aws-sdk-go-v2/credentials v1.19.1
-  github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.14
-  github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.14
-  github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.14
-  github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4
-  github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.3
-  github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.14
-  github.com/aws/aws-sdk-go-v2/service/signin v1.0.1
-  github.com/aws/aws-sdk-go-v2/service/sqs v1.42.16
-  github.com/aws/aws-sdk-go-v2/service/sso v1.30.4
-  github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.9
-  github.com/aws/aws-sdk-go-v2/service/sts v1.41.1
-  github.com/aws/smithy-go v1.23.2
+  github.com/andybalholm/brotli v1.2.2
+  github.com/aws/aws-sdk-go-v2 v1.43.4
+  github.com/aws/aws-sdk-go-v2/config v1.32.35
+  github.com/aws/aws-sdk-go-v2/credentials v1.19.34
+  github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.35
+  github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.35
+  github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.35
+  github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.36
+  github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.15
+  github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.35
+  github.com/aws/aws-sdk-go-v2/service/signin v1.5.4
+  github.com/aws/aws-sdk-go-v2/service/sqs v1.46.4
+  github.com/aws/aws-sdk-go-v2/service/sso v1.33.4
+  github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.4
+  github.com/aws/aws-sdk-go-v2/service/sts v1.45.4
+  github.com/aws/smithy-go v1.27.6
   github.com/dchest/siphash v1.2.3
   github.com/golang/mock v1.6.0
   github.com/google/uuid v1.6.0
-  github.com/klauspost/compress v1.18.0
-  github.com/klauspost/cpuid/v2 v2.2.6
-  github.com/klauspost/reedsolomon v1.12.0
-  github.com/miekg/dns v1.1.65
+  github.com/klauspost/compress v1.19.2
+  github.com/klauspost/cpuid/v2 v2.4.0
+  github.com/klauspost/reedsolomon v1.14.1
+  github.com/miekg/dns v1.1.72
   github.com/patrickmn/go-cache v2.1.0+incompatible
-  github.com/pion/datachannel v1.6.0
-  github.com/pion/dtls/v3 v3.1.2
-  github.com/pion/ice/v4 v4.2.0
-  github.com/pion/interceptor v0.1.43
+  github.com/pion/datachannel v1.6.2
+  github.com/pion/dtls/v3 v3.1.5
+  github.com/pion/ice/v4 v4.4.1
+  github.com/pion/interceptor v0.1.47
   github.com/pion/logging v0.2.4
   github.com/pion/mdns/v2 v2.1.0
   github.com/pion/randutil v0.1.0
-  github.com/pion/rtcp v1.2.16
-  github.com/pion/rtp v1.10.1
-  github.com/pion/sctp v1.9.2
-  github.com/pion/sdp/v3 v3.0.17
-  github.com/pion/srtp/v3 v3.0.10
-  github.com/pion/stun/v3 v3.1.1
-  github.com/pion/transport/v4 v4.0.1
-  github.com/pion/turn/v4 v4.1.4
-  github.com/pion/webrtc/v4 v4.2.3-securityfix
+  github.com/pion/rtcp v1.2.17
+  github.com/pion/rtp v1.10.5
+  github.com/pion/sctp v1.11.1
+  github.com/pion/sdp/v3 v3.0.19
+  github.com/pion/srtp/v3 v3.0.13
+  github.com/pion/stun/v3 v3.1.6
+  github.com/pion/transport/v4 v4.1.0
+  github.com/pion/turn/v5 v5.0.12
+  github.com/pion/webrtc/v4 v4.2.18
   github.com/pkg/errors v0.9.1
   github.com/realclientip/realclientip-go v1.0.0
   github.com/refraction-networking/utls v1.8.2
-  github.com/theodorsm/covert-dtls v1.5.0
+  github.com/theodorsm/covert-dtls v1.5.1
   github.com/tjfoc/gmsm v1.4.1
-  github.com/txthinking/runnergroup v0.0.0-20210608031112-152c7c4432bf
-  github.com/txthinking/socks5 v0.0.0-20251011041537-5c31f201a10e
+  github.com/txthinking/runnergroup v0.0.0-20250224021307-5864ffeb65ae
+  github.com/txthinking/socks5 v0.0.0-20260601051520-339b044ab0eb
   github.com/wlynxg/anet v0.0.5
-  github.com/xtaci/kcp-go/v5 v5.6.24
-  github.com/xtaci/smux v1.5.56
+  github.com/xtaci/kcp-go/v5 v5.6.72
+  github.com/xtaci/smux v1.5.57
   gitlab.com/yawning/edwards25519-extra v0.0.0-20231005122941-2149dcafc266
   gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.6.0
   gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/ptutil v0.0.0-20250815012447-418f76dcf315
-  gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.14.1
+  gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.15.3
   gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/webtunnel v0.0.7
   golang.org/x/crypto v0.57.0
   golang.org/x/net v0.59.0
   golang.org/x/sys v0.48.0
   golang.org/x/text v0.42.0
-  golang.org/x/time v0.10.0
+  golang.org/x/time v0.15.0
 
 ================================================================================
 The text below is in:
-  Go standard library and runtime go1.26.9 LICENSE
+  Go standard library and runtime go1.26.11 LICENSE
   golang.org/x/crypto v0.57.0 LICENSE
   golang.org/x/net v0.59.0 LICENSE
   golang.org/x/sys v0.48.0 LICENSE
   golang.org/x/text v0.42.0 LICENSE
-  golang.org/x/time v0.10.0 LICENSE
+  golang.org/x/time v0.15.0 LICENSE
 ================================================================================
 
 Copyright 2009 The Go Authors.
@@ -111,12 +111,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 The text below is in:
-  Go standard library and runtime go1.26.9 PATENTS
+  Go standard library and runtime go1.26.11 PATENTS
   golang.org/x/crypto v0.57.0 PATENTS
   golang.org/x/net v0.59.0 PATENTS
   golang.org/x/sys v0.48.0 PATENTS
   golang.org/x/text v0.42.0 PATENTS
-  golang.org/x/time v0.10.0 PATENTS
+  golang.org/x/time v0.15.0 PATENTS
 ================================================================================
 
 Additional IP Rights Grant (Patents)
@@ -145,6 +145,7 @@ shall terminate as of the date such litigation is filed.
 ================================================================================
 The text below is in:
   filippo.io/edwards25519 v1.2.0 LICENSE
+  github.com/andybalholm/brotli v1.2.2 flate/LICENSE
   github.com/refraction-networking/utls v1.8.2 LICENSE
 ================================================================================
 
@@ -178,7 +179,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 The text below is in:
-  github.com/andybalholm/brotli v1.0.6 LICENSE
+  github.com/andybalholm/brotli v1.2.2 LICENSE
 ================================================================================
 
 Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors.
@@ -203,20 +204,20 @@ THE SOFTWARE.
 
 ================================================================================
 The text below is in:
-  github.com/aws/aws-sdk-go-v2/config v1.32.1 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/credentials v1.19.1 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.14 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.14 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.14 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.3 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.14 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/service/signin v1.0.1 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/service/sqs v1.42.16 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.9 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/service/sso v1.30.4 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2/service/sts v1.41.1 LICENSE.txt
-  github.com/aws/aws-sdk-go-v2 v1.40.0 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/config v1.32.35 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/credentials v1.19.34 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.35 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.35 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.35 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.36 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.15 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.35 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/service/signin v1.5.4 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/service/sqs v1.46.4 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.4 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/service/sso v1.33.4 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2/service/sts v1.45.4 LICENSE.txt
+  github.com/aws/aws-sdk-go-v2 v1.43.4 LICENSE.txt
   github.com/golang/mock v1.6.0 LICENSE
 ================================================================================
 
@@ -425,7 +426,7 @@ The text below is in:
 
 ================================================================================
 The text below is in:
-  github.com/aws/aws-sdk-go-v2 v1.40.0 NOTICE.txt
+  github.com/aws/aws-sdk-go-v2 v1.43.4 NOTICE.txt
 ================================================================================
 
 AWS SDK for Go
@@ -434,8 +435,8 @@ Copyright 2014-2015 Stripe, Inc.
 
 ================================================================================
 The text below is in:
-  github.com/aws/aws-sdk-go-v2 v1.40.0 internal/sync/singleflight/LICENSE
-  github.com/aws/smithy-go v1.23.2 internal/sync/singleflight/LICENSE
+  github.com/aws/aws-sdk-go-v2 v1.43.4 internal/sync/singleflight/LICENSE
+  github.com/aws/smithy-go v1.27.6 internal/sync/singleflight/LICENSE
 ================================================================================
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -469,7 +470,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 The text below is in:
-  github.com/aws/smithy-go v1.23.2 LICENSE
+  github.com/aws/smithy-go v1.27.6 LICENSE
 ================================================================================
 
 
@@ -650,7 +651,7 @@ The text below is in:
 
 ================================================================================
 The text below is in:
-  github.com/aws/smithy-go v1.23.2 NOTICE
+  github.com/aws/smithy-go v1.27.6 NOTICE
 ================================================================================
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -818,7 +819,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 The text below is in:
-  github.com/klauspost/compress v1.18.0 LICENSE
+  github.com/klauspost/compress v1.19.2 LICENSE
 ================================================================================
 
 Copyright (c) 2012 The Go Authors. All rights reserved.
@@ -1128,7 +1129,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ================================================================================
 The text below is in:
-  github.com/klauspost/compress v1.18.0 internal/snapref/LICENSE
+  github.com/klauspost/compress v1.19.2 internal/snapref/LICENSE
 ================================================================================
 
 Copyright (c) 2011 The Snappy-Go Authors. All rights reserved.
@@ -1161,7 +1162,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 The text below is in:
-  github.com/klauspost/compress v1.18.0 zstd/internal/xxhash/LICENSE.txt
+  github.com/klauspost/compress v1.19.2 zstd/internal/xxhash/LICENSE.txt
 ================================================================================
 
 Copyright (c) 2016 Caleb Spare
@@ -1189,7 +1190,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ================================================================================
 The text below is in:
-  github.com/klauspost/cpuid/v2 v2.2.6 LICENSE
+  github.com/klauspost/cpuid/v2 v2.4.0 LICENSE
 ================================================================================
 
 The MIT License (MIT)
@@ -1217,7 +1218,7 @@ SOFTWARE.
 
 ================================================================================
 The text below is in:
-  github.com/klauspost/reedsolomon v1.12.0 LICENSE
+  github.com/klauspost/reedsolomon v1.14.1 LICENSE
 ================================================================================
 
 The MIT License (MIT)
@@ -1246,7 +1247,7 @@ SOFTWARE.
 
 ================================================================================
 The text below is in:
-  github.com/miekg/dns v1.1.65 LICENSE
+  github.com/miekg/dns v1.1.72 LICENSE
 ================================================================================
 
 BSD 3-Clause License
@@ -1306,23 +1307,23 @@ THE SOFTWARE.
 
 ================================================================================
 The text below is in:
-  github.com/pion/datachannel v1.6.0 LICENSE
-  github.com/pion/ice/v4 v4.2.0 LICENSE
-  github.com/pion/interceptor v0.1.43 LICENSE
-  github.com/pion/logging v0.2.4 LICENSE
-  github.com/pion/rtcp v1.2.16 LICENSE
-  github.com/pion/sctp v1.9.2 LICENSE
-  github.com/pion/sdp/v3 v3.0.17 LICENSE
-  github.com/pion/srtp/v3 v3.0.10 LICENSE
-  github.com/pion/stun/v3 v3.1.1 LICENSE
-  github.com/pion/transport/v4 v4.0.1 LICENSE
-  github.com/pion/turn/v4 v4.1.4 LICENSE
-  github.com/pion/webrtc/v4 v4.2.3-securityfix LICENSE
+  github.com/pion/datachannel v1.6.2 LICENSE
+  github.com/pion/dtls/v3 v3.1.5 LICENSE
+  github.com/pion/ice/v4 v4.4.1 LICENSE
+  github.com/pion/interceptor v0.1.47 LICENSE
+  github.com/pion/rtcp v1.2.17 LICENSE
+  github.com/pion/sctp v1.11.1 LICENSE
+  github.com/pion/sdp/v3 v3.0.19 LICENSE
+  github.com/pion/srtp/v3 v3.0.13 LICENSE
+  github.com/pion/stun/v3 v3.1.6 LICENSE
+  github.com/pion/transport/v4 v4.1.0 LICENSE
+  github.com/pion/turn/v5 v5.0.12 LICENSE
+  github.com/pion/webrtc/v4 v4.2.18 LICENSE
 ================================================================================
 
 MIT License
 
-Copyright (c) 2023 The Pion community <https://pion.ly>
+Copyright (c) 2026 The Pion community <https://pion.ly>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -1332,12 +1333,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ================================================================================
 The text below is in:
-  github.com/pion/dtls/v3 v3.1.2 LICENSE
+  github.com/pion/logging v0.2.4 LICENSE
 ================================================================================
 
 MIT License
 
-Copyright (c) 2026 The Pion community <https://pion.ly>
+Copyright (c) 2023 The Pion community <https://pion.ly>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -1401,7 +1402,7 @@ SOFTWARE.
 
 ================================================================================
 The text below is in:
-  github.com/pion/rtp v1.10.1 LICENSE
+  github.com/pion/rtp v1.10.5 LICENSE
 ================================================================================
 
 MIT License
@@ -1497,7 +1498,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 The text below is in:
-  github.com/theodorsm/covert-dtls v1.5.0 LICENSE
+  github.com/theodorsm/covert-dtls v1.5.1 LICENSE
 ================================================================================
 
 MIT License
@@ -1731,7 +1732,7 @@ The text below is in:
 
 ================================================================================
 The text below is in:
-  github.com/txthinking/runnergroup v0.0.0-20210608031112-152c7c4432bf LICENSE
+  github.com/txthinking/runnergroup v0.0.0-20250224021307-5864ffeb65ae LICENSE
 ================================================================================
 
 The MIT License (MIT)
@@ -1759,7 +1760,7 @@ SOFTWARE.
 
 ================================================================================
 The text below is in:
-  github.com/txthinking/socks5 v0.0.0-20251011041537-5c31f201a10e LICENSE
+  github.com/txthinking/socks5 v0.0.0-20260601051520-339b044ab0eb LICENSE
 ================================================================================
 
 MIT License
@@ -1820,7 +1821,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 The text below is in:
-  github.com/xtaci/kcp-go/v5 v5.6.24 LICENSE
+  github.com/xtaci/kcp-go/v5 v5.6.72 LICENSE
 ================================================================================
 
 The MIT License (MIT)
@@ -1848,7 +1849,7 @@ SOFTWARE.
 
 ================================================================================
 The text below is in:
-  github.com/xtaci/smux v1.5.56 LICENSE
+  github.com/xtaci/smux v1.5.57 LICENSE
 ================================================================================
 
 MIT License
@@ -1910,7 +1911,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 The text below is in:
-  gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird 0.9.0 LICENSE-GPL3.txt
+  gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird 0.10.0 LICENSE-GPL3.txt
 ================================================================================
 
                     GNU GENERAL PUBLIC LICENSE
@@ -2590,7 +2591,7 @@ Public License instead of this License.  But first, please read
 
 ================================================================================
 The text below is in:
-  gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird 0.9.0 LICENSE
+  gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird 0.10.0 LICENSE
 ================================================================================
 
 Copyright (c) 2023, The Tor Project
@@ -2690,7 +2691,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 The text below is in:
-  gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.14.1 LICENSE
+  gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.15.3 LICENSE
 ================================================================================
 
               This file contains the license for "Snowflake"

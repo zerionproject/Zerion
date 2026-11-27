@@ -1,22 +1,27 @@
 package com.professor.zerion.android.contact.add.remote;
 
 import android.app.Application;
-import android.content.SharedPreferences;
-
-import com.professor.zerion.android.AppModule;
 
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.UnsupportedVersionException;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.ContactType;
 import org.zerionproject.core.api.contact.PendingContact;
+import org.zerionproject.core.api.contact.request.ContactRequestManager;
+import org.zerionproject.core.api.contact.request.InviteLink;
 import org.zerionproject.core.api.db.DatabaseExecutor;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.NoSuchPendingContactException;
 import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.keyagreement.PayloadParser;
+import org.zerionproject.core.api.plugin.Plugin;
+import org.zerionproject.core.api.plugin.PluginManager;
+import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.system.AndroidExecutor;
 import org.zerionproject.core.util.ZerionLinks;
+import com.professor.zerion.android.contact.request.LinkErrors;
+import com.professor.zerion.android.contact.request.ScannedCode;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import com.professor.zerion.android.viewmodel.LiveEvent;
 import com.professor.zerion.android.viewmodel.LiveResult;
@@ -32,12 +37,42 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import static org.zerionproject.core.api.contact.HandshakeLinkConstants.LINK_REGEX;
-
 @NotNullByDefault
 public class AddContactViewModel extends DbViewModel {
 
+	public static final class ScanRoute {
+
+		public enum Kind {
+			NEARBY, INVITE, IN_PERSON, REFUSED, IGNORED
+		}
+
+		private final Kind kind;
+		private final String text;
+		private final int message;
+
+		ScanRoute(Kind kind, String text, int message) {
+			this.kind = kind;
+			this.text = text;
+			this.message = message;
+		}
+
+		public Kind getKind() {
+			return kind;
+		}
+
+		public String getText() {
+			return text;
+		}
+
+		public int getMessage() {
+			return message;
+		}
+	}
+
 	private final ContactManager contactManager;
+	private final ContactRequestManager contactRequestManager;
+	private final PayloadParser payloadParser;
+	private final PluginManager pluginManager;
 
 	private final MutableLiveData<String> handshakeLink =
 			new MutableLiveData<>();
@@ -45,38 +80,54 @@ public class AddContactViewModel extends DbViewModel {
 			new MutableLiveEvent<>();
 	private final MutableLiveEvent<Boolean> qrExchangeChosen =
 			new MutableLiveEvent<>();
-	private final MutableLiveEvent<Boolean> linkExchangeChosen =
+	private final MutableLiveEvent<Boolean> sendInviteChosen =
 			new MutableLiveEvent<>();
+	private final MutableLiveEvent<ScanRoute> scanRoute =
+			new MutableLiveEvent<>();
+	private final MutableLiveEvent<ScanRoute> offlineScanRoute =
+			new MutableLiveEvent<>();
+	@Nullable
+	private String invitePrefill;
 	private final MutableLiveData<LiveResult<Boolean>> addContactResult =
 			new MutableLiveData<>();
 	@Nullable
 	private String remoteHandshakeLink;
-	private final OwnLinkMemory ownLinkMemory;
 	private volatile boolean reAddExisting = false;
 	private volatile boolean remoteLinkScannedInPerson = false;
 
 	@Inject
 	AddContactViewModel(Application application,
 			ContactManager contactManager,
+			ContactRequestManager contactRequestManager,
+			PayloadParser payloadParser,
+			PluginManager pluginManager,
 			@DatabaseExecutor Executor dbExecutor,
 			LifecycleManager lifecycleManager,
 			TransactionManager db,
-			AndroidExecutor androidExecutor,
-			@AppModule.ProfilePrefs SharedPreferences profilePrefs) {
-		this(application, contactManager, dbExecutor, lifecycleManager, db,
-				androidExecutor, new OwnLinkMemory(profilePrefs));
-	}
-
-	AddContactViewModel(Application application,
-			ContactManager contactManager,
-			Executor dbExecutor,
-			LifecycleManager lifecycleManager,
-			TransactionManager db,
-			AndroidExecutor androidExecutor,
-			OwnLinkMemory ownLinkMemory) {
+			AndroidExecutor androidExecutor) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.contactManager = contactManager;
-		this.ownLinkMemory = ownLinkMemory;
+		this.contactRequestManager = contactRequestManager;
+		this.payloadParser = payloadParser;
+		this.pluginManager = pluginManager;
+	}
+
+	boolean isTorConnected() {
+		return isTorConnected(pluginManager);
+	}
+
+	static boolean isTorConnected(PluginManager plugins) {
+		if (plugins.isOfflineMode()) return false;
+		Plugin tor = plugins.getPlugin(TorConstants.ID);
+		return tor != null && tor.getState() == Plugin.State.ACTIVE;
+	}
+
+	LiveEvent<ScanRoute> getOfflineScanRoute() {
+		return offlineScanRoute;
+	}
+
+	void onLinkScannedWithoutInternet(String text) {
+		runOnDbThread(() -> offlineScanRoute.postEvent(route(text)));
 	}
 
 	void setReAddExisting(boolean reAdd) {
@@ -85,13 +136,6 @@ public class AddContactViewModel extends DbViewModel {
 
 	boolean isReAddExisting() {
 		return reAddExisting;
-	}
-
-	void onOwnLinkShared() {
-		String link = handshakeLink.getValue();
-		if (link != null) {
-			ownLinkMemory.shared(link, System.currentTimeMillis());
-		}
 	}
 
 	void setRemoteLinkScannedInPerson(boolean inPerson) {
@@ -122,16 +166,60 @@ public class AddContactViewModel extends DbViewModel {
 		qrExchangeChosen.setEvent(true);
 	}
 
-	void onLinkExchangeChosen() {
-		linkExchangeChosen.setEvent(true);
+	void onSendInviteChosen() {
+		sendInviteChosen.setEvent(true);
+	}
+
+	void onSendInviteChosen(String link) {
+		invitePrefill = link;
+		sendInviteChosen.setEvent(true);
+	}
+
+	void setInvitePrefill(String link) {
+		invitePrefill = link;
+	}
+
+	@Nullable
+	public String takeInvitePrefill() {
+		String link = invitePrefill;
+		invitePrefill = null;
+		return link;
+	}
+
+	LiveEvent<ScanRoute> getScanRoute() {
+		return scanRoute;
+	}
+
+	void onCodeScanned(String text) {
+		runOnDbThread(() -> scanRoute.postEvent(route(text)));
+	}
+
+	ScanRoute route(String text) {
+		if (ScannedCode.isNearbyCode(text, payloadParser)) {
+			return new ScanRoute(ScanRoute.Kind.NEARBY, text, 0);
+		}
+		String link = ScannedCode.extractLink(text);
+		if (link == null) return new ScanRoute(ScanRoute.Kind.IGNORED, text, 0);
+		try {
+			InviteLink parsed = contactRequestManager.parseLink(link);
+			if (parsed.getFlow() == InviteLink.Flow.REQUEST) {
+				return new ScanRoute(ScanRoute.Kind.INVITE, link, 0);
+			}
+			return new ScanRoute(ScanRoute.Kind.IN_PERSON, link, 0);
+		} catch (FormatException e) {
+			return new ScanRoute(ScanRoute.Kind.REFUSED, link,
+					LinkErrors.messageFor(e));
+		} catch (DbException e) {
+			return new ScanRoute(ScanRoute.Kind.IGNORED, link, 0);
+		}
 	}
 
 	LiveEvent<Boolean> getQrExchangeChosen() {
 		return qrExchangeChosen;
 	}
 
-	LiveEvent<Boolean> getLinkExchangeChosen() {
-		return linkExchangeChosen;
+	LiveEvent<Boolean> getSendInviteChosen() {
+		return sendInviteChosen;
 	}
 
 	@Nullable
@@ -153,26 +241,6 @@ public class AddContactViewModel extends DbViewModel {
 		return lastRemoteHandshakeLink;
 	}
 
-	boolean isOwnLink(@Nullable CharSequence link) {
-		if (link == null) return false;
-		if (sameLinkKey(link, handshakeLink.getValue())) return true;
-		return sameLinkKey(link,
-				ownLinkMemory.lastShared(System.currentTimeMillis()));
-	}
-
-	private static boolean sameLinkKey(CharSequence link,
-			@Nullable String own) {
-		if (own == null) return false;
-		java.util.regex.Matcher theirs = LINK_REGEX.matcher(link);
-		java.util.regex.Matcher ours = LINK_REGEX.matcher(own);
-		return theirs.find() && ours.find()
-				&& theirs.group(1).equals(ours.group(1));
-	}
-
-	boolean isValidRemoteContactLink(@Nullable CharSequence link) {
-		return link != null && LINK_REGEX.matcher(link).find();
-	}
-
 	LiveEvent<Boolean> getRemoteLinkEntered() {
 		return remoteLinkEntered;
 	}
@@ -185,21 +253,17 @@ public class AddContactViewModel extends DbViewModel {
 	void addContact(String nickname) {
 		if (remoteHandshakeLink == null) throw new IllegalStateException();
 		final String linkSnapshot = remoteHandshakeLink;
-		final String current = handshakeLink.getValue();
-		final String ownLink = current == null ? null
-				: ownLinkMemory.linkToBind(current, System.currentTimeMillis());
+		final String shownOwnLink = handshakeLink.getValue();
 		final boolean reAdd = reAddExisting;
 		final boolean inPerson = remoteLinkScannedInPerson;
 		remoteHandshakeLink = null;
 		runOnDbThread(() -> {
 			try {
-				contactManager.addPendingContact(linkSnapshot, nickname,
-						ownLink, reAdd, inPerson);
-				ownLinkMemory.forget();
+				contactManager.addPendingContactBoundToSharedLink(linkSnapshot,
+						nickname, shownOwnLink, reAdd, inPerson);
 				addContactResult.postValue(new LiveResult<>(true));
 			} catch (org.zerionproject.core.api.contact
 					.OwnLinkChangedException e) {
-				ownLinkMemory.forget();
 				loadHandshakeLink();
 				addContactResult.postValue(new LiveResult<>(e));
 			} catch (UnsupportedVersionException e) {

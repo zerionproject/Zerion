@@ -25,13 +25,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.api.keyagreement.RecordTypes.ABORT;
+import static org.zerionproject.core.api.keyagreement.RecordTypes.CAPABILITIES;
 import static org.zerionproject.core.api.keyagreement.RecordTypes.CONFIRM;
 import static org.zerionproject.core.api.keyagreement.RecordTypes.KEY;
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
 import static org.zerionproject.core.test.TestUtils.getTransportId;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class KeyAgreementTransportTest extends BrambleMockTestCase {
 
@@ -108,6 +111,68 @@ public class KeyAgreementTransportTest extends BrambleMockTestCase {
 		kat.sendAbort(false);
 		assertNotNull(written.get());
 		assertRecordEquals(ABORT, new byte[0], written.get());
+	}
+
+	@Test
+	public void testSendCapabilities() throws Exception {
+		setup();
+		AtomicReference<Record> written = expectWriteRecord();
+		kat.sendCapabilities();
+		assertNotNull(written.get());
+		assertRecordEquals(CAPABILITIES, new byte[] {0x01}, written.get());
+	}
+
+	@Test
+	public void testReceiveKeyAfterCapabilitiesRecordsTheOffer()
+			throws Exception {
+		byte[] key = getRandomBytes(123);
+		setup();
+		expectReadRecord(new Record(PROTOCOL_VERSION, CAPABILITIES,
+				new byte[] {0x01}));
+		expectReadRecord(new Record(PROTOCOL_VERSION, KEY, key));
+		assertArrayEquals(key, kat.receiveKey());
+		assertTrue(kat.peerOffersKeySeparation());
+	}
+
+	@Test
+	public void testReceiveKeyWithoutCapabilitiesMeansNoOffer()
+			throws Exception {
+		byte[] key = getRandomBytes(123);
+		setup();
+		expectReadRecord(new Record(PROTOCOL_VERSION, KEY, key));
+		assertArrayEquals(key, kat.receiveKey());
+		assertFalse(kat.peerOffersKeySeparation());
+	}
+
+	@Test
+	public void testCapabilitiesAreIgnoredAnywhereButBeforeTheKey()
+			throws Exception {
+		byte[] confirm = getRandomBytes(32);
+		Record capabilities = new Record(PROTOCOL_VERSION, CAPABILITIES,
+				new byte[] {0x01});
+		Record confirmRecord = new Record(PROTOCOL_VERSION, CONFIRM, confirm);
+		setup();
+		context.checking(new Expectations() {{
+			oneOf(recordReader).readRecord(with(new PredicateMatcher<>(
+							RecordPredicate.class,
+							rp -> rp.test(confirmRecord)
+									&& !rp.test(capabilities))),
+					with(new PredicateMatcher<>(RecordPredicate.class,
+							rp -> rp.test(capabilities))));
+			will(returnValue(confirmRecord));
+		}});
+		assertArrayEquals(confirm, kat.receiveConfirm());
+		assertFalse(kat.peerOffersKeySeparation());
+	}
+
+	@Test(expected = AbortException.class)
+	public void testCapabilitiesMustBeFollowedByTheKey() throws Exception {
+		setup();
+		expectReadRecord(new Record(PROTOCOL_VERSION, CAPABILITIES,
+				new byte[] {0x01}));
+		expectReadRecord(new Record(PROTOCOL_VERSION, CONFIRM,
+				getRandomBytes(32)));
+		kat.receiveKey();
 	}
 
 	@Test(expected = AbortException.class)

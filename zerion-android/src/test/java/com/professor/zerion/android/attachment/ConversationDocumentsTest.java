@@ -5,7 +5,6 @@ import android.net.Uri;
 
 import com.professor.zerion.android.attachment.media.ImageCompressor;
 import com.professor.zerion.android.attachment.media.ImageHelper;
-import com.professor.zerion.android.attachment.media.ImageSizeCalculator;
 import com.professor.zerion.android.security.TestAndroidKeyStore;
 import com.professor.zerion.android.vault.utils.MetadataStripper;
 
@@ -166,6 +165,128 @@ public class ConversationDocumentsTest {
 	}
 
 	@Test
+	public void aDocumentThatIsOnlyLabelledAsTextIsNotSent() throws Exception {
+		String pdf = "%PDF-1.4\n1 0 obj\n<< /Author (Someone) /Creator (An "
+				+ "editor) /CreationDate (D:20260101120000+01'00') >>\n"
+				+ "endobj\ntrailer\n<< /Info 1 0 R >>\n%%EOF\n";
+		String[][] cases = {{"report.txt", "text/plain", pdf},
+				{"report.md", "text/markdown", pdf},
+				{"report.txt", "text/plain", "\n\n  " + pdf},
+				{"report.txt", "text/plain", "\uFEFF" + pdf},
+				{"letter.txt", "text/plain",
+						"{\\rtf1\\ansi{\\info{\\author Someone}}Hello}"},
+				{"drawing.txt", "text/plain", "<?xml version=\"1.0\"?>\n"
+						+ "<svg><metadata>Someone</metadata></svg>"},
+				{"drawing.txt", "text/plain",
+						"  <SVG xmlns=\"http://www.w3.org/2000/svg\"/>"},
+				{"page.txt", "text/plain",
+						"<!DOCTYPE html><html><head></head></html>"},
+				{"page.txt", "text/x-markdown", "<html><body>x</body></html>"},
+				{"print.txt", "text/plain",
+						"%!PS-Adobe-3.0\n%%Creator: Someone\n"},
+				{"odd.txt", "text/plain", "escape \u001B[31m codes"},
+				{"odd.txt", "text/plain", "a bell \u0007 rings"},
+				{"drawing.txt", "text/plain", "<!-- drawn by Someone -->\n"
+						+ "<svg><metadata>Someone</metadata></svg>"},
+				{"page.txt", "text/plain", "\n  <!--made with an editor-->"
+						+ "<html><head></head></html>"},
+				{"photo.txt", "text/plain", "<?xpacket begin=\"\" id=\"W5M0\"?>"
+						+ "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><dc:creator>"
+						+ "Someone</dc:creator></x:xmpmeta><?xpacket end=\"w\"?>"},
+				{"photo.txt", "text/plain", "<x:xmpmeta xmlns:x=\"adobe:ns:"
+						+ "meta/\"><dc:creator>Someone</dc:creator></x:xmpmeta>"},
+				{"route.txt", "text/plain", "<gpx version=\"1.1\" creator=\""
+						+ "Someone\"><wpt lat=\"52.1\" lon=\"4.3\"/></gpx>"},
+				{"places.txt", "text/plain", "\uFEFF \t\r\n<kml><Document>"
+						+ "<name>Home</name></Document></kml>"},
+				{"sheet.txt", "text/x-markdown", "<Workbook xmlns=\"urn:"
+						+ "schemas-microsoft-com:office:spreadsheet\"><Author>"
+						+ "Someone</Author></Workbook>"},
+				{"letter.txt", "text/plain", "<?mso-application progid=\""
+						+ "Word.Document\"?><w:wordDocument/>"},
+				{"entity.txt", "text/markdown",
+						"<!ENTITY author \"Someone\">"},
+				{"drawing.txt", "text/plain", "\u00A0<svg><title>Someone"
+						+ "</title></svg>"},
+				{"drawing.txt", "text/plain", "\uFEFF\uFEFF<svg/>"},
+				{"places.txt", "text/plain", "\u2028<kml/>"},
+				{"route.txt", "text/plain",
+						"\u2029 \u3000<gpx creator=\"x\"/>"},
+				{"page.txt", "text/plain", "\u200B\u2060\u00A0\n<HTML>"},
+				{"drawing.txt", "text/plain", "<:svg/>"},
+				{"photo.txt", "text/plain", "<rdf:RDF><dc:creator>Someone"
+						+ "</dc:creator></rdf:RDF>"},
+				{"photo.txt", "text/plain", "<RDF/>"},
+				{"photo.txt", "text/plain", "<xmpmeta/>"},
+				{"settings.txt", "text/plain", "<plist version=\"1.0\">"
+						+ "<dict/></plist>"},
+				{"head.txt", "text/plain", "<head><meta name=\"author\" "
+						+ "content=\"Someone\"></head>"},
+				{"body.txt", "text/plain", "<Body>x</Body>"},
+				{"data.txt", "text/plain",
+						"<xml><author>Someone</author></xml>"},
+				{"places.txt", "text/plain", "<kmz/>"},
+				{"note.txt", "text/plain", "<_x:meta>Someone</_x:meta>"},
+				{"note.txt", "text/plain", "<_doc xmlns=\"urn:x\">"
+						+ "Someone</_doc>"},
+				{"note.txt", "text/plain", "<\u00F1ame xmlns:a=\"urn:x\"/>"},
+				{"note.txt", "text/plain", "<\u00E9t:\u00E9 a=\"1\"/>"},
+				{"note.txt", "text/plain", "<! anything>"}};
+		for (String[] c : cases) {
+			sent = null;
+			org.mockito.Mockito.clearInvocations(creator);
+			Uri uri = attach(c[0], c[1],
+					c[2].getBytes(StandardCharsets.UTF_8),
+					PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+			assertNull(c[2], sent);
+			verify(creator).onAttachmentError(eq(uri),
+					isA(MediaRefusedException.class));
+		}
+	}
+
+	@Test
+	public void ordinaryTextIsStillSentAsItIs() throws Exception {
+		String[] texts = {"plain words\nand a second line\r\n",
+				"\uFEFFwith a byte order mark",
+				"tabs\tand a form feed\f and accents: caf\u00E9 \u4E2D\u6587",
+				"a note that names the format only far below\n"
+						+ new String(new char[1100]).replace('\0', '.')
+						+ "%PDF-1.4",
+				"# Title\n\n<b>inline markup</b> in markdown\n",
+				"x = 1 < 2 and <svg> is only mentioned later",
+				"<3 thanks for yesterday",
+				"< 5 minutes left",
+				"<- the arrow points left",
+				"\uFEFF \n<= 10 items",
+				"<1> first point\n<2> second point",
+				"<",
+				"<<< read this first",
+				"a list\n<!-- a comment further down -->\n<?xml later ?>\n"
+						+ "<gpx> and <kml> are only named here",
+				"<p align=\"center\">\n  <img src=\"logo.png\">\n</p>\n\n"
+						+ "# Project\n",
+				"<nick> hi there\n<other> hello\n",
+				"<b>Shopping</b>\n- milk\n- bread\n",
+				"\u00A0<3 still a note",
+				"<_note> remember this",
+				"<\u00F1and\u00FA> is a bird"};
+		for (String text : texts) {
+			sent = null;
+			byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+			attach("notes.txt", "text/plain", bytes,
+					PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+			assertEquals("text/plain", sentType);
+			assertArrayEquals(text, bytes, sent);
+		}
+		byte[] latin1 = "na\u00EFve r\u00E9sum\u00E9"
+				.getBytes(StandardCharsets.ISO_8859_1);
+		sent = null;
+		attach("notes.txt", "text/plain", latin1,
+				PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+		assertArrayEquals(latin1, sent);
+	}
+
+	@Test
 	public void aMarkdownNoteFromTheVaultIsSentAsText() throws Exception {
 		byte[] md = "# Notes\nsome *text*\n".getBytes(StandardCharsets.UTF_8);
 		attach("notes.md", "text/markdown", md,
@@ -207,11 +328,14 @@ public class ConversationDocumentsTest {
 	@Test
 	public void aReceivedDocumentIsShownAsADocument() throws Exception {
 		AttachmentReader reader = mock(AttachmentReader.class);
-		ImageSizeCalculator sizes = mock(ImageSizeCalculator.class);
 		Executor now = Runnable::run;
+		int[] measurements = new int[1];
 		AttachmentRetrieverImpl retriever = new AttachmentRetrieverImpl(now,
 				reader, new AttachmentDimensions(100, 50, 200, 75, 300),
-				mock(ImageHelper.class), sizes);
+				mock(ImageHelper.class), in -> {
+			measurements[0]++;
+			throw new IOException("a document is not an image");
+		});
 		for (String type : new String[] {"application/pdf", "text/plain"}) {
 			AttachmentHeader h = new AttachmentHeader(
 					new GroupId(new byte[32]), new MessageId(new byte[32]),
@@ -221,7 +345,7 @@ public class ConversationDocumentsTest {
 			assertEquals(type, AttachmentItem.State.AVAILABLE,
 					item.getState());
 			assertTrue(item.getThumbnailWidth() > 0);
-			verify(sizes, never()).getSize(any(), anyString());
+			assertEquals(0, measurements[0]);
 		}
 	}
 }

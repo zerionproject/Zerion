@@ -21,12 +21,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongPredicate;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
+import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR;
 import static org.zerionproject.wire.ZwfConstants.FRAME_HEADER_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.FRAME_HEADER_PLAINTEXT_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.FRAME_LENGTH;
@@ -76,6 +79,13 @@ public class ZwfMode3FullStreamDecrypter {
 	private boolean lastFramePq;
 	@Nullable
 	private LongPredicate streamIdAcceptor;
+	@Nullable
+	private AtomicLong receivedSinceRotation;
+	@Nullable
+	private KpId lastRecvKpId;
+	private int lastRecvKpIdFrames;
+	private int maxRecvFramesPerKeyPair =
+			MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR;
 
 	public ZwfMode3FullStreamDecrypter(InputStream in, AuthenticatedCipher cipher,
 			PcsRatchet ratchet, Mode3FullRatchet mode3FullRatchet,
@@ -127,6 +137,16 @@ public class ZwfMode3FullStreamDecrypter {
 
 	public void setStreamIdAcceptor(@Nullable LongPredicate acceptor) {
 		streamIdAcceptor = acceptor;
+	}
+
+	public void setReceivedSinceRotation(@Nullable AtomicLong counter) {
+		receivedSinceRotation = counter;
+	}
+
+	public void setMaxRecvFramesPerKeyPair(int max) {
+		if (max < MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR)
+			throw new IllegalArgumentException();
+		maxRecvFramesPerKeyPair = max;
 	}
 
 	public boolean lastFrameCarriedPqSecret() {
@@ -190,6 +210,10 @@ public class ZwfMode3FullStreamDecrypter {
 				throw new FormatException();
 
 			KpId kpId = parseKpId(m3fHeader.getKpId());
+			int kpIdFrames = Objects.equals(kpId, lastRecvKpId)
+					? lastRecvKpIdFrames + 1 : 1;
+			if (kpId != null && kpIdFrames > maxRecvFramesPerKeyPair)
+				throw new FormatException();
 			bodyMK = classicalMK;
 			Mode3FullState pendingM3f = null;
 			boolean pqSecretMixed = false;
@@ -266,6 +290,10 @@ public class ZwfMode3FullStreamDecrypter {
 			streamChainKey = nextStreamChainKey;
 			nextStreamChainKey = null;
 			lastFramePq = pqSecretMixed;
+			lastRecvKpId = kpId;
+			lastRecvKpIdFrames = kpIdFrames;
+			AtomicLong received = receivedSinceRotation;
+			if (received != null) received.incrementAndGet();
 			streamMessageNumber++;
 			frameNumber++;
 			if (stateCallback != null) stateCallback.accept(recvState);

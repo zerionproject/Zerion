@@ -13,6 +13,30 @@ import static org.junit.Assert.assertTrue;
 public class VideoConsentGateTest {
 
 	@Test
+	public void noOwnRequestStartsWhileTheOtherPhoneIsAsking() {
+		VideoConsentGate g = new VideoConsentGate();
+		g.onLocalVideoCallPlaced();
+		assertEquals(OfferDecision.PROMPT_USER, g.onRemoteOffer(true, true));
+		assertFalse(g.onLocalRequest(true, true));
+		assertFalse(g.onAutoRequest(true, true));
+		assertFalse(g.isCaptureArmed());
+		assertTrue(g.isRemoteOfferPending());
+	}
+
+	@Test
+	public void aSessionResetKeepsAPendingRequestFromTheOtherPhone() {
+		VideoConsentGate g = new VideoConsentGate();
+		assertEquals(OfferDecision.PROMPT_USER, g.onRemoteOffer(true, true));
+		assertTrue(g.resetUnlessOfferPending());
+		assertTrue(g.isRemoteOfferPending());
+		assertFalse(g.isCaptureArmed());
+		assertTrue(g.onLocalAccept(true, true));
+		assertFalse(g.resetUnlessOfferPending());
+		assertFalse(g.isCaptureArmed());
+		assertFalse(g.isVideoWanted());
+	}
+
+	@Test
 	public void testRemoteOfferAloneNeverArmsCapture() {
 		VideoConsentGate g = new VideoConsentGate();
 		assertEquals(OfferDecision.PROMPT_USER, g.onRemoteOffer(true, true));

@@ -33,13 +33,14 @@ os.chdir(ROOT)
 CURRENT_DOCS = [
     "README.md", "SECURITY.md", "CONTRIBUTING.md",
     "docs/ZERION_OVERVIEW.md", "docs/ZERION_TECHNICAL_WHITEPAPER.md",
-    "docs/ZERION_MESH_AND_I2P.md", "docs/bridges/README.md", "docs/protocol/README.md",
+    "docs/ZERION_MESH_AND_I2P.md", "docs/DENIABILITY.md", "docs/bridges/README.md", "docs/protocol/README.md",
     "docs/protocol/SECURITY_CLAIMS.md", "docs/protocol/SECURITY_CLAIMS_MATRIX.md",
     "docs/protocol/ZTP-ZPP.md", "docs/protocol/ZWF-MODE3FULL.md",
     "docs/protocol/ASYNC-SEALED-SENDER.md", "docs/protocol/MESH-TRANSPORT.md",
     "docs/protocol/EMBEDDED-I2P.md", "docs/WALLET_ARCHITECTURE.md",
     "docs/BTC_ARCHITECTURE.md", "docs/XMR_ARCHITECTURE.md",
-    "docs/WALLET_SECURITY_INVARIANTS.md", "docs/FDROID.md",
+    "docs/WALLET_SECURITY_INVARIANTS.md", "docs/FDROID.md", "docs/NETWORK_PATHS.md",
+    "docs/TEAM_SETUP.md",
     "fastlane/metadata/android/en-US/full_description.txt",
     "fastlane/metadata/android/en-US/short_description.txt",
 ]
@@ -158,7 +159,29 @@ def check_claims_matrix():
             continue
         if base in src or any(k.startswith(base) for k in src):
             continue
+        if named_in_code(n):
+            continue
         errors.append("SECURITY_CLAIMS.md: no source or test named %s" % n)
+
+
+CODE_CORPUS = []
+
+
+def named_in_code(n):
+    if not CODE_CORPUS:
+        parts = []
+        for ext in ("java", "kt", "xml", "gradle", "cpp"):
+            for path in glob.glob("**/*." + ext, recursive=True):
+                if "build" in path.replace(os.sep, "/").split("/"):
+                    continue
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    parts.append(f.read())
+        CODE_CORPUS.append(chr(10).join(parts))
+    corpus = CODE_CORPUS[0]
+    name = n.rstrip("*")
+    if "/" in name:
+        return '"%s"' % name.rstrip("/").split("/")[-1] in corpus
+    return name in corpus
 
 
 def check_crypto(name, text, crypto):

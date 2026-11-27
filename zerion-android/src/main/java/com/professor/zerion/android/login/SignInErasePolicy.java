@@ -24,8 +24,8 @@ public final class SignInErasePolicy implements ErasePolicy {
 		return prefs.getBoolean(KEY_WIPE_ON_FAILURES, false);
 	}
 
-	void setEnabled(boolean enabled) {
-		prefs.edit().putBoolean(KEY_WIPE_ON_FAILURES, enabled).commit();
+	boolean setEnabled(boolean enabled) {
+		return prefs.edit().putBoolean(KEY_WIPE_ON_FAILURES, enabled).commit();
 	}
 
 	@Override

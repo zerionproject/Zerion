@@ -76,6 +76,12 @@ public class XmrWalletFragment extends BaseFragment {
 		return v;
 	}
 
+	@Override
+	public void onViewCreated(View view, @Nullable Bundle state) {
+		super.onViewCreated(view, state);
+		if (state == null) XmrNodeSettings.promptIfPaused(this, viewModel);
+	}
+
 	private void observe() {
 		viewModel.getWallets().observe(getViewLifecycleOwner(), this::render);
 		viewModel.getBusy().observe(getViewLifecycleOwner(), busy -> {
@@ -265,7 +271,7 @@ public class XmrWalletFragment extends BaseFragment {
 				false);
 		seed.setMinLines(3);
 		seed.setMaxLines(8);
-		IncognitoInputHelper.configureIncognitoInput(seed, false);
+		IncognitoInputHelper.configureSecretPhraseField(seed);
 		TextView heightNote = new TextView(requireContext());
 		heightNote.setText(R.string.wallet_xmr_restore_height_note);
 		heightNote.setTextSize(12);

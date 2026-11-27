@@ -4,18 +4,18 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.crypto.CryptoComponent;
-import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
-import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
+import org.zerionproject.core.api.versioning.event.ClientVersionUpdatedEvent;
 import org.zerionproject.core.crypto.async.AsyncPrekeyBundle;
 import org.zerionproject.core.crypto.async.MeshBundleStore;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.event.PrekeyBundleReceivedEvent;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +35,7 @@ public class MeshBundleManager implements EventListener {
 	private final ContactManager contactManager;
 	private final MeshManager meshManager;
 	private final MessagingManager messagingManager;
+	private final MeshLinkKeys linkKeys;
 	private final Executor ioExecutor;
 	private final Map<Integer, Long> lastSent = new ConcurrentHashMap<>();
 
@@ -42,12 +43,13 @@ public class MeshBundleManager implements EventListener {
 	MeshBundleManager(EventBus eventBus, MeshBundleStore store,
 			CryptoComponent crypto, ContactManager contactManager,
 			MeshManager meshManager, MessagingManager messagingManager,
-			@IoExecutor Executor ioExecutor) {
+			MeshLinkKeys linkKeys, @IoExecutor Executor ioExecutor) {
 		this.store = store;
 		this.crypto = crypto;
 		this.contactManager = contactManager;
 		this.meshManager = meshManager;
 		this.messagingManager = messagingManager;
+		this.linkKeys = linkKeys;
 		this.ioExecutor = ioExecutor;
 		eventBus.addListener(this);
 	}
@@ -62,22 +64,23 @@ public class MeshBundleManager implements EventListener {
 		} else if (e instanceof ContactConnectedEvent) {
 			ContactId c = ((ContactConnectedEvent) e).getContactId();
 			ioExecutor.execute(() -> maybeSendOurBundle(c));
+		} else if (e instanceof ClientVersionUpdatedEvent) {
+			ClientVersionUpdatedEvent v = (ClientVersionUpdatedEvent) e;
+			if (v.getClientVersion().getClientId()
+					.equals(MessagingManager.CLIENT_ID)) {
+				ContactId c = v.getContactId();
+				ioExecutor.execute(() -> maybeSendOurBundle(c));
+			}
 		}
 	}
 
 	private void storeBundle(ContactId contactId, byte[] bundleBytes) {
 		try {
 			AsyncPrekeyBundle bundle = AsyncPrekeyBundle.decode(bundleBytes);
-			if (!bundle.verify(crypto)) {
-				return;
-			}
 			Contact c = contactManager.getContact(contactId);
-			byte[] ed = c.getAuthor().getPublicKey().getEncoded();
-			byte[] mlDsa = c.getMlDsaSigPublicKey();
-			if (mlDsa == null) return;
-			byte[] identitySigPub =
-					new HybridSignaturePublicKey(ed, mlDsa).getEncoded();
-			if (!MeshBundleStore.matchesIdentity(bundle, identitySigPub)) {
+			byte[] identitySigPub = MeshBundleStore.identityOf(c);
+			if (identitySigPub == null) return;
+			if (!bundle.verifyFromContact(crypto, identitySigPub)) {
 				return;
 			}
 			store.putContactBundle(contactId.getInt(), bundleBytes);
@@ -90,7 +93,11 @@ public class MeshBundleManager implements EventListener {
 		long now = System.currentTimeMillis();
 		if (last != null && now - last < RESEND_INTERVAL_MS) return;
 		try {
-			AsyncPrekeyBundle bundle = meshManager.publishBundle(contactId);
+			UnsignedFormsMemory.Form form = linkKeys.form(contactId);
+			if (form == UnsignedFormsMemory.Form.UNKNOWN) return;
+			boolean signed = form == UnsignedFormsMemory.Form.SIGNED;
+			AsyncPrekeyBundle bundle =
+					meshManager.publishBundle(contactId, signed);
 			messagingManager.sendPrekeyBundle(contactId, bundle.encode());
 			lastSent.put(contactId.getInt(), now);
 		} catch (Exception e) {

@@ -5,6 +5,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 @NotNullByDefault
 public class PasswordEntry {
 
+	public static final String KIND_PASSWORD = "";
+	public static final String KIND_BOOKMARK = "bookmark";
+
+	public final String kind;
 	public final String title;
 	public final String username;
 	public final String password;
@@ -15,6 +19,12 @@ public class PasswordEntry {
 
 	public PasswordEntry(String title, String username, String password,
 			String url, String notes) {
+		this(KIND_PASSWORD, title, username, password, url, notes);
+	}
+
+	public PasswordEntry(String kind, String title, String username,
+			String password, String url, String notes) {
+		this.kind = kind;
 		this.title = title;
 		this.username = username;
 		this.password = password;
@@ -24,8 +34,18 @@ public class PasswordEntry {
 		this.modifiedAt = System.currentTimeMillis();
 	}
 
+	public static PasswordEntry bookmark(String title, String url,
+			String notes) {
+		return new PasswordEntry(KIND_BOOKMARK, title, "", "", url, notes);
+	}
+
+	public boolean isBookmark() {
+		return KIND_BOOKMARK.equals(kind);
+	}
+
 	public PasswordEntry(String title, String username, String password,
 			String url, String notes, long createdAt, long modifiedAt) {
+		this.kind = KIND_PASSWORD;
 		this.title = title;
 		this.username = username;
 		this.password = password;

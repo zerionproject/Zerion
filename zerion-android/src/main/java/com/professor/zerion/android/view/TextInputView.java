@@ -71,6 +71,11 @@ public class TextInputView extends LinearLayout {
 		textInput = findViewById(R.id.emojiTextInput);
 		textInput.setAllowEmptyText(allowEmptyText);
 		if (hint != null) textInput.setHint(hint);
+		View sendButton = findViewById(R.id.compositeSendButton);
+		if (sendButton instanceof CompositeSendButton) {
+			((CompositeSendButton) sendButton).setAttachmentButton(
+					findViewById(R.id.attachmentButton));
+		}
 	}
 
 	@LayoutRes

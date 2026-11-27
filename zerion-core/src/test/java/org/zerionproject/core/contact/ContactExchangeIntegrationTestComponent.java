@@ -50,6 +50,16 @@ interface ContactExchangeIntegrationTestComponent
 
 	ContactExchangeManager getContactExchangeManager();
 
+	org.zerionproject.core.api.crypto.CryptoComponent getCryptoComponent();
+
+	org.zerionproject.core.api.db.DatabaseComponent getDatabaseComponent();
+
+	org.zerionproject.core.api.system.Clock getClock();
+
+	org.zerionproject.core.api.properties.TransportPropertyManager getTransportPropertyManager();
+
+	org.zerionproject.core.api.settings.SettingsManager getSettingsManager();
+
 	ContactManager getContactManager();
 
 	EventBus getEventBus();

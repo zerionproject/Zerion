@@ -3,8 +3,10 @@ package com.professor.zerion.android.view;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.IBinder;
 import android.text.Editable;
+import android.text.InputFilter;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
@@ -17,6 +19,8 @@ import com.vanniktech.emoji.RecentEmoji;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.ZerionApplication;
+
+import java.util.Arrays;
 
 import javax.inject.Inject;
 
@@ -54,6 +58,7 @@ public class EmojiTextInputView extends LinearLayout implements
 	private boolean emptyTextAllowed = false;
 	private boolean isEmpty = true;
 	private boolean keyboardOpen = false;
+	private boolean locked = false;
 
 	public EmojiTextInputView(Context context) {
 		this(context, null);
@@ -79,14 +84,22 @@ public class EmojiTextInputView extends LinearLayout implements
 				R.styleable.EmojiTextInputView_textPaddingEnd, 0);
 		int maxLines =
 				a.getInteger(R.styleable.EmojiTextInputView_maxTextLines, 0);
+		Drawable textBackground = a.getDrawable(
+				R.styleable.EmojiTextInputView_inputTextBackground);
 		a.recycle();
 
 		editText = findViewById(R.id.input_text);
 		textSavedByDefault = editText.isSaveEnabled();
 		int left = editText.getPaddingLeft();
 		editText.setPadding(left, 0, paddingEnd, paddingBottom);
+		if (textBackground != null) editText.setBackground(textBackground);
 		if (maxLines > 0) editText.setMaxLines(maxLines);
 		editText.addTextChangedListener(this);
+		InputFilter[] filters = editText.getFilters();
+		InputFilter[] withLock = Arrays.copyOf(filters, filters.length + 1);
+		withLock[filters.length] = (source, start, end, dest, dstart, dend) ->
+				locked && end > start ? "" : null;
+		editText.setFilters(withLock);
 		editText.setOnEditorActionListener((v, actionId, event) -> {
 			if (actionId == IME_ACTION_SEND) {
 				listener.onSendEvent();
@@ -284,6 +297,22 @@ public class EmojiTextInputView extends LinearLayout implements
 		if (emojiPopup.isShowing()) emojiPopup.dismiss();
 		IBinder token = editText.getWindowToken();
 		imm.hideSoftInputFromWindow(token, 0);
+	}
+
+	void setLocked(boolean locked) {
+		if (this.locked == locked) return;
+		this.locked = locked;
+		editText.setFocusable(!locked);
+		editText.setFocusableInTouchMode(!locked);
+		emojiToggle.setEnabled(!locked);
+		if (locked) {
+			editText.clearFocus();
+			if (emojiPopup != null && imm != null) hideSoftKeyboard();
+		}
+	}
+
+	boolean isLocked() {
+		return locked;
 	}
 
 	private void onKeyboardOpened(

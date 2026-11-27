@@ -1,22 +1,22 @@
 {
   "$comment": "Single source of truth for every public version, artifact and platform reference. Documentation and the website are checked against this file (scripts/check-docs.py) and the website download block is rendered from it (scripts/render-release-refs.py). Change it only together with a release; never edit a hash by hand, compute it from the published artifact. The release reference is the tag: a commit hash is deliberately absent, because this file ships inside the release commit and cannot name that commit's own hash. Consumers resolve the tag (F-Droid records its own resolved hash in fdroiddata).",
   "android": {
-    "version": "3.0.18",
-    "versionCode": 31800,
-    "tag": "v3.0.18",
+    "version": "3.0.19",
+    "versionCode": 31900,
+    "tag": "v3.0.19",
     "minAndroid": "10",
     "minApi": 29,
     "apk": {
-      "name": "zerion-3.0.18.apk",
-      "url": "https://github.com/zerionproject/Zerion/releases/download/v3.0.18/zerion-3.0.18.apk",
-      "sha256": "e93957a514eb33276e27239fa7e586a7e1056aea32b5c386e2aaf2d8877b93e7",
-      "sizeBytes": 88101733,
-      "verified": "2026-10-20"
+      "name": "zerion-3.0.19.apk",
+      "url": "https://github.com/zerionproject/Zerion/releases/download/v3.0.19/zerion-3.0.19.apk",
+      "sha256": "c6c430b9ebe35f091a3c074b9b8534085aa68d953455d1ef14f4669e00311f21",
+      "sizeBytes": 90446777,
+      "verified": "2026-11-27"
     },
     "signingCertSha256": "d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8",
     "channels": {
       "github": {
-        "version": "3.0.18",
+        "version": "3.0.19",
         "url": "https://github.com/zerionproject/Zerion/releases/latest"
       },
       "play": {

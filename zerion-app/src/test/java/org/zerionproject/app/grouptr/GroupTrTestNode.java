@@ -16,6 +16,7 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
 import org.zerionproject.core.api.crypto.PostQuantumConstants;
 import org.zerionproject.core.api.crypto.SignaturePrivateKey;
 import org.zerionproject.core.api.crypto.SignaturePublicKey;
@@ -88,6 +89,19 @@ final class GroupTrTestNode {
 		}
 	}
 
+	private static final class Timer {
+
+		private final Runnable task;
+		private final long delay;
+		private final long dueAt;
+
+		private Timer(Runnable task, long delay, long dueAt) {
+			this.task = task;
+			this.delay = delay;
+			this.dueAt = dueAt;
+		}
+	}
+
 	private interface Handler {
 		@Nullable
 		Object handle(String name, Object[] args) throws Exception;
@@ -96,6 +110,7 @@ final class GroupTrTestNode {
 	final LocalAuthor local;
 	GroupTrManagerImpl manager;
 	final List<Sent> sent = new ArrayList<>();
+	final List<MessageId> userMessages = new ArrayList<>();
 	final List<Object> broadcasts = new ArrayList<>();
 	final List<String> untransactedWrites = new ArrayList<>();
 	long now = 1_000_000L;
@@ -111,6 +126,8 @@ final class GroupTrTestNode {
 	private final Map<MessageId, Integer> timesRead = new HashMap<>();
 	private int signatureChecks = 0;
 	private final Set<String> withoutMlDsa = new HashSet<>();
+	private final Map<String, byte[]> entryMlDsa = new HashMap<>();
+	final List<byte[]> verifiedWithMlDsa = new ArrayList<>();
 	private final Map<String, Settings> settings = new HashMap<>();
 	private final Map<String, BdfList> lists = new HashMap<>();
 	private final Map<MessageId, Message> messages = new HashMap<>();
@@ -127,6 +144,8 @@ final class GroupTrTestNode {
 	private final Set<MessageId> sentCopies = new HashSet<>();
 	private final Set<MessageId> acknowledgedCopies = new HashSet<>();
 	boolean failBroadcasts = false;
+	boolean deferTimers = false;
+	private final List<Timer> timers = new ArrayList<>();
 	private final boolean deferIo;
 	private int txnDepth = 0;
 	private boolean writeTxn = false;
@@ -159,14 +178,18 @@ final class GroupTrTestNode {
 	private GroupTrManagerImpl newManager() {
 		java.util.concurrent.Executor io = deferIo
 				? deferred::add : Runnable::run;
-		return new GroupTrManagerImpl(
-				fake(DatabaseComponent.class, this::db), io,
-				fake(SettingsManager.class, this::settings),
+		DatabaseComponent db = fake(DatabaseComponent.class, this::db);
+		SettingsManager settingsManager =
+				fake(SettingsManager.class, this::settings);
+		ContactManager contactManager =
+				fake(ContactManager.class, this::contacts);
+		MessagingManager messagingManager =
+				fake(MessagingManager.class, this::messaging);
+		return new GroupTrManagerImpl(db, io, settingsManager,
 				fake(ClientHelper.class, this::client),
 				fake(CryptoComponent.class, this::crypto),
 				fake(IdentityManager.class, this::identity),
-				fake(ContactManager.class, this::contacts),
-				fake(MessagingManager.class, this::messaging),
+				contactManager, messagingManager,
 				fake(EventBus.class, (name, args) -> {
 					if (name.equals("broadcast")) {
 						if (failBroadcasts) throw new IllegalStateException();
@@ -177,9 +200,19 @@ final class GroupTrTestNode {
 				fake(Clock.class, (name, args) -> now),
 				fake(org.zerionproject.core.api.system.TaskScheduler.class,
 						(name, args) -> {
-							((Runnable) args[0]).run();
+							if (deferTimers) {
+								long delay = ((java.util.concurrent.TimeUnit)
+										args[3]).toMillis((Long) args[2]);
+								timers.add(new Timer((Runnable) args[0],
+										delay, now + delay));
+							} else {
+								((Runnable) args[0]).run();
+							}
 							return null;
-						}));
+						}),
+				userMessages::add,
+				new org.zerionproject.app.messaging.UnsignedFormsMemory(db,
+						settingsManager, contactManager, messagingManager));
 	}
 
 	void restart() throws Exception {
@@ -188,11 +221,15 @@ final class GroupTrTestNode {
 	}
 
 	ContactId addContact(byte[] pub) {
+		return addContact(pub, ML_DSA_PUB);
+	}
+
+	ContactId addContact(byte[] pub, @Nullable byte[] mlDsa) {
 		ContactId id = new ContactId(nextContact.getAndIncrement());
 		Author a = new Author(new AuthorId(getRandomId()), 1, "c" + id.getInt(),
 				new SignaturePublicKey(pub));
 		contacts.put(id, new Contact(id, a, local.getId(), null, null, true,
-				true, false, ML_DSA_PUB));
+				true, false, mlDsa));
 		return id;
 	}
 
@@ -218,9 +255,36 @@ final class GroupTrTestNode {
 		return deadlines.get(id);
 	}
 
+	long timestampOf(MessageId id) {
+		Message m = messages.get(id);
+		if (m == null) throw new AssertionError("no message");
+		return m.getTimestamp();
+	}
+
 	@Nullable
 	Long cleanupTimerDuration(MessageId id) {
 		return durations.get(id);
+	}
+
+	void runTimers() {
+		List<Timer> run = new ArrayList<>(timers);
+		timers.clear();
+		for (Timer t : run) t.task.run();
+	}
+
+	void runDueTimers() {
+		List<Timer> due = new ArrayList<>();
+		for (Timer t : timers) {
+			if (t.dueAt <= now) due.add(t);
+		}
+		timers.removeAll(due);
+		for (Timer t : due) t.task.run();
+	}
+
+	List<Long> waitingTimerDelays() {
+		List<Long> delays = new ArrayList<>();
+		for (Timer t : timers) delays.add(t.delay);
+		return delays;
 	}
 
 	void runDeferred() {
@@ -360,9 +424,10 @@ final class GroupTrTestNode {
 						(long) m.getRole().getInt()));
 				continue;
 			}
+			byte[] ml = entryMlDsa.get(toHexString(m.getPubKey()));
 			list.add(BdfList.of(m.getPubKey(), m.getName(), m.getJoinedAt(),
 					m.getJoinedAtEpoch(), (long) m.getRole().getInt(),
-					ML_DSA_PUB));
+					ml == null ? ML_DSA_PUB : ml));
 		}
 		out.put(GroupTrConstants.S_MEMBERS, toHexString(token(list)));
 		settings.put(GroupTrConstants.SETTINGS_NS_PREFIX
@@ -405,6 +470,10 @@ final class GroupTrTestNode {
 
 	void withoutMlDsaKey(byte[] pub) {
 		withoutMlDsa.add(toHexString(pub));
+	}
+
+	void entryMlDsaKey(byte[] pub, byte[] mlDsa) {
+		entryMlDsa.put(toHexString(pub), mlDsa);
 	}
 
 	static GroupTrMember creator(byte[] pub) {
@@ -939,6 +1008,16 @@ final class GroupTrTestNode {
 				durations.putIfAbsent(id, (Long) a[2]);
 				return null;
 			}
+			case "lowerCleanupTimerDuration": {
+				MessageId id = (MessageId) a[1];
+				if (stored(id) == null && !messages.containsKey(id)) {
+					throw new NoSuchMessageException();
+				}
+				if (!deadlines.containsKey(id)) {
+					durations.merge(id, (Long) a[2], Math::min);
+				}
+				return null;
+			}
 			case "getMessageStatus": {
 				statusReads++;
 				MessageId id = (MessageId) a[2];
@@ -1232,6 +1311,10 @@ final class GroupTrTestNode {
 			}
 			case "verifyHybridSignature":
 				signatureChecks++;
+				if (a[3] instanceof HybridSignaturePublicKey) {
+					verifiedWithMlDsa.add(((HybridSignaturePublicKey) a[3])
+							.getMlDsaPublicKey());
+				}
 				return !Arrays.equals((byte[]) a[0], FORGED_SIG);
 			case "hybridSign":
 				return SIG.clone();

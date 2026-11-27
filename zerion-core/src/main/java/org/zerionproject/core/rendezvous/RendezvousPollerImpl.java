@@ -53,9 +53,11 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,6 +73,16 @@ import static org.zerionproject.core.api.contact.PendingContactState.ADDING_CONT
 import static org.zerionproject.core.api.contact.PendingContactState.FAILED;
 import static org.zerionproject.core.api.contact.PendingContactState.OFFLINE;
 import static org.zerionproject.core.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
+import static org.zerionproject.core.api.contact.request.ContactRequestConstants.DIAL_BURST_INTERVAL_MS;
+import static org.zerionproject.core.api.contact.request.ContactRequestConstants.DIAL_EAGER_INTERVAL_MS;
+import static org.zerionproject.core.api.contact.request.ContactRequestConstants.DIAL_EAGER_PERIOD_MS;
+import static org.zerionproject.core.api.contact.request.ContactRequestConstants.DIAL_BURST_PERIOD_MS;
+import static org.zerionproject.core.api.contact.request.ContactRequestConstants.DIAL_FAST_INTERVAL_MS;
+import static org.zerionproject.core.api.contact.request.ContactRequestConstants.DIAL_FAST_PERIOD_MS;
+import static org.zerionproject.core.api.contact.request.ContactRequestConstants.DIAL_SLOW_INTERVAL_MS;
+import static org.zerionproject.core.api.contact.request.ContactRequestConstants.MAX_EAGER_DIALS;
+import static org.zerionproject.core.api.contact.request.ContactRequestConstants.RENDEZVOUS_MODE_DIAL_ONLY;
+import static org.zerionproject.core.api.contact.request.ContactRequestConstants.RENDEZVOUS_MODE_PUBLISH_ONLY;
 import static org.zerionproject.core.rendezvous.RendezvousConstants.FAST_POLLING_DURATION_MS;
 import static org.zerionproject.core.rendezvous.RendezvousConstants.FAST_POLLING_INTERVAL_MS;
 import static org.zerionproject.core.rendezvous.RendezvousConstants.POLLING_INTERVAL_MS;
@@ -163,7 +175,8 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 	private void addPendingContact(PendingContact p) {
 		long now = clock.currentTimeMillis();
 
-		long expiry = p.getTimestamp() + RENDEZVOUS_TIMEOUT_MS;
+		long expiry = p.getExpiry() > 0 ? p.getExpiry()
+				: p.getTimestamp() + RENDEZVOUS_TIMEOUT_MS;
 		if (expiry <= now) {
 			expire(p.getId());
 			return;
@@ -243,7 +256,8 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 						.isAlice(p.getPublicKey(), handshakeKeyPair);
 			}
 			boolean classical = !p.isPostQuantum();
-			CryptoState cs = new CryptoState(rendezvousKey, alice, expiry, classical, now);
+			CryptoState cs = new CryptoState(rendezvousKey, alice, expiry,
+					classical, now, p.getRendezvousMode(), p.getTimestamp());
 			requireNull(cryptoStates.put(p.getId(), cs));
 			for (PluginState ps : pluginStates.values()) {
 				RendezvousEndpoint endpoint =
@@ -285,6 +299,9 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		TransportId t = plugin.getId();
 		KeyMaterialSource k =
 				rendezvousCrypto.createKeyMaterialSource(cs.rendezvousKey, t);
+		if (cs.mode == RENDEZVOUS_MODE_DIAL_ONLY) {
+			return plugin.createDialOnlyRendezvousEndpoint(k, cs.alice);
+		}
 		Handler h = new Handler(p, t, true, cs.classical);
 		return plugin.createRendezvousEndpoint(k, cs.alice, h);
 	}
@@ -325,11 +342,25 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		List<Pair<TransportProperties, ConnectionHandler>> properties =
 				new ArrayList<>();
 		List<PendingContactId> polled = new ArrayList<>();
+		Set<PendingContactId> eager = eagerDialers(now);
 		for (Entry<PendingContactId, RendezvousEndpoint> e :
 				ps.endpoints.entrySet()) {
 			PendingContactId pid = e.getKey();
 			CryptoState cs = cryptoStates.get(pid);
 			if (cs == null) continue;
+			if (cs.mode == RENDEZVOUS_MODE_PUBLISH_ONLY) continue;
+			if (cs.mode == RENDEZVOUS_MODE_DIAL_ONLY) {
+				if (!dialDue(lastPollTimes.get(pid), now,
+						dialOnlyInterval(cs, now, eager.contains(pid)))) {
+					continue;
+				}
+				TransportProperties props =
+						e.getValue().getRemoteTransportProperties();
+				properties.add(new Pair<>(props,
+						new Handler(pid, t, false, cs.classical)));
+				polled.add(pid);
+				continue;
+			}
 
 			boolean fastMode =
 					(now - cs.createdAt) < FAST_POLLING_DURATION_MS;
@@ -388,8 +419,51 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 			poll(p.getId());
 		});
 	}
+	static long dialOnlyInterval(long deliveredAt, long now) {
+		long age = now - deliveredAt;
+		if (age < 0) return DIAL_FAST_INTERVAL_MS;
+		if (age < DIAL_EAGER_PERIOD_MS) return DIAL_EAGER_INTERVAL_MS;
+		if (age < DIAL_BURST_PERIOD_MS) return DIAL_BURST_INTERVAL_MS;
+		return age < DIAL_FAST_PERIOD_MS
+				? DIAL_FAST_INTERVAL_MS : DIAL_SLOW_INTERVAL_MS;
+	}
+
+	private static long dialOnlyInterval(CryptoState cs, long now,
+			boolean eager) {
+		long interval = dialOnlyInterval(cs.rowTimestamp, now);
+		if (interval == DIAL_EAGER_INTERVAL_MS && !eager) {
+			return DIAL_BURST_INTERVAL_MS;
+		}
+		return interval;
+	}
+
+	static boolean dialDue(@Nullable Long lastPoll, long now, long interval) {
+		if (lastPoll == null) return true;
+		long since = now - lastPoll;
+		return since < 0 || since + FAST_POLLING_INTERVAL_MS / 2 >= interval;
+	}
+
+	private Set<PendingContactId> eagerDialers(long now) {
+		List<Entry<PendingContactId, CryptoState>> recent = new ArrayList<>();
+		for (Entry<PendingContactId, CryptoState> e : cryptoStates.entrySet()) {
+			CryptoState cs = e.getValue();
+			if (cs.mode != RENDEZVOUS_MODE_DIAL_ONLY) continue;
+			long age = now - cs.rowTimestamp;
+			if (age < 0 || age >= DIAL_EAGER_PERIOD_MS) continue;
+			recent.add(e);
+		}
+		recent.sort((a, b) -> Long.compare(b.getValue().rowTimestamp,
+				a.getValue().rowTimestamp));
+		Set<PendingContactId> eager = new HashSet<>();
+		for (int i = 0; i < recent.size() && i < MAX_EAGER_DIALS; i++) {
+			eager.add(recent.get(i).getKey());
+		}
+		return eager;
+	}
+
 	private void poll(PendingContactId p) {
 		CryptoState cs = cryptoStates.get(p);
+		if (cs != null && cs.mode == RENDEZVOUS_MODE_PUBLISH_ONLY) return;
 		boolean classical = cs != null && cs.classical;
 		for (PluginState ps : pluginStates.values()) {
 			RendezvousEndpoint endpoint = ps.endpoints.get(p);
@@ -492,11 +566,16 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		private final long createdAt;
 
 		private final boolean classical;
+		private final int mode;
+		private final long rowTimestamp;
 
 		private int numEndpoints = 0;
 
 		private CryptoState(SecretKey rendezvousKey, boolean alice,
-				long expiry, boolean classical, long createdAt) {
+				long expiry, boolean classical, long createdAt, int mode,
+				long rowTimestamp) {
+			this.mode = mode;
+			this.rowTimestamp = rowTimestamp;
 			this.rendezvousKey = rendezvousKey;
 			this.alice = alice;
 			this.expiry = expiry;

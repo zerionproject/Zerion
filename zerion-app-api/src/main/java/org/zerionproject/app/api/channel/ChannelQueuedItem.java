@@ -15,7 +15,8 @@ public final class ChannelQueuedItem {
 		POST,
 		EDIT,
 		DELETE,
-		COMMENTS_SETTING
+		COMMENTS_SETTING,
+		MEMBER_POST
 	}
 
 	public enum Reason {

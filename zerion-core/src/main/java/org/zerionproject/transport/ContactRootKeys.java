@@ -14,14 +14,32 @@ public final class ContactRootKeys {
 	private final SecretKey current;
 	@Nullable
 	private final SecretKey pending;
+	@Nullable
+	private final SecretKey pendingConfirmKey;
+	@Nullable
+	private final SecretKey pendingIdKey;
 	private final boolean pendingConfirmed;
 
 	public ContactRootKeys(long epoch, SecretKey current,
 			@Nullable SecretKey pending, boolean pendingConfirmed) {
+		this(epoch, current, pending, null, null, pendingConfirmed);
+	}
+
+	public ContactRootKeys(long epoch, SecretKey current,
+			@Nullable SecretKey pending, @Nullable SecretKey pendingConfirmKey,
+			@Nullable SecretKey pendingIdKey, boolean pendingConfirmed) {
 		if (epoch < 0) throw new IllegalArgumentException();
+		if (pending == null && pendingConfirmKey != null) {
+			throw new IllegalArgumentException();
+		}
+		if ((pendingConfirmKey == null) != (pendingIdKey == null)) {
+			throw new IllegalArgumentException();
+		}
 		this.epoch = epoch;
 		this.current = current;
 		this.pending = pending;
+		this.pendingConfirmKey = pendingConfirmKey;
+		this.pendingIdKey = pendingIdKey;
 		this.pendingConfirmed = pending != null && pendingConfirmed;
 	}
 
@@ -42,6 +60,20 @@ public final class ContactRootKeys {
 		return pending;
 	}
 
+	@Nullable
+	public SecretKey getPendingConfirmKey() {
+		return pendingConfirmKey;
+	}
+
+	@Nullable
+	public SecretKey getPendingIdKey() {
+		return pendingIdKey;
+	}
+
+	public boolean isPendingSeparated() {
+		return pendingConfirmKey != null;
+	}
+
 	public long getPendingEpoch() {
 		return epoch + 1;
 	}
@@ -59,5 +91,12 @@ public final class ContactRootKeys {
 		if (e == epoch) return current;
 		if (pending != null && e == epoch + 1) return pending;
 		return null;
+	}
+
+	public void clear() {
+		current.clear();
+		if (pending != null) pending.clear();
+		if (pendingConfirmKey != null) pendingConfirmKey.clear();
+		if (pendingIdKey != null) pendingIdKey.clear();
 	}
 }

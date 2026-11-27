@@ -33,4 +33,10 @@ public interface DuplexPlugin extends Plugin {
 	@Nullable
 	RendezvousEndpoint createRendezvousEndpoint(KeyMaterialSource k,
 			boolean alice, ConnectionHandler incoming);
+
+	@Nullable
+	default RendezvousEndpoint createDialOnlyRendezvousEndpoint(
+			KeyMaterialSource k, boolean alice) {
+		return null;
+	}
 }

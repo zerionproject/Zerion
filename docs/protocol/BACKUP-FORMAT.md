@@ -38,6 +38,13 @@ integers big endian:
 | vault length | 4 | 0 in version 3 (no file ever carried a vault) |
 | vault | as given | ignored |
 
+A bundle carries no app version. A backup made by a newer app and restored
+into an older one opens if the database schema version is the same, but data
+the older app does not know may be misread; for example a contact root in
+the middle of a version 3 evolution (3.0.19, see ZWF-ROOT-EVOLUTION.md) can
+leave that contact out of sync until it is re-added. Restore with the same
+or a newer app.
+
 Nothing may follow the last field. Every length is checked against the bytes
 that remain before anything is allocated (`BackupBundle`), and a streamed
 bundle is parsed field by field as it arrives (`BundleStreamParser`), so the
@@ -67,6 +74,17 @@ labels `Zerion-Account-Backup-ZBK3-enc` and
 the encryption key is never used for two files. The passphrase check is
 HMAC-SHA256 under the verification key over a fixed label; it tells a wrong
 passphrase apart from a damaged file and is compared in constant time.
+
+The file carries the database key and no device-bound factor, so anyone who
+has it can try passphrases offline. Export therefore refuses a passphrase
+that, after normalization, is shorter than 12 characters, has fewer than 8
+different characters, or uses only one class of characters (lower case,
+upper case, digits, anything else), so `aaaaaaaaaaaa` and `123456789012`
+are refused; `AccountBackupManager.exportAccount` repeats these checks
+before anything is copied. The export dialog also requires a rating in the
+upper two bands of the strength meter and shows the meter while the
+passphrase is typed (`BackupPassphrase`). These rules raise the cost of the
+weakest choices only; they do not measure the entropy of a passphrase.
 
 Chunks: the plaintext is cut into chunks of the header's chunk size (1 MiB
 when exporting); only the last one may be shorter, so the number of chunks
@@ -112,7 +130,10 @@ AES-256-GCM message (4 byte nonce length, 12 byte nonce, ciphertext and tag)
 over the whole bundle. Version 2 derives an encryption and a verification
 key with HKDF-SHA256 (labels `Zerion-Account-Backup-ZBK2-enc` and
 `-verify`) and authenticates the header; version 1 uses the Argon2id output
-for both and authenticates a fixed label with the version and flags.
+itself as both the HMAC-SHA256 key of the passphrase check and the
+AES-256-GCM key, with no key separation, and authenticates only a fixed label
+with the version and flags, not the salt or the parameters. No version of the
+app writes version 1 any more; it is only read, after the header checks above.
 
 The 4 byte length must cover exactly the rest of the file: bytes after the
 message are refused before any key derivation, as in version 3.

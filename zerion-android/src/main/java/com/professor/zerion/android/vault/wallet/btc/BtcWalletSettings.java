@@ -40,7 +40,7 @@ public final class BtcWalletSettings {
 
 	private static final long PENDING_RETENTION_MS = 7L * 24 * 3600 * 1000;
 	private static final String[] WALLET_SECTIONS =
-			{"privacy", "recv", "chg", "pending", "btc"};
+			{"privacy", "recv", "chg", "pending", "btc", "fee"};
 
 	private final WalletStore store;
 
@@ -232,6 +232,40 @@ public final class BtcWalletSettings {
 			}
 		} catch (Throwable ignored) {
 		}
+	}
+
+	public FeeGuard.Store feeBaselineStore(String walletId) {
+		return new FeeGuard.Store() {
+			@Nullable
+			@Override
+			public String load() {
+				try {
+					JSONObject fee = readQuiet().optJSONObject("fee");
+					JSONObject w = fee == null ? null
+							: fee.optJSONObject(walletId);
+					return w == null ? null : w.toString();
+				} catch (Throwable e) {
+					return null;
+				}
+			}
+
+			@Override
+			public void save(String json) {
+				try {
+					synchronized (store.settingsLock) {
+						JSONObject o = readQuiet();
+						JSONObject fee = o.optJSONObject("fee");
+						if (fee == null) {
+							fee = new JSONObject();
+						}
+						fee.put(walletId, new JSONObject(json));
+						o.put("fee", fee);
+						writeQuiet(o);
+					}
+				} catch (Throwable ignored) {
+				}
+			}
+		};
 	}
 
 	public PrivacyStore privacyStore(String walletId) {

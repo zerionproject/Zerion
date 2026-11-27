@@ -47,9 +47,15 @@ final class FakeElectrum implements ElectrumRpc {
 		return tip;
 	}
 
+	String rawHistoryReply;
+
 	@Override
-	public List<ElectrumClient.HistItem> getHistory(String scriptHash) {
+	public List<ElectrumClient.HistItem> getHistory(String scriptHash)
+			throws IOException {
 		getHistoryCalls++;
+		if (rawHistoryReply != null) {
+			return ElectrumClient.parseHistory(rawHistoryReply);
+		}
 		List<ElectrumClient.HistItem> h = history.get(scriptHash);
 		return h == null ? new ArrayList<>() : new ArrayList<>(h);
 	}

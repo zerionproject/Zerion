@@ -22,6 +22,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.recyclerview.selection.SelectionTracker;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.RecyclerView.RecycledViewPool;
 
 import static androidx.recyclerview.widget.RecyclerView.NO_POSITION;
@@ -39,15 +40,19 @@ class ConversationAdapter
 	private final java.util.concurrent.Executor dbExecutor;
 	private final com.professor.zerion.android.conversation.voice.VoiceMemoKeys
 			voiceMemoKeys;
+	private final SecretNoteTimers secretNotes;
 	static final Object PAYLOAD_STATE = new Object();
 	static final Object PAYLOAD_HIGHLIGHT = new Object();
 	static final Object PAYLOAD_NAME = new Object();
+	static final Object PAYLOAD_SECRET_GONE = new Object();
 
 	@Nullable
 	private SelectionTracker<String> tracker = null;
 	private final com.professor.zerion.android.settings.MessageStyle.Source messageStyle =
 			new com.professor.zerion.android.settings.MessageStyle.Source();
 	private int highlightedPosition = -1;
+	@Nullable
+	private RecyclerView attached;
 
 	ConversationAdapter(Context ctx,
 			ConversationListener conversationListener,
@@ -60,10 +65,59 @@ class ConversationAdapter
 		this.attachmentReader = attachmentReader;
 		this.dbExecutor = dbExecutor;
 		this.voiceMemoKeys = voiceMemoKeys;
+		secretNotes = SecretNoteTimers.onMainThread(this::onSecretNoteBurned);
 		imageViewPool = new RecycledViewPool();
 		imageViewPool.setMaxRecycledViews(R.layout.list_item_image, 24);
 		imageItemDecoration = new ImageItemDecoration(ctx);
 		setHasStableIds(true);
+	}
+
+	SecretNoteTimers secretNotes() {
+		return secretNotes;
+	}
+
+	@UiThread
+	void forgetSecretNotes(Collection<MessageId> ids) {
+		for (MessageId id : secretNotes.forget(ids)) blankSecretNote(id);
+	}
+
+	@UiThread
+	void forgetAllSecretNotes() {
+		for (MessageId id : secretNotes.forgetAll()) blankSecretNote(id);
+	}
+
+	private void onSecretNoteBurned(MessageId id) {
+		blankSecretNote(id);
+		listener.onSecretNoteOpened(id);
+	}
+
+	private void blankSecretNote(MessageId id) {
+		RecyclerView rv = attached;
+		if (rv != null) {
+			for (int i = 0; i < rv.getChildCount(); i++) {
+				RecyclerView.ViewHolder h =
+						rv.getChildViewHolder(rv.getChildAt(i));
+				if (h instanceof ConversationSecretNoteViewHolder) {
+					((ConversationSecretNoteViewHolder) h).onSecretNoteGone(id);
+				}
+			}
+		}
+		int position = getPositionOfMessage(id);
+		if (position != NO_POSITION) {
+			notifyItemChanged(position, PAYLOAD_SECRET_GONE);
+		}
+	}
+
+	@Override
+	public void onAttachedToRecyclerView(RecyclerView recyclerView) {
+		super.onAttachedToRecyclerView(recyclerView);
+		attached = recyclerView;
+	}
+
+	@Override
+	public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
+		super.onDetachedFromRecyclerView(recyclerView);
+		if (attached == recyclerView) attached = null;
 	}
 
 	void setMessageStyle(com.professor.zerion.android.settings.MessageStyle style) {
@@ -127,9 +181,15 @@ class ConversationAdapter
 					imageViewPool, imageItemDecoration, attachmentReader, dbExecutor,
 					voiceMemoKeys);
 		} else if (type == R.layout.list_item_conversation_secret_in) {
-			return new ConversationSecretNoteViewHolder(v, listener, true);
+			return new ConversationSecretNoteViewHolder(v, listener, true,
+					secretNotes);
 		} else if (type == R.layout.list_item_conversation_secret_out) {
-			return new ConversationSecretNoteViewHolder(v, listener, false);
+			return new ConversationSecretNoteViewHolder(v, listener, false,
+					secretNotes);
+		} else if (type == R.layout.list_item_conversation_view_once_in) {
+			return new ConversationViewOnceViewHolder(v, listener, true);
+		} else if (type == R.layout.list_item_conversation_view_once_out) {
+			return new ConversationViewOnceViewHolder(v, listener, false);
 		} else if (type == R.layout.list_item_conversation_notice_in) {
 			return new ConversationNoticeViewHolder(v, listener, true);
 		} else if (type == R.layout.list_item_conversation_notice_out) {

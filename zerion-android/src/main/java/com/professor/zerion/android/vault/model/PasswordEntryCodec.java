@@ -15,6 +15,18 @@ public final class PasswordEntryCodec {
 	public static byte[] encode(String title, @Nullable String username,
 			@Nullable String password, @Nullable String url,
 			@Nullable String notes) {
+		return encode(PasswordEntry.KIND_PASSWORD, title, username, password,
+				url, notes);
+	}
+
+	public static byte[] encodeBookmark(String title, String url,
+			@Nullable String notes) {
+		return encode(PasswordEntry.KIND_BOOKMARK, title, "", "", url, notes);
+	}
+
+	public static byte[] encode(String kind, String title,
+			@Nullable String username, @Nullable String password,
+			@Nullable String url, @Nullable String notes) {
 		StringBuilder json = new StringBuilder();
 		json.append("{");
 		json.append("\"title\":\"").append(escape(title)).append("\",");
@@ -22,6 +34,9 @@ public final class PasswordEntryCodec {
 		json.append("\"password\":\"").append(escape(password)).append("\",");
 		json.append("\"url\":\"").append(escape(url)).append("\",");
 		json.append("\"notes\":\"").append(escape(notes)).append("\"");
+		if (!kind.isEmpty()) {
+			json.append(",\"kind\":\"").append(escape(kind)).append("\"");
+		}
 		json.append("}");
 		byte[] content = json.toString().getBytes(StandardCharsets.UTF_8);
 		json.setLength(0);
@@ -34,7 +49,28 @@ public final class PasswordEntryCodec {
 		String password = extract(json, "password");
 		String url = extract(json, "url");
 		String notes = extract(json, "notes");
-		return new PasswordEntry(title, username, password, url, notes);
+		String kind = extract(json, "kind");
+		return new PasswordEntry(kind, title, username, password, url, notes);
+	}
+
+	public static boolean isBookmark(String json) {
+		return PasswordEntry.KIND_BOOKMARK.equals(extract(json, "kind"));
+	}
+
+	static final byte[] BOOKMARK_MARKER = ("\"kind\":\""
+			+ PasswordEntry.KIND_BOOKMARK + "\"")
+			.getBytes(StandardCharsets.US_ASCII);
+
+	public static boolean isBookmark(byte[] json) {
+		byte[] marker = BOOKMARK_MARKER;
+		outer:
+		for (int i = 0; i + marker.length <= json.length; i++) {
+			for (int j = 0; j < marker.length; j++) {
+				if (json[i + j] != marker[j]) continue outer;
+			}
+			return true;
+		}
+		return false;
 	}
 
 	private static String escape(@Nullable String value) {

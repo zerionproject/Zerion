@@ -42,6 +42,10 @@ public class MeshForwarder {
 	static final int STORE_PER_PEER_MAX_FRAMES = 256;
 	static final int MAX_FRAMES_PER_SEC = 200;
 	static final int MAX_FRAMES_PER_SEC_PER_PEER = 50;
+	static final int MAX_BYTES_PER_SEC = 8 * MAX_FRAME_BYTES;
+	static final int MAX_BYTES_PER_SEC_PER_PEER = 2 * MAX_FRAME_BYTES;
+	static final long CREDIT_TTL_MS = 6 * 60_000L;
+	private static final int MAX_CREDITED_PEERS = 256;
 	private static final String UNKNOWN_PEER = "";
 
 	private final FrameListener listener;
@@ -53,8 +57,17 @@ public class MeshForwarder {
 	private final Map<String, Share> storeShares = new HashMap<>();
 	private final Map<String, RateWindow> peerRates = new HashMap<>();
 	private final RateWindow globalRate = new RateWindow();
+	private final RateWindow uncreditedRate = new RateWindow();
+	private final LinkedHashMap<String, Long> credited =
+			new LinkedHashMap<String, Long>(16, 0.75f, true) {
+				@Override
+				protected boolean removeEldestEntry(
+						Map.Entry<String, Long> eldest) {
+					return size() > MAX_CREDITED_PEERS;
+				}
+			};
 	private long storeBytes = 0;
-	volatile LongSupplier clock = System::currentTimeMillis;
+	volatile LongSupplier clock = () -> System.nanoTime() / 1_000_000L;
 
 	private static final class SeenEntry {
 		final long at;
@@ -69,6 +82,7 @@ public class MeshForwarder {
 	private static final class RateWindow {
 		long start = 0;
 		int count = 0;
+		long bytes = 0;
 	}
 
 	private static final class Carried {
@@ -90,6 +104,13 @@ public class MeshForwarder {
 	public MeshForwarder(FrameListener listener, SecureRandom random) {
 		this.listener = listener;
 		this.random = random;
+	}
+
+	public void creditPeer(String peerId) {
+		long now = clock.getAsLong();
+		synchronized (peerRates) {
+			credited.put(peerId, now);
+		}
 	}
 
 	public void addLink(MeshLink link) {
@@ -126,7 +147,7 @@ public class MeshForwarder {
 			@Nullable String fromPeerId) {
 		if (frameBytes.length > MAX_FRAME_BYTES) return false;
 		String peer = fromPeerId == null ? UNKNOWN_PEER : fromPeerId;
-		if (!rateLimitOk(peer)) return false;
+		if (!rateLimitOk(peer, frameBytes.length)) return false;
 		MeshFrame frame;
 		try {
 			frame = MeshFrame.decode(frameBytes);
@@ -289,7 +310,7 @@ public class MeshForwarder {
 		if (--share.frames <= 0) storeShares.remove(c.peer);
 	}
 
-	private boolean rateLimitOk(String peer) {
+	private boolean rateLimitOk(String peer, int length) {
 		long now = clock.getAsLong();
 		synchronized (peerRates) {
 			RateWindow w = peerRates.get(peer);
@@ -298,16 +319,44 @@ public class MeshForwarder {
 				w = new RateWindow();
 				peerRates.put(peer, w);
 			}
-			if (!admit(w, now, MAX_FRAMES_PER_SEC_PER_PEER)) return false;
-			return admit(globalRate, now, MAX_FRAMES_PER_SEC);
+			Long creditedAt = credited.get(peer);
+			boolean isCredited = creditedAt != null && now >= creditedAt
+					&& now - creditedAt <= CREDIT_TTL_MS;
+			roll(w, now);
+			roll(globalRate, now);
+			roll(uncreditedRate, now);
+			if (!fits(w, MAX_FRAMES_PER_SEC_PER_PEER, length,
+					MAX_BYTES_PER_SEC_PER_PEER)
+					|| !fits(globalRate, MAX_FRAMES_PER_SEC, length,
+					MAX_BYTES_PER_SEC)) {
+				return false;
+			}
+			if (!isCredited && !fits(uncreditedRate, MAX_FRAMES_PER_SEC / 2,
+					length, MAX_BYTES_PER_SEC / 2)) {
+				return false;
+			}
+			charge(w, length);
+			charge(globalRate, length);
+			if (!isCredited) charge(uncreditedRate, length);
+			return true;
 		}
 	}
 
-	private static boolean admit(RateWindow w, long now, int max) {
-		if (now - w.start > 1000) {
+	private static void roll(RateWindow w, long now) {
+		if (now - w.start > 1000 || now < w.start) {
 			w.start = now;
 			w.count = 0;
+			w.bytes = 0;
 		}
-		return ++w.count <= max;
+	}
+
+	private static boolean fits(RateWindow w, int maxFrames, int length,
+			long maxBytes) {
+		return w.count < maxFrames && w.bytes + length <= maxBytes;
+	}
+
+	private static void charge(RateWindow w, int length) {
+		w.count++;
+		w.bytes += length;
 	}
 }

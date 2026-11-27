@@ -137,7 +137,15 @@ public final class MediaMagic {
 	}
 
 	public static boolean isVideo(byte[] d) {
-		return isIsoMedia(d) || isEbml(d);
+		return isEbml(d) || (isIsoMedia(d) && !hasStillImageBrand(d));
+	}
+
+	public static boolean hasStillImageBrand(byte[] d) {
+		if (d.length < 12 || !ascii(d, 4, "ftyp")) return false;
+		for (String brand : STILL_IMAGE_BRANDS) {
+			if (ascii(d, 8, brand)) return true;
+		}
+		return false;
 	}
 
 	public static boolean isAudio(byte[] d) {

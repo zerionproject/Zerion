@@ -1,10 +1,17 @@
 package org.zerionproject.app.api.introduction;
 
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
 
 public interface IntroductionConstants {
 
 	int MAX_INTRODUCTION_TEXT_LENGTH = MAX_MESSAGE_BODY_LENGTH - 1024;
+
+	int INTRODUCTION_REQUEST_OVERHEAD_BYTES = 16 * 1024;
+
+	int MAX_DELIVERABLE_INTRODUCTION_TEXT_LENGTH =
+			MAX_DELIVERABLE_MESSAGE_BODY_LENGTH
+					- INTRODUCTION_REQUEST_OVERHEAD_BYTES;
 
 	String LABEL_SESSION_ID = "org.zerionproject.app.introduction/SESSION_ID";
 
@@ -30,6 +37,36 @@ public interface IntroductionConstants {
 
 	String LABEL_BOB_ACTIVATE_KEY =
 			"org.zerionproject.app.introduction/BOB_ACTIVATE_KEY";
+
+	String LABEL_SHARED_SECRET_V2 =
+			"org.zerionproject.app.introduction/SHARED_SECRET_V2";
+
+	String LABEL_AUTH_SECRET_V2 =
+			"org.zerionproject.app.introduction/AUTH_SECRET_V2";
+
+	String LABEL_ALICE_AUTH_MAC_KEY_V2 =
+			"org.zerionproject.app.introduction/ALICE_AUTH_MAC_KEY_V2";
+
+	String LABEL_BOB_AUTH_MAC_KEY_V2 =
+			"org.zerionproject.app.introduction/BOB_AUTH_MAC_KEY_V2";
+
+	String LABEL_ALICE_AUTH_NONCE_KEY_V2 =
+			"org.zerionproject.app.introduction/ALICE_AUTH_NONCE_KEY_V2";
+
+	String LABEL_BOB_AUTH_NONCE_KEY_V2 =
+			"org.zerionproject.app.introduction/BOB_AUTH_NONCE_KEY_V2";
+
+	String LABEL_FINAL_SECRET_V2 =
+			"org.zerionproject.app.introduction/FINAL_SECRET_V2";
+
+	String LABEL_ALICE_ACTIVATE_KEY_V2 =
+			"org.zerionproject.app.introduction/ALICE_ACTIVATE_KEY_V2";
+
+	String LABEL_BOB_ACTIVATE_KEY_V2 =
+			"org.zerionproject.app.introduction/BOB_ACTIVATE_KEY_V2";
+
+	String LABEL_ROOT_KEY_V2 =
+			"org.zerionproject.app.introduction/ROOT_KEY_V2";
 
 	boolean INTRODUCTION_HYBRID_KEM_ENABLED = true;
 

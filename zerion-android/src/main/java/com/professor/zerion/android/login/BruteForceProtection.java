@@ -32,8 +32,8 @@ public final class BruteForceProtection {
 		return erasePolicy.isEnabled();
 	}
 
-	public synchronized void setWipeOnRepeatedFailures(boolean enabled) {
-		erasePolicy.setEnabled(enabled);
+	public synchronized boolean setWipeOnRepeatedFailures(boolean enabled) {
+		return erasePolicy.setEnabled(enabled);
 	}
 
 	public synchronized FailureResult recordFailedAttempt() {

@@ -20,6 +20,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,24 +65,93 @@ public class MetadataStripper {
 		this.context = context.getApplicationContext();
 	}
 
-	public byte[] stripMetadata(byte[] fileData, String mimeType) {
+	public byte[] stripMetadataOrThrow(byte[] fileData,
+			@Nullable String mimeType)
+			throws com.professor.zerion.android.attachment
+			.MediaRefusedException {
 		try {
-			if (mimeType.startsWith("image/")) {
-				return stripImageMetadata(fileData, mimeType);
-			} else if (mimeType.startsWith("video/")) {
-				return stripVideoMetadata(fileData);
-			} else if (isDocument(mimeType)) {
-				return stripDocumentMetadata(fileData, mimeType);
+			String sniffed = sniffedType(fileData);
+			String type = sniffed.equals(UNKNOWN_TYPE) ? mimeType : sniffed;
+			if (type == null) {
+				throw com.professor.zerion.android.attachment
+						.MediaRefusedException.cannotClean("content not recognised");
 			}
-		} catch (Exception | OutOfMemoryError e) {
+			if (type.startsWith("image/")) {
+				return stripImageMetadataOrThrow(fileData, type);
+			} else if (type.startsWith("video/")) {
+				return stripVideoMetadataOrThrow(fileData);
+			} else if (type.equals("application/pdf")) {
+				return new com.professor.zerion.android.attachment
+						.PdfCleaner(context).clean(fileData, Long.MAX_VALUE);
+			} else if (type.contains("officedocument")) {
+				return stripOfficeMetadata(fileData);
+			} else if (type.equals("text/plain") && isPlainText(fileData)) {
+				return fileData;
+			}
+			throw com.professor.zerion.android.attachment
+					.MediaRefusedException.cannotClean("no cleaner for " + type);
+		} catch (com.professor.zerion.android.attachment
+				.MediaRefusedException e) {
+			throw e;
+		} catch (IOException | RuntimeException e) {
+			throw com.professor.zerion.android.attachment
+					.MediaRefusedException.cannotClean(new IOException(e));
+		} catch (OutOfMemoryError e) {
+			throw com.professor.zerion.android.attachment
+					.MediaRefusedException.tooLarge("file too large to clean");
 		}
-		return fileData;
+	}
+
+	public byte[] stripOfficeMetadataOrThrow(byte[] officeData)
+			throws com.professor.zerion.android.attachment
+			.MediaRefusedException {
+		try {
+			return stripOfficeMetadata(officeData);
+		} catch (IOException | RuntimeException e) {
+			throw com.professor.zerion.android.attachment
+					.MediaRefusedException.cannotClean(new IOException(e));
+		} catch (OutOfMemoryError e) {
+			throw com.professor.zerion.android.attachment
+					.MediaRefusedException.tooLarge("file too large to clean");
+		}
+	}
+
+	static final String UNKNOWN_TYPE = "application/octet-stream";
+
+	static boolean isPlainText(byte[] data) {
+		return com.professor.zerion.android.attachment.AttachmentDocuments
+				.isSendableText(data);
+	}
+
+	static String sniffedType(byte[] data) {
+		if (data.length >= 8 && (data[0] & 0xFF) == 0x89 && data[1] == 'P'
+				&& data[2] == 'N' && data[3] == 'G') {
+			return "image/png";
+		}
+		if (com.professor.zerion.android.util.MediaMagic.isRiff(data, "WEBP")) {
+			return "image/webp";
+		}
+		if (com.professor.zerion.android.util.SafeImageDecoder
+				.hasAllowedMagic(data) || isReencodableForSending(data)) {
+			return "image/jpeg";
+		}
+		if (com.professor.zerion.android.util.MediaMagic.isIsoMedia(data)) {
+			return "video/mp4";
+		}
+		if (com.professor.zerion.android.attachment.AttachmentDocuments
+				.isPdf(data)) {
+			return "application/pdf";
+		}
+		if (data.length >= 4 && data[0] == 'P' && data[1] == 'K') {
+			return "application/vnd.openxmlformats-officedocument";
+		}
+		return UNKNOWN_TYPE;
 	}
 
 	public byte[] stripImageMetadataOrThrow(byte[] imageData, String mimeType)
 			throws IOException {
 		try {
-			return stripImageMetadata(imageData, mimeType, true);
+			return stripImageMetadata(imageData, mimeType);
 		} catch (OutOfMemoryError e) {
 			throw com.professor.zerion.android.attachment.MediaRefusedException
 					.tooLarge("image too large to clean");
@@ -94,30 +164,21 @@ public class MetadataStripper {
 		return "image/jpeg";
 	}
 
-	private byte[] stripImageMetadata(byte[] imageData, String mimeType) throws IOException {
-		return stripImageMetadata(imageData, mimeType, false);
-	}
-
-	private byte[] stripImageMetadata(byte[] imageData, String mimeType,
-			boolean bounded) throws IOException {
+	private byte[] stripImageMetadata(byte[] imageData, String mimeType)
+			throws IOException {
 		boolean known = com.professor.zerion.android.util
 				.SafeImageDecoder.hasAllowedMagic(imageData);
-		if (!known && !(bounded && isReencodableForSending(imageData))) {
+		if (!known && !isReencodableForSending(imageData)) {
 			throw new IOException("unsupported image format");
 		}
-		BitmapFactory.Options bounds = bounded ? probeDimensions(imageData)
-				: com.professor.zerion.android.util.SafeImageDecoder
-						.probeBounds(imageData);
+		BitmapFactory.Options bounds = probeDimensions(imageData);
 		if (bounds == null) {
 			throw new IOException("unsupported image format");
 		}
 
 		int maxDimension = 4096;
-		int sampleSize = bounded
-				? boundedSampleSize(bounds.outWidth, bounds.outHeight,
-						maxDimension)
-				: calculateSampleSize(bounds.outWidth, bounds.outHeight,
-						maxDimension);
+		int sampleSize = boundedSampleSize(bounds.outWidth, bounds.outHeight,
+				maxDimension);
 
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = false;
@@ -130,6 +191,27 @@ public class MetadataStripper {
 		if (bitmap == null) {
 			throw new IOException("undecodable image");
 		}
+		return encodedUpright(bitmap, imageData, mimeType);
+	}
+
+	public byte[] stripReceivedImageOrThrow(byte[] imageData, String mimeType)
+			throws IOException {
+		Bitmap bitmap = com.professor.zerion.android.util.ReceivedImageGate
+				.decodeAlone(imageData, 4096);
+		if (bitmap == null) {
+			throw com.professor.zerion.android.attachment.MediaRefusedException
+					.cannotClean("image not decoded");
+		}
+		try {
+			return encodedUpright(bitmap, imageData, mimeType);
+		} catch (OutOfMemoryError e) {
+			throw com.professor.zerion.android.attachment.MediaRefusedException
+					.tooLarge("image too large to clean");
+		}
+	}
+
+	private static byte[] encodedUpright(Bitmap bitmap, byte[] imageData,
+			String mimeType) throws IOException {
 		bitmap = com.professor.zerion.android.attachment.ImageOrientation
 				.upright(bitmap, com.professor.zerion.android.attachment
 						.ImageOrientation.of(imageData));
@@ -177,22 +259,6 @@ public class MetadataStripper {
 		return bounds;
 	}
 
-	private int calculateSampleSize(int width, int height, int maxDimension) {
-		int sampleSize = 1;
-
-		if (width > maxDimension || height > maxDimension) {
-			int halfWidth = width / 2;
-			int halfHeight = height / 2;
-
-			while ((halfWidth / sampleSize) >= maxDimension &&
-			       (halfHeight / sampleSize) >= maxDimension) {
-				sampleSize *= 2;
-			}
-		}
-
-		return sampleSize;
-	}
-
 	static int boundedSampleSize(int width, int height, int maxDimension) {
 		int sampleSize = 1;
 		while (width / sampleSize > maxDimension
@@ -211,7 +277,8 @@ public class MetadataStripper {
 		com.professor.zerion.android.util.CacheSweeper.release(f);
 	}
 
-	private byte[] stripVideoMetadata(byte[] videoData) {
+	private byte[] stripVideoMetadataOrThrow(byte[] videoData)
+			throws IOException {
 
 		File tempIn = null;
 		File tempOut = null;
@@ -232,8 +299,6 @@ public class MetadataStripper {
 				}
 				return bos.toByteArray();
 			}
-		} catch (IOException e) {
-			return videoData;
 		} finally {
 			if (tempIn != null) discard(tempIn);
 			if (tempOut != null) discard(tempOut);
@@ -609,52 +674,162 @@ public class MetadataStripper {
 		return ByteBuffer.allocate((int) sampleSize);
 	}
 
-	private byte[] stripDocumentMetadata(byte[] documentData, String mimeType) {
+	static final int MAX_OFFICE_ENTRIES = 10_000;
+	static final int MAX_OFFICE_XML_PART = 4 * 1024 * 1024;
+	static final long MAX_OFFICE_INFLATED = 512L * 1024 * 1024;
+	static final long OFFICE_ENTRY_TIME =
+			new java.util.GregorianCalendar(1980, 0, 1, 0, 0, 0)
+					.getTimeInMillis();
 
-		if (mimeType.equals("application/pdf")) {
-			return stripPdfMetadata(documentData);
-		} else if (mimeType.contains("officedocument") || mimeType.contains("msword")) {
-			return stripOfficeMetadata(documentData);
-		}
-
-		return documentData;
+	static final java.util.regex.Pattern OFFICE_PART_NAME =
+			java.util.regex.Pattern.compile(
+					"(?is)\\bPartName\\s*=\\s*[\"']([^\"']*)[\"']");
+	static final java.util.regex.Pattern OFFICE_TARGET =
+			java.util.regex.Pattern.compile(
+					"(?is)\\bTarget\\s*=\\s*[\"']([^\"']*)[\"']");
+	static final java.util.regex.Pattern OFFICE_EXTERNAL_TARGET =
+			java.util.regex.Pattern.compile(
+					"(?is)\\bTargetMode\\s*=\\s*[\"']External[\"']");
+	static boolean isRemovedOfficePart(String lowerName) {
+		return lowerName.startsWith("docprops/")
+				|| lowerName.startsWith("customxml/")
+				|| lowerName.endsWith("/core.xml")
+				|| lowerName.endsWith("/app.xml")
+				|| lowerName.endsWith("/custom.xml")
+				|| lowerName.equals("word/people.xml")
+				|| lowerName.equals("ppt/commentauthors.xml");
 	}
 
-	private byte[] stripPdfMetadata(byte[] pdfData) {
-
-		try {
-			String pdfString = new String(pdfData, "ISO-8859-1");
-
-			pdfString = pdfString.replaceAll("/Producer\\s*\\([^)]*\\)", "/Producer ()");
-			pdfString = pdfString.replaceAll("/Creator\\s*\\([^)]*\\)", "/Creator ()");
-			pdfString = pdfString.replaceAll("/Author\\s*\\([^)]*\\)", "/Author ()");
-			pdfString = pdfString.replaceAll("/Title\\s*\\([^)]*\\)", "/Title ()");
-			pdfString = pdfString.replaceAll("/Subject\\s*\\([^)]*\\)", "/Subject ()");
-			pdfString = pdfString.replaceAll("/Keywords\\s*\\([^)]*\\)", "/Keywords ()");
-			pdfString = pdfString.replaceAll("/CreationDate\\s*\\([^)]*\\)", "/CreationDate ()");
-			pdfString = pdfString.replaceAll("/ModDate\\s*\\([^)]*\\)", "/ModDate ()");
-			pdfString = pdfString.replaceAll("/Trapped\\s*/\\w+", "/Trapped /False");
-
-			pdfString = pdfString.replaceAll("<x:xmpmeta[^>]*>.*?</x:xmpmeta>", "");
-			pdfString = pdfString.replaceAll("<\\?xpacket.*?\\?>", "");
-
-			pdfString = pdfString.replaceAll("/Info\\s+\\d+\\s+\\d+\\s+R", "");
-
-			pdfString = pdfString.replaceAll("/Type\\s*/Metadata[^>]*>>stream.*?endstream", "");
-
-			byte[] cleaned = pdfString.getBytes("ISO-8859-1");
-			return cleaned;
-
-		} catch (Exception e) {
-			return pdfData;
-		}
+	static boolean isOfficeRelationships(String lowerName) {
+		return lowerName.endsWith(".rels") && (lowerName.startsWith("_rels/")
+				|| lowerName.contains("/_rels/"));
 	}
 
-	private byte[] stripOfficeMetadata(byte[] officeData) {
+	static String resolveOfficePart(String relsName, String target) {
+		String t = target;
+		int query = t.indexOf('?');
+		if (query >= 0) t = t.substring(0, query);
+		int fragment = t.indexOf('#');
+		if (fragment >= 0) t = t.substring(0, fragment);
+		t = t.replace('\\', '/');
+		String path;
+		if (t.startsWith("/")) {
+			path = t.substring(1);
+		} else {
+			int rels = relsName.toLowerCase(java.util.Locale.ROOT)
+					.lastIndexOf("_rels/");
+			String dir = rels < 0 ? "" : relsName.substring(0, rels);
+			path = dir + t;
+		}
+		java.util.ArrayDeque<String> parts = new java.util.ArrayDeque<>();
+		for (String s : path.split("/")) {
+			if (s.isEmpty() || s.equals(".")) continue;
+			if (s.equals("..")) {
+				if (!parts.isEmpty()) parts.removeLast();
+				continue;
+			}
+			parts.addLast(s);
+		}
+		StringBuilder b = new StringBuilder();
+		for (String s : parts) {
+			if (b.length() > 0) b.append('/');
+			b.append(s);
+		}
+		return b.toString().toLowerCase(java.util.Locale.ROOT);
+	}
+
+	interface OfficeTagTest {
+		boolean drop(String tag);
+	}
+
+	static String cleanOfficeContentTypes(String xml) {
+		return removeOfficeElements(xml, "Override", tag -> {
+			java.util.regex.Matcher name = OFFICE_PART_NAME.matcher(tag);
+			return name.find() && isRemovedOfficePart(
+					resolveOfficePart("", name.group(1)));
+		});
+	}
+
+	static String cleanOfficeRelationships(String relsName, String xml) {
+		return removeOfficeElements(xml, "Relationship", tag -> {
+			if (OFFICE_EXTERNAL_TARGET.matcher(tag).find()) return false;
+			java.util.regex.Matcher target = OFFICE_TARGET.matcher(tag);
+			return target.find() && isRemovedOfficePart(
+					resolveOfficePart(relsName, target.group(1)));
+		});
+	}
+
+	static String cleanOfficeWorkbook(String xml) {
+		return removeOfficeElements(xml, "absPath", tag -> true);
+	}
+
+	static String removeOfficeElements(String xml, String localName,
+			OfficeTagTest test) {
+		StringBuilder out = new StringBuilder(xml.length());
+		int n = xml.length();
+		int pos = 0;
+		while (pos < n) {
+			int lt = xml.indexOf('<', pos);
+			if (lt < 0) break;
+			int gt = xml.indexOf('>', lt);
+			if (gt < 0) break;
+			int end = -1;
+			if (officeTagIs(xml, lt, gt, localName)) {
+				end = officeElementEnd(xml, lt, gt, localName);
+			}
+			if (end > 0 && test.drop(xml.substring(lt, gt + 1))) {
+				out.append(xml, pos, lt);
+				pos = end;
+			} else {
+				out.append(xml, pos, gt + 1);
+				pos = gt + 1;
+			}
+		}
+		out.append(xml, pos, n);
+		return out.toString();
+	}
+
+	private static boolean officeTagIs(String xml, int lt, int gt,
+			String localName) {
+		int i = lt + 1;
+		if (i >= gt || xml.charAt(i) == '/' || xml.charAt(i) == '?'
+				|| xml.charAt(i) == '!') {
+			return false;
+		}
+		int nameEnd = i;
+		while (nameEnd < gt && " \t\r\n/".indexOf(xml.charAt(nameEnd)) < 0) {
+			nameEnd++;
+		}
+		String name = xml.substring(i, nameEnd);
+		int colon = name.indexOf(':');
+		if (colon >= 0) name = name.substring(colon + 1);
+		return name.equalsIgnoreCase(localName);
+	}
+
+	private static int officeElementEnd(String xml, int lt, int gt,
+			String localName) {
+		if (xml.charAt(gt - 1) == '/') return gt + 1;
+		int k = gt + 1;
+		int n = xml.length();
+		while (k < n && " \t\r\n".indexOf(xml.charAt(k)) >= 0) k++;
+		if (k + 1 >= n || xml.charAt(k) != '<' || xml.charAt(k + 1) != '/') {
+			return -1;
+		}
+		int close = xml.indexOf('>', k);
+		if (close < 0) return -1;
+		String name = xml.substring(k + 2, close).trim();
+		int colon = name.indexOf(':');
+		if (colon >= 0) name = name.substring(colon + 1);
+		return name.equalsIgnoreCase(localName) ? close + 1 : -1;
+	}
+
+	private byte[] stripOfficeMetadata(byte[] officeData) throws IOException {
 		if (officeData.length < 4 || officeData[0] != 'P' || officeData[1]
 				!= 'K') {
-			return officeData;
+			throw new IOException("not a zip based Office document");
 		}
+		boolean contentTypes = false;
+		boolean mainPart = false;
 		try (java.io.ByteArrayInputStream bin =
 					new java.io.ByteArrayInputStream(officeData);
 				java.util.zip.ZipInputStream zin =
@@ -665,33 +840,73 @@ public class MetadataStripper {
 						new java.util.zip.ZipOutputStream(bout)) {
 			byte[] buf = new byte[8192];
 			java.util.zip.ZipEntry e;
+			int entries = 0;
+			long inflated = 0;
 			while ((e = zin.getNextEntry()) != null) {
+				if (++entries > MAX_OFFICE_ENTRIES) {
+					throw new IOException("too many parts");
+				}
 				String n = e.getName();
-				if (n.startsWith("docProps/") || n.endsWith("/core.xml")
-						|| n.endsWith("/app.xml")
-						|| n.endsWith("/custom.xml")) {
+				String lower = n.toLowerCase(java.util.Locale.ROOT);
+				if (isRemovedOfficePart(lower)) {
+					int read;
+					while ((read = zin.read(buf)) > 0) {
+						inflated += read;
+						if (inflated > MAX_OFFICE_INFLATED) {
+							throw new IOException("document too large");
+						}
+					}
 					continue;
+				}
+				if (lower.equals("[content_types].xml")) contentTypes = true;
+				if (lower.startsWith("word/") || lower.startsWith("xl/")
+						|| lower.startsWith("ppt/")) {
+					mainPart = true;
 				}
 				java.util.zip.ZipEntry out =
 						new java.util.zip.ZipEntry(n);
+				out.setTime(OFFICE_ENTRY_TIME);
 				zout.putNextEntry(out);
-				int read;
-				while ((read = zin.read(buf)) > 0) zout.write(buf, 0, read);
+				boolean isContentTypes = lower.equals("[content_types].xml");
+				boolean isRels = isOfficeRelationships(lower);
+				boolean isWorkbook = lower.equals("xl/workbook.xml");
+				if (isContentTypes || isRels || isWorkbook) {
+					java.io.ByteArrayOutputStream part =
+							new java.io.ByteArrayOutputStream();
+					int read;
+					while ((read = zin.read(buf)) > 0) {
+						inflated += read;
+						if (part.size() + read > MAX_OFFICE_XML_PART
+								|| inflated > MAX_OFFICE_INFLATED) {
+							throw new IOException("document too large");
+						}
+						part.write(buf, 0, read);
+					}
+					String xml = new String(part.toByteArray(),
+							StandardCharsets.UTF_8);
+					if (isContentTypes) xml = cleanOfficeContentTypes(xml);
+					else if (isRels) xml = cleanOfficeRelationships(n, xml);
+					else xml = cleanOfficeWorkbook(xml);
+					zout.write(xml.getBytes(StandardCharsets.UTF_8));
+				} else {
+					int read;
+					while ((read = zin.read(buf)) > 0) {
+						inflated += read;
+						if (inflated > MAX_OFFICE_INFLATED) {
+							throw new IOException("document too large");
+						}
+						zout.write(buf, 0, read);
+					}
+				}
 				zout.closeEntry();
 			}
 			zout.finish();
+			if (!contentTypes || !mainPart) {
+				throw new IOException("not an Office document");
+			}
 			return bout.toByteArray();
-		} catch (Exception ex) {
-			return officeData;
+		} catch (RuntimeException ex) {
+			throw new IOException("Office document cleaning failed", ex);
 		}
-	}
-
-	private boolean isDocument(String mimeType) {
-		return mimeType.startsWith("application/pdf") ||
-				mimeType.contains("document") ||
-				mimeType.contains("msword") ||
-				mimeType.contains("ms-excel") ||
-				mimeType.contains("ms-powerpoint") ||
-				mimeType.startsWith("text/");
 	}
 }

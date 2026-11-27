@@ -33,6 +33,7 @@ import dagger.Module;
 		ClientModule.class,
 		ConnectionModule.class,
 		ContactModule.class,
+		org.zerionproject.core.contact.request.ContactRequestModule.class,
 		CryptoModule.class,
 		CryptoExecutorModule.class,
 		PcsModule.class,

@@ -66,6 +66,7 @@ class ConnectionChooserImpl implements ConnectionChooser {
 			stopped = true;
 			lock.notifyAll();
 		}
+		for (KeyAgreementConnection c : unused) tryToClose(c.getConnection());
 	}
 
 	private void addResult(KeyAgreementConnection c) {

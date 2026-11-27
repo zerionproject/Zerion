@@ -28,14 +28,15 @@ export OPENSSL_VERSION=3.5.9
 export SODIUM_VERSION=1.0.19
 export BOOST_VERSION=1.84.0
 export BOOST_UNDERSCORE=1_84_0
-export MONERO_TAG=v0.18.5.1
-export MONERO_COMMIT=4f92268d7c16741cfb41e5bbe2aa46cc260a9ea5
+export MONERO_TAG=v0.18.5.4
+export MONERO_COMMIT=85f036ba7019cd36f08e8a38a27c37ea7b522618
 
 # build-monero-android.sh works under /build (matching the container, which
 # keeps the linked .so byte-reproducible with the published PROVENANCE hashes).
 WORK=/build
 mkdir -p "${WORK}/jni"
 install -m644 "${HERE}/jni/zmonero.cpp" "${WORK}/jni/zmonero.cpp"
+install -m644 "${HERE}/jni/zmonero.map" "${WORK}/jni/zmonero.map"
 install -m755 "${HERE}/build-monero-android.sh" "${WORK}/build-monero-android.sh"
 
 cd "${WORK}"

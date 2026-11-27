@@ -74,6 +74,91 @@ public class MeshBluetoothNameTest {
 		assertEquals("Alice's Pixel", adapter.name);
 	}
 
+	@Test
+	public void theChosenAliasIsShownInsteadOfTheRealName() throws Exception {
+		FakeAdapter adapter = new FakeAdapter("Alice's Pixel", false);
+		alias("Kitchen radio");
+		MeshBluetoothName.mask(adapter, settings);
+		assertEquals("Kitchen radio", adapter.name);
+		MeshBluetoothName.restore(adapter, settings);
+		assertEquals("Alice's Pixel", adapter.name);
+	}
+
+	@Test
+	public void anAliasChangedWhileHiddenIsStillRecognised() throws Exception {
+		FakeAdapter adapter = new FakeAdapter("Alice's Pixel", false);
+		alias("Kitchen radio");
+		MeshBluetoothName.mask(adapter, settings);
+		alias("Garden");
+		MeshBluetoothName.mask(adapter, settings);
+		assertEquals("Garden", adapter.name);
+		alias("Shed");
+		MeshBluetoothName.restore(adapter, settings);
+		assertEquals("Alice's Pixel", adapter.name);
+	}
+
+	@Test
+	public void anOldAliasLeftByAFailedRestoreIsNotSavedAsTheRealName()
+			throws Exception {
+		FakeAdapter adapter = new FakeAdapter("Alice's Pixel", false);
+		alias("Kitchen radio");
+		MeshBluetoothName.mask(adapter, settings);
+		adapter.refuse = true;
+		MeshBluetoothName.restore(adapter, settings);
+		adapter.refuse = false;
+		alias("Garden");
+		MeshBluetoothName.mask(adapter, settings);
+		MeshBluetoothName.restore(adapter, settings);
+		assertEquals("Alice's Pixel", adapter.name);
+	}
+
+	@Test
+	public void anAliasChangedWhileTheAdapterRefusesIsStillRecognised()
+			throws Exception {
+		FakeAdapter adapter = new FakeAdapter("Alice's Pixel", false);
+		alias("Kitchen radio");
+		MeshBluetoothName.mask(adapter, settings);
+		adapter.refuse = true;
+		alias("Garden");
+		MeshBluetoothName.mask(adapter, settings);
+		assertEquals("Kitchen radio", adapter.name);
+		adapter.refuse = false;
+		MeshBluetoothName.restore(adapter, settings);
+		assertEquals("Alice's Pixel", adapter.name);
+	}
+
+	@Test
+	public void hiddenAndControlCharactersAreRemovedFromTheAlias()
+			throws Exception {
+		FakeAdapter adapter = new FakeAdapter("Alice's Pixel", false);
+		alias("\u202eKit\u0000chen\u200b\n radio\u2028");
+		MeshBluetoothName.mask(adapter, settings);
+		assertEquals("Kitchen radio", adapter.name);
+	}
+
+	@Test
+	public void theAliasIsCutAtThirtyTwoCharacters() throws Exception {
+		FakeAdapter adapter = new FakeAdapter("Alice's Pixel", false);
+		alias("abcdefghijklmnopqrstuvwxyz0123456789");
+		MeshBluetoothName.mask(adapter, settings);
+		assertEquals("abcdefghijklmnopqrstuvwxyz012345", adapter.name);
+	}
+
+	@Test
+	public void anEmptyAliasFallsBackToAndroid() throws Exception {
+		FakeAdapter adapter = new FakeAdapter("Alice's Pixel", false);
+		alias(" \u200b\t ");
+		MeshBluetoothName.mask(adapter, settings);
+		assertEquals("Android", adapter.name);
+	}
+
+	private void alias(String value) {
+		org.zerionproject.core.api.settings.Settings s =
+				new org.zerionproject.core.api.settings.Settings();
+		s.put("btAlias", value);
+		settings.mergeSettings(s, MeshBluetoothName.NAMESPACE);
+	}
+
 	private static final class FakeAdapter
 			implements MeshBluetoothName.Adapter {
 		String name;

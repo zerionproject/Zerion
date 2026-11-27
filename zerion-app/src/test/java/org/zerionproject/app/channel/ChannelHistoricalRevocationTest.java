@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ChannelHistoricalRevocationTest {
 
@@ -86,18 +87,23 @@ public class ChannelHistoricalRevocationTest {
 	private final class Subscriber {
 		final MemorySettings settings = new MemorySettings();
 		final Deque<byte[]> responses = new ArrayDeque<>();
+		int requests;
 		ChannelStore store;
 		ChannelManagerImpl manager;
 
 		Subscriber() throws Exception {
 			start();
+			subscribe(0L);
+		}
+
+		void subscribe(long manifestSeq) throws DbException {
 			HybridSignaturePublicKey pub =
 					(HybridSignaturePublicKey) publisher.getPublic();
 			store.putChannel(new ChannelState(channelId, salt,
 					pub.getEd25519PublicKey(), pub.getMlDsaPublicKey(),
 					"name", "description", null, HOUR, true, null,
 					"abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx",
-					0L, false, -1L, null, null,
+					manifestSeq, false, -1L, null, null,
 					Collections.<ChannelDelegationCert>emptyList(),
 					Collections.<Long>emptyList(), 10L, null,
 					ChannelState.NO_PINNED_POST, false,
@@ -120,6 +126,7 @@ public class ChannelHistoricalRevocationTest {
 							(proxy, method, args) -> {
 								if (method.getName().equals(
 										"requestFromOnion")) {
+									requests++;
 									return responses.removeFirst();
 								}
 								if (method.getReturnType() == boolean.class) {
@@ -264,6 +271,111 @@ public class ChannelHistoricalRevocationTest {
 		String view = s.view();
 		assertTrue("nothing from the forged certificate on is admitted: "
 				+ view, !view.contains("d1") && !view.contains("p2"));
+	}
+
+	@Test
+	public void aMalformedCertificateIsLeftOutAndTheManifestStillApplies()
+			throws Exception {
+		Subscriber s = new Subscriber();
+		s.pull(manifest(1L, Arrays.asList(cert,
+				malformedCert(stranger, 2L)),
+				Collections.<Long>emptyList()), p0, d1, p2);
+		assertEquals("the owner-signed manifest still applies", "p0 d1 p2",
+				s.view());
+		ChannelState stored = s.store.getChannel(channelId);
+		assertEquals(1L, stored.getManifestSeq());
+		assertEquals("only the well-formed certificate is stored", 1,
+				stored.getActiveDelegations().size());
+		assertEquals(1L, stored.getActiveDelegations().get(0)
+				.getDelegationSeq());
+	}
+
+	@Test
+	public void aPublisherRevokesItsOwnMalformedCertificatesAtStartup()
+			throws Exception {
+		Subscriber s = new Subscriber();
+		HybridSignaturePublicKey pub =
+				(HybridSignaturePublicKey) publisher.getPublic();
+		s.store.putChannel(new ChannelState(channelId, salt,
+				pub.getEd25519PublicKey(), pub.getMlDsaPublicKey(),
+				"name", "description", null, HOUR, true, null, "", 3L, true,
+				-1L, null, null,
+				Arrays.asList(cert, malformedCert(stranger, 2L)),
+				Collections.<Long>emptyList(), 3L, null,
+				ChannelState.NO_PINNED_POST, false,
+				Collections.<ChannelDelegationCert>emptyList()));
+		java.lang.reflect.Method startup = ChannelManagerImpl.class
+				.getDeclaredMethod("rebindOwnedChannelsOnStartup");
+		startup.setAccessible(true);
+		startup.invoke(s.manager);
+
+		ChannelState after = s.store.getChannel(channelId);
+		assertEquals(1, after.getActiveDelegations().size());
+		assertEquals(1L, after.getActiveDelegations().get(0)
+				.getDelegationSeq());
+		assertEquals(Collections.singletonList(2L),
+				after.getRevokedDelegationSeqs());
+		assertEquals("the change is published under a new manifest", 4L,
+				after.getManifestSeq());
+	}
+
+	@Test
+	public void aStoredMalformedCertificateFindsNoSignerInsteadOfThrowing()
+			throws Exception {
+		HybridSignaturePublicKey pub =
+				(HybridSignaturePublicKey) publisher.getPublic();
+		ChannelState state = new ChannelState(channelId, salt,
+				pub.getEd25519PublicKey(), pub.getMlDsaPublicKey(), "name",
+				"description", null, HOUR, true, null, "", 1L, false, -1L,
+				null, null, Collections.singletonList(
+						malformedCert(delegate, 1L)),
+				Collections.<Long>emptyList(), 0L);
+		ChannelPostValidator validator =
+				new ChannelPostValidator(codec, signatures, chain);
+		assertEquals(ChannelPostValidator.Result.DELEGATION_NOT_FOUND,
+				validator.validateSigner(state, d1));
+	}
+
+	@Test
+	public void anUncheckedFailureInAScheduledPullEndsOnlyThatRound()
+			throws Exception {
+		Subscriber s = new Subscriber();
+		s.subscribe(-1L);
+		java.lang.reflect.Method round = ChannelManagerImpl.class
+				.getDeclaredMethod("refreshAndReschedule");
+		round.setAccessible(true);
+		round.invoke(s.manager);
+		assertEquals("the scheduled round asked the channel", 1, s.requests);
+
+		s.subscribe(0L);
+		s.pull(manifest1(), p0);
+		assertEquals("the channel still pulls afterwards", "p0", s.view());
+	}
+
+	@Test
+	public void anUncheckedFailureInAPullIsReportedAsADatabaseFailure()
+			throws Exception {
+		Subscriber s = new Subscriber();
+		try {
+			s.manager.refreshChannel(channelId);
+			fail("a pull that could not complete reported success");
+		} catch (DbException expected) {
+		}
+		assertEquals(1, s.requests);
+	}
+
+	private ChannelDelegationCert malformedCert(KeyPair delegatee, long seq)
+			throws GeneralSecurityException {
+		HybridSignaturePublicKey dPub =
+				(HybridSignaturePublicKey) delegatee.getPublic();
+		byte[] shortMlDsa = Arrays.copyOf(dPub.getMlDsaPublicKey(),
+				dPub.getMlDsaPublicKey().length - 1);
+		byte[] input = codec.delegationSignedInput(channelId,
+				dPub.getEd25519PublicKey(), shortMlDsa, HOUR, 100 * HOUR, seq);
+		byte[] sig = signatures.signDelegation(input,
+				(HybridSignaturePrivateKey) publisher.getPrivate());
+		return new ChannelDelegationCert(channelId, dPub.getEd25519PublicKey(),
+				shortMlDsa, HOUR, 100 * HOUR, seq, sig);
 	}
 
 	private BdfDictionary manifest(long manifestSeq,

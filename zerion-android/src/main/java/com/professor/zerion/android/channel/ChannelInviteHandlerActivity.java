@@ -13,6 +13,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.util.DisplayNames;
 
 import org.zerionproject.core.api.account.AccountManager;
 import org.zerionproject.core.api.db.DbException;
@@ -74,21 +75,37 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 		byte[] cid = link.getChannelId();
 		ioExecutor.execute(() -> {
 			boolean held = isHeld(cid);
+			String name = held ? nameOf(cid) : "";
 			runOnUiThreadUnlessDestroyed(() -> {
 				if (!held && link.requiresApproval()) {
-					showApplyDialog(link, 0);
+					showApplyDialog(link, 0, false);
 				} else {
-					showJoinDialog(link, held);
+					showJoinDialog(link, held, name);
 				}
 			});
 		});
 	}
 
-	private void showJoinDialog(ChannelInviteLink link, boolean held) {
+	static String joinQuestion(android.content.Context ctx, boolean held,
+			String name) {
+		String join = ctx.getString(R.string.channels_join_confirm_question);
+		if (!held) {
+			return ctx.getString(R.string.channels_link_name_unknown) + " "
+					+ join;
+		}
+		String clean = DisplayNames.clean(name).trim();
+		if (clean.isEmpty()) return join;
+		return ctx.getString(R.string.channels_join_known_question,
+				DisplayNames.isolate(clean));
+	}
+
+	private void showJoinDialog(ChannelInviteLink link, boolean held,
+			String name) {
 		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_join_title)
-				.setMessage(R.string.channels_join_confirm_question)
-				.setCancelable(false)
+				.setMessage(joinQuestion(this, held, name))
+				.setCancelable(true)
+				.setOnCancelListener(d -> finish())
 				.setPositiveButton(R.string.channels_join_action,
 						(d, w) -> {
 							if (held) checkHeld(link);
@@ -199,7 +216,8 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 				}
 				if (result == ChannelRejoinResult.UPDATED) {
 					Toast.makeText(this,
-							getString(R.string.channels_rejoin_updated, name),
+							getString(R.string.channels_rejoin_updated,
+									DisplayNames.isolate(name)),
 							Toast.LENGTH_LONG).show();
 				} else if (rejoinMessage(result) != 0) {
 					Toast.makeText(this, rejoinMessage(result),
@@ -211,9 +229,11 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 	}
 
 	static String deletedMessage(android.content.Context ctx, String name) {
-		return name.isEmpty()
+		String clean = DisplayNames.clean(name).trim();
+		return clean.isEmpty()
 				? ctx.getString(R.string.channels_owner_deleted_notice_unnamed)
-				: ctx.getString(R.string.channels_owner_deleted_notice, name);
+				: ctx.getString(R.string.channels_owner_deleted_notice,
+						DisplayNames.isolate(clean));
 	}
 
 	static int rejoinMessage(ChannelRejoinResult result) {
@@ -234,7 +254,7 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 	private String nameOf(byte[] channelId) {
 		try {
 			ChannelState s = channelManager.getChannel(channelId);
-			return s == null ? "" : s.getName();
+			return s == null ? "" : DisplayNames.clean(s.getName()).trim();
 		} catch (DbException e) {
 			return "";
 		}
@@ -251,11 +271,21 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 	}
 
 	private void showApplyDialog(ChannelInviteLink link, int message) {
+		showApplyDialog(link, message, true);
+	}
+
+	private void showApplyDialog(ChannelInviteLink link, int message,
+			boolean held) {
 		View view = LayoutInflater.from(this).inflate(
 				R.layout.dialog_apply_to_join, null);
+		android.widget.TextView about =
+				view.findViewById(R.id.channelApplyMessage);
 		if (message != 0) {
-			((android.widget.TextView) view.findViewById(
-					R.id.channelApplyMessage)).setText(message);
+			about.setText(message);
+		} else if (!held) {
+			about.setText(getString(R.string.channels_link_name_unknown)
+					+ "\n\n"
+					+ getString(R.string.channels_request_access_message));
 		}
 		TextInputEditText nameInput =
 				view.findViewById(R.id.channelApplyNameInput);
@@ -266,7 +296,8 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_request_access_title)
 				.setView(view)
-				.setCancelable(false)
+				.setCancelable(true)
+				.setOnCancelListener(d -> finish())
 				.setPositiveButton(R.string.channels_request_access_action,
 						(d, w) -> handleApply(link, nameInput))
 				.setNegativeButton(android.R.string.cancel,

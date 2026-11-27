@@ -2,6 +2,7 @@ package org.zerionproject.core.crypto;
 
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.CryptoException;
+import org.bouncycastle.crypto.params.ParametersWithRandom;
 import org.bouncycastle.pqc.crypto.mldsa.MLDSAKeyGenerationParameters;
 import org.bouncycastle.pqc.crypto.mldsa.MLDSAKeyPairGenerator;
 import org.bouncycastle.pqc.crypto.mldsa.MLDSAParameters;
@@ -54,7 +55,7 @@ class MlDsa65 {
 
 		try {
 			MLDSASigner signer = new MLDSASigner();
-			signer.init(true, privateKey);
+			signer.init(true, new ParametersWithRandom(privateKey, secureRandom));
 			signer.update(message, 0, message.length);
 
 			return signer.generateSignature();

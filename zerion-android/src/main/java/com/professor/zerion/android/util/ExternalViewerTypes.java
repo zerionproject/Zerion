@@ -86,6 +86,7 @@ public final class ExternalViewerTypes {
 			"application/dash+xml",
 			"application/x-bittorrent",
 			"application/x-mimearchive",
+			"application/webbundle",
 			"application/epub+zip",
 			"audio/x-pn-realaudio",
 			"audio/x-pn-realaudio-plugin",
@@ -94,8 +95,51 @@ public final class ExternalViewerTypes {
 
 	private static final String[] ACTIVE_PARTS = {"mpegurl", "m3u", "html",
 			"script", "svg", "smil", "scpls", "bittorrent", "mimearchive",
-			"webarchive", "xspf", "realaudio", "realmedia", "ms-asx",
-			"ms-wax", "ms-wvx", "ms-wmx", "ms-wpl", "sdp"};
+			"webarchive", "webbundle", "xspf", "realaudio", "realmedia",
+			"ms-asx", "ms-wax", "ms-wvx", "ms-wmx", "ms-wpl", "sdp"};
+
+	private static final Set<String> TOP_LEVEL = new HashSet<>(Arrays.asList(
+			"application", "image", "video", "audio", "text", "message",
+			"multipart", "font", "model"));
+
+	private static final String[] SYSTEM_PARTS = {"package-archive", "apk",
+			"vnd.android", "x-dex", "java-archive", "executable", "x-elf",
+			"msdownload", "msdos-program", "x-sharedlib", "x509", "pkcs",
+			"pkix", "pem-file", "x-pem", "wifi-config", "vnd.wfa", "oma.drm",
+			"android-drm", "mobileconfig", "aspen-config", "passpoint",
+			"openvpn", "ovpn", "wireguard", "strongswan", "pgp-key",
+			"keyring", "x-jar", "/jar"};
+
+	private static final byte[] PACKAGE_MANIFEST = {'A', 'n', 'd', 'r', 'o',
+			'i', 'd', 'M', 'a', 'n', 'i', 'f', 'e', 's', 't', '.', 'x', 'm',
+			'l'};
+
+	private static final byte[] PACKAGE_CODE = {'c', 'l', 'a', 's', 's', 'e',
+			's', '.', 'd', 'e', 'x'};
+
+	private static final byte[][] PACKAGE_SUFFIXES = {{'.', 'a', 'p', 'k'},
+			{'.', 'a', 'p', 'k', 's'}, {'.', 'x', 'a', 'p', 'k'},
+			{'.', 'a', 'p', 'k', 'm'}};
+
+	private static final int ZIP_TAIL = 65_557;
+
+	static final int MAX_DIRECTORY_BYTES = 8 * 1024 * 1024;
+
+	static final int MAX_WALKED_DIRECTORIES = 64;
+
+	static final int MAX_END_RECORDS = 256;
+
+	private static final int END_RECORD_BYTES = 22;
+
+	private static final int ENTRY_HEADER_BYTES = 46;
+
+	private static final int LARGE_ARCHIVE_LOCATOR_BYTES = 20;
+
+	private static final int LARGE_ARCHIVE_COUNT = 0xFFFF;
+
+	private static final long LARGE_ARCHIVE_FIELD = 0xFFFFFFFFL;
+
+	private static final int BLOCK_BYTES = 64 * 1024;
 
 	private static final String[] MARKUP_TEXT_STARTS = {"#ext", "rtsptext",
 			"v=0\n", "v=0\r", "mime-version:", "content-type:",
@@ -151,10 +195,204 @@ public final class ExternalViewerTypes {
 		return false;
 	}
 
+	static boolean isHandledBySystem(String m) {
+		int slash = m.indexOf('/');
+		if (slash < 1 || !TOP_LEVEL.contains(m.substring(0, slash))) {
+			return true;
+		}
+		for (String part : SYSTEM_PARTS) {
+			if (m.contains(part)) return true;
+		}
+		return false;
+	}
+
+	static boolean isProgram(Source source) throws IOException {
+		byte[] head = source.head(8);
+		if (MediaMagic.ascii(head, 0, "dex\n")
+				|| MediaMagic.ascii(head, 0, "dey\n")
+				|| MediaMagic.ascii(head, 0, "\u007FELF")) {
+			return true;
+		}
+		long length = source.length();
+		if (length < END_RECORD_BYTES) return false;
+		int tailSize = (int) Math.min(length, ZIP_TAIL);
+		return new Archive(source, length,
+				source.read(length - tailSize, tailSize)).holdsProgram();
+	}
+
+	private static final class Archive {
+
+		private static final int CLEAN = 0;
+		private static final int PROGRAM = 1;
+		private static final int ABSENT = 0;
+		private static final int PRESENT = 1;
+		private static final int MISSING = -1;
+		private static final int SPENT = -2;
+
+		private final Source source;
+		private final long length;
+		private final byte[] tail;
+		private final long tailStart;
+		private byte[] block = new byte[0];
+		private long blockStart;
+		private byte[] found = block;
+		private long allowance = MAX_DIRECTORY_BYTES;
+		private int walked;
+
+		Archive(Source source, long length, byte[] tail) {
+			this.source = source;
+			this.length = length;
+			this.tail = tail;
+			this.tailStart = length - tail.length;
+		}
+
+		boolean holdsProgram() throws IOException {
+			int endRecords = 0;
+			for (int i = tail.length - END_RECORD_BYTES; i >= 0; i--) {
+				if (!signed(tail, i, 5, 6)) continue;
+				if (++endRecords > MAX_END_RECORDS) return true;
+				if (endRecordHoldsProgram(i)) return true;
+			}
+			return false;
+		}
+
+		private boolean endRecordHoldsProgram(int at) throws IOException {
+			long end = tailStart + at;
+			int entriesHere = u16le(tail, at + 8);
+			int entries = u16le(tail, at + 10);
+			long size = u32le(tail, at + 12);
+			long offset = u32le(tail, at + 16);
+			if (entriesHere == LARGE_ARCHIVE_COUNT
+					|| entries == LARGE_ARCHIVE_COUNT
+					|| size == LARGE_ARCHIVE_FIELD
+					|| offset == LARGE_ARCHIVE_FIELD) {
+				return true;
+			}
+			if (signatureAt(end - LARGE_ARCHIVE_LOCATOR_BYTES, 6, 7)
+					!= ABSENT) {
+				return true;
+			}
+			long beforeEnd = end - size;
+			long[] starts = offset == beforeEnd ? new long[] {offset}
+					: new long[] {offset, beforeEnd};
+			for (long start : starts) {
+				int directory = signatureAt(start, 1, 2);
+				if (directory == SPENT) return true;
+				if (directory == ABSENT) continue;
+				if (++walked > MAX_WALKED_DIRECTORIES) return true;
+				if (walkFindsProgram(start, end, size,
+						Math.max(entries, entriesHere))) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		private int signatureAt(long pos, int third, int fourth)
+				throws IOException {
+			int at = locate(pos, 4, 4);
+			if (at == SPENT) return SPENT;
+			if (at == MISSING) return ABSENT;
+			return signed(found, at, third, fourth) ? PRESENT : ABSENT;
+		}
+
+		private boolean walkFindsProgram(long start, long end,
+				long statedSize, int statedEntries) throws IOException {
+			long pos = start;
+			long entries = 0;
+			while (true) {
+				int at = locate(pos, ENTRY_HEADER_BYTES, BLOCK_BYTES);
+				if (at == SPENT) return true;
+				if (at == MISSING || !signed(found, at, 1, 2)) break;
+				int name = u16le(found, at + 28);
+				int extra = u16le(found, at + 30);
+				int comment = u16le(found, at + 32);
+				int verdict = nameVerdict(pos + ENTRY_HEADER_BYTES, name);
+				if (verdict == PROGRAM || verdict == SPENT) return true;
+				if (verdict == MISSING) break;
+				pos += ENTRY_HEADER_BYTES + name + extra + comment;
+				entries++;
+			}
+			return pos - start < statedSize || entries < statedEntries
+					|| (start < end && pos > end);
+		}
+
+		private int nameVerdict(long namePos, int nameLength)
+				throws IOException {
+			int compared = Math.min(nameLength, PACKAGE_MANIFEST.length);
+			if (compared == 0) return CLEAN;
+			int at = locate(namePos + nameLength - compared, compared,
+					BLOCK_BYTES);
+			if (at < 0) return at;
+			if (nameLength == PACKAGE_MANIFEST.length
+					&& same(found, at, PACKAGE_MANIFEST)) {
+				return PROGRAM;
+			}
+			if (nameLength == PACKAGE_CODE.length
+					&& same(found, at, PACKAGE_CODE)) {
+				return PROGRAM;
+			}
+			for (byte[] suffix : PACKAGE_SUFFIXES) {
+				if (compared >= suffix.length && endsIn(found,
+						at + compared - suffix.length, suffix)) {
+					return PROGRAM;
+				}
+			}
+			return CLEAN;
+		}
+
+		private int locate(long pos, int n, int ahead) throws IOException {
+			if (pos < 0 || pos + n > length) return MISSING;
+			if (pos >= tailStart) {
+				found = tail;
+				return (int) (pos - tailStart);
+			}
+			if (pos >= blockStart && pos + n <= blockStart + block.length) {
+				found = block;
+				return (int) (pos - blockStart);
+			}
+			long want = Math.min(Math.max(n, ahead), length - pos);
+			if (want > allowance) want = allowance;
+			if (want < n) return SPENT;
+			byte[] read = source.read(pos, (int) want);
+			allowance -= read.length;
+			if (read.length < n) return MISSING;
+			if (ahead > n) {
+				block = read;
+				blockStart = pos;
+			}
+			found = read;
+			return 0;
+		}
+
+		private static boolean signed(byte[] d, int at, int third,
+				int fourth) {
+			return d[at] == 'P' && d[at + 1] == 'K' && d[at + 2] == third
+					&& d[at + 3] == fourth;
+		}
+
+		private static boolean same(byte[] d, int at, byte[] name) {
+			for (int i = 0; i < name.length; i++) {
+				if (d[at + i] != name[i]) return false;
+			}
+			return true;
+		}
+
+		private static boolean endsIn(byte[] d, int at, byte[] suffix) {
+			if (d[at] != suffix[0]) return false;
+			for (int i = 1; i < suffix.length; i++) {
+				if ((d[at + i] | 0x20) != suffix[i]) return false;
+			}
+			return true;
+		}
+	}
+
 	@Nullable
 	private static String typeFor(@Nullable String declared, Source source)
 			throws IOException {
 		String type = effectiveType(declared);
+		if (!TEXT.equals(type) && isHandledBySystem(type)) return null;
+		if (isProgram(source)) return null;
 		if (TEXT.equals(type)) return type;
 		byte[] head = source.head(HEAD_BYTES);
 		if (readsAsActiveText(head)) return null;
@@ -501,6 +739,10 @@ public final class ExternalViewerTypes {
 	private static long u32(byte[] d, int off) {
 		return ((d[off] & 0xFFL) << 24) | ((d[off + 1] & 0xFFL) << 16)
 				| ((d[off + 2] & 0xFFL) << 8) | (d[off + 3] & 0xFFL);
+	}
+
+	private static int u16le(byte[] d, int off) {
+		return (d[off] & 0xFF) | ((d[off + 1] & 0xFF) << 8);
 	}
 
 	private static long u32le(byte[] d, int off) {

@@ -19,6 +19,7 @@ import java.util.Arrays;
 
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MLKEM_CIPHERTEXT_SIZE;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULATION_KEY_SIZE;
+import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_RECV_ROTATION_INTERVAL;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_RECV_SK_LRU_SIZE;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_SEND_ROTATION_INTERVAL;
 import static org.junit.Assert.assertArrayEquals;
@@ -70,7 +71,7 @@ public class Mode3FullRatchetImplTest {
 	public void testFirstSendEmitsZeroSentinelAndNoSharedSecret() {
 		Mode3FullState state = ratchet.createInitialState();
 
-		PqSendResult result = ratchet.pqEncapsulateSend(state, 0);
+		PqSendResult result = ratchet.pqEncapsulateSend(state, 0, 0);
 
 		assertEquals(MLKEM_CIPHERTEXT_SIZE, result.getCiphertext().length);
 		for (byte b : result.getCiphertext()) assertEquals(0, b);
@@ -131,7 +132,7 @@ public class Mode3FullRatchetImplTest {
 		Mode3FullState aliceState = ratchet.createInitialState()
 				.withRecvAdvance(bobKp.getEncapsulationKey());
 
-		PqSendResult aliceSend = ratchet.pqEncapsulateSend(aliceState, 0);
+		PqSendResult aliceSend = ratchet.pqEncapsulateSend(aliceState, 0, 0);
 
 		Mode3FullState bobState = new Mode3FullState(
 				null, bobKp, new java.util.LinkedHashMap<>(), 0);
@@ -195,19 +196,51 @@ public class Mode3FullRatchetImplTest {
 		state = state.withRecvAdvance(peer.getEncapsulationKey());
 		MlKemKeyPair before = state.getOurActiveKeyPair();
 
-		Mode3FullState afterOne = ratchet.pqEncapsulateSend(state, 0).getNewState();
+		Mode3FullState afterOne = ratchet.pqEncapsulateSend(state, 0, 0).getNewState();
 		assertTrue(Arrays.equals(before.getEncapsulationKey(),
 				afterOne.getOurActiveKeyPair().getEncapsulationKey()));
 
 		Mode3FullState s = state;
 		long osr = 0;
 		for (int i = 0; i < MODE3_FULL_SEND_ROTATION_INTERVAL; i++) {
-			PqSendResult r = ratchet.pqEncapsulateSend(s, osr);
+			PqSendResult r = ratchet.pqEncapsulateSend(s, osr, 0);
 			osr = r.isRotated() ? 0 : osr + 1;
 			s = r.getNewState();
 		}
 		assertFalse(Arrays.equals(before.getEncapsulationKey(),
 				s.getOurActiveKeyPair().getEncapsulationKey()));
+	}
+
+	@Test
+	public void testSixteenReceivedFramesRotateAtTheNextSend() {
+		Mode3FullState state = ratchet.createInitialState();
+		MlKemKeyPair peer = mlKemProvider.generateKeyPair();
+		state = state.withRecvAdvance(peer.getEncapsulationKey());
+		byte[] before = state.getOurActiveKeyPair().getEncapsulationKey();
+
+		PqSendResult early = ratchet.pqEncapsulateSend(state, 0,
+				MODE3_FULL_RECV_ROTATION_INTERVAL - 1);
+		assertFalse(early.isRotated());
+
+		PqSendResult due = ratchet.pqEncapsulateSend(state, 0,
+				MODE3_FULL_RECV_ROTATION_INTERVAL);
+		assertTrue(due.isRotated());
+		assertFalse(Arrays.equals(before,
+				due.getNewState().getOurActiveKeyPair().getEncapsulationKey()));
+		assertArrayEquals(due.getNewState().getOurActiveKeyPair()
+				.getEncapsulationKey(), due.getPkAdvertise());
+	}
+
+	@Test
+	public void testReceivedFramesDoNotRotatePastTheRetentionBound() {
+		Mode3FullState state = ratchet.createInitialState().withRecvAdvance(
+				mlKemProvider.generateKeyPair().getEncapsulationKey());
+		for (int i = 0; i < MODE3_FULL_RECV_SK_LRU_SIZE; i++) {
+			state = state.withSendAdvance(mlKemProvider.generateKeyPair());
+		}
+		assertFalse(state.canRotate());
+		assertFalse(ratchet.pqEncapsulateSend(state, 0,
+				MODE3_FULL_RECV_ROTATION_INTERVAL).isRotated());
 	}
 
 	@Test
@@ -222,7 +255,7 @@ public class Mode3FullRatchetImplTest {
 		boolean rotatedWithinBound = false;
 		for (int ownSend = 1;
 				ownSend <= MODE3_FULL_SEND_ROTATION_INTERVAL; ownSend++) {
-			PqSendResult r = ratchet.pqEncapsulateSend(state, osr);
+			PqSendResult r = ratchet.pqEncapsulateSend(state, osr, 0);
 			osr = r.isRotated() ? 0 : osr + 1;
 			state = r.getNewState();
 			if (r.isRotated()) rotatedWithinBound = true;
@@ -251,7 +284,7 @@ public class Mode3FullRatchetImplTest {
 					state.getOurActiveKeyPair().getEncapsulationKey();
 			for (int step = 0; step < 300; step++) {
 				if (rnd.nextBoolean()) {
-					PqSendResult r = ratchet.pqEncapsulateSend(state, osr);
+					PqSendResult r = ratchet.pqEncapsulateSend(state, osr, 0);
 					byte[] afterKp = r.getNewState().getOurActiveKeyPair()
 							.getEncapsulationKey();
 					assertEquals("rotated flag must equal keypair change",
@@ -282,12 +315,12 @@ public class Mode3FullRatchetImplTest {
 						mlKemProvider.generateKeyPair().getEncapsulationKey());
 		byte[] kp = state.getOurActiveKeyPair().getEncapsulationKey();
 		for (long osr = 0; osr < MODE3_FULL_SEND_ROTATION_INTERVAL - 1; osr++) {
-			PqSendResult r = ratchet.pqEncapsulateSend(state, osr);
+			PqSendResult r = ratchet.pqEncapsulateSend(state, osr, 0);
 			assertFalse("no rotation before the interval", r.isRotated());
 			state = r.getNewState();
 		}
 		PqSendResult atBound = ratchet.pqEncapsulateSend(state,
-				MODE3_FULL_SEND_ROTATION_INTERVAL - 1);
+				MODE3_FULL_SEND_ROTATION_INTERVAL - 1, 0);
 		assertTrue("rotation occurs at the interval boundary",
 				atBound.isRotated());
 		assertFalse(Arrays.equals(kp, atBound.getNewState()
@@ -304,7 +337,7 @@ public class Mode3FullRatchetImplTest {
 				mlKemProvider.generateKeyPair().getEncapsulationKey());
 
 		PqSendResult rotated = ratchet.pqEncapsulateSend(state,
-				MODE3_FULL_SEND_ROTATION_INTERVAL - 1);
+				MODE3_FULL_SEND_ROTATION_INTERVAL - 1, 0);
 		assertTrue(rotated.isRotated());
 		byte[] newPk = rotated.getPkAdvertise();
 
@@ -334,7 +367,7 @@ public class Mode3FullRatchetImplTest {
 				* MODE3_FULL_SEND_ROTATION_INTERVAL;
 		long osr = 0;
 		for (int i = 0; i < sends; i++) {
-			PqSendResult r = ratchet.pqEncapsulateSend(state, osr);
+			PqSendResult r = ratchet.pqEncapsulateSend(state, osr, 0);
 			osr = r.isRotated() ? 0 : osr + 1;
 			state = r.getNewState();
 		}

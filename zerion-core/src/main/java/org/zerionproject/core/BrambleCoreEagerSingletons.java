@@ -24,6 +24,9 @@ public interface BrambleCoreEagerSingletons {
 
 	void inject(ContactModule.EagerSingletons init);
 
+	void inject(org.zerionproject.core.contact.request.ContactRequestModule
+			.EagerSingletons init);
+
 	void inject(CryptoExecutorModule.EagerSingletons init);
 
 	void inject(DatabaseExecutorModule.EagerSingletons init);
@@ -57,6 +60,8 @@ public interface BrambleCoreEagerSingletons {
 			c.inject(new AccountModule.EagerSingletons());
 			c.inject(new CleanupModule.EagerSingletons());
 			c.inject(new ContactModule.EagerSingletons());
+			c.inject(new org.zerionproject.core.contact.request
+					.ContactRequestModule.EagerSingletons());
 			c.inject(new CryptoExecutorModule.EagerSingletons());
 			c.inject(new DatabaseExecutorModule.EagerSingletons());
 			c.inject(new IdentityModule.EagerSingletons());

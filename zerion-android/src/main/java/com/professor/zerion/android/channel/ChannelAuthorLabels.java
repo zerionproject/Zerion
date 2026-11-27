@@ -1,5 +1,6 @@
 package com.professor.zerion.android.channel;
 
+import com.professor.zerion.android.util.DisplayNames;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.app.api.channel.ChannelComment;
 import org.zerionproject.core.util.StringUtils;
@@ -31,7 +32,7 @@ final class ChannelAuthorLabels {
 		Map<String, Long> firstSeen = new HashMap<>();
 		for (ChannelComment c : comments) {
 			String key = StringUtils.toHexString(c.getAuthorEd25519PubKey());
-			String name = c.getAuthorDisplayName().trim();
+			String name = DisplayNames.clean(c.getAuthorDisplayName()).trim();
 			if (!names.containsKey(key)) {
 				names.put(key, name.isEmpty() ? unnamed : name);
 			}
@@ -82,7 +83,7 @@ final class ChannelAuthorLabels {
 		String label = labels.get(StringUtils.toHexString(
 				c.getAuthorEd25519PubKey()));
 		if (label != null) return label;
-		String name = c.getAuthorDisplayName().trim();
+		String name = DisplayNames.clean(c.getAuthorDisplayName()).trim();
 		return name.isEmpty() ? unnamed : name;
 	}
 }

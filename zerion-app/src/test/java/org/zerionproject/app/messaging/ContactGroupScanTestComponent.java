@@ -96,6 +96,8 @@ interface ContactGroupScanTestComponent
 
 	TimeTravel getTimeTravel();
 
+	org.zerionproject.core.api.system.Clock getClock();
+
 	CryptoComponent getCryptoComponent();
 
 	ValidationManager getValidationManager();

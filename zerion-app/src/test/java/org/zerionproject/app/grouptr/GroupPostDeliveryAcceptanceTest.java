@@ -19,11 +19,50 @@ public class GroupPostDeliveryAcceptanceTest {
 	private final byte[] removed = fill((byte) 3);
 	private final byte[] stranger = fill((byte) 4);
 
+	private final byte[] other = fill((byte) 5);
+
 	private GroupTrState group(boolean dissolved) {
 		List<GroupTrMember> members = new ArrayList<>();
 		members.add(new GroupTrMember(member, "Member", 0L, 1L));
 		return new GroupTrState(fill((byte) 9), "g", fill((byte) 8), creator,
 				"Creator", 0L, 5L, dissolved, members);
+	}
+
+	private GroupTrState keyedGroup() {
+		List<GroupTrMember> members = new ArrayList<>();
+		members.add(new GroupTrMember(member, "Member", 0L, 1L));
+		members.add(new GroupTrMember(other, "Other", 0L, 1L));
+		return new GroupTrState(fill((byte) 9), "g", fill((byte) 8), creator,
+				"Creator", 0L, 5L, false, members, 0L,
+				GroupTrState.SCHEME_GROUP_KEYS);
+	}
+
+	@Test
+	public void withMemberKeysOnlyTheSignerOrTheCreatorMayDeliver() {
+		assertTrue(GroupTrManagerImpl.groupPostDeliveryAccepted(
+				keyedGroup(), member, member));
+		assertTrue("the creator passes a member's record on",
+				GroupTrManagerImpl.groupPostDeliveryAccepted(
+						keyedGroup(), member, creator));
+		assertFalse("another member may not pass a record on",
+				GroupTrManagerImpl.groupPostDeliveryAccepted(
+						keyedGroup(), member, other));
+		assertFalse(GroupTrManagerImpl.groupPostDeliveryAccepted(
+				keyedGroup(), stranger, creator));
+		assertFalse(GroupTrManagerImpl.groupPostDeliveryAccepted(
+				keyedGroup(), member, stranger));
+	}
+
+	@Test
+	public void withAccountKeysAnyMemberStillDelivers() {
+		GroupTrState s = group(false);
+		List<GroupTrMember> members = new ArrayList<>(s.getMembers());
+		members.add(new GroupTrMember(other, "Other", 0L, 1L));
+		s.setMembers(members);
+		assertTrue(GroupTrManagerImpl.groupPostDeliveryAccepted(s, member,
+				other));
+		assertTrue(GroupTrManagerImpl.groupPostDeliveryAccepted(s, member,
+				creator));
 	}
 
 	@Test

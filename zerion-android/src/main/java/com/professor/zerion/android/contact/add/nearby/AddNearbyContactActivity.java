@@ -20,6 +20,9 @@ import androidx.appcompat.app.ActionBar;
 public class AddNearbyContactActivity extends ZerionActivity
 		implements BaseFragmentListener {
 
+	public static final String EXTRA_SCANNED_CODE =
+			"com.professor.zerion.android.contact.add.nearby.SCANNED_CODE";
+
 	@Override
 	public void injectActivity(ActivityComponent component) {
 		component.inject(this);

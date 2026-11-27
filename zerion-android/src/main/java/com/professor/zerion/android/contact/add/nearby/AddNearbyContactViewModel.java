@@ -9,7 +9,6 @@ import com.professor.zerion.android.viewmodel.DbViewModel;
 
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactExchangeManager;
-import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseExecutor;
 import org.zerionproject.core.api.db.TransactionManager;
 import org.zerionproject.core.api.event.Event;
@@ -182,18 +181,21 @@ public class AddNearbyContactViewModel extends DbViewModel
 
 	private void exchangeContacts(KeyAgreementResult r) {
 		DuplexTransportConnection conn = r.getConnection();
-		SecretKey masterKey = r.getMasterKey();
 		boolean alice = r.wasAlice();
 		Contact contact;
 		try {
-			contact = contactExchangeManager.exchangeContacts(conn, masterKey,
-					alice, true);
+			contact = contactExchangeManager.exchangeContacts(conn,
+					r.getExchangeKey(), r.getMasterKey(), alice, true);
 		} catch (Exception ex) {
 			dispose(conn, true);
 			state.postValue(PairingState.FAILED);
 			return;
+		} finally {
+			r.getExchangeKey().clear();
+			r.getMasterKey().clear();
 		}
-		contactName.postValue(contact.getAuthor().getName());
+		contactName.postValue(com.professor.zerion.android.util.DisplayNames
+				.clean(contact.getAuthor().getName()));
 		state.postValue(PairingState.SUCCESS);
 		TransportId transportId = r.getTransportId();
 		ioExecutor.execute(() ->

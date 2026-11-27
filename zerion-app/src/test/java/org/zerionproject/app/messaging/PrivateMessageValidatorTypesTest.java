@@ -137,11 +137,75 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void linkPreviewTextMadeOfFormattingCharactersIsRejected()
+			throws Exception {
+		reject(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "https://example.org",
+				"\u202E\u200B\u2066", null), true);
+		reject(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "https://example.org",
+				"\u0007\u001B\r", null), true);
+		accept(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "https://example.org",
+				"title\u202E", "\u202Edescription"), true, 0);
+	}
+
+	@Test
+	public void displayTextDropsFormattingAndControlCharacters() {
+		assertEquals("paypal.com", PrivateMessageValidator.displayText(
+				"\u202Epaypal\u200B.com\u2069", false));
+		assertEquals("a b", PrivateMessageValidator.displayText(
+				"a\tb\u0007", false));
+		assertEquals("a b", PrivateMessageValidator.displayText(
+				"a\nb", false));
+		assertEquals("a\nb\nc", PrivateMessageValidator.displayText(
+				"a\nb\u2028c", true));
+		assertEquals("Z\u00FCrich \u65E5\u672C \u0440\u0430",
+				PrivateMessageValidator.displayText(
+						" Z\u00FCrich \u65E5\u672C \u0440\u0430 ", false));
+		assertEquals("", PrivateMessageValidator.displayText(
+				"\u00AD\uFEFF\u061C", false));
+	}
+
+	@Test
+	public void linkPreviewAcceptsOnlyWebSchemes() throws Exception {
+		accept(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "http://example.org/a",
+				"title", null), true, 0);
+		accept(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "HTTPS://Example.org",
+				"title", null), true, 0);
+		String[] bad = {"tel:+15551234", "sms:+15551234",
+				"market://details?id=x", "content://x/y", "file:///sdcard/x",
+				"intent://x#Intent;scheme=http;end", "javascript:alert(1)",
+				"zerion://channel/abc", "https://", "http:example.org",
+				" https://example.org", "httpsx://example.org",
+				"https://exa\u202Emple.org", "https://example.org/a b",
+				"https://\u0440\u0430ypal.com", "https://example.org/\t",
+				"https://example.org/\u00E9"};
+		for (String url : bad) {
+			reject(BdfList.of(LINK_PREVIEW_MESSAGE, "text", url, "title",
+					null), true);
+		}
+	}
+
+	@Test
 	public void meshPrekeyBundle() throws Exception {
 		accept(BdfList.of(MESH_PREKEY_BUNDLE, getRandomBytes(100)), true, 0);
 		reject(BdfList.of(MESH_PREKEY_BUNDLE), true);
 		reject(BdfList.of(MESH_PREKEY_BUNDLE, "not raw"), true);
 		reject(BdfList.of(MESH_PREKEY_BUNDLE, getRandomBytes(1), 2), true);
+	}
+
+	@Test
+	public void meshLinkKeys() throws Exception {
+		accept(BdfList.of(MessageTypes.MESH_LINK_KEYS, getRandomBytes(32),
+				getRandomBytes(32)), true, 0);
+		reject(BdfList.of(MessageTypes.MESH_LINK_KEYS, getRandomBytes(32)),
+				true);
+		reject(BdfList.of(MessageTypes.MESH_LINK_KEYS, getRandomBytes(31),
+				getRandomBytes(32)), true);
+		reject(BdfList.of(MessageTypes.MESH_LINK_KEYS, getRandomBytes(32),
+				getRandomBytes(33)), true);
+		reject(BdfList.of(MessageTypes.MESH_LINK_KEYS, "not raw",
+				getRandomBytes(32)), true);
+		reject(BdfList.of(MessageTypes.MESH_LINK_KEYS, getRandomBytes(32),
+				getRandomBytes(32), 1), true);
 	}
 
 	@Test
@@ -203,6 +267,200 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 						.HYBRID_SIGNATURE_BYTES + 1)), true);
 		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
 				getRandomBytes(32), now, "signature"), true);
+	}
+
+	@Test
+	public void messagePin() throws Exception {
+		assertEquals(15, MessageTypes.MESSAGE_PIN);
+		accept(BdfList.of(MessageTypes.MESSAGE_PIN, id), true, 0);
+		accept(BdfList.of(MessageTypes.MESSAGE_PIN, BdfDictionary.NULL_VALUE),
+				true, 0);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN), true);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, id, 1L), true);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, getRandomBytes(31)), true);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, getRandomBytes(33)), true);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, "id"), true);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, 7L), true);
+	}
+
+	@Test
+	public void messagePinMustEndTheMessage() throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(reader).eof();
+			will(returnValue(false));
+		}});
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, id), false);
+	}
+
+	@Test
+	public void groupPin() throws Exception {
+		assertEquals(59, MessageTypes.GROUP_PIN);
+		byte[] hybrid = getRandomBytes(PostQuantumConstants
+				.HYBRID_SIGNATURE_BYTES);
+		accept(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				hybrid), true, 0);
+		accept(BdfList.of(MessageTypes.GROUP_PIN, id, BdfDictionary.NULL_VALUE,
+				now, hybrid), true, 0);
+		accept(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				sig), true, 0);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now),
+				true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				hybrid, 1L), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, getRandomBytes(31),
+				getRandomBytes(32), now, hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(31), now,
+				hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, "post", now, hybrid),
+				true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32),
+				"now", hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				new byte[0]), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				getRandomBytes(4097)), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				"signature"), true);
+	}
+
+	@Test
+	public void groupRelayRequest() throws Exception {
+		assertEquals(60, MessageTypes.GROUP_RELAY_REQUEST);
+		byte[] hybrid = getRandomBytes(PostQuantumConstants
+				.HYBRID_SIGNATURE_BYTES);
+		BdfList delete = BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L,
+				key, getRandomBytes(32), now, hybrid);
+		BdfList members = BdfList.of(getRandomBytes(32), getRandomBytes(32));
+		accept(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, members,
+				delete), true, 0);
+		accept(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id,
+				BdfList.of(getRandomBytes(32)), delete), true, 0);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, members),
+				true);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, members,
+				delete, 1L), true);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, getRandomBytes(31),
+				members, delete), true);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, new BdfList(),
+				delete), true);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id,
+				BdfList.of(getRandomBytes(31)), delete), true);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id,
+				BdfList.of("member"), delete), true);
+		BdfList tooMany = new BdfList();
+		for (int i = 0; i < 257; i++) tooMany.add(getRandomBytes(32));
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, tooMany,
+				delete), true);
+		byte[] twice = getRandomBytes(32);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id,
+				BdfList.of(twice, getRandomBytes(32), twice), delete), true);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, members,
+				BdfList.of(MessageTypes.GROUP_POST_DELETE, getRandomBytes(32),
+						5L, key, getRandomBytes(32), now, hybrid)), true);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, members,
+				BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+						getRandomBytes(32), now, sig)), true);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, members,
+				BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+						hybrid)), true);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, members,
+				BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, members,
+						delete)), true);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, members,
+				"record"), true);
+	}
+
+	@Test
+	public void groupRelayRequestCarryingAPost() throws Exception {
+		allowHash();
+		allowSignature(true);
+		BdfList post = BdfList.of(GROUP_POST, id, 5L, key, "Name",
+				getRandomBytes(10), getRandomBytes(PostQuantumConstants
+						.HYBRID_SIGNATURE_BYTES));
+		accept(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id,
+				BdfList.of(getRandomBytes(32)), post), true, 0);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id,
+				BdfList.of(getRandomBytes(32)),
+				BdfList.of(GROUP_POST, getRandomBytes(32), 5L, key, "Name",
+						getRandomBytes(10), getRandomBytes(PostQuantumConstants
+								.HYBRID_SIGNATURE_BYTES))), true);
+	}
+
+	@Test
+	public void groupRelayRequestWithAPostWhoseSignatureFails()
+			throws Exception {
+		allowHash();
+		allowSignature(false);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id,
+				BdfList.of(getRandomBytes(32)),
+				BdfList.of(GROUP_POST, id, 5L, key, "Name", getRandomBytes(10),
+						getRandomBytes(PostQuantumConstants
+								.HYBRID_SIGNATURE_BYTES))), true);
+	}
+
+	@Test
+	public void groupRelayRequestMustEndTheMessage() throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(reader).eof();
+			will(returnValue(false));
+		}});
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id,
+				BdfList.of(getRandomBytes(32)),
+				BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+						getRandomBytes(32), now, getRandomBytes(
+								PostQuantumConstants.HYBRID_SIGNATURE_BYTES))),
+				false);
+	}
+
+	@Test
+	public void groupMemberKeys() throws Exception {
+		assertEquals(61, MessageTypes.GROUP_MEMBER_KEYS);
+		byte[] mlDsa = getRandomBytes(PostQuantumConstants
+				.ML_DSA_65_PUBLIC_KEY_BYTES);
+		byte[] hybrid = getRandomBytes(PostQuantumConstants
+				.HYBRID_SIGNATURE_BYTES);
+		accept(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, id, key, mlDsa, now,
+				hybrid), true, 0);
+		accept(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, id, key, mlDsa, now,
+				sig), true, 0);
+		reject(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, id, key, mlDsa, now),
+				true);
+		reject(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, id, key, mlDsa, now,
+				hybrid, 1L), true);
+		reject(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, getRandomBytes(31),
+				key, mlDsa, now, hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, id,
+				getRandomBytes(31), mlDsa, now, hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, id, key,
+				getRandomBytes(PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES
+						- 1), now, hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, id, key, mlDsa,
+				"now", hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, id, key, mlDsa, now,
+				new byte[0]), true);
+		reject(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, id, key, mlDsa, now,
+				getRandomBytes(4097)), true);
+	}
+
+	@Test
+	public void groupMemberKeysMustEndTheMessage() throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(reader).eof();
+			will(returnValue(false));
+		}});
+		reject(BdfList.of(MessageTypes.GROUP_MEMBER_KEYS, id, key,
+				getRandomBytes(PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES),
+				now, sig), false);
+	}
+
+	@Test
+	public void groupPinMustEndTheMessage() throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(reader).eof();
+			will(returnValue(false));
+		}});
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				sig), false);
 	}
 
 	@Test
@@ -354,6 +612,32 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 		BdfList negative = binding();
 		negative.set(2, -1L);
 		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, negative), true);
+		BdfList unsigned = binding();
+		unsigned.set(3, new byte[0]);
+		accept(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, unsigned), true,
+				0);
+		accept(BdfList.of(GROUPTR_INVITE_ACCEPT, id, now, sig, unsigned),
+				true, 0);
+		BdfList oneByte = binding();
+		oneByte.set(3, new byte[1]);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, oneByte), true);
+		BdfList shortIdentitySig = binding();
+		shortIdentitySig.set(3, getRandomBytes(
+				PostQuantumConstants.HYBRID_SIGNATURE_BYTES - 1));
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id,
+				shortIdentitySig), true);
+		BdfList unsignedGroupSig = binding();
+		unsignedGroupSig.set(4, new byte[0]);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id,
+				unsignedGroupSig), true);
+		accept(BdfList.of(MessageTypes.GROUP_KEY_PROBE, BdfList.of(BdfList.of(
+				getRandomBytes(32), getRandomBytes(32), getRandomBytes(
+						SEALED - PostQuantumConstants.HYBRID_SIGNATURE_BYTES)))),
+				true, 0);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_PROBE, BdfList.of(BdfList.of(
+				getRandomBytes(32), getRandomBytes(32), getRandomBytes(SEALED
+						- PostQuantumConstants.HYBRID_SIGNATURE_BYTES - 1)))),
+				true);
 		accept(BdfList.of(MessageTypes.GROUP_KEY_PROBE,
 				BdfList.of(probeEntry())), true, 0);
 		BdfList full = new BdfList();
@@ -436,7 +720,7 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 	public void unknownAndReservedTypesAreRejected() throws Exception {
 		reject(BdfList.of(39, id), false);
 		reject(BdfList.of(40, id), false);
-		reject(BdfList.of(59, id), false);
+		reject(BdfList.of(62, id), false);
 		reject(BdfList.of(99, id), false);
 		reject(BdfList.of(-1, id), false);
 	}

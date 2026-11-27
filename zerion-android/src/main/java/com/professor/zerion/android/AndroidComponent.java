@@ -109,6 +109,8 @@ public interface AndroidComponent
 
 	PluginManager pluginManager();
 
+	org.zerionproject.tor.TorWakePolicy torWakePolicy();
+
 	EventBus eventBus();
 
 	AndroidNotificationManager androidNotificationManager();
@@ -118,6 +120,8 @@ public interface AndroidComponent
 	ConnectionRegistry connectionRegistry();
 
 	ContactManager contactManager();
+
+	org.zerionproject.core.api.contact.request.ContactRequestManager contactRequestManager();
 
 	ConversationManager conversationManager();
 
@@ -212,6 +216,8 @@ public interface AndroidComponent
 	SharedPreferences profilePreferences();
 
 	com.professor.zerion.android.profile.ProfileStorage profileStorage();
+
+	org.zerionproject.core.account.LockoutStores lockoutStores();
 
 	void inject(SignInReminderReceiver briarService);
 

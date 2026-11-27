@@ -22,6 +22,7 @@ import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.api.system.TaskScheduler;
 import org.zerionproject.core.util.ByteUtils;
@@ -73,6 +74,14 @@ import static org.zerionproject.app.grouptr.GroupTrConstants.CLIENT_ID;
 import static org.zerionproject.app.grouptr.GroupTrConstants.FORMAT_VERSION;
 import static org.zerionproject.app.grouptr.GroupTrConstants.GROUP_ID_LABEL;
 import static org.zerionproject.app.grouptr.GroupTrConstants.GROUP_SALT_LENGTH;
+import static org.zerionproject.app.grouptr.GroupTrConstants.SIGNING_LABEL_GROUP_PIN;
+import static org.zerionproject.app.grouptr.GroupTrConstants.SIGNING_LABEL_GROUP_MEMBER_KEYS;
+import static org.zerionproject.app.grouptr.GroupTrConstants.SIGNING_LABEL_GROUP_POST_DELETE;
+import static org.zerionproject.app.grouptr.GroupTrConstants.GROUP_MEMBER_KEYS_DOMAIN;
+import static org.zerionproject.app.grouptr.GroupTrConstants.GROUP_MEMBER_KEYS_ML_DSA_LABEL;
+import static org.zerionproject.app.grouptr.GroupTrConstants.GROUP_RELAY_SEEN_LABEL;
+import static org.zerionproject.app.grouptr.GroupTrConstants.S_PINNED_POST_ID;
+import static org.zerionproject.app.grouptr.GroupTrConstants.S_PINNED_TIMESTAMP;
 import static org.zerionproject.app.grouptr.GroupTrConstants.KEYED_FORMAT_VERSION;
 import static org.zerionproject.app.grouptr.GroupTrConstants.MAJOR_VERSION;
 import static org.zerionproject.app.grouptr.GroupTrConstants.SETTINGS_NS_INDEX;
@@ -136,10 +145,40 @@ class GroupTrManagerImpl
 			.autodelete.AutoDeleteConstants.MAX_AUTO_DELETE_TIMER_MS;
 	private static final long MIN_TIMER_MS = org.zerionproject.app.api
 			.autodelete.AutoDeleteConstants.MIN_AUTO_DELETE_TIMER_MS;
+	static final long SETTINGS_OFFER_INTERVAL_MS = 10L * 60L * 1000L;
+	static final long SETTINGS_REACH_BACK_DELAY_MS = 2L * 60L * 1000L;
+	static final long SETTINGS_PASS_MIN_DELAY_MS = 30L * 1000L;
+	static final long SETTINGS_PASS_MAX_DELAY_MS = 2L * 60L * 1000L;
+	static final long SETTINGS_PASS_QUIET_MS = 10L * 60L * 1000L;
+	private static final int MAX_PENDING_SETTINGS = 16;
+	private static final int MAX_SETTINGS_OFFERS_REMEMBERED = 1024;
+	private final TaskScheduler taskScheduler;
+	private final UserMessageMarker userMessages;
+	private final org.zerionproject.app.messaging.UnsignedFormsMemory
+			unsignedForms;
+	private final java.util.Map<String, Long> settingsOffered =
+			Collections.synchronizedMap(
+					new java.util.LinkedHashMap<String, Long>(16, 0.75f,
+							true) {
+						@Override
+						protected boolean removeEldestEntry(
+								java.util.Map.Entry<String, Long> eldest) {
+							return size() > MAX_SETTINGS_OFFERS_REMEMBERED;
+						}
+					});
+
+	private static final class SettingsPass {
+
+		private boolean scheduled;
+		private boolean ran;
+		private long ranAt;
+	}
+
+	private final Map<String, SettingsPass> settingsPasses = new HashMap<>();
 
 	private final MlDsaKeyDirectory mlDsaKeys = new MlDsaKeyDirectory(
-			this::lookupScopedMlDsaPubKey, this::lookupMemberMlDsaPubKey,
-			this::lookupLocalMlDsaPubKey, this::lookupContactMlDsaPubKey);
+			this::lookupScopedMlDsaPubKey, this::lookupContactMlDsaPubKey,
+			this::lookupLocalMlDsaPubKey);
 
 	private static final byte[] NO_KEY = new byte[0];
 	static final String S_KEY_SCHEME = "keyScheme";
@@ -251,9 +290,13 @@ class GroupTrManagerImpl
 			SettingsManager settingsManager, ClientHelper clientHelper,
 			CryptoComponent crypto, IdentityManager identityManager,
 			ContactManager contactManager, MessagingManager messagingManager,
-			EventBus eventBus, Clock clock, TaskScheduler taskScheduler) {
+			EventBus eventBus, Clock clock, TaskScheduler taskScheduler,
+			UserMessageMarker userMessages,
+			org.zerionproject.app.messaging.UnsignedFormsMemory
+					unsignedForms) {
 		this.db = db;
 		this.ioExecutor = ioExecutor;
+		this.taskScheduler = taskScheduler;
 		this.settingsManager = settingsManager;
 		this.clientHelper = clientHelper;
 		this.crypto = crypto;
@@ -262,6 +305,8 @@ class GroupTrManagerImpl
 		this.messagingManager = messagingManager;
 		this.eventBus = eventBus;
 		this.clock = clock;
+		this.userMessages = userMessages;
+		this.unsignedForms = unsignedForms;
 		this.random = new SecureRandom();
 		this.keys = new GroupTrKeys(settingsManager, crypto, clientHelper);
 		this.removals = new GroupTrPostRemovals(db, settingsManager,
@@ -270,11 +315,12 @@ class GroupTrManagerImpl
 		this.replies = new GroupTrReplies(messagingManager);
 		this.memberInvites = new GroupTrMemberInvites(db, settingsManager,
 				clientHelper, crypto, identityManager, contactManager,
-				messagingManager, eventBus, clock, new MemberInvitesHost());
+				messagingManager, unsignedForms, eventBus, clock,
+				new MemberInvitesHost());
 		this.order = new GroupTrReceiveOrder(settingsManager);
 		this.keyExchange = new GroupTrKeyExchange(db, contactManager,
-				messagingManager, keys, clock, taskScheduler, ioExecutor,
-				random, clientHelper, new KeyExchangeHost());
+				messagingManager, unsignedForms, keys, clock, taskScheduler,
+				ioExecutor, random, clientHelper, new KeyExchangeHost());
 	}
 
 	@Override
@@ -288,6 +334,22 @@ class GroupTrManagerImpl
 		ioExecutor.execute(this::sweepRemovedGroupsSafely);
 		ioExecutor.execute(keyExchange::sendDueProbes);
 		ioExecutor.execute(this::createMissingSecrets);
+		ioExecutor.execute(this::applyConfirmedSettingsSafely);
+	}
+
+	private void applyConfirmedSettingsSafely() {
+		try {
+			for (GroupTrState s : getGroups()) {
+				if (s.isDissolved()) continue;
+				String pending = settingsManager.getSettings(
+						nsOf(s.getGroupId()))
+						.get(GroupTrConstants.S_SETTINGS_PENDING);
+				if (pending != null && !pending.isEmpty()) {
+					applyConfirmedSettingsLater(s.getGroupId());
+				}
+			}
+		} catch (DbException | RuntimeException ex) {
+		}
 	}
 
 	void createMissingSecrets() {
@@ -544,7 +606,7 @@ class GroupTrManagerImpl
 					}
 				}
 				db.transaction(false,
-						txn -> sendSettings(txn, s, to, record, now));
+						txn -> sendSettings(txn, s, to, record, now, false));
 			} catch (FormatException ex) {
 				throw new DbException(ex);
 			} finally {
@@ -610,6 +672,14 @@ class GroupTrManagerImpl
 							.GroupTrInviteResponseReceivedEvent) e);
 		} else if (e instanceof GroupPostDeleteReceivedEvent) {
 			removals.received((GroupPostDeleteReceivedEvent) e);
+		} else if (e instanceof org.zerionproject.app.api.messaging.event
+				.GroupPinReceivedEvent) {
+			handleGroupPin((org.zerionproject.app.api.messaging.event
+					.GroupPinReceivedEvent) e);
+		} else if (e instanceof org.zerionproject.app.api.messaging.event
+				.GroupTrRelayRecordEvent) {
+			handleRelayRecord((org.zerionproject.app.api.messaging.event
+					.GroupTrRelayRecordEvent) e);
 		} else if (e instanceof org.zerionproject.core.api.sync.event
 				.MessagesSentEvent) {
 			ownCopiesChanged(((org.zerionproject.core.api.sync.event
@@ -632,6 +702,10 @@ class GroupTrManagerImpl
 				.ContactAddedEvent) {
 			mlDsaKeys.invalidate();
 			posts.forgetAllSummaries();
+		} else if (e instanceof org.zerionproject.core.api.plugin.event
+				.ContactConnectedEvent) {
+			handHeldSettingsToLater(((org.zerionproject.core.api.plugin
+					.event.ContactConnectedEvent) e).getContactId());
 		} else if (e instanceof org.zerionproject.app.api.autodelete.event
 				.ConversationMessagesDeletedEvent) {
 			purgeExpiredPosts();
@@ -671,12 +745,16 @@ class GroupTrManagerImpl
 					BdfList record = settingsRecord(s);
 					db.transaction(false, txn -> sendSettings(txn, s,
 							Collections.singletonList(memberPub), record,
-							clock.currentTimeMillis()));
+							clock.currentTimeMillis(), false));
 				} finally {
 					lock.unlock();
 				}
 			}
 		} catch (DbException ex) {
+		}
+		if (v.getMinorVersion()
+				>= MessagingManager.GROUP_SETTINGS_RELAY_MIN_VERSION) {
+			handHeldSettingsToLater(e.getContactId());
 		}
 		if (v.getMinorVersion() < MessagingManager.GROUP_ACTIONS_MIN_VERSION) {
 			return;
@@ -688,6 +766,32 @@ class GroupTrManagerImpl
 				if (memberPub == null) continue;
 				if (!isMemberOrCreator(s, memberPub)) continue;
 				removals.resendOwnDeletes(s.getGroupId(), e.getContactId());
+			}
+		} catch (DbException ex) {
+		}
+		if (v.getMinorVersion() < MessagingManager.PIN_MIN_VERSION) return;
+		try {
+			for (GroupTrState s : getGroups()) {
+				if (s.isDissolved()) continue;
+				byte[] localPub = localKeyIn(s);
+				if (!Arrays.equals(s.getCreatorPubKey(), localPub)) continue;
+				byte[] memberPub = contactKeyIn(s, e.getContactId());
+				if (memberPub == null) continue;
+				if (!isMemberOrCreator(s, memberPub)) continue;
+				Settings current = settingsManager.getSettings(
+						nsOf(s.getGroupId()));
+				if (current.get(S_PINNED_TIMESTAMP) == null) continue;
+				java.util.concurrent.locks.ReentrantLock lock =
+						lockFor(s.getGroupId());
+				lock.lock();
+				try {
+					BdfList record = pinRecord(s);
+					db.transaction(false, txn -> sendPin(txn, s,
+							Collections.singletonList(memberPub), record,
+							clock.currentTimeMillis(), false));
+				} finally {
+					lock.unlock();
+				}
 			}
 		} catch (DbException ex) {
 		}
@@ -746,7 +850,11 @@ class GroupTrManagerImpl
 			posts.buffer(toHexString(groupId), new GroupTrPostCache
 					.BufferedPost(p, identity, id));
 		} else {
-			acceptPost(id, p, identity);
+			if (acceptPost(id, p, identity) && e.getAutoDeleteTimerMs()
+					!= s.getDefaultAutoDeleteTimerMs()
+					&& Arrays.equals(e.getSenderPubKey(), deliveringPub)) {
+				offerSettings(s, deliveringPub, false);
+			}
 		}
 	}
 
@@ -1072,24 +1180,47 @@ class GroupTrManagerImpl
 	}
 
 	private GroupTrKeys.Binding bindAs(byte[] groupId, GroupTrKeys.Own own,
-			long timestamp) throws DbException {
+			long timestamp, boolean identitySigned) throws DbException {
 		LocalAuthor la = localAuthor();
+		byte[] identity = la.getPublicKey().getEncoded();
+		if (!identitySigned) {
+			return keys.bind(groupId, own, identity, null, timestamp);
+		}
 		org.zerionproject.core.api.crypto.HybridSignaturePrivateKey key =
 				identitySigningKey(la);
 		try {
-			return keys.bind(groupId, own, la.getPublicKey().getEncoded(),
-					key, timestamp);
+			return keys.bind(groupId, own, identity, key, timestamp);
 		} finally {
 			key.clear();
 		}
 	}
 
+	static boolean bindingIdentitySigned(
+			org.zerionproject.app.messaging.UnsignedFormsMemory unsignedForms,
+			Transaction txn, ContactId contactId) throws DbException {
+		org.zerionproject.app.messaging.UnsignedFormsMemory.Form form =
+				unsignedForms.form(txn, contactId);
+		if (form == org.zerionproject.app.messaging.UnsignedFormsMemory
+				.Form.UNKNOWN) {
+			throw new DbException();
+		}
+		return form == org.zerionproject.app.messaging.UnsignedFormsMemory
+				.Form.SIGNED;
+	}
+
+	private boolean bindingIdentitySignedFor(ContactId contactId)
+			throws DbException {
+		return db.transactionWithResult(true, txn ->
+				bindingIdentitySigned(unsignedForms, txn, contactId));
+	}
+
 	@Nullable
-	private GroupTrKeys.Binding ownBinding(byte[] groupId) throws DbException {
+	private GroupTrKeys.Binding ownBinding(byte[] groupId,
+			boolean identitySigned) throws DbException {
 		GroupTrKeys.Own own = keys.own(groupId);
 		if (own == null) return null;
 		try {
-			return bindAs(groupId, own, own.created);
+			return bindAs(groupId, own, own.created, identitySigned);
 		} finally {
 			own.clear();
 		}
@@ -1181,7 +1312,14 @@ class GroupTrManagerImpl
 
 	private boolean verifyIn(GroupTrState s, byte[] sig, String label,
 			byte[] signed, byte[] pubKey) {
-		if (!s.usesGroupKeys()) return verify(sig, label, signed, pubKey);
+		if (!s.usesGroupKeys()) {
+			try {
+				return verifyAccountKey(sig, label, signed, pubKey,
+						mlDsaIn(s, pubKey));
+			} catch (DbException ex) {
+				return false;
+			}
+		}
 		if (signed.length == 0) return false;
 		try {
 			byte[] mlDsa = mlDsaIn(s, pubKey);
@@ -1201,8 +1339,17 @@ class GroupTrManagerImpl
 
 	@Nullable
 	private byte[] mlDsaIn(GroupTrState s, byte[] pubKey) throws DbException {
-		if (!s.usesGroupKeys()) return lookupPeerMlDsaPubKey(pubKey);
-		return mlDsaKeys.lookupIn(s.getGroupId(), pubKey);
+		if (s.usesGroupKeys()) {
+			return mlDsaKeys.lookupIn(s.getGroupId(), pubKey);
+		}
+		byte[] known = mlDsaKeys.lookup(pubKey);
+		if (known != null) return known;
+		for (GroupTrMember m : s.getMembers()) {
+			if (!Arrays.equals(m.getPubKey(), pubKey)) continue;
+			byte[] ml = m.getMlDsaPubKey();
+			if (ml != null) return ml;
+		}
+		return null;
 	}
 
 	@Nullable
@@ -1763,7 +1910,8 @@ class GroupTrManagerImpl
 	static boolean groupPostDeliveryAccepted(@Nullable GroupTrState s,
 			byte[] signerPubKey, byte[] deliveringPubKey) {
 		if (s != null && s.usesGroupKeys()
-				&& !Arrays.equals(signerPubKey, deliveringPubKey)) {
+				&& !Arrays.equals(signerPubKey, deliveringPubKey)
+				&& !Arrays.equals(deliveringPubKey, s.getCreatorPubKey())) {
 			return false;
 		}
 		return isMemberOrCreator(s, signerPubKey)
@@ -2521,7 +2669,7 @@ class GroupTrManagerImpl
 				creatorPub, timestamp, sig);
 		db.transaction(false, txn -> {
 			Contact c = contactManager.getContact(txn, contactId);
-			dispatchToContact(txn, c, timestamp, body);
+			dispatchToContact(txn, c, timestamp, body, true);
 			persistInviteSent(txn, grouptrGroupId, contactId, contactPubKey,
 					contactName, timestamp);
 		});
@@ -2566,7 +2714,8 @@ class GroupTrManagerImpl
 		GroupTrKeys.Binding binding;
 		byte[] sig;
 		try {
-			binding = bindAs(groupId, own, timestamp);
+			binding = bindAs(groupId, own, timestamp,
+					bindingIdentitySignedFor(contactId));
 			byte[] signed = offerSignedInputBound(groupId, own.pub,
 					NO_INVITEE, timestamp, s.getName(), s.getSalt(),
 					s.getCreatorName());
@@ -2580,7 +2729,7 @@ class GroupTrManagerImpl
 				timestamp, sig, binding.toList());
 		byte[] identity = c.getAuthor().getPublicKey().getEncoded();
 		db.transaction(false, txn -> {
-			dispatchToContact(txn, c, timestamp, body);
+			dispatchToContact(txn, c, timestamp, body, true);
 			persistInviteSent(txn, groupId, contactId, identity, contactName,
 					timestamp);
 		});
@@ -2664,7 +2813,7 @@ class GroupTrManagerImpl
 							grouptrGroupId, ts, incognitoName, sig);
 			db.transaction(false, txn -> {
 				Contact c = contactManager.getContact(txn, pi.contactId);
-				dispatchToContact(txn, c, ts, body);
+				dispatchToContact(txn, c, ts, body, true);
 			});
 			materializeLocalState(grouptrGroupId, pi.creatorPubKey,
 					pi.creatorName, pi.groupName, pi.salt, pi.inviteTimestamp,
@@ -2698,7 +2847,8 @@ class GroupTrManagerImpl
 			LocalAuthor la, @Nullable String incognitoName,
 			byte[] creatorMlDsa, long ts, GroupTrKeys.Own own)
 			throws DbException {
-		GroupTrKeys.Binding binding = bindAs(groupId, own, ts);
+		GroupTrKeys.Binding binding = bindAs(groupId, own, ts,
+				bindingIdentitySignedFor(pi.contactId));
 		byte[] signed = offerSignedInputBound(groupId, own.pub,
 				pi.creatorPubKey, ts, pi.groupName, pi.salt, pi.creatorName);
 		byte[] sig = keys.sign(own, SIGNING_LABEL_GROUPTR_INVITE_ACCEPT,
@@ -2720,7 +2870,7 @@ class GroupTrManagerImpl
 				false, members, 0L, GroupTrState.SCHEME_GROUP_KEYS);
 		db.transaction(false, txn -> {
 			Contact c = contactManager.getContact(txn, pi.contactId);
-			dispatchToContact(txn, c, ts, body);
+			dispatchToContact(txn, c, ts, body, true);
 			try {
 				persist(txn, s);
 			} catch (FormatException ex) {
@@ -2754,7 +2904,7 @@ class GroupTrManagerImpl
 				grouptrGroupId, ts, sig);
 		db.transaction(false, txn -> {
 			Contact c = contactManager.getContact(txn, pi.contactId);
-			dispatchToContact(txn, c, ts, body);
+			dispatchToContact(txn, c, ts, body, true);
 		});
 		removeInviteReceived(grouptrGroupId);
 	}
@@ -3173,10 +3323,7 @@ class GroupTrManagerImpl
 		if (b.timestamp != ev.getInviteTimestamp()) return;
 		Contact c = contactOrNull(ev.getContactId());
 		if (c == null) return;
-		if (!keys.verify(groupId, b, c.getAuthor().getPublicKey().getEncoded(),
-				c.getMlDsaSigPublicKey())) {
-			return;
-		}
+		if (!keys.verify(groupId, b, c)) return;
 		byte[] derived = deriveKeyedGroupId(ev.getCreatorName(), creatorPub,
 				b.mlDsa, ev.getGroupName(), ev.getSalt());
 		GroupTrState existing = getGroup(groupId);
@@ -3253,7 +3400,7 @@ class GroupTrManagerImpl
 			String joinerName = ev.getJoinerName();
 			try {
 				addMember(grouptrGid, pis.contactPubKey, joinerName != null
-						? joinerName : pis.contactName);
+						? joinerName : pis.contactName, null, false);
 				try {
 					sendMemberListSnapshot(grouptrGid);
 				} catch (DbException ex) {
@@ -3289,7 +3436,7 @@ class GroupTrManagerImpl
 		BdfList list = ev.getKeyBinding();
 		if (list == null) return;
 		GroupTrKeys.Binding b = GroupTrKeys.Binding.parse(list);
-		if (!keys.verify(groupId, b, responderIdentity, identityMlDsa)) return;
+		if (!keys.verify(groupId, b, c)) return;
 		if (isMemberOrCreator(s, b.pub)) return;
 		byte[] signed = offerSignedInputBound(groupId, b.pub,
 				s.getCreatorPubKey(), ev.getInviteTimestamp(), s.getName(),
@@ -3305,7 +3452,7 @@ class GroupTrManagerImpl
 		mlDsaKeys.invalidate();
 		String joinerName = ev.getJoinerName();
 		addMember(groupId, b.pub, joinerName != null ? joinerName
-				: pis.contactName, b.mlDsa);
+				: pis.contactName, b.mlDsa, false);
 		byte[] tag = keys.removalTag(groupId, responderIdentity);
 		memberInvites.forgetRemovedTag(groupId, tag);
 		memberInvites.storeMemberTag(groupId, b.pub, tag);
@@ -3642,12 +3789,12 @@ class GroupTrManagerImpl
 				: MemberRole.valueOf(roleInt);
 		String name = "";
 		long joinedAt = 0L;
-		byte[] mlDsaPub = null;
+		byte[] mlDsaPub = s.usesGroupKeys() ? null : mlDsaIn(s, pk);
 		for (GroupTrMember pm : prev) {
 			if (Arrays.equals(pm.getPubKey(), pk)) {
 				name = pm.getName();
 				joinedAt = pm.getJoinedAt();
-				mlDsaPub = pm.getMlDsaPubKey();
+				if (mlDsaPub == null) mlDsaPub = pm.getMlDsaPubKey();
 				break;
 			}
 		}
@@ -3837,6 +3984,7 @@ class GroupTrManagerImpl
 		s.setMembers(next);
 		if (localIsCreator) {
 			persist(s);
+			forgetRelayPairs(s.getGroupId(), pk);
 			memberInvites.forgetGrant(s.getGroupId(), pk);
 			confirmLeaving(s, pk);
 		} else {
@@ -3885,8 +4033,8 @@ class GroupTrManagerImpl
 		BdfList commitBody = BdfList.of(37L, s.getGroupId(),
 				(long) fromEpoch, (long) toEpoch, pqSeed, sigCommit);
 		db.transaction(false, txn -> {
-			fanOut(txn, s, removedBody, timestamp, null);
-			fanOut(txn, s, commitBody, timestamp, null);
+			fanOut(txn, s, removedBody, timestamp, null, false);
+			fanOut(txn, s, commitBody, timestamp, null, false);
 		});
 		s.setEpoch(toEpoch);
 		try {
@@ -3914,26 +4062,86 @@ class GroupTrManagerImpl
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
 			if (s == null || s.isDissolved()) return;
-			byte[] senderPubKey = contactKeyIn(s, e.getContactId());
-			if (senderPubKey == null
-					|| !Arrays.equals(senderPubKey, s.getCreatorPubKey())) {
-				return;
-			}
+			byte[] deliverer = contactKeyIn(s, e.getContactId());
+			if (deliverer == null || !isMemberOrCreator(s, deliverer)) return;
 			if (!timerAllowed(e.getAutoDeleteTimerMs())) return;
 			Settings current = settingsManager.getSettings(
 					nsOf(s.getGroupId()));
-			if (e.getSettingsTimestamp()
-					<= current.getLong(S_SETTINGS_TIMESTAMP, Long.MIN_VALUE)) {
+			long held = current.getLong(S_SETTINGS_TIMESTAMP, Long.MIN_VALUE);
+			long chosen = e.getSettingsTimestamp();
+			long timer = e.getAutoDeleteTimerMs();
+			String ns = nsOf(s.getGroupId());
+			boolean fromCreator =
+					Arrays.equals(deliverer, s.getCreatorPubKey());
+			if (chosen < held && !fromCreator) {
+				offerSettings(s, deliverer, false);
 				return;
 			}
-			byte[] signed = groupSettingsSignedInput(s.getGroupId(),
-					e.getAutoDeleteTimerMs(), e.getSettingsTimestamp());
+			if (Arrays.equals(localKeyIn(s), s.getCreatorPubKey())) return;
+			boolean confirms = fromCreator && current.getLong(
+					GroupTrConstants.S_SETTINGS_CONFIRMED, Long.MIN_VALUE)
+					!= chosen;
+			if (chosen < held && pendingSettings(current).containsKey(chosen)) {
+				return;
+			}
+			if (chosen == held) {
+				if (timer != s.getDefaultAutoDeleteTimerMs()) return;
+				if (current.get(GroupTrConstants.S_SETTINGS_SIG) != null
+						&& !confirms) {
+					if (fromCreator && !pendingSettings(current).isEmpty()) {
+						applyConfirmedSettingsLater(s.getGroupId());
+					}
+					if (!fromCreator && isHeldSettingsSignature(current,
+							e.getRecordSig())) {
+						noteSettingsHeldByLater(s.getGroupId(), held,
+								e.getRecordSig(), e.getContactId());
+					}
+					return;
+				}
+			}
+			byte[] signed = groupSettingsSignedInput(s.getGroupId(), timer,
+					chosen);
 			if (!verifyIn(s, e.getRecordSig(), SIGNING_LABEL_GROUP_SETTINGS,
 					signed, s.getCreatorPubKey())) {
 				return;
 			}
-			s.setDefaultAutoDeleteTimerMs(e.getAutoDeleteTimerMs());
-			persistSettings(s, e.getSettingsTimestamp());
+			if (chosen < held) {
+				Settings note = new Settings();
+				note.put(GroupTrConstants.S_SETTINGS_PENDING,
+						withPending(current, chosen, timer));
+				settingsManager.mergeSettings(note, ns);
+				applyConfirmedSettingsLater(s.getGroupId());
+				return;
+			}
+			String pending = confirms ? withPending(current, chosen, timer)
+					: null;
+			if (chosen == held) {
+				boolean firstSig =
+						current.get(GroupTrConstants.S_SETTINGS_SIG) == null;
+				Settings keep = new Settings();
+				keep.put(GroupTrConstants.S_SETTINGS_SIG,
+						toHexString(e.getRecordSig()));
+				if (pending != null) {
+					keep.putLong(GroupTrConstants.S_SETTINGS_CONFIRMED,
+							chosen);
+					keep.put(GroupTrConstants.S_SETTINGS_PENDING, pending);
+				}
+				if (firstSig) {
+					keep.put(GroupTrConstants.S_SETTINGS_SENT_TO,
+							sentToAtReceipt(current, chosen, fromCreator,
+									e.getContactId()));
+				}
+				settingsManager.mergeSettings(keep, ns);
+				if (confirms) applyConfirmedSettingsLater(s.getGroupId());
+				if (firstSig) handSettingsOnLater(s.getGroupId());
+				return;
+			}
+			s.setDefaultAutoDeleteTimerMs(timer);
+			persistSettings(s, chosen, e.getRecordSig(), pending,
+					sentToAtReceipt(current, chosen, fromCreator,
+							e.getContactId()));
+			if (confirms) applyConfirmedSettingsLater(s.getGroupId());
+			handSettingsOnLater(s.getGroupId());
 			eventBus.broadcast(new org.zerionproject.app.api.messaging.event
 					.GroupTrLocalStateChangedEvent(s.getGroupId(),
 					org.zerionproject.app.api.messaging.event
@@ -3950,9 +4158,592 @@ class GroupTrManagerImpl
 
 	private void persistSettings(GroupTrState s, long settingsTimestamp)
 			throws DbException, FormatException {
+		persistSettings(s, settingsTimestamp, null, null, null);
+	}
+
+	private void persistSettings(GroupTrState s, long settingsTimestamp,
+			@Nullable byte[] creatorSig, @Nullable String pending,
+			@Nullable String sentTo) throws DbException, FormatException {
 		Settings out = serializeState(s);
 		out.putLong(S_SETTINGS_TIMESTAMP, settingsTimestamp);
+		if (creatorSig != null) {
+			out.put(GroupTrConstants.S_SETTINGS_SIG, toHexString(creatorSig));
+		}
+		if (pending != null) {
+			out.putLong(GroupTrConstants.S_SETTINGS_CONFIRMED,
+					settingsTimestamp);
+			out.put(GroupTrConstants.S_SETTINGS_PENDING, pending);
+		}
+		if (sentTo != null) {
+			out.put(GroupTrConstants.S_SETTINGS_SENT_TO, sentTo);
+		}
 		settingsManager.mergeSettings(out, nsOf(s.getGroupId()));
+	}
+
+	private static java.util.TreeMap<Long, Long> pendingSettings(
+			Settings held) {
+		java.util.TreeMap<Long, Long> out = new java.util.TreeMap<>();
+		String value = held.get(GroupTrConstants.S_SETTINGS_PENDING);
+		if (value == null || value.isEmpty()) return out;
+		for (String part : value.split(",")) {
+			int at = part.indexOf(':');
+			if (at <= 0) continue;
+			try {
+				out.put(Long.parseLong(part.substring(0, at)),
+						Long.parseLong(part.substring(at + 1)));
+			} catch (NumberFormatException ex) {
+				continue;
+			}
+		}
+		return out;
+	}
+
+	private static String withPending(Settings held, long timestamp,
+			long timer) {
+		java.util.TreeMap<Long, Long> pending = pendingSettings(held);
+		pending.put(timestamp, timer);
+		while (pending.size() > MAX_PENDING_SETTINGS) pending.pollFirstEntry();
+		StringBuilder out = new StringBuilder();
+		for (Map.Entry<Long, Long> p : pending.entrySet()) {
+			if (out.length() > 0) out.append(',');
+			out.append(p.getKey()).append(':').append(p.getValue());
+		}
+		return out.toString();
+	}
+
+	private void applyConfirmedSettingsLater(byte[] groupId) {
+		taskScheduler.schedule(() -> applyConfirmedSettings(groupId),
+				ioExecutor, SETTINGS_REACH_BACK_DELAY_MS,
+				java.util.concurrent.TimeUnit.MILLISECONDS);
+	}
+
+	private void applyConfirmedSettings(byte[] groupId) {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		String ns = nsOf(groupId);
+		String pending;
+		long held;
+		List<long[]> spans = new ArrayList<>();
+		GroupTrState s;
+		lock.lock();
+		try {
+			s = getGroup(groupId);
+			if (s == null || s.isDissolved()) return;
+			Settings current = settingsManager.getSettings(ns);
+			pending = current.get(GroupTrConstants.S_SETTINGS_PENDING);
+			if (pending == null || pending.isEmpty()) return;
+			held = current.getLong(S_SETTINGS_TIMESTAMP, Long.MIN_VALUE);
+			java.util.TreeMap<Long, Long> chosen = pendingSettings(current);
+			for (Map.Entry<Long, Long> p : chosen.entrySet()) {
+				if (p.getValue() <= 0) continue;
+				Long next = chosen.higherKey(p.getKey());
+				long until = next != null ? next
+						: (held > p.getKey() ? held : Long.MAX_VALUE);
+				spans.add(new long[] {p.getKey(), until, p.getValue()});
+			}
+		} catch (DbException | RuntimeException ex) {
+			return;
+		} finally {
+			lock.unlock();
+		}
+		try {
+			List<HeldPost> late = spans.isEmpty()
+					? new ArrayList<>() : heldPostsIn(s, spans);
+			for (int from = 0; from < late.size();
+					from += STORED_POSTS_PER_READ) {
+				int start = from;
+				int end = Math.min(late.size(), from + STORED_POSTS_PER_READ);
+				lock.lock();
+				try {
+					if (!stillPending(groupId, pending, held)) {
+						applyConfirmedSettingsLater(groupId);
+						return;
+					}
+					db.transaction(false, txn -> {
+						for (int i = start; i < end; i++) {
+							applyTimerTo(txn, late.get(i));
+						}
+					});
+				} finally {
+					lock.unlock();
+				}
+			}
+			lock.lock();
+			try {
+				if (!stillPending(groupId, pending, held)) {
+					applyConfirmedSettingsLater(groupId);
+					return;
+				}
+				for (long[] span : spans) {
+					posts.retime(toHexString(groupId), span[0], span[1],
+							span[2]);
+				}
+				Settings done = new Settings();
+				done.put(GroupTrConstants.S_SETTINGS_PENDING, "");
+				settingsManager.mergeSettings(done, ns);
+				if (spans.isEmpty()) return;
+				eventBus.broadcast(new org.zerionproject.app.api.messaging
+						.event.GroupTrLocalStateChangedEvent(groupId,
+						org.zerionproject.app.api.messaging.event
+								.GroupTrLocalStateChangedEvent.Kind.UPDATED));
+			} finally {
+				lock.unlock();
+			}
+		} catch (DbException | RuntimeException ex) {
+		}
+	}
+
+	private boolean stillPending(byte[] groupId, String pending, long held)
+			throws DbException {
+		GroupTrState s = getGroup(groupId);
+		if (s == null || s.isDissolved()) return false;
+		Settings current = settingsManager.getSettings(nsOf(groupId));
+		return pending.equals(
+				current.get(GroupTrConstants.S_SETTINGS_PENDING))
+				&& current.getLong(S_SETTINGS_TIMESTAMP, Long.MIN_VALUE)
+				== held;
+	}
+
+	@Nullable
+	private BdfList heldSettingsRecord(GroupTrState s) throws DbException {
+		Settings current = settingsManager.getSettings(nsOf(s.getGroupId()));
+		if (current.get(S_SETTINGS_TIMESTAMP) == null) return null;
+		if (Arrays.equals(localKeyIn(s), s.getCreatorPubKey())) {
+			return settingsRecord(s);
+		}
+		String hex = current.get(GroupTrConstants.S_SETTINGS_SIG);
+		if (hex == null) return null;
+		byte[] creatorSig;
+		try {
+			creatorSig = fromHexString(hex);
+		} catch (FormatException | RuntimeException ex) {
+			return null;
+		}
+		return BdfList.of((long) MessageTypes.GROUP_SETTINGS, s.getGroupId(),
+				s.getDefaultAutoDeleteTimerMs(),
+				current.getLong(S_SETTINGS_TIMESTAMP, 0L), creatorSig);
+	}
+
+	private void offerSettings(GroupTrState s, byte[] memberPub,
+			boolean always) {
+		if (Arrays.equals(memberPub, s.getCreatorPubKey())) return;
+		try {
+			Settings current = settingsManager.getSettings(
+					nsOf(s.getGroupId()));
+			if (current.get(S_SETTINGS_TIMESTAMP) == null) return;
+			long now = clock.currentTimeMillis();
+			String key = toHexString(s.getGroupId()) + ":"
+					+ toHexString(memberPub) + ":"
+					+ current.getLong(S_SETTINGS_TIMESTAMP, 0L);
+			Long last = settingsOffered.get(key);
+			if (!always && last != null && now >= last
+					&& now - last < SETTINGS_OFFER_INTERVAL_MS) {
+				return;
+			}
+			settingsOffered.put(key, now);
+			BdfList record = heldSettingsRecord(s);
+			if (record == null) return;
+			int needed = Arrays.equals(localKeyIn(s), s.getCreatorPubKey())
+					? MessagingManager.GROUP_PROTOCOL_V2_MIN_VERSION
+					: MessagingManager.GROUP_SETTINGS_RELAY_MIN_VERSION;
+			db.transaction(false, txn -> sendSettings(txn, s,
+					Collections.singletonList(memberPub), record, now,
+					needed, false));
+		} catch (DbException | RuntimeException ex) {
+		}
+	}
+
+	private void handSettingsOnLater(byte[] groupId) {
+		String groupHex = toHexString(groupId);
+		long now = clock.currentTimeMillis();
+		long delay = SETTINGS_PASS_MIN_DELAY_MS + random.nextInt((int)
+				(SETTINGS_PASS_MAX_DELAY_MS - SETTINGS_PASS_MIN_DELAY_MS) + 1);
+		synchronized (settingsPasses) {
+			forgetQuietSettingsPasses(now);
+			SettingsPass pass = settingsPasses.get(groupHex);
+			if (pass == null) {
+				pass = new SettingsPass();
+				settingsPasses.put(groupHex, pass);
+			}
+			if (pass.scheduled) return;
+			if (pass.ran) {
+				long quietFor = pass.ranAt + SETTINGS_PASS_QUIET_MS - now;
+				delay = Math.min(Math.max(delay, quietFor),
+						SETTINGS_PASS_QUIET_MS);
+			}
+			pass.scheduled = true;
+		}
+		try {
+			taskScheduler.schedule(() -> runSettingsPass(groupId),
+					ioExecutor, delay,
+					java.util.concurrent.TimeUnit.MILLISECONDS);
+		} catch (RuntimeException ex) {
+			synchronized (settingsPasses) {
+				settingsPasses.remove(groupHex);
+			}
+		}
+	}
+
+	private void forgetQuietSettingsPasses(long now) {
+		java.util.Iterator<SettingsPass> held =
+				settingsPasses.values().iterator();
+		while (held.hasNext()) {
+			SettingsPass pass = held.next();
+			if (pass.scheduled) continue;
+			if (!pass.ran || now < pass.ranAt
+					|| now - pass.ranAt >= SETTINGS_PASS_QUIET_MS) {
+				held.remove();
+			}
+		}
+	}
+
+	private void runSettingsPass(byte[] groupId) {
+		String groupHex = toHexString(groupId);
+		long now = clock.currentTimeMillis();
+		synchronized (settingsPasses) {
+			SettingsPass pass = settingsPasses.get(groupHex);
+			if (pass != null) {
+				pass.scheduled = false;
+				pass.ran = true;
+				pass.ranAt = now;
+			}
+			forgetQuietSettingsPasses(now);
+		}
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = getGroup(groupId);
+			if (s == null || s.isDissolved()) {
+				synchronized (settingsPasses) {
+					SettingsPass pass = settingsPasses.get(groupHex);
+					if (pass != null && !pass.scheduled) {
+						settingsPasses.remove(groupHex);
+					}
+				}
+				return;
+			}
+			handSettingsOn(s, null);
+		} catch (DbException | RuntimeException ex) {
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void handSettingsOn(GroupTrState s, @Nullable ContactId only) {
+		try {
+			byte[] localPub = localKeyIn(s);
+			if (Arrays.equals(localPub, s.getCreatorPubKey())) return;
+			String ns = nsOf(s.getGroupId());
+			Settings current = settingsManager.getSettings(ns);
+			if (current.get(S_SETTINGS_TIMESTAMP) == null) return;
+			long held = current.getLong(S_SETTINGS_TIMESTAMP, 0L);
+			java.util.Set<Integer> sent = settingsSentTo(current, held);
+			if (only != null && sent.contains(only.getInt())) return;
+			int others = 0;
+			for (GroupTrMember m : s.getMembers()) {
+				if (!Arrays.equals(m.getPubKey(), s.getCreatorPubKey())
+						&& !Arrays.equals(m.getPubKey(), localPub)) {
+					others++;
+				}
+			}
+			if (only == null && sent.size() >= others
+					&& membersNoted(s, sent) >= others) {
+				return;
+			}
+			BdfList record = heldSettingsRecord(s);
+			if (record == null) return;
+			long now = clock.currentTimeMillis();
+			int needed = MessagingManager.GROUP_SETTINGS_RELAY_MIN_VERSION;
+			String noted = current.get(GroupTrConstants.S_SETTINGS_SENT_TO);
+			db.transaction(false, txn -> {
+				Reach reach = reach(txn, s);
+				java.util.TreeSet<Integer> keep = new java.util.TreeSet<>();
+				for (GroupTrMember m : s.getMembers()) {
+					if (Arrays.equals(m.getPubKey(), s.getCreatorPubKey())) {
+						continue;
+					}
+					Contact c = reach.contact(m.getPubKey());
+					if (c == null) continue;
+					int id = c.getId().getInt();
+					if (sent.contains(id)) {
+						keep.add(id);
+						continue;
+					}
+					if (only != null && !only.equals(c.getId())) continue;
+					if (messagingManager.getContactClientMinorVersion(txn,
+							c.getId()) < needed) {
+						continue;
+					}
+					dispatchToContact(txn, c, now, record, false);
+					keep.add(id);
+				}
+				String value = sentToValue(held, keep);
+				if (value.equals(noted)) return;
+				Settings mark = new Settings();
+				mark.put(GroupTrConstants.S_SETTINGS_SENT_TO, value);
+				settingsManager.mergeSettings(txn, mark, ns);
+			});
+		} catch (DbException | RuntimeException ex) {
+		}
+	}
+
+	private static boolean isHeldSettingsSignature(Settings current,
+			byte[] received) {
+		String hex = current.get(GroupTrConstants.S_SETTINGS_SIG);
+		if (hex == null) return false;
+		byte[] stored;
+		try {
+			stored = fromHexString(hex);
+		} catch (FormatException | RuntimeException ex) {
+			return false;
+		}
+		return java.security.MessageDigest.isEqual(stored, received);
+	}
+
+	private int membersNoted(GroupTrState s, java.util.Set<Integer> sent)
+			throws DbException {
+		return db.transactionWithResult(true, txn -> {
+			Reach reach = reach(txn, s);
+			int noted = 0;
+			for (GroupTrMember m : s.getMembers()) {
+				if (Arrays.equals(m.getPubKey(), s.getCreatorPubKey())) {
+					continue;
+				}
+				Contact c = reach.contact(m.getPubKey());
+				if (c != null && sent.contains(c.getId().getInt())) noted++;
+			}
+			return noted;
+		});
+	}
+
+	private void noteSettingsHeldByLater(byte[] groupId, long held,
+			byte[] recordSig, ContactId holder) {
+		ioExecutor.execute(() -> {
+			java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+			lock.lock();
+			try {
+				GroupTrState s = getGroup(groupId);
+				if (s == null || s.isDissolved()) return;
+				Settings current = settingsManager.getSettings(nsOf(groupId));
+				if (current.getLong(S_SETTINGS_TIMESTAMP, Long.MIN_VALUE)
+						!= held) {
+					return;
+				}
+				if (!isHeldSettingsSignature(current, recordSig)) return;
+				noteSettingsHeldBy(s, current, held, holder);
+			} catch (DbException | RuntimeException ex) {
+			} finally {
+				lock.unlock();
+			}
+		});
+	}
+
+	private void noteSettingsHeldBy(GroupTrState s, Settings current,
+			long held, ContactId holder) {
+		java.util.Set<Integer> sent = settingsSentTo(current, held);
+		if (sent.contains(holder.getInt())) return;
+		String ns = nsOf(s.getGroupId());
+		String noted = current.get(GroupTrConstants.S_SETTINGS_SENT_TO);
+		try {
+			db.transaction(false, txn -> {
+				Reach reach = reach(txn, s);
+				java.util.TreeSet<Integer> keep = new java.util.TreeSet<>();
+				for (GroupTrMember m : s.getMembers()) {
+					if (Arrays.equals(m.getPubKey(), s.getCreatorPubKey())) {
+						continue;
+					}
+					Contact c = reach.contact(m.getPubKey());
+					if (c == null) continue;
+					int id = c.getId().getInt();
+					if (sent.contains(id) || holder.equals(c.getId())) {
+						keep.add(id);
+					}
+				}
+				String value = sentToValue(held, keep);
+				if (value.equals(noted)) return;
+				Settings mark = new Settings();
+				mark.put(GroupTrConstants.S_SETTINGS_SENT_TO, value);
+				settingsManager.mergeSettings(txn, mark, ns);
+			});
+		} catch (DbException | RuntimeException ex) {
+		}
+	}
+
+	private static String sentToValue(long held,
+			Collection<Integer> contactIds) {
+		StringBuilder value = new StringBuilder().append(held);
+		char sep = ':';
+		for (Integer id : new java.util.TreeSet<>(contactIds)) {
+			value.append(sep).append(id);
+			sep = ',';
+		}
+		return value.toString();
+	}
+
+	private static String sentToAtReceipt(Settings current, long chosen,
+			boolean fromCreator, ContactId cameFrom) {
+		java.util.Set<Integer> sent = settingsSentTo(current, chosen);
+		if (!fromCreator) sent.add(cameFrom.getInt());
+		return sentToValue(chosen, sent);
+	}
+
+	private static java.util.Set<Integer> settingsSentTo(Settings current,
+			long held) {
+		java.util.Set<Integer> out = new java.util.HashSet<>();
+		String value = current.get(GroupTrConstants.S_SETTINGS_SENT_TO);
+		if (value == null) return out;
+		int colon = value.indexOf(':');
+		String ts = colon < 0 ? value : value.substring(0, colon);
+		try {
+			if (Long.parseLong(ts) != held || colon < 0) return out;
+			for (String id : value.substring(colon + 1).split(",")) {
+				if (!id.isEmpty()) out.add(Integer.parseInt(id));
+			}
+		} catch (NumberFormatException ex) {
+			out.clear();
+		}
+		return out;
+	}
+
+	private void handHeldSettingsToLater(ContactId contactId) {
+		ioExecutor.execute(() -> handHeldSettingsTo(contactId));
+	}
+
+	private void handHeldSettingsTo(ContactId contactId) {
+		try {
+			String ids = settingsManager.getSettings(SETTINGS_NS_INDEX)
+					.get(S_GROUP_IDS);
+			if (ids == null || ids.isEmpty()) return;
+			for (String groupHex : ids.split(",")) {
+				if (groupHex.isEmpty()) continue;
+				byte[] groupId;
+				try {
+					groupId = fromHexString(groupHex);
+				} catch (FormatException | RuntimeException badHex) {
+					continue;
+				}
+				handHeldSettingsTo(groupId, contactId);
+			}
+		} catch (DbException | RuntimeException ex) {
+		}
+	}
+
+	private void handHeldSettingsTo(byte[] groupId, ContactId contactId)
+			throws DbException {
+		Settings stored = settingsManager.getSettings(nsOf(groupId));
+		if (stored.isEmpty() || stored.getBoolean(S_REMOVED, false)) return;
+		if (stored.get(S_SETTINGS_TIMESTAMP) == null
+				|| stored.get(GroupTrConstants.S_SETTINGS_SIG) == null) {
+			return;
+		}
+		if (settingsSentTo(stored, stored.getLong(S_SETTINGS_TIMESTAMP, 0L))
+				.contains(contactId.getInt())) {
+			return;
+		}
+		GroupTrState seen;
+		try {
+			seen = deserialize(groupId, stored);
+		} catch (FormatException corrupt) {
+			return;
+		}
+		if (seen.isDissolved()) return;
+		byte[] memberPub = contactKeyIn(seen, contactId);
+		if (memberPub == null || !isMemberOrCreator(seen, memberPub)
+				|| Arrays.equals(memberPub, seen.getCreatorPubKey())) {
+			return;
+		}
+		int minor = db.transactionWithResult(true, txn -> messagingManager
+				.getContactClientMinorVersion(txn, contactId));
+		if (minor < MessagingManager.GROUP_SETTINGS_RELAY_MIN_VERSION) return;
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = getGroup(groupId);
+			if (s == null || s.isDissolved()) return;
+			handSettingsOn(s, contactId);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private static final class HeldPost {
+
+		private final MessageId id;
+		private final ContactId holder;
+		private final boolean local;
+		private final long due;
+		private final long timer;
+
+		private HeldPost(MessageId id, ContactId holder, boolean local,
+				long due, long timer) {
+			this.id = id;
+			this.holder = holder;
+			this.local = local;
+			this.due = due;
+			this.timer = timer;
+		}
+	}
+
+	private List<HeldPost> heldPostsIn(GroupTrState s, List<long[]> spans)
+			throws DbException {
+		byte[] groupId = s.getGroupId();
+		byte[] localPub = localKeyIn(s);
+		List<MessageId> ids = new ArrayList<>();
+		List<ContactId> holders = new ArrayList<>();
+		db.transaction(true, txn -> {
+			BdfDictionary query = new BdfDictionary();
+			query.put("messageType", 32L);
+			query.put("groupId", groupId);
+			for (Contact c : contactManager.getContacts(txn)) {
+				org.zerionproject.core.api.sync.GroupId cg =
+						messagingManager.getContactGroup(c).getId();
+				try {
+					for (MessageId id
+							: clientHelper.getMessageIds(txn, cg, query)) {
+						ids.add(id);
+						holders.add(c.getId());
+					}
+				} catch (FormatException ex) {
+					continue;
+				}
+			}
+		});
+		List<HeldPost> late = new ArrayList<>();
+		readStoredPosts(ids, (i, meta) -> {
+			StoredRecord r = parseStoredPost(groupId, meta, localPub);
+			if (r == null) return;
+			long start = r.post.getTimerStart();
+			for (long[] span : spans) {
+				if (start < span[0] || start >= span[1]) continue;
+				long timer = span[2];
+				if (r.effectiveTtl <= 0 || r.effectiveTtl > timer) {
+					late.add(new HeldPost(ids.get(i), holders.get(i),
+							r.post.isLocal(),
+							GroupTrPost.expiryTime(start, timer), timer));
+				}
+				break;
+			}
+		});
+		return late;
+	}
+
+	private void applyTimerTo(Transaction txn, HeldPost p)
+			throws DbException {
+		BdfDictionary update = new BdfDictionary();
+		update.put(MessagingManager.MSG_KEY_GROUP_EFFECTIVE_TTL, p.timer);
+		try {
+			clientHelper.mergeMessageMetadata(txn, p.id, update);
+			if (!p.local) {
+				db.setCleanupDeadline(txn, p.id, p.due);
+				return;
+			}
+			db.lowerCleanupTimerDuration(txn, p.id, p.timer);
+			if (db.getMessageStatus(txn, p.holder, p.id).isSeen()) {
+				db.setCleanupDeadline(txn, p.id, p.due);
+			}
+		} catch (org.zerionproject.core.api.db.NoSuchMessageException
+				| org.zerionproject.core.api.db.NoSuchContactException
+				| FormatException ex) {
+		}
 	}
 
 	static byte[] groupSettingsSignedInput(byte[] groupId, long timer,
@@ -3980,19 +4771,26 @@ class GroupTrManagerImpl
 	}
 
 	private int sendSettings(Transaction txn, GroupTrState s,
-			Collection<byte[]> to, BdfList record, long timestamp)
-			throws DbException {
+			Collection<byte[]> to, BdfList record, long timestamp,
+			boolean userAction) throws DbException {
+		return sendSettings(txn, s, to, record, timestamp,
+				MessagingManager.GROUP_PROTOCOL_V2_MIN_VERSION, userAction);
+	}
+
+	private int sendSettings(Transaction txn, GroupTrState s,
+			Collection<byte[]> to, BdfList record, long timestamp,
+			int neededVersion, boolean userAction) throws DbException {
 		int skipped = 0;
 		Reach reach = reach(txn, s);
 		for (byte[] pub : to) {
 			Contact c = reach.contact(pub);
 			if (c == null) continue;
 			if (messagingManager.getContactClientMinorVersion(txn, c.getId())
-					< MessagingManager.GROUP_PROTOCOL_V2_MIN_VERSION) {
+					< neededVersion) {
 				skipped++;
 				continue;
 			}
-			dispatchToContact(txn, c, timestamp, record);
+			dispatchToContact(txn, c, timestamp, record, userAction);
 		}
 		return skipped;
 	}
@@ -4037,6 +4835,355 @@ class GroupTrManagerImpl
 			}
 			return out;
 		});
+	}
+
+	@Override
+	public boolean ownerPassesPostsOn(byte[] groupId) throws DbException {
+		GroupTrState s = getGroup(groupId);
+		if (s == null || s.isDissolved()) return false;
+		return db.transactionWithResult(true, txn -> {
+			byte[] localPub = localKeyIn(txn, s);
+			if (Arrays.equals(localPub, s.getCreatorPubKey())) return false;
+			Contact creator = reach(txn, s).contact(s.getCreatorPubKey());
+			if (creator == null) return false;
+			return messagingManager.getContactClientMinorVersion(txn,
+					creator.getId())
+					>= MessagingManager.GROUP_POST_RELAY_MIN_VERSION;
+		});
+	}
+
+	static final String RELAY_NAMESPACE_PREFIX = "grouptr-relayed:";
+	static final String RELAYED_KEY = "relayed";
+	static final String KEYS_SENT_KEY = "keysSent";
+	private static final int MAX_RELAYED_REMEMBERED = 512;
+	private static final int MAX_KEYS_SENT_REMEMBERED = 2048;
+	static final long RELAYED_COPY_KEPT_MS = 7L * 24L * 60L * 60L * 1000L;
+
+	private void relayThroughCreator(Transaction txn, GroupTrState s,
+			byte[] localPub, BdfList record, long timestamp)
+			throws DbException {
+		byte[] creatorPub = s.getCreatorPubKey();
+		if (Arrays.equals(localPub, creatorPub)) return;
+		Reach reach = reach(txn, s);
+		Contact creator = reach.contact(creatorPub);
+		if (creator == null) return;
+		BdfList unreachable = new BdfList();
+		for (GroupTrMember m : s.getMembers()) {
+			byte[] pub = m.getPubKey();
+			if (Arrays.equals(pub, localPub)) continue;
+			if (Arrays.equals(pub, creatorPub)) continue;
+			if (reach.contact(pub) != null) continue;
+			unreachable.add(pub);
+		}
+		if (unreachable.isEmpty()) return;
+		if (messagingManager.getContactClientMinorVersion(txn, creator.getId())
+				< MessagingManager.GROUP_POST_RELAY_MIN_VERSION) {
+			return;
+		}
+		BdfList body = BdfList.of((long) MessageTypes.GROUP_RELAY_REQUEST,
+				s.getGroupId(), unreachable, record);
+		try {
+			if (clientHelper.toByteArray(body).length > org.zerionproject
+					.core.api.sync.SyncConstants
+					.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH) {
+				return;
+			}
+		} catch (FormatException ex) {
+			return;
+		}
+		dispatchToContact(txn, creator, timestamp, body, false);
+	}
+
+	private boolean fitsOneRecordWithRelay(BdfList record) {
+		try {
+			return clientHelper.toByteArray(record).length
+					<= org.zerionproject.core.api.sync.SyncConstants
+					.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH
+					- RELAY_ENVELOPE_BYTES;
+		} catch (FormatException ex) {
+			return false;
+		}
+	}
+
+	private void handleRelayRecord(org.zerionproject.app.api.messaging.event
+			.GroupTrRelayRecordEvent e) {
+		if (e.getMessageType() == MessageTypes.GROUP_RELAY_REQUEST) {
+			handleRelayRequest(e);
+		} else if (e.getMessageType() == MessageTypes.GROUP_MEMBER_KEYS) {
+			handleMemberKeys(e);
+		}
+	}
+
+	private void handleRelayRequest(org.zerionproject.app.api.messaging.event
+			.GroupTrRelayRecordEvent e) {
+		BdfList r = e.getRecord();
+		byte[] groupId;
+		try {
+			groupId = r.getRaw(1);
+		} catch (FormatException ex) {
+			return;
+		}
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = getGroup(groupId);
+			if (s == null || s.isDissolved()) return;
+			byte[] localPub = localKeyIn(s);
+			if (!Arrays.equals(localPub, s.getCreatorPubKey())) return;
+			byte[] requester = contactKeyIn(s, e.getContactId());
+			if (requester == null || Arrays.equals(requester, localPub)
+					|| !isMemberOrCreator(s, requester)) {
+				return;
+			}
+			BdfList listed = r.getList(2);
+			if (listed.size() > s.getMembers().size()) return;
+			BdfList inner = r.getList(3);
+			int type = inner.getInt(0);
+			if (!Arrays.equals(inner.getRaw(1), groupId)) return;
+			byte[] signer = inner.getRaw(3);
+			if (!Arrays.equals(signer, requester)) return;
+			long now = clock.currentTimeMillis();
+			long kept;
+			byte[] signed;
+			if (type == MessageTypes.GROUP_POST) {
+				long epoch = inner.getLong(2);
+				String name = inner.getString(4);
+				byte[] body = inner.getRaw(5);
+				long ttl = inner.size() > 7 ? inner.getLong(7) : 0L;
+				signed = buildGroupPostSignedInput(groupId, (int) epoch,
+						signer, name, bodyHash(body), e.getTimestamp(), ttl);
+				if (!verifyIn(s, inner.getRaw(6), "org.zerionproject/GROUP_POST",
+						signed, signer)) {
+					return;
+				}
+				long effective = effectiveTtl(ttl,
+						s.getDefaultAutoDeleteTimerMs());
+				if (effective > 0 && now >= GroupTrPost.expiryTime(
+						e.getTimestamp(), effective)) {
+					return;
+				}
+				kept = effective > 0
+						? Math.min(effective, RELAYED_COPY_KEPT_MS)
+						: RELAYED_COPY_KEPT_MS;
+			} else if (type == MessageTypes.GROUP_POST_DELETE) {
+				signed = GroupTrPostRemovals.signedInput(groupId,
+						inner.getLong(2), signer, inner.getRaw(4),
+						inner.getLong(5));
+				if (!verifyIn(s, inner.getRaw(6), SIGNING_LABEL_GROUP_POST_DELETE,
+						signed, signer)) {
+					return;
+				}
+				kept = RELAYED_COPY_KEPT_MS;
+			} else {
+				return;
+			}
+			byte[] authorMlDsa = mlDsaIn(s, signer);
+			if (authorMlDsa == null) return;
+			String identity = toHexString(crypto.hash(GROUP_RELAY_SEEN_LABEL,
+					signed));
+			String ns = RELAY_NAMESPACE_PREFIX + toHexString(groupId);
+			if (parseSeen(settingsManager.getSettings(ns).get(RELAYED_KEY))
+					.contains(identity)) {
+				return;
+			}
+			BdfList keysRecord = memberKeysRecord(s, signer, authorMlDsa, now);
+			long duration = kept;
+			long timestamp = e.getTimestamp();
+			db.transaction(false, txn -> {
+				Settings held = settingsManager.getSettings(txn, ns);
+				java.util.LinkedHashSet<String> relayed =
+						parseSeen(held.get(RELAYED_KEY));
+				if (!relayed.add(identity)) return;
+				while (relayed.size() > MAX_RELAYED_REMEMBERED) {
+					relayed.remove(relayed.iterator().next());
+				}
+				java.util.LinkedHashSet<String> keysSent =
+						parseSeen(held.get(KEYS_SENT_KEY));
+				java.util.Set<String> handled = new java.util.HashSet<>();
+				Reach reach = reach(txn, s);
+				long keysTimestamp = Math.min(now, timestamp - 1);
+				for (int i = 0; i < listed.size(); i++) {
+					byte[] pub = listed.getRaw(i);
+					if (Arrays.equals(pub, signer)) continue;
+					if (Arrays.equals(pub, localPub)) continue;
+					if (!handled.add(toHexString(pub))) continue;
+					GroupTrMember listedMember = null;
+					for (GroupTrMember m : s.getMembers()) {
+						if (Arrays.equals(m.getPubKey(), pub)) listedMember = m;
+					}
+					if (listedMember == null) continue;
+					Contact c = reach.contact(pub);
+					if (c == null) continue;
+					if (messagingManager.getContactClientMinorVersion(txn,
+							c.getId())
+							< MessagingManager.GROUP_POST_RELAY_MIN_VERSION) {
+						continue;
+					}
+					if (keysSent.add(relayPair(pub,
+							listedMember.getJoinedAtEpoch(), signer))) {
+						dispatchToContact(txn, c, keysTimestamp, keysRecord,
+								false);
+					}
+					MessageId copy = dispatchToContact(txn, c, timestamp, inner,
+							dispatchedRecordMetadata(inner), false);
+					db.setCleanupTimerDuration(txn, copy, duration);
+					db.startCleanupTimer(txn, copy);
+				}
+				while (keysSent.size() > MAX_KEYS_SENT_REMEMBERED) {
+					keysSent.remove(keysSent.iterator().next());
+				}
+				Settings upd = new Settings();
+				upd.put(RELAYED_KEY, joinSeen(relayed));
+				upd.put(KEYS_SENT_KEY, joinSeen(keysSent));
+				settingsManager.mergeSettings(txn, upd, ns);
+			});
+		} catch (DbException | FormatException | RuntimeException ex) {
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private static String relayPair(byte[] memberPub, long joinedAtEpoch,
+			byte[] authorPub) {
+		return toHexString(memberPub) + ":" + joinedAtEpoch + ":"
+				+ toHexString(authorPub);
+	}
+
+	private void forgetRelayPairs(byte[] groupId, byte[] memberPub) {
+		String ns = RELAY_NAMESPACE_PREFIX + toHexString(groupId);
+		String prefix = toHexString(memberPub) + ":";
+		try {
+			db.transaction(false, txn -> {
+				Settings held = settingsManager.getSettings(txn, ns);
+				java.util.LinkedHashSet<String> keysSent =
+						parseSeen(held.get(KEYS_SENT_KEY));
+				if (!keysSent.removeIf(pair -> pair.startsWith(prefix))) return;
+				Settings upd = new Settings();
+				upd.put(KEYS_SENT_KEY, joinSeen(keysSent));
+				settingsManager.mergeSettings(txn, upd, ns);
+			});
+		} catch (DbException ex) {
+		}
+	}
+
+	private void redecidePendingPostsOf(GroupTrState s, byte[] author)
+			throws DbException {
+		byte[] groupId = s.getGroupId();
+		List<MessageId> ids = new ArrayList<>();
+		List<byte[]> deliverers = new ArrayList<>();
+		byte[] localPub = db.transactionWithResult(true, txn -> {
+			Reach reach = reach(txn, s);
+			BdfDictionary query = new BdfDictionary();
+			query.put("messageType", 32L);
+			query.put("groupId", groupId);
+			query.put("groupSenderPubKey", author);
+			query.put(MessagingManager.MSG_KEY_GROUP_POST_STATE,
+					(long) MessagingManager.GROUP_POST_STATE_PENDING);
+			for (Contact c : contactManager.getContacts(txn)) {
+				org.zerionproject.core.api.sync.GroupId cg =
+						messagingManager.getContactGroup(c).getId();
+				try {
+					for (MessageId id : clientHelper.getMessageIds(txn, cg,
+							query)) {
+						ids.add(id);
+						deliverers.add(reach.keyOrNone(c.getId()));
+					}
+				} catch (FormatException ex) {
+				}
+			}
+			return localKeyIn(txn, s);
+		});
+		long now = clock.currentTimeMillis();
+		for (int i = 0; i < ids.size(); i++) {
+			decideStoredPost(groupId, ids.get(i), deliverers.get(i), s, now,
+					localPub);
+		}
+	}
+
+	private BdfList memberKeysRecord(GroupTrState s, byte[] memberPub,
+			byte[] mlDsa, long timestamp) throws DbException {
+		byte[] sig = signIn(s, SIGNING_LABEL_GROUP_MEMBER_KEYS,
+				memberKeysSignedInput(s.getGroupId(), memberPub, mlDsa,
+						timestamp));
+		return BdfList.of((long) MessageTypes.GROUP_MEMBER_KEYS,
+				s.getGroupId(), memberPub, mlDsa, timestamp, sig);
+	}
+
+	byte[] memberKeysSignedInput(byte[] groupId, byte[] memberPub,
+			byte[] mlDsa, long timestamp) {
+		byte[] mlHash = crypto.hash(GROUP_MEMBER_KEYS_ML_DSA_LABEL, mlDsa);
+		byte[] out = new byte[32 + 32 + mlHash.length + 8 + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		System.arraycopy(memberPub, 0, out, 32, 32);
+		System.arraycopy(mlHash, 0, out, 64, mlHash.length);
+		int off = 64 + mlHash.length;
+		for (int i = 0; i < 8; i++) {
+			out[off + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		out[off + 8] = GROUP_MEMBER_KEYS_DOMAIN;
+		return out;
+	}
+
+	private void handleMemberKeys(org.zerionproject.app.api.messaging.event
+			.GroupTrRelayRecordEvent e) {
+		BdfList r = e.getRecord();
+		byte[] groupId;
+		try {
+			groupId = r.getRaw(1);
+		} catch (FormatException ex) {
+			return;
+		}
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = getGroup(groupId);
+			if (s == null || s.isDissolved()) return;
+			byte[] from = contactKeyIn(s, e.getContactId());
+			if (from == null || !Arrays.equals(from, s.getCreatorPubKey())) {
+				return;
+			}
+			byte[] member = r.getRaw(2);
+			byte[] mlDsa = r.getRaw(3);
+			long timestamp = r.getLong(4);
+			byte[] sig = r.getRaw(5);
+			byte[] localPub = localKeyIn(s);
+			if (Arrays.equals(member, localPub)
+					|| Arrays.equals(member, s.getCreatorPubKey())) {
+				return;
+			}
+			List<GroupTrMember> members = s.getMembers();
+			int index = -1;
+			for (int i = 0; i < members.size(); i++) {
+				if (Arrays.equals(members.get(i).getPubKey(), member)) {
+					index = i;
+					break;
+				}
+			}
+			if (index < 0) return;
+			if (mlDsaIn(s, member) != null) return;
+			if (!verifyIn(s, sig, SIGNING_LABEL_GROUP_MEMBER_KEYS,
+					memberKeysSignedInput(groupId, member, mlDsa, timestamp),
+					s.getCreatorPubKey())) {
+				return;
+			}
+			GroupTrMember m = members.get(index);
+			List<GroupTrMember> next = new ArrayList<>(members);
+			next.set(index, new GroupTrMember(m.getPubKey(), m.getName(),
+					m.getJoinedAt(), m.getJoinedAtEpoch(), m.getRole(), mlDsa));
+			s.setMembers(next);
+			persist(s);
+			mlDsaKeys.invalidate();
+			removals.retryHeld(groupId, member);
+			redecidePendingPostsOf(s, member);
+			posts.forgetHistory(toHexString(groupId));
+			eventBus.broadcast(new org.zerionproject.app.api.messaging.event
+					.GroupTrLocalStateChangedEvent(groupId,
+					org.zerionproject.app.api.messaging.event
+							.GroupTrLocalStateChangedEvent.Kind.UPDATED));
+		} catch (DbException | FormatException | RuntimeException ex) {
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	@Override
@@ -4294,8 +5441,8 @@ class GroupTrManagerImpl
 
 		@Override
 		public GroupTrKeys.Binding bind(byte[] groupId, GroupTrKeys.Own own,
-				long timestamp) throws DbException {
-			return bindAs(groupId, own, timestamp);
+				long timestamp, boolean identitySigned) throws DbException {
+			return bindAs(groupId, own, timestamp, identitySigned);
 		}
 
 		@Override
@@ -4311,8 +5458,8 @@ class GroupTrManagerImpl
 
 		@Override
 		public void dispatch(Transaction txn, Contact c, long timestamp,
-				BdfList body) throws DbException {
-			dispatchToContact(txn, c, timestamp, body);
+				BdfList body, boolean userAction) throws DbException {
+			dispatchToContact(txn, c, timestamp, body, userAction);
 		}
 
 		@Override
@@ -4421,7 +5568,7 @@ class GroupTrManagerImpl
 		public void addMember(byte[] groupId, byte[] pubKey, String name,
 				byte[] mlDsaPubKey) throws DbException {
 			GroupTrManagerImpl.this.addMember(groupId, pubKey, name,
-					mlDsaPubKey);
+					mlDsaPubKey, false);
 		}
 
 		@Override
@@ -4460,14 +5607,15 @@ class GroupTrManagerImpl
 		@Override
 		public void dispatch(Transaction txn, Contact c, long timestamp,
 				BdfList body) throws DbException {
-			dispatchToContact(txn, c, timestamp, body);
+			dispatchToContact(txn, c, timestamp, body, false);
 		}
 
 		@Nullable
 		@Override
-		public GroupTrKeys.Binding ownBinding(byte[] groupId)
-				throws DbException {
-			return GroupTrManagerImpl.this.ownBinding(groupId);
+		public GroupTrKeys.Binding ownBinding(byte[] groupId,
+				boolean identitySigned) throws DbException {
+			return GroupTrManagerImpl.this.ownBinding(groupId,
+					identitySigned);
 		}
 
 		@Override
@@ -4527,9 +5675,18 @@ class GroupTrManagerImpl
 
 	private boolean verify(byte[] sig, String label, byte[] signed,
 			byte[] pubKeyBytes) {
+		try {
+			return verifyAccountKey(sig, label, signed, pubKeyBytes,
+					lookupPeerMlDsaPubKey(pubKeyBytes));
+		} catch (DbException ex) {
+			return false;
+		}
+	}
+
+	private boolean verifyAccountKey(byte[] sig, String label, byte[] signed,
+			byte[] pubKeyBytes, @Nullable byte[] peerMlDsaPub) {
 		if (signed.length == 0) return false;
 		try {
-			byte[] peerMlDsaPub = lookupPeerMlDsaPubKey(pubKeyBytes);
 			if (peerMlDsaPub == null) return false;
 			if (sig.length != org.zerionproject.core.api.crypto
 					.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
@@ -4541,8 +5698,6 @@ class GroupTrManagerImpl
 			return crypto.verifyHybridSignature(sig, label, signed,
 					hybridPub);
 		} catch (GeneralSecurityException ex) {
-			return false;
-		} catch (DbException ex) {
 			return false;
 		}
 	}
@@ -4604,21 +5759,6 @@ class GroupTrManagerImpl
 			}
 			return null;
 		});
-	}
-
-	@javax.annotation.Nullable
-	private byte[] lookupMemberMlDsaPubKey(byte[] ed25519PubKey)
-			throws DbException {
-		for (GroupTrState g : getGroups()) {
-			if (g.usesGroupKeys()) continue;
-			for (GroupTrMember m : g.getMembers()) {
-				if (Arrays.equals(m.getPubKey(), ed25519PubKey)) {
-					byte[] ml = m.getMlDsaPubKey();
-					if (ml != null) return ml;
-				}
-			}
-		}
-		return null;
 	}
 
 	private Settings serializeState(GroupTrState s) throws FormatException {
@@ -4892,6 +6032,10 @@ class GroupTrManagerImpl
 				throw new GroupTrAuthException(
 						GroupTrAuthException.Reason.GROUP_DISSOLVED);
 			}
+			if (body.length > MAX_POST_BODY_LENGTH) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.POST_TOO_LARGE);
+			}
 			long effectiveTtl = effectiveTtl(autoDeleteTimerMs,
 					s.getDefaultAutoDeleteTimerMs());
 			LocalAuthor la = localAuthor();
@@ -4942,6 +6086,10 @@ class GroupTrManagerImpl
 							finalSenderName, body, sig, effectiveTtl)
 					: BdfList.of(32L, groupId, (long) epoch, localPub,
 							finalSenderName, body, sig);
+			if (!fitsOneRecordWithRelay(msgBody)) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.POST_TOO_LARGE);
+			}
 			int failed = 0;
 			byte[] postId = postIdentity(signed);
 			for (Contact c : recipients) {
@@ -4966,7 +6114,7 @@ class GroupTrManagerImpl
 				try {
 					db.transaction(false, txn -> {
 						MessageId stored = dispatchToContact(txn, c,
-								timestamp, msgBody, selfMeta);
+								timestamp, msgBody, selfMeta, true);
 						if (effectiveTtl > 0) {
 							db.setCleanupTimerDuration(txn, stored,
 									effectiveTtl);
@@ -4983,6 +6131,13 @@ class GroupTrManagerImpl
 			}
 			if (!recipients.isEmpty() && failed == recipients.size()) {
 				throw new DbException();
+			}
+			if (!recipients.isEmpty()) {
+				try {
+					db.transaction(false, txn -> relayThroughCreator(txn, s,
+							localPub, msgBody, timestamp));
+				} catch (DbException | RuntimeException ex) {
+				}
 			}
 			int others = 0;
 			for (GroupTrMember m : s.getMembers()) {
@@ -5151,21 +6306,238 @@ class GroupTrManagerImpl
 
 		@Override
 		public void dispatchRecord(Transaction txn, Contact c,
-				long timestamp, BdfList body, BdfDictionary meta)
-				throws DbException {
-			MessageId id = dispatchToContact(txn, c, timestamp, body, meta);
+				long timestamp, BdfList body, BdfDictionary meta,
+				boolean userAction) throws DbException {
+			MessageId id = dispatchToContact(txn, c, timestamp, body, meta,
+					userAction);
 			db.setCleanupTimerDuration(txn, id, RECORD_KEPT_AFTER_ACK_MS);
+		}
+
+		@Override
+		public void relayThroughCreator(Transaction txn, GroupTrState s,
+				byte[] localPub, BdfList record, long timestamp)
+				throws DbException {
+			GroupTrManagerImpl.this.relayThroughCreator(txn, s, localPub,
+					record, timestamp);
 		}
 
 		@Override
 		public void lowerUnread(byte[] groupId, int by) {
 			GroupTrManagerImpl.this.lowerUnread(groupId, by);
 		}
+
+		@Override
+		public void postsRemoved(byte[] groupId, List<byte[]> removed) {
+			unpinRemovedPost(groupId, removed);
+		}
 	}
 
 	@Override
 	public void setMeshSink(GroupTrMeshSink sink) {
 		this.meshSink = sink;
+	}
+
+	static boolean mayPin(@Nullable GroupTrState s, @Nullable byte[] localPub) {
+		return s != null && !s.isDissolved() && localPub != null
+				&& Arrays.equals(localPub, s.getCreatorPubKey());
+	}
+
+	@Override
+	public boolean canPin(byte[] groupId) throws DbException {
+		GroupTrState s = getGroup(groupId);
+		return s != null && mayPin(s, localKeyIn(s));
+	}
+
+	@Override
+	@Nullable
+	public byte[] getPinnedPostId(byte[] groupId) throws DbException {
+		String hex = settingsManager.getSettings(nsOf(groupId))
+				.get(S_PINNED_POST_ID);
+		if (hex == null || hex.isEmpty()) return null;
+		try {
+			byte[] id = fromHexString(hex);
+			return id.length == 32 ? id : null;
+		} catch (FormatException | IllegalArgumentException ex) {
+			return null;
+		}
+	}
+
+	@Override
+	public int pinPost(byte[] groupId, byte[] postId) throws DbException {
+		if (postId.length != 32) throw new IllegalArgumentException();
+		return setPin(groupId, postId);
+	}
+
+	@Override
+	public int unpinPost(byte[] groupId) throws DbException {
+		return setPin(groupId, null);
+	}
+
+	private int setPin(byte[] groupId, @Nullable byte[] postId)
+			throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = requireWritable(groupId);
+			requireLocalIsCreator(s);
+			Settings current = settingsManager.getSettings(nsOf(groupId));
+			long now = clock.currentTimeMillis();
+			long last = current.getLong(S_PINNED_TIMESTAMP, 0L);
+			long ts = Math.max(now, last + 1);
+			BdfList record = pinRecord(s, postId, ts);
+			byte[] localPub = localKeyIn(s);
+			List<byte[]> to = new ArrayList<>();
+			for (GroupTrMember m : s.getMembers()) {
+				if (!Arrays.equals(m.getPubKey(), localPub)) {
+					to.add(m.getPubKey());
+				}
+			}
+			Settings out = pinSettings(postId, ts);
+			int skipped = db.transactionWithResult(false, txn -> {
+				int n = sendPin(txn, s, to, record, now, true);
+				settingsManager.mergeSettings(txn, out, nsOf(groupId));
+				return n;
+			});
+			eventBus.broadcast(new org.zerionproject.app.api.messaging.event
+					.GroupTrLocalStateChangedEvent(groupId,
+					org.zerionproject.app.api.messaging.event
+							.GroupTrLocalStateChangedEvent.Kind.UPDATED));
+			return skipped;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private static Settings pinSettings(@Nullable byte[] postId,
+			long timestamp) {
+		Settings out = new Settings();
+		out.put(S_PINNED_POST_ID, postId == null ? "" : toHexString(postId));
+		out.putLong(S_PINNED_TIMESTAMP, timestamp);
+		return out;
+	}
+
+	private void persistPin(byte[] groupId, @Nullable byte[] postId,
+			long timestamp) throws DbException {
+		settingsManager.mergeSettings(pinSettings(postId, timestamp),
+				nsOf(groupId));
+	}
+
+	private void unpinRemovedPost(byte[] groupId, List<byte[]> removed) {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			byte[] pinned = getPinnedPostId(groupId);
+			if (pinned == null) return;
+			boolean gone = false;
+			for (byte[] id : removed) {
+				if (Arrays.equals(id, pinned)) gone = true;
+			}
+			if (!gone) return;
+			Settings out = new Settings();
+			out.put(S_PINNED_POST_ID, "");
+			GroupTrState s = getGroup(groupId);
+			if (s != null && mayPin(s, localKeyIn(s))) {
+				long last = settingsManager.getSettings(nsOf(groupId))
+						.getLong(S_PINNED_TIMESTAMP, 0L);
+				out.putLong(S_PINNED_TIMESTAMP,
+						Math.max(clock.currentTimeMillis(), last + 1));
+			}
+			settingsManager.mergeSettings(out, nsOf(groupId));
+			eventBus.broadcast(new org.zerionproject.app.api.messaging.event
+					.GroupTrLocalStateChangedEvent(groupId,
+					org.zerionproject.app.api.messaging.event
+							.GroupTrLocalStateChangedEvent.Kind.UPDATED));
+		} catch (DbException ex) {
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	static byte[] groupPinSignedInput(byte[] groupId, @Nullable byte[] postId,
+			long timestamp) {
+		byte[] out = new byte[32 + 1 + 32 + 8 + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		out[32] = (byte) (postId == null ? 0 : 1);
+		if (postId != null) System.arraycopy(postId, 0, out, 33, 32);
+		for (int i = 0; i < 8; i++) {
+			out[65 + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		out[73] = (byte) 0x0C;
+		return out;
+	}
+
+	private BdfList pinRecord(GroupTrState s) throws DbException {
+		Settings current = settingsManager.getSettings(nsOf(s.getGroupId()));
+		long ts = current.getLong(S_PINNED_TIMESTAMP, 0L);
+		return pinRecord(s, getPinnedPostId(s.getGroupId()), ts);
+	}
+
+	private BdfList pinRecord(GroupTrState s, @Nullable byte[] postId,
+			long ts) throws DbException {
+		byte[] sig = signIn(s, SIGNING_LABEL_GROUP_PIN,
+				groupPinSignedInput(s.getGroupId(), postId, ts));
+		BdfList record = new BdfList();
+		record.add((long) MessageTypes.GROUP_PIN);
+		record.add(s.getGroupId());
+		record.add(postId);
+		record.add(ts);
+		record.add(sig);
+		return record;
+	}
+
+	private int sendPin(Transaction txn, GroupTrState s,
+			Collection<byte[]> to, BdfList record, long timestamp,
+			boolean userAction) throws DbException {
+		int skipped = 0;
+		Reach reach = reach(txn, s);
+		for (byte[] pub : to) {
+			Contact c = reach.contact(pub);
+			if (c == null) continue;
+			if (messagingManager.getContactClientMinorVersion(txn, c.getId())
+					< MessagingManager.PIN_MIN_VERSION) {
+				skipped++;
+				continue;
+			}
+			dispatchToContact(txn, c, timestamp, record, userAction);
+		}
+		return skipped;
+	}
+
+	private void handleGroupPin(org.zerionproject.app.api.messaging.event
+			.GroupPinReceivedEvent e) {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(e.getGroupId());
+		lock.lock();
+		try {
+			GroupTrState s = getGroup(e.getGroupId());
+			if (s == null || s.isDissolved()) return;
+			byte[] senderPubKey = contactKeyIn(s, e.getContactId());
+			if (senderPubKey == null
+					|| !Arrays.equals(senderPubKey, s.getCreatorPubKey())) {
+				return;
+			}
+			byte[] target = e.getTargetPostId();
+			if (target != null && target.length != 32) return;
+			Settings current = settingsManager.getSettings(
+					nsOf(s.getGroupId()));
+			if (e.getTimestamp()
+					<= current.getLong(S_PINNED_TIMESTAMP, Long.MIN_VALUE)) {
+				return;
+			}
+			byte[] signed = groupPinSignedInput(s.getGroupId(), target,
+					e.getTimestamp());
+			if (!verifyIn(s, e.getRecordSig(), SIGNING_LABEL_GROUP_PIN,
+					signed, s.getCreatorPubKey())) {
+				return;
+			}
+			persistPin(s.getGroupId(), target, e.getTimestamp());
+			eventBus.broadcast(new org.zerionproject.app.api.messaging.event
+					.GroupTrLocalStateChangedEvent(s.getGroupId(),
+					org.zerionproject.app.api.messaging.event
+							.GroupTrLocalStateChangedEvent.Kind.UPDATED));
+		} catch (DbException ex) {
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	@Override
@@ -5195,7 +6567,7 @@ class GroupTrManagerImpl
 				}
 			}
 			db.transaction(false, txn -> {
-				sendSettings(txn, s, to, record, now);
+				sendSettings(txn, s, to, record, now, true);
 			});
 		} catch (FormatException ex) {
 			throw new DbException(ex);
@@ -5278,12 +6650,12 @@ class GroupTrManagerImpl
 	@Override
 	public void addMember(byte[] groupId, byte[] addedPubKey,
 			String addedName) throws DbException {
-		addMember(groupId, addedPubKey, addedName, null);
+		addMember(groupId, addedPubKey, addedName, null, false);
 	}
 
 	private void addMember(byte[] groupId, byte[] addedPubKey,
-			String addedName, @Nullable byte[] addedMlDsaPubKey)
-			throws DbException {
+			String addedName, @Nullable byte[] addedMlDsaPubKey,
+			boolean userAction) throws DbException {
 		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
 		lock.lock();
 		try {
@@ -5306,15 +6678,26 @@ class GroupTrManagerImpl
 			BdfList body = BdfList.of(33L, groupId, addedPubKey, addedName,
 					(long) newEpoch, timestamp, sig);
 			db.transaction(false, txn ->
-					fanOutToAllPlusTarget(txn, s, body, timestamp, addedPubKey));
+					fanOutToAllPlusTarget(txn, s, body, timestamp, addedPubKey,
+							userAction));
 			applyLocalAdd(s, addedPubKey, addedName, timestamp, newEpoch,
 					addedMlDsaPubKey);
-			if (s.getDefaultAutoDeleteTimerMs() > 0) {
+			if (s.getDefaultAutoDeleteTimerMs() > 0
+					|| settingsManager.getSettings(nsOf(groupId))
+					.get(S_SETTINGS_TIMESTAMP) != null) {
 				BdfList record = settingsRecord(s);
 				db.transaction(false, txn -> {
 					sendSettings(txn, s,
 							Collections.singletonList(addedPubKey), record,
-							timestamp);
+							timestamp, userAction);
+				});
+			}
+			if (settingsManager.getSettings(nsOf(groupId))
+					.get(S_PINNED_POST_ID) != null) {
+				BdfList record = pinRecord(s);
+				db.transaction(false, txn -> {
+					sendPin(txn, s, Collections.singletonList(addedPubKey),
+							record, timestamp, userAction);
 				});
 			}
 			memberInvites.onMemberAdded(s, addedPubKey);
@@ -5325,20 +6708,20 @@ class GroupTrManagerImpl
 	}
 
 	private void fanOutToAllPlusTarget(Transaction txn, GroupTrState s,
-			BdfList body, long timestamp, byte[] targetPubKey)
-			throws DbException {
+			BdfList body, long timestamp, byte[] targetPubKey,
+			boolean userAction) throws DbException {
 		byte[] localPub = localKeyIn(txn, s);
 		Reach reach = reach(txn, s);
 		Contact target = reach.contact(targetPubKey);
 		if (target != null) {
-			dispatchToContact(txn, target, timestamp, body);
+			dispatchToContact(txn, target, timestamp, body, userAction);
 		}
 		for (GroupTrMember m : s.getMembers()) {
 			if (Arrays.equals(m.getPubKey(), localPub)) continue;
 			if (Arrays.equals(m.getPubKey(), targetPubKey)) continue;
 			Contact c = reach.contact(m.getPubKey());
 			if (c == null) continue;
-			dispatchToContact(txn, c, timestamp, body);
+			dispatchToContact(txn, c, timestamp, body, userAction);
 		}
 	}
 
@@ -5372,8 +6755,8 @@ class GroupTrManagerImpl
 			BdfList commitBody = BdfList.of(37L, groupId, (long) fromEpoch,
 					(long) toEpoch, pqSeed, sigCommit);
 			db.transaction(false, txn -> {
-				fanOut(txn, s, removedBody, timestamp, null);
-				fanOut(txn, s, commitBody, timestamp, removedPubKey);
+				fanOut(txn, s, removedBody, timestamp, null, true);
+				fanOut(txn, s, commitBody, timestamp, removedPubKey, true);
 			});
 			byte[] removedTag = null;
 			if (s.usesGroupKeys()) {
@@ -5418,7 +6801,7 @@ class GroupTrManagerImpl
 			BdfList body = BdfList.of(35L, groupId, localPub,
 					(long) newEpoch, timestamp, sig);
 			db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
-					localPub));
+					localPub, true));
 			applyLocalLeave(s, localPub, newEpoch);
 			removeFromDevice(groupId);
 		} finally {
@@ -5440,7 +6823,7 @@ class GroupTrManagerImpl
 			BdfList body = BdfList.of(36L, groupId, (long) newEpoch,
 					timestamp, sig);
 			db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
-					null));
+					null, true));
 			s.setDissolved(true);
 			s.setEpoch(newEpoch);
 			try {
@@ -5521,7 +6904,7 @@ class GroupTrManagerImpl
 	}
 
 	private void fanOut(Transaction txn, GroupTrState s, BdfList body,
-			long timestamp, @Nullable byte[] skipPubKey)
+			long timestamp, @Nullable byte[] skipPubKey, boolean userAction)
 			throws DbException {
 		byte[] localPub = localKeyIn(txn, s);
 		Reach reach = reach(txn, s);
@@ -5531,14 +6914,15 @@ class GroupTrManagerImpl
 					&& Arrays.equals(m.getPubKey(), skipPubKey)) continue;
 			Contact c = reach.contact(m.getPubKey());
 			if (c == null) continue;
-			dispatchToContact(txn, c, timestamp, body);
+			dispatchToContact(txn, c, timestamp, body, userAction);
 		}
 	}
 
 	private void dispatchToContact(Transaction txn, Contact c,
-			long timestamp, BdfList body) throws DbException {
+			long timestamp, BdfList body, boolean userAction)
+			throws DbException {
 		MessageId id = dispatchToContact(txn, c, timestamp, body,
-				dispatchedRecordMetadata(body));
+				dispatchedRecordMetadata(body), userAction);
 		db.setCleanupTimerDuration(txn, id, RECORD_KEPT_AFTER_ACK_MS);
 	}
 
@@ -5556,8 +6940,8 @@ class GroupTrManagerImpl
 	private static final long RECORD_KEPT_AFTER_ACK_MS = 5L * 60L * 1000L;
 
 	private MessageId dispatchToContact(Transaction txn, Contact c,
-			long timestamp, BdfList body, BdfDictionary meta)
-			throws DbException {
+			long timestamp, BdfList body, BdfDictionary meta,
+			boolean userAction) throws DbException {
 		byte[] contactGroupId =
 				messagingManager.getContactGroup(c).getId().getBytes();
 		try {
@@ -5573,6 +6957,7 @@ class GroupTrManagerImpl
 						.MSG_KEY_MESH_GROUP_PENDING, true);
 			}
 			clientHelper.addLocalMessage(txn, m, meta, !offline, false);
+			if (userAction) userMessages.noteUserMessage(m.getId());
 			if (offline) {
 				sink.floodRecord(c.getId().getInt(), bodyBytes, timestamp);
 			}
@@ -5606,6 +6991,7 @@ class GroupTrManagerImpl
 
 	private void applyLocalRemove(GroupTrState s, byte[] pk, int newEpoch)
 			throws DbException {
+		forgetRelayPairs(s.getGroupId(), pk);
 		List<GroupTrMember> next = new ArrayList<>(s.getMembers().size());
 		for (GroupTrMember m : s.getMembers()) {
 			if (!Arrays.equals(m.getPubKey(), pk)) next.add(m);
@@ -5698,7 +7084,8 @@ class GroupTrManagerImpl
 			BdfList blob = keyExchange.secretBlob(s, epoch);
 			if (blob != null) body.add(blob);
 		}
-		db.transaction(false, txn -> fanOut(txn, s, body, timestamp, null));
+		db.transaction(false, txn -> fanOut(txn, s, body, timestamp, null,
+				false));
 	}
 
 	private byte[] snapshotSignedInput(byte[] groupId, int epoch,
@@ -5749,7 +7136,7 @@ class GroupTrManagerImpl
 			BdfList body = BdfList.of(38L, groupId, targetPubKey,
 					(long) newRole.getInt(), (long) newEpoch, timestamp, sig);
 			db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
-					null));
+					null, true));
 			applyLocalRoleChange(s, targetPubKey, newRole, newEpoch);
 		} finally {
 			lock.unlock();

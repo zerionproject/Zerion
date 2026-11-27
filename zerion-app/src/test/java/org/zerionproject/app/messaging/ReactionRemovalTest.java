@@ -162,7 +162,9 @@ public class ReactionRemovalTest extends BrambleTestCase {
 				device.getAutoDeleteManager(),
 				device.getStreamingAttachmentWriter(),
 				device.getIdentityManager(), validator,
-				device.getCryptoComponent());
+				device.getCryptoComponent(),
+				id -> {
+				});
 	}
 
 	private int removalsSent() throws Exception {

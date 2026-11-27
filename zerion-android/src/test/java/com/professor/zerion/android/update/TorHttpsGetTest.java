@@ -1,5 +1,7 @@
 package com.professor.zerion.android.update;
 
+import com.professor.zerion.android.util.LegacyTlsDefault;
+
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -352,5 +354,65 @@ public class TorHttpsGetTest {
 		}
 		assertEquals(Arrays.asList(4_000L), armed);
 		assertEquals(4_000, (int) connectTimeouts.get(1));
+	}
+
+	@Test(timeout = 15_000)
+	public void theTlsHandshakeOffersOnlyTls12AndTls13() throws Exception {
+		try (java.net.ServerSocket hangUp = new java.net.ServerSocket(0, 4,
+				java.net.InetAddress.getLoopbackAddress());
+				LegacyTlsDefault tls = LegacyTlsDefault.install()) {
+			Thread t = new Thread(() -> {
+				try (Socket c = hangUp.accept()) {
+					c.getInputStream().read();
+				} catch (IOException ignored) {
+				}
+			});
+			t.setDaemon(true);
+			t.start();
+			javax.net.SocketFactory loopback = new javax.net.SocketFactory() {
+				@Override
+				public Socket createSocket() {
+					return new Socket() {
+						@Override
+						public void connect(java.net.SocketAddress a, int t)
+								throws IOException {
+							super.connect(new java.net.InetSocketAddress(
+									java.net.InetAddress.getLoopbackAddress(),
+									hangUp.getLocalPort()), t);
+						}
+					};
+				}
+
+				@Override
+				public Socket createSocket(String h, int p) {
+					throw new AssertionError();
+				}
+
+				@Override
+				public Socket createSocket(String h, int p,
+						java.net.InetAddress l, int lp) {
+					throw new AssertionError();
+				}
+
+				@Override
+				public Socket createSocket(java.net.InetAddress h, int p) {
+					throw new AssertionError();
+				}
+
+				@Override
+				public Socket createSocket(java.net.InetAddress a, int p,
+						java.net.InetAddress l, int lp) {
+					throw new AssertionError();
+				}
+			};
+			try {
+				TorHttpsGet.get(loopback, "https://bridges.example/x", 10);
+				fail("a server that hangs up was answered");
+			} catch (IOException expected) {
+			}
+			assertEquals(1, tls.sockets().size());
+			assertTrue(LegacyTlsDefault.onlyModernProtocols(
+					tls.sockets().get(0)));
+		}
 	}
 }

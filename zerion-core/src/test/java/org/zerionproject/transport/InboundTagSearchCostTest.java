@@ -58,7 +58,9 @@ public class InboundTagSearchCostTest {
 
 	private ZtpSessionProviderImpl provider(ZwfTagRecogniser recogniser) {
 		ZtpSessionProviderImpl p = new ZtpSessionProviderImpl(recogniser, null,
-				null, null, null, null, null, Runnable::run, null);
+				null, null, new org.zerionproject.wire.ZwfStreamCounter(
+						new RootEvolutionTestBed.MemCounterStore()), null, null,
+				Runnable::run, null);
 		p.clock = now::get;
 		return p;
 	}

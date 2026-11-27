@@ -170,7 +170,7 @@ public class RemuxDeviceDetailsDeviceTest {
 			throws Exception {
 		File in = recordedVideo();
 		byte[] raw = Files.readAllBytes(in.toPath());
-		byte[] kept = new MetadataStripper(ctx).stripMetadata(raw,
+		byte[] kept = new MetadataStripper(ctx).stripMetadataOrThrow(raw,
 				"video/mp4");
 		assertFalse("the vault kept the video as it was",
 				java.util.Arrays.equals(raw, kept));

@@ -171,6 +171,7 @@ public class ZwfMode3FullSharedStateRaceTest {
 			dec = new ZwfMode3FullStreamDecrypter(in, cipher(), ratchet,
 					mode3FullRatchet, tag, streamId, streamHeaderKey,
 					recvState, null, shared::get, shared::set, lock, !alice);
+			dec.setMaxRecvFramesPerKeyPair(Integer.MAX_VALUE);
 		}
 
 		void send(String text) throws IOException {

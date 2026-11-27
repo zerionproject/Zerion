@@ -2,6 +2,7 @@ package com.professor.zerion.android.util;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Looper;
@@ -18,14 +19,17 @@ import org.mockito.MockedStatic;
 import org.robolectric.Robolectric;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowDialog;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.FileProvider;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -33,8 +37,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -124,8 +130,53 @@ public class ExternalHandoffTest {
 		return null;
 	}
 
+	private Intent openAndConfirm(ChannelAttachmentHandoffTest.HandoffFeed screen,
+			byte[] content, String type) {
+		ExternalHandoff.open(screen, Runnable::run, content, type,
+				() -> failures.add(type));
+		shadowOf(Looper.getMainLooper()).idle();
+		AlertDialog d = (AlertDialog) ShadowDialog.getLatestDialog();
+		assertNotNull(d);
+		d.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+		Intent i;
+		while ((i = shadowOf(screen).getNextStartedActivity()) != null) {
+			if (Intent.ACTION_VIEW.equals(i.getAction())) return i;
+		}
+		return null;
+	}
+
 	private File dir() {
 		return new File(ctx.getCacheDir(), ExternalHandoff.DIR);
+	}
+
+	private static byte[] zip(String... names) throws Exception {
+		java.io.ByteArrayOutputStream out =
+				new java.io.ByteArrayOutputStream();
+		try (java.util.zip.ZipOutputStream z =
+				new java.util.zip.ZipOutputStream(out)) {
+			for (String name : names) {
+				z.putNextEntry(new java.util.zip.ZipEntry(name));
+				z.write(("content of " + name).getBytes("US-ASCII"));
+				z.closeEntry();
+			}
+		}
+		return out.toByteArray();
+	}
+
+	private static byte[] jpeg() {
+		byte[] j = new byte[64];
+		byte[] head = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0,
+				0x10, 'J', 'F', 'I', 'F', 0, 1, 1, 0, 0, 1, 0, 1, 0, 0};
+		System.arraycopy(head, 0, j, 0, head.length);
+		return j;
+	}
+
+	private static byte[] dex() {
+		byte[] d = new byte[128];
+		byte[] head = {'d', 'e', 'x', '\n', '0', '3', '5', 0};
+		System.arraycopy(head, 0, d, 0, head.length);
+		return d;
 	}
 
 	@Test
@@ -199,7 +250,9 @@ public class ExternalHandoffTest {
 
 	@Test
 	public void theOtherAppOnlyEverGetsTheCleanedCopy() throws Exception {
-		byte[] clean = {7, 7, 7};
+		byte[] clean = video();
+		clean[clean.length - 1] = 9;
+		byte[] expected = clean.clone();
 		List<String> asked = new ArrayList<>();
 		ExternalHandoff.cleaner = (c, content, type) -> {
 			asked.add(type);
@@ -211,8 +264,7 @@ public class ExternalHandoffTest {
 		assertEquals("video/mp4", view.getType());
 		File copy = ExternalHandoff.current();
 		assertNotNull(copy);
-		assertArrayEquals(new byte[] {7, 7, 7},
-				Files.readAllBytes(copy.toPath()));
+		assertArrayEquals(expected, Files.readAllBytes(copy.toPath()));
 		assertArrayEquals("the cleaned copy stays in memory after staging",
 				new byte[clean.length], clean);
 		assertEquals(Arrays.asList("video/quicktime"), asked);
@@ -267,5 +319,232 @@ public class ExternalHandoffTest {
 		assertTrue("a copy was left: " + Arrays.toString(left),
 				left == null || left.length == 0);
 		assertEquals(1, revoked.size());
+	}
+
+	@Test
+	public void anInstallableNeverLeavesWhateverTypeWasDeclared()
+			throws Exception {
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
+		byte[] apk = zip("META-INF/MANIFEST.MF", "AndroidManifest.xml",
+				"classes.dex");
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		assertNull(open(s, apk, "video/mp4"));
+		assertNull(open(s, dex(), "audio/mpeg"));
+		assertNull(open(s, apk, "image/jpeg"));
+		assertNull(openAndConfirm(s, apk, "application/zip"));
+		assertNull(openAndConfirm(s, dex(), ExternalViewerTypes.OPAQUE));
+		assertEquals(Arrays.asList("video/mp4", "audio/mpeg", "image/jpeg",
+				"application/zip", ExternalViewerTypes.OPAQUE), failures);
+		assertNull(ExternalHandoff.current());
+		String[] left = dir().list();
+		assertTrue("a copy was left: " + Arrays.toString(left),
+				left == null || left.length == 0);
+	}
+
+	@Test
+	public void anArchiveThatCarriesPackagesOrProgramCodeNeverLeaves()
+			throws Exception {
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
+		byte[] bundle = zip("icon.png", "base.apk", "split_config.en.APK");
+		byte[] code = zip("META-INF/MANIFEST.MF", "classes.dex");
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		assertNull(openAndConfirm(s, bundle, "application/zip"));
+		assertNull(openAndConfirm(s, code, "application/zip"));
+		assertNull(openAndConfirm(s, bundle, ExternalViewerTypes.OPAQUE));
+		assertNull(open(s, code, "image/jpeg"));
+		assertEquals(Arrays.asList("application/zip", "application/zip",
+				ExternalViewerTypes.OPAQUE, "image/jpeg"), failures);
+		assertNull(ExternalHandoff.current());
+		String[] left = dir().list();
+		assertTrue("a copy was left: " + Arrays.toString(left),
+				left == null || left.length == 0);
+		failures.clear();
+		assertNotNull(openAndConfirm(s, zip("readme.txt", "data.csv"),
+				"application/zip"));
+		assertTrue(failures.isEmpty());
+	}
+
+	@Test
+	public void checkedPicturesAndDocumentsStillOpen() throws Exception {
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		Intent picture = open(s, jpeg(), "image/jpeg");
+		assertNotNull(picture);
+		assertEquals("image/jpeg", picture.getType());
+		Intent document = openAndConfirm(s,
+				"%PDF-1.4\nclean\n%%EOF\n".getBytes("US-ASCII"),
+				"application/pdf");
+		assertNotNull(document);
+		assertEquals("application/pdf", document.getType());
+		assertTrue(failures.isEmpty());
+	}
+
+	@Test
+	public void theTypeHandedOverIsTheOneTheContentChecksAs()
+			throws Exception {
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		byte[] svg = ("<svg xmlns=\"http://www.w3.org/2000/svg\">"
+				+ "<script>1</script></svg>").getBytes("US-ASCII");
+		Intent view = open(s, svg, "image/svg+xml");
+		assertNotNull(view);
+		assertEquals(ExternalViewerTypes.TEXT, view.getType());
+	}
+
+	@Test
+	public void aCopyLeavesOnlyUnderTheTypeItWasCheckedAs() throws Exception {
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		File f = ExternalHandoff.stage(ctx, jpeg(), "image/jpeg");
+		assertFalse(ExternalHandoff.launch(s, f,
+				"application/vnd.android.package-archive"));
+		assertNull(shadowOf(s).getNextStartedActivity());
+		assertTrue(ExternalHandoff.launch(s, f, "image/jpeg"));
+		Intent view = shadowOf(s).getNextStartedActivity();
+		assertNotNull(view);
+		assertEquals("image/jpeg", view.getType());
+	}
+
+	private void assertNotStaged(byte[] content, String type) {
+		assertThrows(type, IOException.class,
+				() -> ExternalHandoff.stage(ctx, content, type));
+	}
+
+	@Test
+	public void nothingIsStagedUnlessTheContentChecksAsTheGivenType()
+			throws Exception {
+		byte[] apk = zip("META-INF/MANIFEST.MF", "AndroidManifest.xml",
+				"classes.dex");
+		byte[] svg = ("<svg xmlns=\"http://www.w3.org/2000/svg\">"
+				+ "<script>1</script></svg>").getBytes("US-ASCII");
+		assertNotStaged(apk, "application/zip");
+		assertNotStaged(apk, "image/jpeg");
+		assertNotStaged(dex(), ExternalViewerTypes.OPAQUE);
+		assertNotStaged(dex(), "audio/mpeg");
+		assertNotStaged(jpeg(), "application/vnd.android.package-archive");
+		assertNotStaged(svg, "image/svg+xml");
+		assertNotStaged(video(), "image/jpeg");
+		assertNotStaged(jpeg(), "IMAGE/JPEG");
+		assertNull(ExternalHandoff.current());
+		String[] left = dir().list();
+		assertTrue("a copy was left: " + Arrays.toString(left),
+				left == null || left.length == 0);
+
+		File staged = ExternalHandoff.stage(ctx, jpeg(), "image/jpeg");
+		assertEquals(staged, ExternalHandoff.current());
+		assertArrayEquals(jpeg(), Files.readAllBytes(staged.toPath()));
+		File text = ExternalHandoff.stage(ctx, svg, ExternalViewerTypes.TEXT);
+		assertEquals(text, ExternalHandoff.current());
+	}
+
+	@Test
+	public void aStagedCopyLeavesOnlyAfterItsContentWasChecked()
+			throws Exception {
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		byte[] apk = zip("AndroidManifest.xml", "classes.dex");
+		assertNotStaged(apk, "application/zip");
+		File stray = new File(dir(), "stray.zip");
+		assertTrue(dir().isDirectory() || dir().mkdirs());
+		Files.write(stray.toPath(), apk);
+		assertFalse(ExternalHandoff.launch(s, stray, "application/zip"));
+		assertNull(shadowOf(s).getNextStartedActivity());
+	}
+
+	@Test
+	public void aRefusedCopyAndAMissingAppAreReportedApart() throws Exception {
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		List<String> refused = new ArrayList<>();
+		List<String> noApp = new ArrayList<>();
+
+		ExternalHandoff.open(s, Runnable::run, dex(), "audio/mpeg",
+				() -> refused.add("program"), () -> noApp.add("program"));
+		shadowOf(Looper.getMainLooper()).idle();
+		assertEquals(Arrays.asList("program"), refused);
+		assertTrue(noApp.isEmpty());
+
+		shadowOf((Application) ctx).checkActivities(true);
+		ExternalHandoff.openCopy(s, Runnable::run, video(), "video/mp4",
+				() -> refused.add("video"), () -> noApp.add("video"));
+		shadowOf(Looper.getMainLooper()).idle();
+		assertEquals(Arrays.asList("program"), refused);
+		assertEquals(Arrays.asList("video"), noApp);
+		assertNull(ExternalHandoff.current());
+	}
+
+	private static final Executor OFF_THE_SCREEN_THREAD = task -> {
+		Thread worker = new Thread(task);
+		worker.start();
+		try {
+			worker.join();
+		} catch (InterruptedException e) {
+			throw new AssertionError(e);
+		}
+	};
+
+	private static List<Intent> viewsStartedBy(
+			ChannelAttachmentHandoffTest.HandoffFeed screen) {
+		List<Intent> views = new ArrayList<>();
+		Intent i;
+		while ((i = shadowOf(screen).getNextStartedActivity()) != null) {
+			if (Intent.ACTION_VIEW.equals(i.getAction())) views.add(i);
+		}
+		return views;
+	}
+
+	@Test
+	public void aCopyReplacedBeforeItOpensEndsWithoutAMessage()
+			throws Exception {
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		List<String> refused = new ArrayList<>();
+		List<String> noApp = new ArrayList<>();
+
+		ExternalHandoff.open(s, OFF_THE_SCREEN_THREAD, video(), "video/mp4",
+				() -> refused.add("first"), () -> noApp.add("first"));
+		File first = ExternalHandoff.current();
+		ExternalHandoff.open(s, OFF_THE_SCREEN_THREAD, jpeg(), "image/jpeg",
+				() -> refused.add("second"), () -> noApp.add("second"));
+		File second = ExternalHandoff.current();
+		assertNotNull(first);
+		assertNotNull(second);
+		assertNotEquals(first, second);
+		shadowOf(Looper.getMainLooper()).idle();
+
+		assertTrue("the replaced copy was reported as a failure: " + noApp,
+				noApp.isEmpty());
+		assertTrue(refused.isEmpty());
+		List<Intent> views = viewsStartedBy(s);
+		assertEquals("the copy that replaced it did not open", 1,
+				views.size());
+		assertEquals("image/jpeg", views.get(0).getType());
+		assertEquals(second, ExternalHandoff.current());
+		assertTrue(second.exists());
+		assertFalse(first.exists());
+	}
+
+	@Test
+	public void aReplacedCopyStaysSilentWhenItsReplacementFindsNoApp()
+			throws Exception {
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		shadowOf((Application) ctx).checkActivities(true);
+		List<String> refused = new ArrayList<>();
+		List<String> noApp = new ArrayList<>();
+
+		ExternalHandoff.open(s, OFF_THE_SCREEN_THREAD, video(), "video/mp4",
+				() -> refused.add("first"), () -> noApp.add("first"));
+		ExternalHandoff.open(s, OFF_THE_SCREEN_THREAD, jpeg(), "image/jpeg",
+				() -> refused.add("second"), () -> noApp.add("second"));
+		ExternalHandoff.open(s, OFF_THE_SCREEN_THREAD, dex(), "audio/mpeg",
+				() -> refused.add("third"), () -> noApp.add("third"));
+		shadowOf(Looper.getMainLooper()).idle();
+
+		assertEquals(Arrays.asList("second"), noApp);
+		assertEquals(Arrays.asList("third"), refused);
+		assertTrue(viewsStartedBy(s).isEmpty());
+		assertNull(ExternalHandoff.current());
+		String[] left = dir().list();
+		assertTrue("a copy was left: " + Arrays.toString(left),
+				left == null || left.length == 0);
 	}
 }

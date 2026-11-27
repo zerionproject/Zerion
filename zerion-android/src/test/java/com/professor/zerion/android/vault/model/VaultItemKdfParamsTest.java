@@ -54,6 +54,28 @@ public class VaultItemKdfParamsTest {
 	}
 
 	@Test
+	public void itemMetadataKeepsThePortableCap() {
+		int[] refused = {256 * 1024 + 1, 512 * 1024, 1024 * 1024};
+		for (int memoryKb : refused) {
+			VaultItem item = VaultItem.createNewWithPassword(
+					VaultItem.ItemType.WALLET, "BTC\nMain", 32,
+					bytes(48, 1), bytes(12, 2), bytes(32, 3),
+					memoryKb, 1, 1);
+			try {
+				VaultItem.deserializeMetadata(item.serializeMetadata());
+				org.junit.Assert.fail(memoryKb + " KB must be refused");
+			} catch (IllegalArgumentException expected) {
+			}
+		}
+		VaultItem max = VaultItem.createNewWithPassword(
+				VaultItem.ItemType.WALLET, "BTC\nMain", 32,
+				bytes(48, 1), bytes(12, 2), bytes(32, 3),
+				256 * 1024, 3, 1);
+		assertEquals(256 * 1024, VaultItem.deserializeMetadata(
+				max.serializeMetadata()).extraPasswordMemoryKb);
+	}
+
+	@Test
 	public void legacyVersionOneDefaultsTo256MbParams() {
 		VaultItem legacy = VaultItem.createNew(
 				VaultItem.ItemType.WALLET, "BTC\nOld", 32,

@@ -22,6 +22,7 @@ import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.view.textclassifier.TextClassifier;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -152,9 +153,11 @@ public class UiUtils {
 
 	public static String getContactDisplayName(Author author,
 			@Nullable String alias) {
-		String name = author.getName();
+		String name = DisplayNames.clean(author.getName());
+		if (name.trim().isEmpty()) name = DisplayNames.PLACEHOLDER;
 		if (alias == null) return name;
-		else return String.format("%s (%s)", alias, name);
+		else return String.format("%s (%s)", DisplayNames.isolate(alias),
+				DisplayNames.isolate(name));
 	}
 
 	public static String getContactDisplayName(Contact c) {
@@ -254,8 +257,13 @@ public class UiUtils {
 		return HtmlCompat.fromHtml(s, HtmlCompat.FROM_HTML_MODE_LEGACY);
 	}
 
+	public static void keepLinkActionsInApp(@Nullable TextView v) {
+		if (v != null) v.setTextClassifier(TextClassifier.NO_OP);
+	}
+
 	public static void makeLinksClickable(TextView v,
 			Consumer<String> onLinkClicked) {
+		keepLinkActionsInApp(v);
 		SpannableStringBuilder ssb = new SpannableStringBuilder(v.getText());
 		URLSpan[] spans = ssb.getSpans(0, ssb.length(), URLSpan.class);
 		for (URLSpan span : spans) {

@@ -119,6 +119,39 @@
 
 				</LinearLayout>
 
+				<View
+					android:layout_width="1dp"
+					android:layout_height="36dp"
+					android:layout_gravity="center_vertical"
+					android:background="@color/zerion_divider" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical"
+					android:gravity="center">
+
+					<TextView
+						android:id="@+id/bookmarks_count"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:textSize="26sp"
+						android:textStyle="bold"
+						android:textColor="@color/zerion_accent_large_text"
+						tools:text="0" />
+
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="2dp"
+						android:text="@string/vault_card_bookmarks_title"
+						android:textSize="11sp"
+						android:letterSpacing="0.05"
+						android:textColor="@color/zerion_text_secondary" />
+
+				</LinearLayout>
+
 			</LinearLayout>
 
 			<GridLayout
@@ -126,7 +159,7 @@
 				android:layout_height="wrap_content"
 				android:layout_marginTop="14dp"
 				android:columnCount="2"
-				android:rowCount="2"
+				android:rowCount="3"
 				android:alignmentMode="alignMargins"
 				android:columnOrderPreserved="false"
 				android:rowOrderPreserved="false">
@@ -363,6 +396,53 @@
 						android:text="@string/wallet_card_summary"
 						android:textSize="12sp"
 						android:visibility="gone"
+						android:textColor="@color/zerion_text_secondary" />
+
+				</LinearLayout>
+
+				<LinearLayout
+					android:id="@+id/bookmarks_card"
+					android:layout_width="0dp"
+					android:layout_height="148dp"
+					android:layout_columnWeight="1"
+					android:layout_margin="6dp"
+					android:orientation="vertical"
+					android:padding="18dp"
+					android:background="@drawable/bg_settings_group"
+					android:foreground="?attr/selectableItemBackground"
+					android:clickable="true"
+					android:focusable="true">
+
+					<FrameLayout
+						android:layout_width="44dp"
+						android:layout_height="44dp"
+						android:background="@drawable/bg_vault_card_blue">
+
+						<ImageView
+							android:layout_width="22dp"
+							android:layout_height="22dp"
+							android:layout_gravity="center"
+							android:src="@drawable/ic_bookmark"
+							app:tint="@color/zerion_accent_icon"
+							android:importantForAccessibility="no" />
+
+					</FrameLayout>
+
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="14dp"
+						android:text="@string/vault_card_bookmarks_title"
+						android:textSize="16sp"
+						android:textStyle="bold"
+						android:textColor="@color/zerion_text_primary" />
+
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="2dp"
+						android:text="@string/vault_card_bookmarks_subtitle"
+						android:textSize="12sp"
 						android:textColor="@color/zerion_text_secondary" />
 
 				</LinearLayout>

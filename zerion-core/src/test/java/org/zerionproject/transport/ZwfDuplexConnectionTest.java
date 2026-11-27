@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -194,6 +195,128 @@ public class ZwfDuplexConnectionTest {
 		assertNotNull("bob should have learned alice's ML-KEM key",
 				bob.currentMode3FullState().getTheirActivePqPk());
 	}
+
+	@Test(timeout = 120_000)
+	public void anUnknownTagCostsOneBoundedSearchPerContactAndInterval()
+			throws Exception {
+		byte[] rootBytes = new byte[SecretKey.LENGTH];
+		crypto.getSecureRandom().nextBytes(rootBytes);
+		SecretKey rootKey = new SecretKey(rootBytes);
+		java.util.concurrent.atomic.AtomicLong now =
+				new java.util.concurrent.atomic.AtomicLong(1_000_000L);
+		ZwfStreamCounter counter =
+				new ZwfStreamCounter(new MemStore(), now::get);
+		int epochs = sessionFactory.deriveSession(rootKey, false)
+				.getRecvKeys().size();
+
+		long first = costOfAnUnknownTag(rootKey, counter);
+		assertTrue("the first unknown tag is searched for", first > 0);
+		assertTrue("the search is bounded",
+				first <= ZwfDuplexConnection.MAX_RECV_STREAM_GAP * epochs);
+
+		assertEquals("a second unknown tag within the interval costs nothing",
+				0, costOfAnUnknownTag(rootKey, counter));
+		assertEquals(0, costOfAnUnknownTag(rootKey, counter));
+
+		now.addAndGet(ZwfStreamCounter.BEYOND_WINDOW_SEARCH_INTERVAL_MS);
+		assertTrue("the search runs again after the interval",
+				costOfAnUnknownTag(rootKey, counter) > 0);
+
+		assertTrue(counter.startBeyondWindowSearch(9));
+		assertFalse(counter.startBeyondWindowSearch(9));
+		counter.beyondWindowSearchMatched(9, 1L);
+		assertTrue("a search that found its tag holds nothing back",
+				counter.startBeyondWindowSearch(9));
+	}
+
+	@Test(timeout = 120_000)
+	public void aStreamAlreadyFoundBySearchIsTakenWithoutSearchingAgain()
+			throws Exception {
+		byte[] rootBytes = new byte[SecretKey.LENGTH];
+		crypto.getSecureRandom().nextBytes(rootBytes);
+		SecretKey rootKey = new SecretKey(rootBytes);
+		java.util.concurrent.atomic.AtomicLong now =
+				new java.util.concurrent.atomic.AtomicLong(1_000_000L);
+		ZwfStreamCounter bobCounter =
+				new ZwfStreamCounter(new MemStore(), now::get);
+		assertTrue(costOfAnUnknownTag(rootKey, bobCounter) > 0);
+		long ahead = 5000;
+		bobCounter.beyondWindowSearchMatched(2, ahead + 1);
+
+		java.util.concurrent.atomic.AtomicLong macs =
+				new java.util.concurrent.atomic.AtomicLong();
+		CryptoComponent counting = countingMacs(macs);
+		PipedOutputStream aOut = new PipedOutputStream();
+		PipedInputStream bIn = new PipedInputStream(aOut, 1 << 20);
+		MemStore aliceStore = new MemStore();
+		aliceStore.storeHighWater(1,
+				org.zerionproject.wire.ZwfConstants.DIRECTION_SEND, ahead);
+		ZwfDuplexConnection alice = new ZwfDuplexConnection(1,
+				sessionFactory.deriveSession(rootKey, true),
+				new ZwfStreamCounter(aliceStore), crypto, ratchet,
+				mode3FullRatchet, cipherFactory(),
+				new java.io.ByteArrayInputStream(new byte[0]), aOut);
+		ZwfDuplexConnection bob = new ZwfDuplexConnection(2,
+				sessionFactory.deriveSession(rootKey, false), bobCounter,
+				counting, ratchet, mode3FullRatchet, cipherFactory(), bIn,
+				new java.io.ByteArrayOutputStream());
+		alice.sendMessage("found".getBytes(StandardCharsets.UTF_8));
+		long before = macs.get();
+		assertEquals("found", new String(bob.receiveMessage(),
+				StandardCharsets.UTF_8));
+		assertTrue("the stream found by the inbound search was searched for"
+				+ " again", macs.get() - before < ahead / 2);
+	}
+
+	private CryptoComponent countingMacs(
+			java.util.concurrent.atomic.AtomicLong macs) {
+		return (CryptoComponent) java.lang.reflect.Proxy.newProxyInstance(
+				CryptoComponent.class.getClassLoader(),
+				new Class<?>[] {CryptoComponent.class},
+				(proxy, method, args) -> {
+					if (method.getName().equals("mac")) macs.incrementAndGet();
+					try {
+						return method.invoke(crypto, args);
+					} catch (java.lang.reflect.InvocationTargetException e) {
+						throw e.getCause();
+					}
+				});
+	}
+
+	private long costOfAnUnknownTag(SecretKey rootKey, ZwfStreamCounter counter)
+			throws Exception {
+		java.util.concurrent.atomic.AtomicLong macs =
+				new java.util.concurrent.atomic.AtomicLong();
+		CryptoComponent counting = (CryptoComponent) java.lang.reflect.Proxy
+				.newProxyInstance(CryptoComponent.class.getClassLoader(),
+						new Class<?>[] {CryptoComponent.class},
+						(proxy, method, args) -> {
+							if (method.getName().equals("mac")) {
+								macs.incrementAndGet();
+							}
+							try {
+								return method.invoke(crypto, args);
+							} catch (java.lang.reflect.InvocationTargetException e) {
+								throw e.getCause();
+							}
+						});
+		byte[] garbage = new byte[FRAME_BYTES_FOR_GARBAGE];
+		crypto.getSecureRandom().nextBytes(garbage);
+		ZwfDuplexConnection c = new ZwfDuplexConnection(2,
+				sessionFactory.deriveSession(rootKey, false), counter, counting,
+				ratchet, mode3FullRatchet, cipherFactory(),
+				new java.io.ByteArrayInputStream(garbage),
+				new java.io.ByteArrayOutputStream());
+		long before = macs.get();
+		try {
+			c.receiveMessage();
+			fail("an unknown tag must be refused");
+		} catch (org.zerionproject.core.api.FormatException expected) {
+		}
+		return macs.get() - before;
+	}
+
+	private static final int FRAME_BYTES_FOR_GARBAGE = 8192;
 
 	private ZwfDuplexConnection[] pairWithSenderAhead(long senderSendHighWater)
 			throws Exception {

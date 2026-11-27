@@ -11,4 +11,8 @@ public interface AttachmentReader {
 	Attachment getAttachment(Transaction txn, AttachmentHeader h)
 			throws DbException;
 
+	default long getStoredSize(AttachmentHeader h) throws DbException {
+		return -1L;
+	}
+
 }

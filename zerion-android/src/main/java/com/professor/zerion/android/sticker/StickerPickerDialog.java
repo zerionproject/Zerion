@@ -82,8 +82,10 @@ public class StickerPickerDialog extends BottomSheetDialogFragment {
 		ZerionApplication app =
 				(ZerionApplication) context.getApplicationContext();
 		ioExecutor = app.getApplicationComponent().ioExecutor();
-		storage = new StickerStorage(app.getApplicationComponent()
-				.profileStorage().stickerDir());
+		com.professor.zerion.android.profile.ProfileStorage profiles =
+				app.getApplicationComponent().profileStorage();
+		storage = new StickerStorage(profiles.stickerDir(),
+				profiles.preferences());
 		importer = new StickerImporter(storage);
 	}
 

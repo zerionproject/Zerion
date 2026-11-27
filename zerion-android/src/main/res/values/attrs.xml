@@ -66,6 +66,7 @@
 		<attr name="textPaddingBottom" format="dimension"/>
 		<attr name="textPaddingEnd" format="dimension"/>
 		<attr name="maxTextLines" format="integer"/>
+		<attr name="inputTextBackground" format="reference|color"/>
 	</declare-styleable>
 
 	<declare-styleable name="TextInputView">

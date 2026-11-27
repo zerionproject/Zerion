@@ -43,6 +43,8 @@ public class VaultDashboardFragment extends BaseFragment {
 	private View documentsCard;
 	private View passwordsCard;
 	private View walletCard;
+	private View bookmarksCard;
+	private TextView bookmarksCount;
 
 	public static VaultDashboardFragment newInstance() {
 		return new VaultDashboardFragment();
@@ -67,6 +69,8 @@ public class VaultDashboardFragment extends BaseFragment {
 		documentsCard = view.findViewById(R.id.documents_card);
 		passwordsCard = view.findViewById(R.id.passwords_card);
 		walletCard = view.findViewById(R.id.wallet_card);
+		bookmarksCard = view.findViewById(R.id.bookmarks_card);
+		bookmarksCount = view.findViewById(R.id.bookmarks_count);
 
 		return view;
 	}
@@ -92,8 +96,14 @@ public class VaultDashboardFragment extends BaseFragment {
 
 	private void checkVaultState() {
 		viewModel.refreshVaultState();
-		VaultViewModel.VaultState currentState = viewModel.getVaultState().getValue();
+		leaveIfGated(viewModel.getVaultState().getValue());
+	}
 
+	private boolean gateCommitted = false;
+
+	private void leaveIfGated(
+			@Nullable VaultViewModel.VaultState currentState) {
+		if (gateCommitted || isRemoving() || !isAdded()) return;
 		boolean gated = currentState == VaultViewModel.VaultState.NOT_CREATED
 				|| currentState == VaultViewModel.VaultState.LOCKED;
 		View root = getView();
@@ -106,6 +116,7 @@ public class VaultDashboardFragment extends BaseFragment {
 			containerId = ((android.view.ViewGroup) root.getParent()).getId();
 		}
 		if (containerId == View.NO_ID) return;
+		gateCommitted = true;
 		if (currentState == VaultViewModel.VaultState.NOT_CREATED) {
 			VaultOnboardingFragment f = VaultOnboardingFragment.newInstance();
 			UiUtils.showFragment(getParentFragmentManager(), f,
@@ -132,6 +143,10 @@ public class VaultDashboardFragment extends BaseFragment {
 
 		passwordsCard.setOnClickListener(v -> {
 			showNextFragment(VaultPasswordsFragment.newInstance());
+		});
+
+		bookmarksCard.setOnClickListener(v -> {
+			showNextFragment(VaultBookmarksFragment.newInstance());
 		});
 
 		if (walletCard != null) {
@@ -318,10 +333,20 @@ public class VaultDashboardFragment extends BaseFragment {
 		viewModel.getVaultState().observe(getViewLifecycleOwner(), state -> {
 			if (state == VaultViewModel.VaultState.UNLOCKED) {
 				viewModel.loadVaultItems();
+			} else if (isResumed()) {
+				leaveIfGated(state);
 			}
 		});
 
 		viewModel.getVaultItems().observe(getViewLifecycleOwner(), items -> {
+			if (items != null) {
+				updateCounts(items);
+			}
+		});
+
+		viewModel.getBookmarks().observe(getViewLifecycleOwner(), bookmarks -> {
+			java.util.List<com.professor.zerion.android.vault.model.VaultItem>
+					items = viewModel.getVaultItems().getValue();
 			if (items != null) {
 				updateCounts(items);
 			}
@@ -396,6 +421,14 @@ public class VaultDashboardFragment extends BaseFragment {
 		notesCount.setText(String.valueOf(notes));
 		imagesCount.setText(String.valueOf(media));
 		docsCount.setText(String.valueOf(docs));
+
+		java.util.Map<String, String> bookmarks =
+				viewModel.getBookmarks().getValue();
+		java.util.Set<String> bookmarkIds = bookmarks == null
+				? java.util.Collections.<String>emptySet() : bookmarks.keySet();
+		int saved = com.professor.zerion.android.vault.util.BookmarkRules
+				.bookmarks(items, bookmarkIds).size();
+		bookmarksCount.setText(String.valueOf(saved));
 	}
 
 	private void showToast(String message) {
@@ -410,6 +443,7 @@ public class VaultDashboardFragment extends BaseFragment {
 		galleryCard.setAlpha(0f);
 		documentsCard.setAlpha(0f);
 		passwordsCard.setAlpha(0f);
+		bookmarksCard.setAlpha(0f);
 
 		View statsCard = getView().findViewById(R.id.stats_card);
 		if (statsCard != null) {
@@ -422,6 +456,7 @@ public class VaultDashboardFragment extends BaseFragment {
 		animateCard(galleryCard, delay * 2);
 		animateCard(documentsCard, delay * 3);
 		animateCard(passwordsCard, delay * 4);
+		animateCard(bookmarksCard, delay * 5);
 	}
 
 	private void animateCard(View card, int delay) {

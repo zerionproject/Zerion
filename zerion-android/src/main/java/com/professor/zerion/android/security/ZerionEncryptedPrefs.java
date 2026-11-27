@@ -204,16 +204,33 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 				}
 			}
 		}
-		KeyGenerator gen = KeyGenerator.getInstance(
-				KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE);
-		KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(
-				alias,
-				KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
-				.setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-				.setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-				.setKeySize(256);
-		gen.init(builder.build());
-		return gen.generateKey();
+		GeneralSecurityException last = null;
+		for (boolean strongBox : strongBoxFirst()) {
+			KeyGenParameterSpec.Builder builder =
+					new KeyGenParameterSpec.Builder(alias,
+							KeyProperties.PURPOSE_ENCRYPT
+									| KeyProperties.PURPOSE_DECRYPT)
+							.setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+							.setEncryptionPaddings(
+									KeyProperties.ENCRYPTION_PADDING_NONE)
+							.setKeySize(256);
+			if (strongBox) builder.setIsStrongBoxBacked(true);
+			try {
+				KeyGenerator gen = KeyGenerator.getInstance(
+						KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE);
+				gen.init(builder.build());
+				return gen.generateKey();
+			} catch (GeneralSecurityException e) {
+				last = e;
+			} catch (RuntimeException e) {
+				last = new GeneralSecurityException(e);
+			}
+		}
+		throw last == null ? new GeneralSecurityException() : last;
+	}
+
+	static boolean[] strongBoxFirst() {
+		return new boolean[] {false};
 	}
 
 	private static SecretKey getOrCreateHmacKey()
@@ -243,11 +260,25 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 				}
 			}
 		}
-		KeyGenerator gen = KeyGenerator.getInstance(
-				KeyProperties.KEY_ALGORITHM_HMAC_SHA256, ANDROID_KEYSTORE);
-		gen.init(new KeyGenParameterSpec.Builder(KEYNAME_HMAC_ALIAS,
-				KeyProperties.PURPOSE_SIGN).build());
-		return gen.generateKey();
+		GeneralSecurityException last = null;
+		for (boolean strongBox : strongBoxFirst()) {
+			KeyGenParameterSpec.Builder builder =
+					new KeyGenParameterSpec.Builder(KEYNAME_HMAC_ALIAS,
+							KeyProperties.PURPOSE_SIGN);
+			if (strongBox) builder.setIsStrongBoxBacked(true);
+			try {
+				KeyGenerator gen = KeyGenerator.getInstance(
+						KeyProperties.KEY_ALGORITHM_HMAC_SHA256,
+						ANDROID_KEYSTORE);
+				gen.init(builder.build());
+				return gen.generateKey();
+			} catch (GeneralSecurityException e) {
+				last = e;
+			} catch (RuntimeException e) {
+				last = new GeneralSecurityException(e);
+			}
+		}
+		throw last == null ? new GeneralSecurityException() : last;
 	}
 
 	@Nullable

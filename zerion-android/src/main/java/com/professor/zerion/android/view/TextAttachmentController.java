@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.widget.CompoundButton;
 import android.widget.Toast;
 
 import com.professor.zerion.R;
@@ -13,6 +14,8 @@ import com.professor.zerion.android.attachment.AttachmentItemResult;
 import com.professor.zerion.android.attachment.AttachmentManager;
 import com.professor.zerion.android.attachment.AttachmentResult;
 import com.professor.zerion.android.view.ImagePreview.ImagePreviewListener;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.messaging.ViewOnceMedia;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -29,6 +32,7 @@ import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 import uk.co.samuelwall.materialtaptargetprompt.MaterialTapTargetPrompt;
 
 import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
 import static android.widget.Toast.LENGTH_LONG;
 import static androidx.core.content.ContextCompat.getColor;
 import static androidx.customview.view.AbsSavedState.EMPTY_STATE;
@@ -50,6 +54,9 @@ public class TextAttachmentController extends TextSendController
 
 	private final List<Uri> imageUris = new ArrayList<>();
 	private boolean loadingUris = false;
+	private final CompoundButton viewOnceToggle;
+	private boolean viewOnceAvailable = false;
+	private boolean viewOnceOffline = false;
 
 	public TextAttachmentController(TextInputView v, ImagePreview imagePreview,
 			AttachmentListener attachmentListener,
@@ -59,6 +66,14 @@ public class TextAttachmentController extends TextSendController
 		this.imagePreview = imagePreview;
 		this.attachmentManager = attachmentManager;
 		this.imagePreview.setImagePreviewListener(this);
+		viewOnceToggle = imagePreview.findViewById(R.id.viewOnceToggle);
+		viewOnceToggle.setOnCheckedChangeListener((b, checked) -> {
+			if (checked && !textIsEmpty) {
+				b.setChecked(false);
+				return;
+			}
+			updateViewState();
+		});
 
 		sendButton = (CompositeSendButton) compositeSendButton;
 		sendButton.setOnAttachmentClickListener(view -> onImageButtonClicked());
@@ -76,8 +91,55 @@ public class TextAttachmentController extends TextSendController
 		sendButton.setOnVoiceClickListener(listener);
 	}
 
+	public void setViewOnceAvailable(boolean available, boolean offline) {
+		viewOnceAvailable = available;
+		viewOnceOffline = offline;
+		viewOnceToggle.setText(offline ? R.string.view_once_offline
+				: R.string.view_once);
+		updateViewState();
+	}
+
+	boolean isViewOnceOffered() {
+		if (!viewOnceAvailable || viewOnceOffline || loadingUris
+				|| imageUris.size() != 1
+				|| !attachmentManager.hasValidAttachments()) {
+			return false;
+		}
+		List<AttachmentHeader> headers =
+				attachmentManager.getAttachmentHeadersForSending();
+		return headers.size() == 1
+				&& ViewOnceMedia.isAllowedType(headers.get(0).getContentType());
+	}
+
+	boolean isViewOnceChosen() {
+		return viewOnceToggle.isChecked() && isViewOnceOffered();
+	}
+
+	private void updateViewOnceToggle() {
+		boolean offered = isViewOnceOffered();
+		boolean shown = offered || (viewOnceOffline && viewOnceAvailable
+				&& imageUris.size() == 1 && !loadingUris);
+		if (!offered || !textIsEmpty) viewOnceToggle.setChecked(false);
+		viewOnceToggle.setVisibility(shown ? VISIBLE : GONE);
+		viewOnceToggle.setEnabled(offered
+				&& (textIsEmpty || viewOnceToggle.isChecked()));
+	}
+
+	@Override
+	public void onTextIsEmptyChanged(boolean isEmpty) {
+		if (!isEmpty && viewOnceToggle.isChecked()) {
+			textInput.post(textInput::clearText);
+			return;
+		}
+		super.onTextIsEmptyChanged(isEmpty);
+	}
+
 	@Override
 	protected void updateViewState() {
+		if (viewOnceToggle != null) {
+			updateViewOnceToggle();
+			textInput.setLocked(viewOnceToggle.isChecked());
+		}
 		super.updateViewState();
 		if (loadingUris) {
 			sendButton.showProgress(true);
@@ -92,7 +154,8 @@ public class TextAttachmentController extends TextSendController
 
 	@Override
 	protected boolean isTextInputEnabled() {
-		return super.isTextInputEnabled() && !loadingUris;
+		return super.isTextInputEnabled() && !loadingUris
+				&& (viewOnceToggle == null || !viewOnceToggle.isChecked());
 	}
 
 	@Override
@@ -108,7 +171,9 @@ public class TextAttachmentController extends TextSendController
 
 	@Override
 	protected CharSequence getCurrentTextHint() {
-		if (imageUris.isEmpty()) {
+		if (viewOnceToggle != null && viewOnceToggle.isChecked()) {
+			return textInput.getContext().getString(R.string.view_once);
+		} else if (imageUris.isEmpty()) {
 			return super.getCurrentTextHint();
 		} else {
 			Context ctx = textInput.getContext();
@@ -124,9 +189,11 @@ public class TextAttachmentController extends TextSendController
 				onError(null);
 				return;
 			}
-			listener.onSendClick(textInput.getText(),
+			boolean once = isViewOnceChosen();
+			listener.onSendClick(once ? null : textInput.getText(),
 					attachmentManager.getAttachmentHeadersForSending(),
-					expectedTimer).observe(listener, this::onSendStateChanged);
+					expectedTimer, once)
+					.observe(listener, this::onSendStateChanged);
 		}
 	}
 
@@ -276,6 +343,7 @@ public class TextAttachmentController extends TextSendController
 		imagePreview.setVisibility(GONE);
 		imageUris.clear();
 		loadingUris = false;
+		viewOnceToggle.setChecked(false);
 		updateViewState();
 	}
 

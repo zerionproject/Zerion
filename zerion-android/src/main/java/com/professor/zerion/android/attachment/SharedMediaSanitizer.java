@@ -50,10 +50,16 @@ public class SharedMediaSanitizer {
 	private static final String WAV = "audio/wav";
 
 	private final Context context;
+	private final boolean received;
 	private final MetadataStripper stripper;
 	private final ContentResolver resolver;
 
 	public SharedMediaSanitizer(Context context) {
+		this(context, false);
+	}
+
+	public SharedMediaSanitizer(Context context, boolean received) {
+		this.received = received;
 		this.context = context.getApplicationContext();
 		this.stripper = new MetadataStripper(context);
 		this.resolver = this.context.getContentResolver();
@@ -104,7 +110,7 @@ public class SharedMediaSanitizer {
 
 	private Cleaned clean(Uri source, String declaredMime, byte[] data,
 			long maxBytes) throws IOException {
-		if (isPlainText(declaredMime, data)) {
+		if (isPlainText(declaredMime, data, !received)) {
 			return new Cleaned(AttachmentDocuments.TEXT, data);
 		}
 		if (GifMetadataStripper.isGif(data)) {
@@ -114,6 +120,14 @@ public class SharedMediaSanitizer {
 					throw MediaRefusedException.tooLarge(
 							"cleaned image too large");
 				}
+				long pixels = (long) ((gif[6] & 0xFF) | (gif[7] & 0xFF) << 8)
+						* ((gif[8] & 0xFF) | (gif[9] & 0xFF) << 8);
+				if (!com.professor.zerion.android.util.ReceivedImageGate
+						.isAcceptedFormat(gif) || pixels > com.professor
+						.zerion.android.util.ReceivedImageGate.MAX_PIXELS) {
+					throw MediaRefusedException.tooLarge(
+							"animation has too many frames or pixels");
+				}
 				return new Cleaned("image/gif", gif);
 			}
 		}
@@ -122,7 +136,9 @@ public class SharedMediaSanitizer {
 			String mime = reencodedType(declaredMime, data);
 			byte[] clean;
 			try {
-				clean = stripper.stripImageMetadataOrThrow(data, mime);
+				clean = received
+						? stripper.stripReceivedImageOrThrow(data, mime)
+						: stripper.stripImageMetadataOrThrow(data, mime);
 			} catch (IOException e) {
 				throw MediaRefusedException.cannotClean(e);
 			}
@@ -188,7 +204,9 @@ public class SharedMediaSanitizer {
 	@Nullable
 	private static byte[] rebuiltGif(byte[] data) {
 		try {
-			return GifMetadataStripper.withoutMetadata(data);
+			byte[] gif = GifMetadataStripper.withoutMetadata(data);
+			return com.professor.zerion.android.util.ReceivedImageGate
+					.gifFrames(gif) < 1 ? null : gif;
 		} catch (IOException e) {
 			return null;
 		}
@@ -264,6 +282,12 @@ public class SharedMediaSanitizer {
 		return MediaMagic.isRiffContainer(data)
 				&& !MediaMagic.isRiff(data, "WAVE")
 				&& !MediaMagic.isRiff(data, "AVI ");
+	}
+
+	static boolean isPlainText(String declaredMime, byte[] data,
+			boolean toSend) {
+		return isPlainText(declaredMime, data)
+				&& (!toSend || AttachmentDocuments.isSendableText(data));
 	}
 
 	static boolean isPlainText(String declaredMime, byte[] data) {

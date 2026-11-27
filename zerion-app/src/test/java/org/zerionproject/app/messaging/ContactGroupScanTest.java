@@ -182,7 +182,9 @@ public class ContactGroupScanTest extends BrambleTestCase {
 				device.getStreamingAttachmentWriter(),
 				identityManager,
 				device.getPrivateMessageValidator(),
-				device.getCryptoComponent());
+				device.getCryptoComponent(),
+				id -> {
+				});
 		before = new WholeGroupScans(db, clientHelper,
 				device.getMessagingManager());
 		busyGroup = device.getMessagingManager().getConversationId(busy);

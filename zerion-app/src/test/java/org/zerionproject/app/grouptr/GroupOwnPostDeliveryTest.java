@@ -54,8 +54,15 @@ public class GroupOwnPostDeliveryTest {
 		return node.manager.getOwnPostDeliveries(groupId).get(postId);
 	}
 
-	private MessageId copyTo(ContactId c) {
-		List<MessageId> copies = node.copiesTo(c);
+	private MessageId copyTo(ContactId c) throws Exception {
+		List<MessageId> copies = new ArrayList<>();
+		for (MessageId id : node.copiesTo(c)) {
+			BdfDictionary meta = node.metadata(id);
+			if (meta != null && Long.valueOf(32L).equals(
+					meta.getOptionalLong("messageType"))) {
+				copies.add(id);
+			}
+		}
 		assertEquals(1, copies.size());
 		return copies.get(0);
 	}

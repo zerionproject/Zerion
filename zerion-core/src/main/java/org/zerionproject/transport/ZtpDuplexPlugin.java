@@ -3,6 +3,7 @@ package org.zerionproject.transport;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
+import org.zerionproject.tor.TorWakePolicy;
 import org.zerionproject.tor.TorWrapper.Observer;
 import org.zerionproject.tor.TorWrapper.TorState;
 import org.zerionproject.core.api.contact.ContactId;
@@ -64,6 +65,7 @@ import static org.zerionproject.core.util.IoUtils.tryToClose;
 
 @NotNullByDefault
 class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
+		org.zerionproject.core.plugin.tor.InboxOnionAdapter,
 		TorClockSkewStatus,
 		org.zerionproject.core.api.plugin.TorEntryRelayStatus {
 
@@ -85,6 +87,8 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	private final B4OnionRotation b4OnionRotation;
 	private final EventBus eventBus;
 	private final TorOnionServiceControl onionServiceControl;
+	private final java.util.Set<String> powInboxes =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
 	private final org.zerionproject.core.plugin.tor.auth
 			.OnionClientAuthManagerImpl onionClientAuth;
 	private final AtomicBoolean used = new AtomicBoolean(false);
@@ -96,8 +100,17 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 			new EntryRelayHealth(this::reportEntryRelay);
 	private volatile LongSupplier clock =
 			() -> System.nanoTime() / 1_000_000L;
-	private final EventListener torSettingsListener = e -> {
-		if (isTorSettingsChange(e)) entryRelay.clear();
+	@Nullable
+	private final org.zerionproject.sync.ZppPacingPolicy pacingPolicy;
+	@Nullable
+	private final TorWakePolicy wakePolicy;
+	final EventListener torSettingsListener = e -> {
+		if (isTorSettingsChange(e)) {
+			entryRelay.clear();
+			Settings settings = ((SettingsUpdatedEvent) e).getSettings();
+			applyCoverTraffic(settings);
+			applyKeepAwake(settings);
+		}
 	};
 
 	ZtpDuplexPlugin(Executor ioExecutor, Executor wakefulIoExecutor,
@@ -109,6 +122,41 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 			TorOnionServiceControl onionServiceControl,
 			org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
 					onionClientAuth) {
+		this(ioExecutor, wakefulIoExecutor, taskScheduler, socketFactory, tor,
+				transport, poller, torRendezvousCrypto, callback,
+				b4OnionRotation, eventBus, onionServiceControl,
+				onionClientAuth, null);
+	}
+
+	ZtpDuplexPlugin(Executor ioExecutor, Executor wakefulIoExecutor,
+			TaskScheduler taskScheduler, SocketFactory socketFactory,
+			TorWrapper tor,
+			ZtpTorTransport transport, ZtpPoller poller,
+			TorRendezvousCrypto torRendezvousCrypto, PluginCallback callback,
+			B4OnionRotation b4OnionRotation, EventBus eventBus,
+			TorOnionServiceControl onionServiceControl,
+			org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
+					onionClientAuth,
+			@Nullable org.zerionproject.sync.ZppPacingPolicy pacingPolicy) {
+		this(ioExecutor, wakefulIoExecutor, taskScheduler, socketFactory, tor,
+				transport, poller, torRendezvousCrypto, callback,
+				b4OnionRotation, eventBus, onionServiceControl,
+				onionClientAuth, pacingPolicy, null);
+	}
+
+	ZtpDuplexPlugin(Executor ioExecutor, Executor wakefulIoExecutor,
+			TaskScheduler taskScheduler, SocketFactory socketFactory,
+			TorWrapper tor,
+			ZtpTorTransport transport, ZtpPoller poller,
+			TorRendezvousCrypto torRendezvousCrypto, PluginCallback callback,
+			B4OnionRotation b4OnionRotation, EventBus eventBus,
+			TorOnionServiceControl onionServiceControl,
+			org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
+					onionClientAuth,
+			@Nullable org.zerionproject.sync.ZppPacingPolicy pacingPolicy,
+			@Nullable TorWakePolicy wakePolicy) {
+		this.pacingPolicy = pacingPolicy;
+		this.wakePolicy = wakePolicy;
 		this.eventBus = eventBus;
 		this.onionServiceControl = onionServiceControl;
 		this.onionClientAuth = onionClientAuth;
@@ -228,6 +276,8 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 		if (settings.getBoolean(PREF_ACCOUNT_MOVED, false)) {
 			throw new PluginException();
 		}
+		applyCoverTraffic(settings);
+		applyKeepAwake(settings);
 		@Nullable String privateKey = settings.get(HS_PRIVATE_KEY_V3);
 		HiddenServiceProperties hs;
 		try {
@@ -364,6 +414,25 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	@Override
 	public boolean isUsingBridges() {
 		return transport.isUsingBridges();
+	}
+
+	private void applyCoverTraffic(Settings settings) {
+		boolean cover = settings.getBoolean(
+				TorConstants.PREF_TOR_COVER_TRAFFIC,
+				TorConstants.DEFAULT_PREF_TOR_COVER_TRAFFIC);
+		org.zerionproject.sync.ZppPacingPolicy policy = pacingPolicy;
+		if (policy != null) policy.setCoverTraffic(cover);
+		transport.setReducedConnectionPadding(!cover);
+	}
+
+	private void applyKeepAwake(Settings settings) {
+		TorWakePolicy policy = wakePolicy;
+		if (policy != null) policy.setKeepAwake(wantsKeepAwake(settings));
+	}
+
+	static boolean wantsKeepAwake(Settings settings) {
+		return settings.getBoolean(TorConstants.PREF_TOR_KEEP_AWAKE,
+				TorConstants.DEFAULT_PREF_TOR_KEEP_AWAKE);
 	}
 
 	static boolean isTorSettingsChange(Event e) {
@@ -508,6 +577,31 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	}
 
 	@Override
+	@Nullable
+	public RendezvousEndpoint createDialOnlyRendezvousEndpoint(
+			KeyMaterialSource k, boolean alice) {
+		byte[] aliceSeed = k.getKeyMaterial(SEED_BYTES);
+		byte[] bobSeed = k.getKeyMaterial(SEED_BYTES);
+		byte[] remoteSeed = alice ? bobSeed : aliceSeed;
+		String remoteOnion = torRendezvousCrypto.getOnion(remoteSeed);
+		java.util.Arrays.fill(aliceSeed, (byte) 0);
+		java.util.Arrays.fill(bobSeed, (byte) 0);
+		TransportProperties remoteProperties = new TransportProperties();
+		remoteProperties.put(PROP_ONION_V3, remoteOnion);
+		return new RendezvousEndpoint() {
+
+			@Override
+			public TransportProperties getRemoteTransportProperties() {
+				return remoteProperties;
+			}
+
+			@Override
+			public void close() {
+			}
+		};
+	}
+
+	@Override
 	public ChannelOnionHandle publishChannelOnion(String target,
 			@Nullable String privateKey) throws IOException {
 		HiddenServiceProperties hs = transport.publishHiddenService(target,
@@ -523,6 +617,53 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	@Override
 	public void removeChannelOnion(String onion) throws IOException {
 		transport.removeHiddenService(onion);
+	}
+
+	@Override
+	public boolean isConnected() {
+		return getState() == ACTIVE;
+	}
+
+	@Override
+	public String publishInboxOnion(String target, String privateKeyBlob,
+			byte[] clientAuthPublicKey) throws IOException {
+		if (getState() != ACTIVE) throw new IOException("Tor not connected");
+		TorOnionServiceControl.InboxPublished p =
+				onionServiceControl.publishInbox(privateKeyBlob, target,
+						REMOTE_ONION_PORT, clientAuthPublicKey);
+		if (p.powProtected) powInboxes.add(p.onion);
+		else powInboxes.remove(p.onion);
+		return p.onion;
+	}
+
+	@Override
+	public void removeInboxOnion(String onion) throws IOException {
+		powInboxes.remove(onion);
+		onionServiceControl.remove(onion);
+	}
+
+	@Override
+	public boolean isInboxPowProtected(String onion) {
+		return powInboxes.contains(onion);
+	}
+
+	@Override
+	public Socket connectToInbox(String onion, byte[] clientAuthPrivateKey)
+			throws IOException {
+		if (getState() != ACTIVE) throw new IOException("Tor not connected");
+		if (!ONION_V3.matcher(onion).matches()) {
+			throw new IOException("Not an onion");
+		}
+		onionServiceControl.addClientKey(onion, clientAuthPrivateKey);
+		Socket s = socketFactory.createSocket(onion + ".onion",
+				REMOTE_ONION_PORT);
+		configureSocket(s);
+		return s;
+	}
+
+	@Override
+	public void forgetInboxClientKey(String onion) throws IOException {
+		onionServiceControl.removeClientKey(onion);
 	}
 
 	private static void configureSocket(Socket s) throws IOException {

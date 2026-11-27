@@ -38,18 +38,13 @@ public class PanicResponderActivity extends ZerionActivity {
 		trustedIntents.addTrustedSigner(FDroidSignaturePin.class);
 
 		Intent intent = trustedIntents.getIntentFromTrustedSender(this);
-		if (intent != null) {
-			if (Panic.isTriggerIntent(intent)) {
-				if (new PanicSettingsStore(uiPrefs)
+		if (intent != null && Panic.isTriggerIntent(intent)
+				&& new PanicSettingsStore(uiPrefs)
 						.receivedTriggerFromConnectedApp(this)) {
-					if (uiPrefs.getBoolean(KEY_PURGE, false)) {
-						signOut(true, true);
-					} else if (uiPrefs.getBoolean(KEY_LOCK, true)) {
-						signOut(true, false);
-					}
-				} else if (uiPrefs.getBoolean(KEY_LOCK, true)) {
-					signOut(true, false);
-				}
+			if (uiPrefs.getBoolean(KEY_PURGE, false)) {
+				signOut(true, true);
+			} else if (uiPrefs.getBoolean(KEY_LOCK, true)) {
+				signOut(true, false);
 			}
 		}
 		finishAndRemoveTask();

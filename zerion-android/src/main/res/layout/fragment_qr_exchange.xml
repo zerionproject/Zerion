@@ -65,6 +65,17 @@
 		android:gravity="center"
 		android:padding="16dp">
 
+		<TextView
+			android:id="@+id/qrModeText"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginBottom="12dp"
+			android:gravity="center"
+			android:text="@string/scan_qr_mode_online"
+			android:textColor="@color/zerion_text_primary"
+			android:textSize="14sp"
+			android:textStyle="bold" />
+
 		<ImageView
 			android:id="@+id/qrCodeImage"
 			android:layout_width="180dp"

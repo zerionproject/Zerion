@@ -25,13 +25,17 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR;
+import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_RECV_ROTATION_INTERVAL;
 import static org.zerionproject.wire.ZwfConstants.FRAME_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.STREAM_HEADER_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.TAG_LENGTH;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -40,6 +44,7 @@ public class ZwfMode3FullStreamIntegrationTest {
 	private CryptoComponent crypto;
 	private PcsRatchet ratchet;
 	private Mode3FullRatchet mode3FullRatchet;
+	private MlKemProvider mlKemProvider;
 
 	@Before
 	public void setUp() throws Exception {
@@ -70,7 +75,7 @@ public class ZwfMode3FullStreamIntegrationTest {
 		Constructor<?> providerCtor = providerImpl.getDeclaredConstructor(
 				java.security.SecureRandom.class);
 		providerCtor.setAccessible(true);
-		MlKemProvider mlKemProvider = (MlKemProvider) providerCtor
+		mlKemProvider = (MlKemProvider) providerCtor
 				.newInstance(crypto.getSecureRandom());
 		Class<?> ratchetImpl = Class.forName(
 				"org.zerionproject.core.crypto.pcs.Mode3FullRatchetImpl");
@@ -247,6 +252,140 @@ public class ZwfMode3FullStreamIntegrationTest {
 				mode3FullRatchet, tag, 0L, streamHeaderKey, p.receiver, null);
 		int n = dec.readFrame(new byte[FRAME_LENGTH]);
 		assertEquals(0, n);
+	}
+
+	@Test
+	public void aPeerStuckOnOneOfOurKeyPairsIsCutOff() throws Exception {
+		SecretKey rootKey = randomKey();
+		SecretKey streamHeaderKey = randomKey();
+		byte[] tag = randomBytes(TAG_LENGTH);
+		Pair p = hybridPair(rootKey);
+
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ZwfMode3FullStreamEncrypter enc = new ZwfMode3FullStreamEncrypter(
+				out, cipher(), ratchet, mode3FullRatchet, 1L, tag,
+				randomBytes(24), streamHeaderKey, p.sender, null);
+		int frames = MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR + 1;
+		for (int i = 0; i < frames; i++) {
+			byte[] m = ("frame-" + i).getBytes();
+			enc.writeFrame(m, m.length, false);
+		}
+
+		ZwfMode3FullStreamDecrypter dec = new ZwfMode3FullStreamDecrypter(
+				new ByteArrayInputStream(out.toByteArray()), cipher(), ratchet,
+				mode3FullRatchet, tag, 0L, streamHeaderKey, p.receiver, null);
+		AtomicLong received = new AtomicLong();
+		dec.setReceivedSinceRotation(received);
+		byte[] buf = new byte[FRAME_LENGTH];
+		for (int i = 0; i < MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR; i++) {
+			assertTrue("frame " + i, dec.readFrame(buf) > 0);
+		}
+		assertEquals(MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR, received.get());
+		try {
+			dec.readFrame(buf);
+			fail("expected FormatException once the peer exceeds the limit");
+		} catch (FormatException expected) {
+		}
+		assertEquals(MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR, received.get());
+	}
+
+	@Test
+	public void theLimitCountsFramesInARowOnOneKeyPair() throws Exception {
+		SecretKey rootKey = randomKey();
+		SecretKey streamHeaderKey = randomKey();
+		byte[] tag = randomBytes(TAG_LENGTH);
+		Mode3FullState receiverInitial = mode3FullRatchet.createInitialState();
+		MlKemKeyPair next = mlKemProvider.generateKeyPair();
+		AtomicReference<Mode3FullState> receiverShared =
+				new AtomicReference<>(receiverInitial.withSendAdvance(next));
+		AtomicReference<Mode3FullState> senderShared = new AtomicReference<>(
+				mode3FullRatchet.createInitialState().withRecvAdvance(
+						receiverInitial.getOurActiveKeyPair()
+								.getEncapsulationKey()));
+
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ZwfMode3FullStreamEncrypter enc = new ZwfMode3FullStreamEncrypter(
+				out, cipher(), ratchet, mode3FullRatchet, 1L, tag,
+				randomBytes(24), streamHeaderKey,
+				stateWith(rootKey, senderShared.get()), null,
+				senderShared::get, senderShared::set, null, true);
+		int perKey = MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR;
+		for (int i = 0; i < 2 * perKey; i++) {
+			if (i == perKey) {
+				senderShared.set(senderShared.get()
+						.withRecvAdvance(next.getEncapsulationKey()));
+			}
+			byte[] m = ("frame-" + i).getBytes();
+			enc.writeFrame(m, m.length, false);
+		}
+
+		ZwfMode3FullStreamDecrypter dec = new ZwfMode3FullStreamDecrypter(
+				new ByteArrayInputStream(out.toByteArray()), cipher(), ratchet,
+				mode3FullRatchet, tag, 0L, streamHeaderKey,
+				stateWith(rootKey, receiverInitial), null,
+				receiverShared::get, receiverShared::set, null, true);
+		byte[] buf = new byte[FRAME_LENGTH];
+		for (int i = 0; i < 2 * perKey; i++) {
+			assertTrue("frame " + i, dec.readFrame(buf) > 0);
+			assertTrue("frame " + i, dec.lastFrameCarriedPqSecret());
+		}
+	}
+
+	@Test
+	public void openingSentinelFramesAreNotLimited() throws Exception {
+		SecretKey rootKey = randomKey();
+		SecretKey streamHeaderKey = randomKey();
+		byte[] tag = randomBytes(TAG_LENGTH);
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ZwfMode3FullStreamEncrypter enc = new ZwfMode3FullStreamEncrypter(
+				out, cipher(), ratchet, mode3FullRatchet, 1L, tag,
+				randomBytes(24), streamHeaderKey,
+				stateWith(rootKey, mode3FullRatchet.createInitialState()),
+				null);
+		int frames = MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR + 1;
+		for (int i = 0; i < frames; i++) {
+			byte[] m = ("cover-" + i).getBytes();
+			enc.writeFrame(m, m.length, false);
+		}
+
+		ZwfMode3FullStreamDecrypter dec = new ZwfMode3FullStreamDecrypter(
+				new ByteArrayInputStream(out.toByteArray()), cipher(), ratchet,
+				mode3FullRatchet, tag, 0L, streamHeaderKey,
+				stateWith(rootKey, mode3FullRatchet.createInitialState()),
+				null);
+		byte[] buf = new byte[FRAME_LENGTH];
+		for (int i = 0; i < frames; i++) {
+			assertTrue("frame " + i, dec.readFrame(buf) > 0);
+			assertFalse(dec.lastFrameCarriedPqSecret());
+		}
+	}
+
+	@Test
+	public void receivedFramesRotateOurKeyPairAtTheNextSend()
+			throws Exception {
+		SecretKey rootKey = randomKey();
+		Pair p = hybridPair(rootKey);
+		byte[] before = p.sender.getMode3FullState().getOurActiveKeyPair()
+				.getEncapsulationKey();
+
+		AtomicReference<PcsSessionState> last = new AtomicReference<>();
+		ZwfMode3FullStreamEncrypter enc = new ZwfMode3FullStreamEncrypter(
+				new ByteArrayOutputStream(), cipher(), ratchet,
+				mode3FullRatchet, 1L, randomBytes(TAG_LENGTH), randomBytes(24),
+				randomKey(), p.sender, last::set);
+		AtomicLong received =
+				new AtomicLong(MODE3_FULL_RECV_ROTATION_INTERVAL - 1);
+		enc.setReceivedSinceRotation(received);
+
+		enc.writeFrame("one".getBytes(), 3, false);
+		assertArrayEquals(before, last.get().getMode3FullState()
+				.getOurActiveKeyPair().getEncapsulationKey());
+
+		received.incrementAndGet();
+		enc.writeFrame("two".getBytes(), 3, false);
+		assertFalse(Arrays.equals(before, last.get().getMode3FullState()
+				.getOurActiveKeyPair().getEncapsulationKey()));
+		assertEquals(0, received.get());
 	}
 
 	@Test

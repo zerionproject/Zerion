@@ -45,6 +45,13 @@ public interface ContactManager {
 			@javax.annotation.Nullable byte[] peerMlDsaSigPublicKey)
 			throws DbException, GeneralSecurityException;
 
+	ContactId addContact(Transaction txn, PendingContactId p, Author remote,
+			AuthorId local, SecretKey rootKey, long timestamp, boolean alice,
+			boolean verified, boolean active,
+			@javax.annotation.Nullable byte[] peerMlDsaSigPublicKey,
+			@javax.annotation.Nullable Boolean peerReplacesKeys)
+			throws DbException, GeneralSecurityException;
+
 	ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			boolean verified) throws DbException;
 
@@ -84,6 +91,35 @@ public interface ContactManager {
 			@javax.annotation.Nullable String sharedOwnLink,
 			boolean reAddExisting, boolean verifiedInPerson)
 			throws DbException, FormatException, GeneralSecurityException;
+
+	PendingContact addPendingContactBoundToSharedLink(String link,
+			String alias, boolean reAddExisting, boolean verifiedInPerson)
+			throws DbException, FormatException, GeneralSecurityException;
+
+	PendingContact addPendingContactBoundToSharedLink(String link,
+			String alias, @javax.annotation.Nullable String shownOwnLink,
+			boolean reAddExisting, boolean verifiedInPerson)
+			throws DbException, FormatException, GeneralSecurityException;
+
+	PendingContact addPendingContactFromInvite(String link, String alias,
+			@javax.annotation.Nullable String sharedZeroId)
+			throws DbException, FormatException, GeneralSecurityException;
+
+	PendingContact addPendingContactFromInvite(String link, String alias,
+			@javax.annotation.Nullable String sharedZeroId,
+			boolean reAddExisting)
+			throws DbException, FormatException, GeneralSecurityException;
+
+	boolean intendsToReplaceKeys(Transaction txn, PendingContactId p)
+			throws DbException;
+
+	void recordPerAddLinkShared(String link)
+			throws DbException, FormatException;
+
+	void recordPerAddLinkShared(Transaction txn, String link, long sharedAt)
+			throws DbException, FormatException;
+
+	void registerPendingContactHook(PendingContactHook hook);
 
 	PendingContact getPendingContact(Transaction txn, PendingContactId p)
 			throws DbException;
@@ -140,11 +176,19 @@ public interface ContactManager {
 	boolean isConnectionOutOfSync(Transaction txn, ContactId c)
 			throws DbException;
 
+	boolean isConnectionRenewalStalled(ContactId c) throws DbException;
+
 	SecretKey deriveContactKey(ContactId c, String label, byte[]... inputs)
 			throws DbException;
 
 	SecretKey deriveContactKey(Transaction txn, ContactId c, String label,
 			byte[]... inputs) throws DbException;
+
+	interface PendingContactHook {
+
+		void convertingPendingContact(Transaction txn, PendingContactId p,
+				ContactId c) throws DbException;
+	}
 
 	interface ContactHook {
 

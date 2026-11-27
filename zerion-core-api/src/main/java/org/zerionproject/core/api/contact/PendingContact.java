@@ -17,6 +17,8 @@ public class PendingContact {
 	private final String alias;
 	private final long timestamp;
 	private final int formatVersion;
+	private final long expiry;
+	private final int rendezvousMode;
 
 	public PendingContact(PendingContactId id, PublicKey publicKey,
 			String alias, long timestamp) {
@@ -25,11 +27,19 @@ public class PendingContact {
 
 	public PendingContact(PendingContactId id, PublicKey publicKey,
 			String alias, long timestamp, int formatVersion) {
+		this(id, publicKey, alias, timestamp, formatVersion, 0, 0);
+	}
+
+	public PendingContact(PendingContactId id, PublicKey publicKey,
+			String alias, long timestamp, int formatVersion, long expiry,
+			int rendezvousMode) {
 		this.id = id;
 		this.publicKey = publicKey;
 		this.alias = alias;
 		this.timestamp = timestamp;
 		this.formatVersion = formatVersion;
+		this.expiry = expiry;
+		this.rendezvousMode = rendezvousMode;
 	}
 
 	public PendingContactId getId() {
@@ -50,6 +60,14 @@ public class PendingContact {
 
 	public int getFormatVersion() {
 		return formatVersion;
+	}
+
+	public long getExpiry() {
+		return expiry;
+	}
+
+	public int getRendezvousMode() {
+		return rendezvousMode;
 	}
 
 	public boolean isPostQuantum() {

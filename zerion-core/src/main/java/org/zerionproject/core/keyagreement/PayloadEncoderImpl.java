@@ -14,7 +14,9 @@ import java.io.IOException;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
+import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.CAPABILITY_KEY_SEPARATION;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
+import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_CAPABILITIES;
 
 @Immutable
 @NotNullByDefault
@@ -38,6 +40,10 @@ class PayloadEncoderImpl implements PayloadEncoder {
 		payload.add(p.getCommitment());
 		for (TransportDescriptor d : p.getTransportDescriptors()) {
 			payload.add(d.getDescriptor());
+		}
+		if (p.offersKeySeparation()) {
+			payload.add(BdfList.of((long) TRANSPORT_ID_CAPABILITIES,
+					(long) CAPABILITY_KEY_SEPARATION));
 		}
 		BdfWriter w = bdfWriterFactory.createWriter(out);
 		try {

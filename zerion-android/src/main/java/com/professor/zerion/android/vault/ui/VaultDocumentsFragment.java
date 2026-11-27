@@ -571,12 +571,10 @@ public class VaultDocumentsFragment extends BaseFragment {
 		intent.addCategory(Intent.CATEGORY_OPENABLE);
 		intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
 				"application/pdf",
-				"application/msword",
 				"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-				"application/vnd.ms-excel",
 				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-				"text/plain",
-				"application/zip"
+				"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+				"text/plain"
 		});
 
 		expectChildResult();
@@ -683,7 +681,9 @@ public class VaultDocumentsFragment extends BaseFragment {
 							byte[] content = outputStream.toByteArray();
 							outputStream.close();
 
-							showPasswordDialogForImport(fileName, content);
+							showPasswordDialogForImport(fileName, content,
+									requireContext().getContentResolver()
+											.getType(fileUri));
 						}
 					} catch (Exception e) {
 						showSnackbar(getString(R.string.vault_document_read_failed));
@@ -693,7 +693,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 		}
 	}
 
-	private void showPasswordDialogForImport(String fileName, byte[] content) {
+	private void showPasswordDialogForImport(String fileName, byte[] content,
+			@Nullable String mimeType) {
 		DocumentPasswordDialog dialog = DocumentPasswordDialog.newPasswordDialog(
 				getString(R.string.vault_document_protect_title),
 				getString(R.string.vault_document_protect_message_optional)
@@ -702,14 +703,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 		dialog.setCallback(new DocumentPasswordDialog.PasswordCallback() {
 			@Override
 			public void onPasswordEntered(@Nullable char[] password) {
-				viewModel.addDocumentWithPassword(fileName, content, password);
-				showSnackbar(password != null
-						? getString(R.string.vault_document_saved_with_password,
-								fileName)
-						: getString(R.string.vault_document_saved_securely,
-								fileName));
-
-				java.util.Arrays.fill(content, (byte) 0);
+				viewModel.addDocumentWithPassword(fileName, content, mimeType,
+						password);
 			}
 
 			@Override
@@ -769,6 +764,18 @@ public class VaultDocumentsFragment extends BaseFragment {
 				allItems.clear();
 				allItems.addAll(docItems);
 				applyFilterAndSort();
+			}
+		});
+		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), m -> {
+			if (m != null && !m.isEmpty()) {
+				showSnackbar(m);
+				viewModel.clearMessages();
+			}
+		});
+		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), m -> {
+			if (m != null && !m.isEmpty()) {
+				showSnackbar(m);
+				viewModel.clearMessages();
 			}
 		});
 	}

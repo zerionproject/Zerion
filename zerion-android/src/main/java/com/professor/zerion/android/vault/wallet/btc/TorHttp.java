@@ -1,5 +1,7 @@
 package com.professor.zerion.android.vault.wallet.btc;
 
+import com.professor.zerion.android.util.TlsProtocols;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.BufferedInputStream;
@@ -130,6 +132,7 @@ public final class TorHttp {
 			SSLSocket ssl = (SSLSocket) ((SSLSocketFactory)
 					SSLSocketFactory.getDefault())
 					.createSocket(socket, host, target.port, true);
+			TlsProtocols.restrict(ssl);
 			ssl.startHandshake();
 			if (!HttpsURLConnection.getDefaultHostnameVerifier()
 					.verify(host, ssl.getSession())) {
@@ -168,6 +171,9 @@ public final class TorHttp {
 		String host = uri.getHost();
 		if (host == null || host.isEmpty() || host.startsWith("[")
 				|| uri.getRawUserInfo() != null) {
+			return null;
+		}
+		if (!https && !host.toLowerCase(Locale.US).endsWith(".onion")) {
 			return null;
 		}
 		int port = uri.getPort();

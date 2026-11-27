@@ -8,8 +8,17 @@ import java.util.Collection;
 
 import javax.annotation.Nullable;
 
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_DELIVERABLE_MESSAGE_BODY_LENGTH;
+
 @NotNullByDefault
 public interface GroupTrManager {
+
+	int POST_RECORD_OVERHEAD_BYTES = 16 * 1024;
+
+	int MAX_POST_BODY_LENGTH =
+			MAX_DELIVERABLE_MESSAGE_BODY_LENGTH - POST_RECORD_OVERHEAD_BYTES;
+
+	int RELAY_ENVELOPE_BYTES = 10 * 1024;
 
 	@Nullable
 	GroupTrState getGroup(byte[] groupId) throws DbException;
@@ -88,6 +97,8 @@ public interface GroupTrManager {
 	java.util.List<GroupTrMember> getMembersOutOfReach(byte[] groupId)
 			throws DbException;
 
+	boolean ownerPassesPostsOn(byte[] groupId) throws DbException;
+
 	java.util.Map<String, GroupTrPostDelivery> getOwnPostDeliveries(
 			byte[] groupId) throws DbException;
 
@@ -157,6 +168,15 @@ public interface GroupTrManager {
 	void sendMemberListSnapshot(byte[] groupId) throws DbException;
 
 	void setGroupAutoDeleteTimer(byte[] groupId, long ms) throws DbException;
+
+	boolean canPin(byte[] groupId) throws DbException;
+
+	@Nullable
+	byte[] getPinnedPostId(byte[] groupId) throws DbException;
+
+	int pinPost(byte[] groupId, byte[] postId) throws DbException;
+
+	int unpinPost(byte[] groupId) throws DbException;
 
 	@Nullable
 	String getStealthName(byte[] groupId) throws DbException;

@@ -173,6 +173,12 @@ public class SettingsFragment extends Fragment {
 		if (supportCard != null) {
 			supportCard.setOnClickListener(v -> showDonationDialog());
 		}
+		View inviteLinksCard = view.findViewById(R.id.invite_links_card);
+		if (inviteLinksCard != null) {
+			inviteLinksCard.setOnClickListener(v -> startActivity(new Intent(
+					requireContext(), com.professor.zerion.android.contact
+					.request.InviteLinksActivity.class)));
+		}
 		if (inviteFriendsCard != null) {
 			inviteFriendsCard.setOnClickListener(v -> shareInvite());
 		}

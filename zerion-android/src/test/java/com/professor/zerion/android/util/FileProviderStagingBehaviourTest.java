@@ -55,7 +55,8 @@ public class FileProviderStagingBehaviourTest {
 			}
 		}
 		assertEquals(new HashSet<>(Arrays.asList("camera_photos/",
-				"vault_share/", "zenc_share/", ExternalHandoff.DIR + "/")),
+				"vault_share/", "zenc_share/",
+				CacheSweeper.CLEAN_SHARE_DIR + "/", ExternalHandoff.DIR + "/")),
 				cacheRoots);
 	}
 

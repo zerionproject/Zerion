@@ -1,5 +1,7 @@
 package com.professor.zerion.android.update;
 
+import com.professor.zerion.android.util.TlsProtocols;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.ByteArrayOutputStream;
@@ -100,6 +102,7 @@ final class TorHttpsGet {
 					SSLSocketFactory.getDefault()).createSocket(raw, host, port,
 					true);
 			ssl.setSoTimeout(remaining(READ_TIMEOUT_MS, deadlineMs, clock));
+			TlsProtocols.restrict(ssl);
 			ssl.startHandshake();
 			if (!HttpsURLConnection.getDefaultHostnameVerifier()
 					.verify(host, ssl.getSession())) {

@@ -85,7 +85,7 @@ class KeyAgreementConnector {
 				connectionChooser.submit(new ReadableTask(l::accept));
 			}
 		}
-		return new Payload(commitment, descriptors);
+		return new Payload(commitment, descriptors, true);
 	}
 
 	void stopListening() {

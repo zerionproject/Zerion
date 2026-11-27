@@ -68,7 +68,8 @@ public class ZppBulkLaneTest {
 		}, () -> true) {
 			@Override
 			public void enqueueRecord(byte[] record, boolean userOriginated,
-					boolean bulkLane, Runnable onSent) {
+					boolean opensWindow, int rank, boolean bulkLane,
+					Runnable onSent) {
 				lanes.add(bulkLane ? "bulk" : "small");
 			}
 		};
@@ -96,7 +97,7 @@ public class ZppBulkLaneTest {
 						new MessageId(getRandomId()), g,
 						NOW - 15 * 60_000L, new byte[10]);
 		LocalMessageLog localMessages = new LocalMessageLog(() -> NOW);
-		localMessages.noteLocal(old.getId());
+		localMessages.noteUserMessage(old.getId());
 		ZppOutgoingSource source = new ZppOutgoingSource(null, Runnable::run,
 				null, null, null, null,
 				new org.zerionproject.core.api.contact.ContactId(1), 60_000,
@@ -112,7 +113,7 @@ public class ZppBulkLaneTest {
 		long[] now = {NOW};
 		LocalMessageLog log = new LocalMessageLog(() -> now[0]);
 		MessageId id = new MessageId(getRandomId());
-		log.noteLocal(id);
+		log.noteUserMessage(id);
 		now[0] = NOW + LocalMessageLog.FRESH_MESSAGE_MS + 1;
 		assertFalse(log.takeFirstSend(id));
 	}
@@ -145,8 +146,10 @@ public class ZppBulkLaneTest {
 		}, () -> true) {
 			@Override
 			public void enqueueRecord(byte[] record, boolean userOriginated,
-					boolean bulkLane, Runnable onSent) {
-				super.enqueueRecord(record, userOriginated, bulkLane, onSent);
+					boolean opensWindow, int rank, boolean bulkLane,
+					Runnable onSent) {
+				super.enqueueRecord(record, userOriginated, opensWindow, rank,
+						bulkLane, onSent);
 				if (!bulkLane) small.add(record);
 			}
 		};
@@ -202,8 +205,9 @@ public class ZppBulkLaneTest {
 
 		source.eventOccurred(new MessageRequestedEvent(CONTACT));
 		long batchCapacity = (RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2L;
-		assertEquals("an empty lane allows the whole lane",
-				Math.min(batchCapacity, 512L * FRAME_RECORD_BYTES),
+		assertEquals("an empty lane allows the whole lane or one whole record",
+				Math.min(batchCapacity, Math.max(512L * FRAME_RECORD_BYTES,
+						ZmmConstants.MAX_RECORD_BYTES)),
 				capacity.get());
 
 		for (int i = 0; i < 512; i++) {

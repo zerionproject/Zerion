@@ -44,7 +44,7 @@ public class B3PqProofTest {
 		byte[] sessionFromB = B3PqProof.computeSessionId(ephB, ephA);
 		assertArrayEquals("Both sides must derive the same sessionId",
 				sessionFromA, sessionFromB);
-		assertEquals("sessionId is BLAKE2b-256 — 32 bytes",
+		assertEquals("sessionId is BLAKE2b-256, 32 bytes",
 				32, sessionFromA.length);
 	}
 

@@ -141,7 +141,7 @@ public class SqlCipherOpenPolicyTest {
 				out.write(suffix.getBytes());
 			}
 		}
-		assertTrue(SqlCipherRecoveryFiles.quarantine(db, 1234L));
+		assertTrue(SqlCipherRecoveryFiles.quarantine(db, "1234"));
 		assertFalse(db.exists());
 		assertFalse(new File(db.getPath() + "-wal").exists());
 		for (String suffix : new String[] {"", "-wal", "-shm", "-journal"}) {
@@ -150,6 +150,44 @@ public class SqlCipherOpenPolicyTest {
 			assertEquals(suffix,
 					new String(Files.readAllBytes(moved.toPath())));
 		}
+	}
+
+	@Test
+	public void testQuarantineUsesARandomTagNotATimestamp() throws Exception {
+		File dir = Files.createTempDirectory("zerion-db").toFile();
+		File db = new File(dir, "db.sqlite");
+		assertTrue(db.createNewFile());
+		assertTrue(SqlCipherRecoveryFiles.quarantine(db));
+		String[] names = dir.list();
+		assertEquals(1, names.length);
+		String tag = names[0].substring("db.sqlite.incomplete-".length());
+		assertEquals(16, tag.length());
+		assertTrue(tag, tag.matches("[0-9a-f]{16}"));
+		assertFalse(SqlCipherRecoveryFiles.randomSuffix()
+				.equals(SqlCipherRecoveryFiles.randomSuffix()));
+	}
+
+	@Test
+	public void testQuarantinedFilesAreShreddedOnceTheNewDatabaseIsSetUp()
+			throws Exception {
+		File dir = Files.createTempDirectory("zerion-db").toFile();
+		File db = new File(dir, "db.sqlite");
+		for (String suffix : new String[] {"", "-wal"}) {
+			try (FileOutputStream out = new FileOutputStream(
+					new File(db.getPath() + suffix))) {
+				out.write(new byte[4096]);
+			}
+		}
+		assertTrue(SqlCipherRecoveryFiles.quarantine(db, "abcd"));
+		File fresh = new File(dir, "db.sqlite");
+		assertTrue(fresh.createNewFile());
+		File keep = new File(dir, "db.key");
+		assertTrue(keep.createNewFile());
+		SqlCipherRecoveryFiles.shredQuarantined(fresh);
+		assertTrue(fresh.exists());
+		assertTrue(keep.exists());
+		assertFalse(new File(dir, "db.sqlite.incomplete-abcd").exists());
+		assertFalse(new File(dir, "db.sqlite.incomplete-abcd-wal").exists());
 	}
 
 	@Test

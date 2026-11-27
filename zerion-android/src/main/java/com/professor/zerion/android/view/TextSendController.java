@@ -190,6 +190,12 @@ public class TextSendController implements TextInputListener {
 	public interface SendListener extends LifecycleOwner {
 		LiveData<SendState> onSendClick(@Nullable String text,
 				List<AttachmentHeader> headers, long expectedAutoDeleteTimer);
+
+		default LiveData<SendState> onSendClick(@Nullable String text,
+				List<AttachmentHeader> headers, long expectedAutoDeleteTimer,
+				boolean viewOnce) {
+			return onSendClick(text, headers, expectedAutoDeleteTimer);
+		}
 	}
 
 }

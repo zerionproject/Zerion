@@ -4,7 +4,6 @@ import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.connection.InterruptibleConnection;
 import org.zerionproject.core.api.contact.ContactId;
-import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.sync.Priority;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -67,6 +66,45 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		this.evolutions = evolutions;
 	}
 
+	static final class SessionConnection implements InterruptibleConnection {
+
+		private final InputStream in;
+		private final OutputStream out;
+		@Nullable
+		private final ZwfControlHandler control;
+		private final AtomicBoolean closed = new AtomicBoolean(false);
+
+		SessionConnection(InputStream in, OutputStream out,
+				@Nullable ZwfControlHandler control) {
+			this.in = in;
+			this.out = out;
+			this.control = control;
+		}
+
+		@Override
+		public void interruptOutgoingSession() {
+			closeAsRedundant();
+		}
+
+		@Override
+		public void forceClose() {
+			if (!closed.compareAndSet(false, true)) return;
+			try {
+				in.close();
+			} catch (IOException ignored) {
+			}
+			try {
+				out.close();
+			} catch (IOException ignored) {
+			}
+		}
+
+		void closeAsRedundant() {
+			if (control != null) control.closingAsRedundant();
+			forceClose();
+		}
+	}
+
 	private static final class TransportSession {
 		private final TransportId transportId;
 		private int count;
@@ -124,6 +162,19 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		}
 	}
 
+	void sessionLiveClosingRedundant(int contactId, TransportId transportId,
+			boolean byDesignated, InterruptibleConnection conn,
+			AtomicBoolean counted) {
+		for (InterruptibleConnection redundant : sessionLive(contactId,
+				transportId, byDesignated, conn, counted)) {
+			if (redundant instanceof SessionConnection) {
+				((SessionConnection) redundant).closeAsRedundant();
+			} else {
+				redundant.forceClose();
+			}
+		}
+	}
+
 	void releaseSession(int contactId, TransportId transportId) {
 		releaseSession(contactId, transportId, true, false, null);
 	}
@@ -175,7 +226,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		if (stored == null) throw new FormatException();
 		runResumed(transportId, contactId, stored, in, out, false,
 				dialEpoch(contactId, stored.getRootKeys()), false, null,
-				authenticated, !refusalExpected);
+				authenticated, !refusalExpected, readTimeoutControl(in));
 	}
 
 	private long dialEpoch(int contactId, ContactRootKeys keys) {
@@ -223,7 +274,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		runResumed(transportId, contactId, stored, bufferedIn, out, true,
 				epoch, tor && viaAuthorizedService,
 				tor && !viaAuthorizedService ? localOnion : null,
-				new AtomicBoolean(), true);
+				new AtomicBoolean(), true, readTimeoutControl(in));
 	}
 
 	@Override
@@ -235,14 +286,21 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		runResumed(transportId, contactId, stored, in, out, incoming,
 				incoming ? stored.getRootKeys().getSendEpoch()
 						: dialEpoch(contactId, stored.getRootKeys()), false,
-				null, new AtomicBoolean(), true);
+				null, new AtomicBoolean(), true, null);
+	}
+
+	@Nullable
+	private static ZtpReadTimeoutControl readTimeoutControl(InputStream in) {
+		return in instanceof ZtpReadTimeoutControl
+				? (ZtpReadTimeoutControl) in : null;
 	}
 
 	private void runResumed(TransportId transportId, int contactId,
 			StoredContactSession stored, InputStream in, OutputStream out,
 			boolean incoming, long sendEpoch, boolean viaAuthorizedService,
 			@Nullable String inboundOnion, AtomicBoolean authenticated,
-			boolean countUnauthenticated) throws IOException {
+			boolean countUnauthenticated,
+			@Nullable ZtpReadTimeoutControl readTimeout) throws IOException {
 		boolean byDesignated = stored.isAlice() != incoming;
 		if (!acquireSession(contactId, transportId, byDesignated)) {
 			wipe(stored.getRootKeys());
@@ -257,26 +315,10 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 					sendEpoch, stored.isAlice(), stored.getGeneration(), in,
 					out);
 			ContactId c = new ContactId(contactId);
-			AtomicBoolean closed = new AtomicBoolean(false);
-			InterruptibleConnection ic = new InterruptibleConnection() {
-				@Override
-				public void interruptOutgoingSession() {
-					forceClose();
-				}
-
-				@Override
-				public void forceClose() {
-					if (!closed.compareAndSet(false, true)) return;
-					try {
-						in.close();
-					} catch (IOException ignored) {
-					}
-					try {
-						out.close();
-					} catch (IOException ignored) {
-					}
-				}
-			};
+			ZwfControlHandler control = evolutions == null ? null
+					: evolutions.newEvolution(c, stored.isAlice());
+			InterruptibleConnection ic =
+					new SessionConnection(in, out, control);
 			live[0] = ic;
 			connection.setFirstFrameListener(epoch -> {
 				if (viaAuthorizedService) {
@@ -295,18 +337,13 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 				authenticated.set(true);
 				sessionProvider.sessionEstablished(contactId,
 						incoming ? inboundOnion : null);
-				for (InterruptibleConnection redundant : sessionLive(contactId,
-						transportId, byDesignated, ic, counted)) {
-					redundant.forceClose();
-				}
+				sessionLiveClosingRedundant(contactId, transportId,
+						byDesignated, ic, counted);
 			});
-			if (evolutions != null) {
-				connection.setControlHandler(
-						evolutions.newEvolution(c, stored.isAlice()));
-			}
+			if (control != null) connection.setControlHandler(control);
 			boolean exception = false;
 			try {
-				connectionRunner.run(contactId, connection);
+				connectionRunner.run(contactId, connection, readTimeout);
 			} catch (IOException e) {
 				exception = true;
 				throw e;
@@ -331,9 +368,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	}
 
 	private static void wipe(ContactRootKeys keys) {
-		keys.getCurrent().clear();
-		SecretKey pending = keys.getPending();
-		if (pending != null) pending.clear();
+		keys.clear();
 	}
 
 	private static byte[] peekTag(BufferedInputStream in) throws IOException {

@@ -107,6 +107,12 @@ public class IncognitoInputHelper {
 		editText.setSaveEnabled(false);
 	}
 
+	public static void configureSecretPhraseField(EditText editText) {
+		configureIncognitoInput(editText, false);
+		editText.setSaveEnabled(false);
+		protectFromAccessibility(editText);
+	}
+
 	public static void install(View root) {
 		enforceSecureInputsOnViewTree(root);
 		root.removeOnAttachStateChangeListener(ON_ATTACH);
@@ -178,7 +184,6 @@ public class IncognitoInputHelper {
 		if (Build.VERSION.SDK_INT >= 34) {
 			field.setAccessibilityDataSensitive(
 					View.ACCESSIBILITY_DATA_SENSITIVE_YES);
-			return;
 		}
 		View.AccessibilityDelegate current = field.getAccessibilityDelegate();
 		if (current instanceof MaskingDelegate) return;
@@ -191,6 +196,32 @@ public class IncognitoInputHelper {
 		return new String(c);
 	}
 
+	private static boolean holdsText(View host) {
+		return host instanceof EditText && ((EditText) host).length() > 0;
+	}
+
+	static void maskNode(View host, AccessibilityNodeInfo info) {
+		info.setPassword(true);
+		if (holdsText(host)) {
+			info.setText(mask(((EditText) host).length()));
+		}
+	}
+
+	static void maskEvent(View host, AccessibilityEvent event) {
+		event.setPassword(true);
+		if (holdsText(host)) {
+			List<CharSequence> text = event.getText();
+			for (int i = 0; i < text.size(); i++) {
+				CharSequence t = text.get(i);
+				if (t != null && t.length() > 0) text.set(i, mask(t.length()));
+			}
+		}
+		CharSequence before = event.getBeforeText();
+		if (before != null && before.length() > 0) {
+			event.setBeforeText(mask(before.length()));
+		}
+	}
+
 	private static final class MaskingDelegate
 			extends View.AccessibilityDelegate {
 
@@ -201,19 +232,12 @@ public class IncognitoInputHelper {
 			this.inner = inner;
 		}
 
-		private static boolean holdsText(View host) {
-			return host instanceof EditText && ((EditText) host).length() > 0;
-		}
-
 		@Override
 		public void onInitializeAccessibilityNodeInfo(View host,
 				AccessibilityNodeInfo info) {
 			if (inner != null) inner.onInitializeAccessibilityNodeInfo(host, info);
 			else super.onInitializeAccessibilityNodeInfo(host, info);
-			info.setPassword(true);
-			if (holdsText(host)) {
-				info.setText(mask(((EditText) host).length()));
-			}
+			maskNode(host, info);
 		}
 
 		@Override
@@ -278,21 +302,6 @@ public class IncognitoInputHelper {
 			return inner != null
 					? inner.onRequestSendAccessibilityEvent(host, child, event)
 					: super.onRequestSendAccessibilityEvent(host, child, event);
-		}
-
-		private static void maskEvent(View host, AccessibilityEvent event) {
-			event.setPassword(true);
-			if (holdsText(host)) {
-				List<CharSequence> text = event.getText();
-				for (int i = 0; i < text.size(); i++) {
-					CharSequence t = text.get(i);
-					if (t != null && t.length() > 0) text.set(i, mask(t.length()));
-				}
-			}
-			CharSequence before = event.getBeforeText();
-			if (before != null && before.length() > 0) {
-				event.setBeforeText(mask(before.length()));
-			}
 		}
 	}
 }

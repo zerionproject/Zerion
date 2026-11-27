@@ -107,7 +107,12 @@ final class RootEvolutionTestBed {
 		private final Map<Integer, long[]> epochs = new HashMap<>();
 		private final Map<Integer, byte[]> current = new HashMap<>();
 		private final Map<Integer, byte[]> pending = new HashMap<>();
+		private final Map<Integer, byte[]> pendingConfirmKeys =
+				new HashMap<>();
+		private final Map<Integer, byte[]> pendingIdKeys = new HashMap<>();
 		private final Map<Integer, Boolean> confirmed = new HashMap<>();
+		private final java.util.Set<Integer> removed =
+				java.util.concurrent.ConcurrentHashMap.newKeySet();
 		volatile boolean paused = false;
 		final AtomicInteger pendingStores = new AtomicInteger();
 
@@ -117,12 +122,41 @@ final class RootEvolutionTestBed {
 		}
 
 		synchronized void put(ContactId c, ContactRootKeys keys) {
+			removed.remove(c.getInt());
 			epochs.put(c.getInt(), new long[] {keys.getEpoch()});
 			current.put(c.getInt(), keys.getCurrent().getBytes().clone());
 			SecretKey p = keys.getPending();
 			if (p == null) pending.remove(c.getInt());
 			else pending.put(c.getInt(), p.getBytes().clone());
+			SecretKey pc = keys.getPendingConfirmKey();
+			if (pc == null) pendingConfirmKeys.remove(c.getInt());
+			else pendingConfirmKeys.put(c.getInt(), pc.getBytes().clone());
+			SecretKey pi = keys.getPendingIdKey();
+			if (pi == null) pendingIdKeys.remove(c.getInt());
+			else pendingIdKeys.put(c.getInt(), pi.getBytes().clone());
 			confirmed.put(c.getInt(), keys.isPendingConfirmed());
+		}
+
+		synchronized void remove(ContactId c) {
+			int id = c.getInt();
+			epochs.remove(id);
+			current.remove(id);
+			pending.remove(id);
+			pendingConfirmKeys.remove(id);
+			pendingIdKeys.remove(id);
+			confirmed.remove(id);
+			outOfSync.remove(id);
+			enforcing.remove(id);
+			evolving.remove(id);
+			evolvedAt.remove(id);
+			stalls.remove(id);
+			notRenewing.remove(id);
+			removed.add(id);
+		}
+
+		@Override
+		public boolean hasContact(ContactId c) {
+			return !removed.contains(c.getInt());
 		}
 
 		@Override
@@ -131,19 +165,32 @@ final class RootEvolutionTestBed {
 			long[] e = epochs.get(c.getInt());
 			if (e == null) return null;
 			byte[] p = pending.get(c.getInt());
+			byte[] pc = p == null ? null : pendingConfirmKeys.get(c.getInt());
+			byte[] pi = p == null ? null : pendingIdKeys.get(c.getInt());
 			return new ContactRootKeys(e[0],
 					new SecretKey(current.get(c.getInt()).clone()),
 					p == null ? null : new SecretKey(p.clone()),
+					pc == null ? null : new SecretKey(pc.clone()),
+					pi == null ? null : new SecretKey(pi.clone()),
 					Boolean.TRUE.equals(confirmed.get(c.getInt())));
 		}
 
 		@Override
 		public boolean storePending(ContactId c, long fromEpoch,
-				SecretKey key, boolean conf) {
+				SecretKey key, @Nullable SecretKey confirmKey,
+				@Nullable SecretKey idKey, boolean conf) {
+			if ((confirmKey == null) != (idKey == null)) {
+				throw new IllegalArgumentException();
+			}
 			synchronized (this) {
 				long[] e = epochs.get(c.getInt());
 				if (e == null || e[0] != fromEpoch) return false;
 				pending.put(c.getInt(), key.getBytes().clone());
+				if (confirmKey == null) pendingConfirmKeys.remove(c.getInt());
+				else pendingConfirmKeys.put(c.getInt(),
+						confirmKey.getBytes().clone());
+				if (idKey == null) pendingIdKeys.remove(c.getInt());
+				else pendingIdKeys.put(c.getInt(), idKey.getBytes().clone());
 				confirmed.put(c.getInt(), conf);
 				pendingStores.incrementAndGet();
 			}
@@ -157,6 +204,8 @@ final class RootEvolutionTestBed {
 				long[] e = epochs.get(c.getInt());
 				if (e == null || e[0] != fromEpoch) return false;
 				if (pending.remove(c.getInt()) == null) return false;
+				pendingConfirmKeys.remove(c.getInt());
+				pendingIdKeys.remove(c.getInt());
 				confirmed.put(c.getInt(), false);
 			}
 			notifyChanged(c);
@@ -170,6 +219,8 @@ final class RootEvolutionTestBed {
 				if (e == null || e[0] != fromEpoch) return false;
 				byte[] p = pending.remove(c.getInt());
 				if (p == null) return false;
+				pendingConfirmKeys.remove(c.getInt());
+				pendingIdKeys.remove(c.getInt());
 				e[0] = fromEpoch + 1;
 				current.put(c.getInt(), p);
 				confirmed.put(c.getInt(), false);
@@ -185,6 +236,46 @@ final class RootEvolutionTestBed {
 
 		private final java.util.Set<Integer> outOfSync =
 				java.util.concurrent.ConcurrentHashMap.newKeySet();
+		private final java.util.Set<Integer> enforcing =
+				java.util.concurrent.ConcurrentHashMap.newKeySet();
+		private final Map<Integer, Long> evolvedAt =
+				new java.util.concurrent.ConcurrentHashMap<>();
+
+		@Override
+		public boolean peerEnforces(ContactId c) {
+			return enforcing.contains(c.getInt());
+		}
+
+		@Override
+		public void setPeerEnforces(ContactId c, boolean enforces) {
+			if (enforces) enforcing.add(c.getInt());
+			else enforcing.remove(c.getInt());
+		}
+
+		private final java.util.Set<Integer> evolving =
+				java.util.concurrent.ConcurrentHashMap.newKeySet();
+		volatile boolean snapshotting = false;
+
+		@Override
+		public boolean peerEvolves(ContactId c) {
+			return evolving.contains(c.getInt());
+		}
+
+		@Override
+		public void setPeerEvolves(ContactId c) {
+			evolving.add(c.getInt());
+		}
+
+		@Override
+		public boolean isSnapshotting() {
+			return snapshotting;
+		}
+
+		@Override
+		public long evolvedAt(ContactId c) {
+			Long at = evolvedAt.get(c.getInt());
+			return at == null ? 0 : at;
+		}
 
 		@Override
 		public void markOutOfSync(ContactId c, boolean flag) {
@@ -195,6 +286,46 @@ final class RootEvolutionTestBed {
 		@Override
 		public boolean isOutOfSync(ContactId c) {
 			return outOfSync.contains(c.getInt());
+		}
+
+		private final Map<Integer, long[]> stalls =
+				new java.util.concurrent.ConcurrentHashMap<>();
+		private final java.util.Set<Integer> notRenewing =
+				java.util.concurrent.ConcurrentHashMap.newKeySet();
+		final AtomicInteger notRenewingRaised = new AtomicInteger();
+
+		@Override
+		public long[] stalls(ContactId c) {
+			long[] s = stalls.get(c.getInt());
+			return s == null ? new long[] {0, 0} : s.clone();
+		}
+
+		@Override
+		public void setStalls(ContactId c, int count, long since) {
+			stalls.put(c.getInt(), new long[] {count, since});
+		}
+
+		@Override
+		public void markNotRenewing(ContactId c, boolean flag) {
+			if (flag) {
+				notRenewingRaised.incrementAndGet();
+				notRenewing.add(c.getInt());
+			} else {
+				notRenewing.remove(c.getInt());
+			}
+		}
+
+		@Override
+		public boolean isNotRenewing(ContactId c) {
+			return notRenewing.contains(c.getInt());
+		}
+
+		@Override
+		public void renewed(ContactId c, long at) {
+			evolvedAt.put(c.getInt(), at);
+			stalls.remove(c.getInt());
+			notRenewing.remove(c.getInt());
+			outOfSync.remove(c.getInt());
 		}
 	}
 
@@ -253,17 +384,21 @@ final class RootEvolutionTestBed {
 		final List<String> received =
 				Collections.synchronizedList(new ArrayList<>());
 		final AtomicInteger connections = new AtomicInteger();
+		final AtomicInteger authenticatedStreams = new AtomicInteger();
 		@Nullable
 		volatile Cut cut;
 		@Nullable
 		volatile Runnable cutAction;
 		@Nullable
 		volatile Hold hold;
+		volatile byte withheld = 0;
 		@Nullable
 		volatile Gate gate;
 		final List<Byte> receivedKinds =
 				Collections.synchronizedList(new ArrayList<>());
 		final List<Byte> handledKinds =
+				Collections.synchronizedList(new ArrayList<>());
+		final List<byte[]> receivedRecords =
 				Collections.synchronizedList(new ArrayList<>());
 		final ZtpConnectionHandlerImpl handler;
 		final Provider provider;
@@ -418,6 +553,7 @@ final class RootEvolutionTestBed {
 					inner.start(new Sender() {
 						@Override
 						public void send(byte[] payload) {
+							if (payload[1] == device.withheld) return;
 							Cut cut = device.cut;
 							if (cut != null && !cut.fired
 									&& payload[1] == cut.kind) {
@@ -441,6 +577,7 @@ final class RootEvolutionTestBed {
 							sender.sendWhenDue(() -> {
 								byte[] payload = builder.get();
 								if (payload == null) return null;
+								if (payload[1] == device.withheld) return null;
 								Cut cut = device.cut;
 								if (cut != null && !cut.fired
 										&& payload[1] == cut.kind) {
@@ -449,16 +586,38 @@ final class RootEvolutionTestBed {
 									if (a != null) a.run();
 									return null;
 								}
+								Hold hold = device.hold;
+								if (hold != null && !hold.caught
+										&& payload[1] == hold.kind) {
+									hold.caught = true;
+									return null;
+								}
 								return payload;
 							});
 						}
+
+						@Override
+						public void close() {
+							sender.close();
+						}
+
+						@Override
+						public void released() {
+							sender.released();
+						}
 					});
+				}
+
+				@Override
+				public boolean holdsUserRecords() {
+					return inner.holdsUserRecords();
 				}
 
 				@Override
 				public void onRecord(byte[] payload) {
 					if (payload.length > 1) {
 						device.receivedKinds.add(payload[1]);
+						device.receivedRecords.add(payload.clone());
 						Gate g = device.gate;
 						if (g != null && payload[1] == g.kind) {
 							g.reached.countDown();
@@ -476,6 +635,12 @@ final class RootEvolutionTestBed {
 				@Override
 				public void onPeerStreamAuthenticated(long epoch) {
 					inner.onPeerStreamAuthenticated(epoch);
+					device.authenticatedStreams.incrementAndGet();
+				}
+
+				@Override
+				public void closingAsRedundant() {
+					inner.closingAsRedundant();
 				}
 
 				@Override

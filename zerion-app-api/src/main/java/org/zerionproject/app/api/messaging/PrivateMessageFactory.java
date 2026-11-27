@@ -33,4 +33,8 @@ public interface PrivateMessageFactory {
 			@Nullable String text, List<AttachmentHeader> headers,
 			long autoDeleteTimer, @Nullable MessageId replyToId)
 			throws FormatException;
+
+	PrivateMessage createViewOncePrivateMessage(GroupId groupId,
+			long timestamp, AttachmentHeader header, long autoDeleteTimer,
+			@Nullable MessageId replyToId) throws FormatException;
 }

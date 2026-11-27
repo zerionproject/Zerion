@@ -12,9 +12,10 @@ import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.bluetooth.le.AdvertiseCallback;
 import android.bluetooth.le.AdvertiseData;
-import android.bluetooth.le.AdvertiseSettings;
+import android.bluetooth.le.AdvertisingSet;
+import android.bluetooth.le.AdvertisingSetCallback;
+import android.bluetooth.le.AdvertisingSetParameters;
 import android.bluetooth.le.BluetoothLeAdvertiser;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -23,6 +24,9 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.ParcelUuid;
+
+import com.professor.zerion.android.mesh.BleAdvertising;
+import com.professor.zerion.android.mesh.BluetoothNameGuard;
 
 import org.zerionproject.core.api.Pair;
 import org.zerionproject.core.api.data.BdfList;
@@ -39,13 +43,18 @@ import org.zerionproject.core.api.rendezvous.RendezvousEndpoint;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -54,6 +63,7 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import static com.professor.zerion.android.contact.add.nearby.ble.BluetoothKeyAgreementConstants.CCCD;
 import static com.professor.zerion.android.contact.add.nearby.ble.BluetoothKeyAgreementConstants.FRAME_CHARACTERISTIC;
+import static com.professor.zerion.android.contact.add.nearby.ble.BluetoothKeyAgreementConstants.PROOF_CHARACTERISTIC;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_BLUETOOTH;
 import static org.zerionproject.core.api.plugin.Plugin.State.ACTIVE;
 import static org.zerionproject.core.api.plugin.Plugin.State.INACTIVE;
@@ -69,23 +79,51 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 	private static final int DEFAULT_CHUNK = 20;
 	private static final long OP_TIMEOUT_MS = 8000;
 	private static final long ACCEPT_TIMEOUT_MS = 30_000;
+	private static final long ACCEPT_POLL_MS = 250;
 	private static final long CONNECT_TIMEOUT_MS = 15_000;
 	private static final int SEND_RETRIES = 3;
 
 	private final Context appContext;
 	private final PluginCallback callback;
+	private final BluetoothNameGuard nameGuard;
 	@Nullable
 	private final BluetoothManager bluetoothManager;
+	private final long proofTimeoutMs;
+	private final long backOffMs;
+	private final Set<String> ownLinks = ConcurrentHashMap.newKeySet();
 	private final Set<Runnable> closers =
 			Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+	private final Object nameLock = new Object();
+	private int nameHolds = 0;
+
 	private volatile State state = STARTING_STOPPING;
 
-	BluetoothKeyAgreementPlugin(Context context, PluginCallback callback) {
+	BluetoothKeyAgreementPlugin(Context context, PluginCallback callback,
+			BluetoothNameGuard nameGuard) {
+		this(context, callback, nameGuard, (BluetoothManager) context
+				.getApplicationContext()
+				.getSystemService(Context.BLUETOOTH_SERVICE));
+	}
+
+	BluetoothKeyAgreementPlugin(Context context, PluginCallback callback,
+			BluetoothNameGuard nameGuard,
+			@Nullable BluetoothManager bluetoothManager) {
+		this(context, callback, nameGuard, bluetoothManager,
+				PairingCentralGate.PROOF_TIMEOUT_MS,
+				PairingCentralGate.BACK_OFF_MS);
+	}
+
+	BluetoothKeyAgreementPlugin(Context context, PluginCallback callback,
+			BluetoothNameGuard nameGuard,
+			@Nullable BluetoothManager bluetoothManager, long proofTimeoutMs,
+			long backOffMs) {
 		this.appContext = context.getApplicationContext();
 		this.callback = callback;
-		this.bluetoothManager = (BluetoothManager)
-				appContext.getSystemService(Context.BLUETOOTH_SERVICE);
+		this.nameGuard = nameGuard;
+		this.bluetoothManager = bluetoothManager;
+		this.proofTimeoutMs = proofTimeoutMs;
+		this.backOffMs = backOffMs;
 	}
 
 	@Override
@@ -165,7 +203,8 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 		if (adapter == null || !adapter.isEnabled()) return null;
 		UUID serviceUuid = pairingUuid(localCommitment);
 		if (serviceUuid == null) return null;
-		Acceptor acceptor = new Acceptor(adapter, serviceUuid);
+		Acceptor acceptor =
+				new Acceptor(adapter, serviceUuid, localCommitment);
 		if (!acceptor.startServerAndAdvertise()) {
 			acceptor.close();
 			return null;
@@ -183,7 +222,8 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 		if (adapter == null || !adapter.isEnabled()) return null;
 		UUID serviceUuid = pairingUuid(remoteCommitment);
 		if (serviceUuid == null) return null;
-		Connector connector = new Connector(adapter, serviceUuid);
+		Connector connector =
+				new Connector(adapter, serviceUuid, remoteCommitment);
 		DuplexTransportConnection conn = connector.scanConnectAndOpen();
 		if (conn == null) connector.close();
 		return conn;
@@ -205,6 +245,23 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 		if (android.os.Build.VERSION.SDK_INT
 				< android.os.Build.VERSION_CODES.S) return null;
 		return bluetoothManager == null ? null : bluetoothManager.getAdapter();
+	}
+
+	private void holdName() {
+		synchronized (nameLock) {
+			nameHolds++;
+			nameGuard.acquire(BluetoothNameGuard.HOLDER_PAIRING);
+		}
+	}
+
+	private void releaseName() {
+		synchronized (nameLock) {
+			if (nameHolds == 0) return;
+			nameHolds--;
+			if (nameHolds == 0) {
+				nameGuard.release(BluetoothNameGuard.HOLDER_PAIRING);
+			}
+		}
 	}
 
 	private void setState(State s) {
@@ -248,10 +305,22 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 		private final BluetoothAdapter adapter;
 		private final UUID serviceUuid;
 		private final Runnable self = this::close;
+		private final AtomicBoolean nameHeld = new AtomicBoolean(false);
 		private final LinkedBlockingQueue<BleGattStream> ready =
 				new LinkedBlockingQueue<>(1);
+		private final PairingCentralGate gate;
+		private final Map<String, Integer> mtuByAddress =
+				new ConcurrentHashMap<>();
+		private final ScheduledExecutorService timer =
+				Executors.newSingleThreadScheduledExecutor(r -> {
+					Thread t = new Thread(r, "PairNearbyGate");
+					t.setDaemon(true);
+					return t;
+				});
 		private volatile int mtu = 23;
 		private volatile boolean streamOpened = false;
+		private volatile boolean closed = false;
+		private volatile boolean advertisingWanted = true;
 
 		@Nullable
 		private volatile BluetoothGattServer server;
@@ -266,12 +335,16 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 		@Nullable
 		private volatile CountDownLatch pending;
 
-		Acceptor(BluetoothAdapter adapter, UUID serviceUuid) {
+		Acceptor(BluetoothAdapter adapter, UUID serviceUuid,
+				byte[] commitment) {
 			this.adapter = adapter;
 			this.serviceUuid = serviceUuid;
+			this.gate = new PairingCentralGate(commitment);
 		}
 
 		boolean startServerAndAdvertise() {
+			if (bluetoothManager == null) return false;
+			if (nameHeld.compareAndSet(false, true)) holdName();
 			try {
 				BluetoothGattServer s = bluetoothManager.openGattServer(
 						appContext, serverCallback);
@@ -291,57 +364,81 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 						serviceUuid,
 						BluetoothGattService.SERVICE_TYPE_PRIMARY);
 				service.addCharacteristic(ch);
+				service.addCharacteristic(new BluetoothGattCharacteristic(
+						PROOF_CHARACTERISTIC,
+						BluetoothGattCharacteristic.PROPERTY_WRITE,
+						BluetoothGattCharacteristic.PERMISSION_WRITE));
 				s.addService(service);
 				server = s;
 				characteristic = ch;
 				BluetoothLeAdvertiser a = adapter.getBluetoothLeAdvertiser();
 				if (a == null) return false;
 				advertiser = a;
-				AdvertiseSettings settings = new AdvertiseSettings.Builder()
-						.setAdvertiseMode(
-								AdvertiseSettings.ADVERTISE_MODE_BALANCED)
-						.setConnectable(true)
-						.setTxPowerLevel(
-								AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
-						.build();
-				AdvertiseData data = new AdvertiseData.Builder()
-						.setIncludeDeviceName(false)
-						.addServiceUuid(new ParcelUuid(serviceUuid))
-						.build();
-				a.startAdvertising(settings, data, advertiseCallback);
 				closers.add(self);
-				return true;
+				return startAdvertising();
 			} catch (Exception e) {
 				return false;
 			}
 		}
 
-		private final AdvertiseCallback advertiseCallback =
-				new AdvertiseCallback() {
-					@Override
-					public void onStartFailure(int errorCode) {
+		private boolean startAdvertising() {
+			BluetoothLeAdvertiser a = advertiser;
+			if (a == null || closed) return false;
+			AdvertiseData data = new AdvertiseData.Builder()
+					.setIncludeDeviceName(false)
+					.addServiceUuid(new ParcelUuid(serviceUuid))
+					.build();
+			AdvertisingSetCallback cb = new AdvertisingSetCallback() {
+				@Override
+				public void onAdvertisingSetStarted(
+						@Nullable AdvertisingSet set, int txPower,
+						int status) {
+					if (status != ADVERTISE_SUCCESS
+							&& advertiseCallback == this) {
+						close();
 					}
-				};
+				}
+			};
+			advertiseCallback = cb;
+			try {
+				a.startAdvertisingSet(BleAdvertising.parameters(
+								AdvertisingSetParameters.TX_POWER_LOW,
+								new SecureRandom()),
+						data, null, null, null, cb);
+				return true;
+			} catch (RuntimeException e) {
+				return false;
+			}
+		}
+
+		@Nullable
+		private volatile AdvertisingSetCallback advertiseCallback;
 
 		private final BluetoothGattServerCallback serverCallback =
 				new BluetoothGattServerCallback() {
 					@Override
 					public void onConnectionStateChange(BluetoothDevice device,
 							int status, int newState) {
+						String address = device.getAddress();
 						if (newState == BluetoothProfile.STATE_CONNECTED) {
-							if (central == null) {
-								central = device;
+							if (!ownLinks.contains(address)
+									&& gate.onConnected(address)) {
+								awaitProof(address);
 							}
 						} else if (newState
-								== BluetoothProfile.STATE_DISCONNECTED
-								&& device.equals(central)) {
-							BleGattStream st = stream;
-							if (st != null) st.setEof();
+								== BluetoothProfile.STATE_DISCONNECTED) {
+							if (device.equals(central)) {
+								close();
+							} else {
+								gate.onDisconnected(address);
+								mtuByAddress.remove(address);
+							}
 						}
 					}
 
 					@Override
 					public void onMtuChanged(BluetoothDevice device, int m) {
+						mtuByAddress.put(device.getAddress(), m);
 						if (device.equals(central)) mtu = m;
 					}
 
@@ -357,12 +454,9 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 							int requestId, BluetoothGattDescriptor descriptor,
 							boolean prep, boolean rsp, int offset,
 							byte[] value) {
-						BluetoothGattServer s = server;
-						if (rsp && s != null) {
-							s.sendResponse(device, requestId,
-									BluetoothGatt.GATT_SUCCESS, offset, null);
-						}
-						if (device.equals(central)) openStreamOnce();
+						boolean ok = device.equals(central);
+						respond(device, rsp, requestId, ok, offset);
+						if (ok) openStreamOnce();
 					}
 
 					@Override
@@ -370,12 +464,13 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 							BluetoothDevice device, int requestId,
 							BluetoothGattCharacteristic ch, boolean prep,
 							boolean rsp, int offset, byte[] value) {
-						BluetoothGattServer s = server;
-						if (rsp && s != null) {
-							s.sendResponse(device, requestId,
-									BluetoothGatt.GATT_SUCCESS, offset, null);
+						if (PROOF_CHARACTERISTIC.equals(ch.getUuid())) {
+							onProof(device, rsp, requestId, offset, value);
+							return;
 						}
-						if (!device.equals(central)) return;
+						boolean ok = device.equals(central);
+						respond(device, rsp, requestId, ok, offset);
+						if (!ok) return;
 						if (FRAME_CHARACTERISTIC.equals(ch.getUuid())) {
 							openStreamOnce();
 							BleGattStream st = stream;
@@ -383,6 +478,59 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 						}
 					}
 				};
+
+		private void awaitProof(String address) {
+			try {
+				timer.schedule(() -> gate.onTimeout(address), proofTimeoutMs,
+						TimeUnit.MILLISECONDS);
+			} catch (RejectedExecutionException e) {
+				gate.onTimeout(address);
+			}
+		}
+
+		private void onProof(BluetoothDevice device, boolean rsp,
+				int requestId, int offset, @Nullable byte[] value) {
+			String address = device.getAddress();
+			PairingCentralGate.Verdict verdict = gate.onProof(address, value,
+					!ownLinks.contains(address));
+			if (verdict == PairingCentralGate.Verdict.ACCEPTED) {
+				if (!device.equals(central)) {
+					Integer m = mtuByAddress.get(address);
+					if (m != null) mtu = m;
+					central = device;
+				}
+				respond(device, rsp, requestId, true, offset);
+				return;
+			}
+			respond(device, rsp, requestId, false, offset);
+			if (verdict == PairingCentralGate.Verdict.BACK_OFF) backOff();
+		}
+
+		private void backOff() {
+			stopAdvertising();
+			try {
+				timer.schedule(() -> {
+					gate.endBackOff();
+					if (advertisingWanted && !gate.hasChosen()) {
+						startAdvertising();
+					}
+				}, backOffMs, TimeUnit.MILLISECONDS);
+			} catch (RejectedExecutionException e) {
+				gate.endBackOff();
+			}
+		}
+
+		private void respond(BluetoothDevice device, boolean rsp,
+				int requestId, boolean ok, int offset) {
+			BluetoothGattServer s = server;
+			if (!rsp || s == null) return;
+			int status = ok ? BluetoothGatt.GATT_SUCCESS
+					: BluetoothGatt.GATT_WRITE_NOT_PERMITTED;
+			try {
+				s.sendResponse(device, requestId, status, offset, null);
+			} catch (RuntimeException e) {
+			}
+		}
 
 		private synchronized void openStreamOnce() {
 			if (streamOpened) return;
@@ -415,14 +563,18 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 		}
 
 		void stopAdvertising() {
+			AdvertisingSetCallback cb = advertiseCallback;
+			advertiseCallback = null;
 			try {
 				BluetoothLeAdvertiser a = advertiser;
-				if (a != null) a.stopAdvertising(advertiseCallback);
+				if (a != null && cb != null) a.stopAdvertisingSet(cb);
 			} catch (Exception e) {
 			}
 		}
 
 		void close() {
+			closed = true;
+			advertisingWanted = false;
 			try {
 				stopAdvertising();
 				BleGattStream st = stream;
@@ -431,7 +583,9 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 				if (s != null) s.close();
 			} catch (Exception e) {
 			} finally {
+				timer.shutdownNow();
 				closers.remove(self);
+				if (nameHeld.compareAndSet(true, false)) releaseName();
 			}
 		}
 
@@ -444,8 +598,13 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 			@Override
 			public KeyAgreementConnection accept() throws java.io.IOException {
 				try {
-					BleGattStream st = ready.poll(ACCEPT_TIMEOUT_MS,
-							TimeUnit.MILLISECONDS);
+					long end = System.nanoTime()
+							+ TimeUnit.MILLISECONDS.toNanos(ACCEPT_TIMEOUT_MS);
+					BleGattStream st = null;
+					while (st == null && !closed && System.nanoTime() < end) {
+						st = ready.poll(ACCEPT_POLL_MS, TimeUnit.MILLISECONDS);
+					}
+					if (st == null) st = ready.poll();
 					if (st == null) throw new java.io.IOException("no peer");
 					return new KeyAgreementConnection(
 							new BluetoothKeyAgreementConnection(
@@ -459,6 +618,7 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 
 			@Override
 			public void close() {
+				advertisingWanted = false;
 				stopAdvertising();
 				if (stream == null) Acceptor.this.close();
 			}
@@ -473,7 +633,11 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 		private final Runnable self = this::close;
 		private final CountDownLatch ready = new CountDownLatch(1);
 		private final AtomicBoolean connecting = new AtomicBoolean(false);
+		private final AtomicBoolean nameHeld = new AtomicBoolean(false);
+		private final byte[] proof;
 		private volatile int mtu = 23;
+		@Nullable
+		private volatile String remoteAddress;
 
 		@Nullable
 		private volatile BluetoothLeScanner scanner;
@@ -484,15 +648,18 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 		@Nullable
 		private volatile CountDownLatch pending;
 
-		Connector(BluetoothAdapter adapter, UUID serviceUuid) {
+		Connector(BluetoothAdapter adapter, UUID serviceUuid,
+				byte[] commitment) {
 			this.adapter = adapter;
 			this.serviceUuid = serviceUuid;
+			this.proof = PairingCentralGate.proof(commitment);
 		}
 
 		@Nullable
 		DuplexTransportConnection scanConnectAndOpen() {
 			BluetoothLeScanner s = adapter.getBluetoothLeScanner();
 			if (s == null) return null;
+			if (nameHeld.compareAndSet(false, true)) holdName();
 			scanner = s;
 			closers.add(self);
 			ScanFilter filter = new ScanFilter.Builder()
@@ -523,6 +690,11 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 				if (!connecting.compareAndSet(false, true)) return;
 				BluetoothLeScanner s = scanner;
 				if (s != null) s.stopScan(this);
+				String address = result.getDevice().getAddress();
+				if (address != null) {
+					remoteAddress = address;
+					ownLinks.add(address);
+				}
 				gatt = result.getDevice().connectGatt(appContext, false,
 						clientCallback, BluetoothDevice.TRANSPORT_LE);
 			}
@@ -547,8 +719,8 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 						} else if (newState
 								!= BluetoothProfile.STATE_CONNECTING) {
 							BleGattStream st = stream;
-							if (st != null) st.setEof();
 							ready.countDown();
+							if (st != null) close();
 						}
 					}
 
@@ -573,15 +745,16 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 							ready.countDown();
 							return;
 						}
-						g.setCharacteristicNotification(ch, true);
-						BluetoothGattDescriptor cccd = ch.getDescriptor(CCCD);
-						if (cccd == null) {
-							ready.countDown();
+						BluetoothGattCharacteristic p =
+								service.getCharacteristic(PROOF_CHARACTERISTIC);
+						if (p == null) {
+							enableNotifications(g, ch);
 							return;
 						}
-						cccd.setValue(BluetoothGattDescriptor
-								.ENABLE_NOTIFICATION_VALUE);
-						if (!g.writeDescriptor(cccd)) ready.countDown();
+						p.setValue(proof);
+						p.setWriteType(BluetoothGattCharacteristic
+								.WRITE_TYPE_DEFAULT);
+						if (!g.writeCharacteristic(p)) ready.countDown();
 					}
 
 					@Override
@@ -594,6 +767,10 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 					@Override
 					public void onCharacteristicWrite(BluetoothGatt g,
 							BluetoothGattCharacteristic ch, int status) {
+						if (PROOF_CHARACTERISTIC.equals(ch.getUuid())) {
+							onProofWritten(g, status);
+							return;
+						}
 						CountDownLatch l = pending;
 						if (l != null) l.countDown();
 					}
@@ -608,6 +785,29 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 						}
 					}
 				};
+
+		private void onProofWritten(BluetoothGatt g, int status) {
+			BluetoothGattService service = g.getService(serviceUuid);
+			BluetoothGattCharacteristic ch = service == null ? null
+					: service.getCharacteristic(FRAME_CHARACTERISTIC);
+			if (status != BluetoothGatt.GATT_SUCCESS || ch == null) {
+				ready.countDown();
+				return;
+			}
+			enableNotifications(g, ch);
+		}
+
+		private void enableNotifications(BluetoothGatt g,
+				BluetoothGattCharacteristic ch) {
+			g.setCharacteristicNotification(ch, true);
+			BluetoothGattDescriptor cccd = ch.getDescriptor(CCCD);
+			if (cccd == null) {
+				ready.countDown();
+				return;
+			}
+			cccd.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+			if (!g.writeDescriptor(cccd)) ready.countDown();
+		}
 
 		private synchronized void openStream(BluetoothGatt g) {
 			if (stream != null) return;
@@ -654,7 +854,10 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 				}
 			} catch (Exception e) {
 			} finally {
+				String address = remoteAddress;
+				if (address != null) ownLinks.remove(address);
 				closers.remove(self);
+				if (nameHeld.compareAndSet(true, false)) releaseName();
 			}
 		}
 	}

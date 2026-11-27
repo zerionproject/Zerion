@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class RootEvolutionManagerTest {
@@ -79,6 +80,405 @@ public class RootEvolutionManagerTest {
 		manager.dialEnded(contact, false);
 		assertTrue(store.isOutOfSync(contact));
 		manager.dialEnded(contact, true);
+		assertTrue("a dial that authenticated cleared the mark by itself",
+				store.isOutOfSync(contact));
+		for (int i = 0; i < RootEvolutionManager.OUT_OF_SYNC_AFTER - 1; i++) {
+			manager.dialEnded(contact, false);
+		}
+		manager.connectionEnded(contact, false, false);
+		assertTrue("a connection that did not confirm the peer's keys"
+				+ " cleared the mark", store.isOutOfSync(contact));
+		manager.connectionEnded(contact, true, true);
+		assertTrue("a stalled connection cleared the mark",
+				store.isOutOfSync(contact));
+		manager.connectionEnded(contact, false);
+		assertFalse("a connection on which no renewal was outstanding",
+				store.isOutOfSync(contact));
+		manager.dialEnded(contact, false);
+		assertTrue("the dial that authenticated did not end the run of"
+				+ " failed dials", store.isOutOfSync(contact));
+		manager.evolved(contact);
 		assertFalse(store.isOutOfSync(contact));
+	}
+
+	@Test
+	public void aPausedPeerIsRememberedPerContactUntilItRenewsOrThePauseLengthPasses() {
+		ContactId other = new ContactId(8);
+		manager.peerGreeted(contact, true);
+		assertTrue(manager.peerPauseRemembered(contact));
+		assertFalse("another contact is not affected",
+				manager.peerPauseRemembered(other));
+		manager.peerGreeted(contact, true);
+		assertEquals("one contact is remembered once", 1,
+				manager.peerPausesRemembered());
+		clock.addAndGet(RootEvolutionManager.PEER_PAUSE_MEMORY_MS);
+		manager.peerGreeted(other, true);
+		assertEquals("a pause that is over stayed in memory", 1,
+				manager.peerPausesRemembered());
+		assertFalse(manager.peerPauseRemembered(contact));
+		assertTrue(manager.peerPauseRemembered(other));
+		manager.peerGreeted(other, false);
+		assertFalse("a greeting that says not paused",
+				manager.peerPauseRemembered(other));
+		manager.peerGreeted(other, true);
+		manager.peerRenews(other);
+		assertFalse("an offer from the peer",
+				manager.peerPauseRemembered(other));
+		manager.peerGreeted(other, true);
+		manager.evolved(other);
+		assertFalse("a renewal that completed",
+				manager.peerPauseRemembered(other));
+		assertEquals(0, manager.peerPausesRemembered());
+	}
+
+	@Test
+	public void aGreetingFromOneContactLeavesAnotherContactsPauseAlone() {
+		ContactId other = new ContactId(8);
+		for (boolean otherPaused : new boolean[] {false, true}) {
+			manager.peerGreeted(contact, true);
+			clock.addAndGet(1);
+			assertTrue(manager.peerPauseRemembered(contact));
+			clock.addAndGet(-1);
+			manager.peerGreeted(other, otherPaused);
+			clock.addAndGet(1);
+			assertTrue("a greeting from another contact, read off the clock a"
+							+ " millisecond earlier, ended the pause",
+					manager.peerPauseRemembered(contact));
+			clock.addAndGet(-10_000);
+			manager.peerGreeted(other, otherPaused);
+			clock.addAndGet(10_000);
+			assertTrue("a greeting from another contact after the clock"
+							+ " stepped back ended the pause",
+					manager.peerPauseRemembered(contact));
+			manager.peerGreeted(other, false);
+		}
+		clock.addAndGet(-1);
+		assertFalse("a clock that went back for the contact itself kept its"
+				+ " pause", manager.peerPauseRemembered(contact));
+		assertEquals(0, manager.peerPausesRemembered());
+
+		manager.peerGreeted(contact, true);
+		clock.addAndGet(RootEvolutionManager.PEER_PAUSE_MEMORY_MS - 1);
+		manager.peerGreeted(other, false);
+		assertEquals("a pause that is not over was dropped", 1,
+				manager.peerPausesRemembered());
+		clock.addAndGet(1);
+		manager.peerGreeted(other, false);
+		assertEquals("a pause that is over stayed in memory", 0,
+				manager.peerPausesRemembered());
+	}
+
+	@Test
+	public void forgettingAContactDropsWhatIsRememberedOfItAndOfNoOtherContact() {
+		ContactId other = new ContactId(8);
+		ContactRootKeys confirmed = new ContactRootKeys(3, bed.randomKey(),
+				bed.randomKey(), true);
+		RootEvolution offering = new RootEvolution(manager, contact, true);
+		for (ContactId c : new ContactId[] {contact, other}) {
+			store.put(c, ContactRootKeys.atPairing(bed.randomKey()));
+			manager.peerGreeted(c, true);
+			manager.stalledBesideAnother(c);
+			manager.stalled(c);
+			manager.proved(c);
+			for (int i = 0; i < RootEvolutionManager.MAX_ANSWERS_PER_INTERVAL;
+					i++) {
+				assertTrue(manager.mayAnswer(c));
+			}
+			for (int i = 0; i < RootEvolutionManager.OUT_OF_SYNC_AFTER - 1;
+					i++) {
+				manager.dialEnded(c, false);
+			}
+			assertEquals("the dial after five failed ones", 3,
+					manager.dialEpoch(c, confirmed));
+		}
+		assertFalse(manager.mayOffer(contact, offering));
+
+		manager.forget(contact);
+
+		assertFalse("a pause of the peer outlived the contact's keys",
+				manager.peerPauseRemembered(contact));
+		assertEquals(1, manager.peerPausesRemembered());
+		assertFalse(manager.recentlyStalled(contact.getInt()));
+		assertNull(manager.lastEvolution(contact));
+		assertTrue(manager.mayOffer(contact, offering));
+		assertTrue("the answers given under the earlier keys still counted",
+				manager.mayAnswer(contact));
+		assertEquals("the failed dials under the earlier keys still counted",
+				4, manager.dialEpoch(contact, confirmed));
+		manager.dialEnded(contact, false);
+		assertFalse(store.isOutOfSync(contact));
+		manager.connectionEnded(contact, false);
+		assertEquals("a stall noted beside another connection outlived the"
+				+ " contact's keys", 0, store.stalls(contact)[0]);
+
+		assertTrue(manager.peerPauseRemembered(other));
+		assertTrue(manager.recentlyStalled(other.getInt()));
+		assertFalse(manager.mayOffer(other,
+				new RootEvolution(manager, other, true)));
+		assertFalse(manager.mayAnswer(other));
+		assertEquals(3, manager.dialEpoch(other, confirmed));
+		manager.dialEnded(other, false);
+		assertTrue(store.isOutOfSync(other));
+		manager.connectionEnded(other, false);
+		assertEquals(1, store.stalls(other)[0]);
+	}
+
+	@Test
+	public void connectionsWithARenewalOutstandingAreCountedUntilOneCompletes() {
+		for (int i = 1; i < RootEvolutionManager
+				.NOT_RENEWING_AFTER_CONNECTIONS; i++) {
+			manager.connectionEnded(contact, true);
+			assertEquals(i, store.stalls(contact)[0]);
+			assertEquals(1_000_000L, store.stalls(contact)[1]);
+			assertFalse("connection " + i, store.isNotRenewing(contact));
+			clock.addAndGet(1_000);
+		}
+		manager.connectionEnded(contact, false);
+		assertFalse(store.isNotRenewing(contact));
+		assertEquals("a connection with nothing outstanding ended the run",
+				RootEvolutionManager.NOT_RENEWING_AFTER_CONNECTIONS - 1,
+				store.stalls(contact)[0]);
+		manager.connectionEnded(contact, true);
+		assertTrue(store.isNotRenewing(contact));
+		assertFalse("another contact is not affected",
+				store.isNotRenewing(new ContactId(8)));
+		manager.connectionEnded(contact, false);
+		assertTrue("the warning went away without a renewal",
+				store.isNotRenewing(contact));
+		manager.evolved(contact);
+		assertFalse(store.isNotRenewing(contact));
+		assertEquals(0, store.stalls(contact)[0]);
+		manager.connectionEnded(contact, true);
+		assertEquals(1, store.stalls(contact)[0]);
+		assertFalse(store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void aRenewalOutstandingForAnHourRaisesTheWarningAtTheNextConnection() {
+		manager.connectionEnded(contact, true);
+		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_MS - 1);
+		manager.connectionEnded(contact, true);
+		assertFalse(store.isNotRenewing(contact));
+		clock.addAndGet(1);
+		manager.connectionEnded(contact, true);
+		assertTrue(store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void twoStallsLessThanADayApartDoNotRaiseTheWarningByThemselves() {
+		manager.connectionEnded(contact, true);
+		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS - 1);
+		manager.connectionEnded(contact, true);
+		assertEquals(2, store.stalls(contact)[0]);
+		assertFalse(store.isNotRenewing(contact));
+		manager.connectionEnded(contact, true);
+		assertTrue(store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void twoStallsADayApartRaiseTheWarning() {
+		manager.connectionEnded(contact, true);
+		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS);
+		manager.connectionEnded(contact, true);
+		assertEquals(2, store.stalls(contact)[0]);
+		assertTrue(store.isNotRenewing(contact));
+		manager.evolved(contact);
+		assertFalse(store.isNotRenewing(contact));
+		assertEquals(0, store.stalls(contact)[0]);
+	}
+
+	@Test
+	public void twoStallsAtOnceRaiseNothingUntilAThirdIsCountedADayLater() {
+		manager.connectionEnded(contact, true);
+		manager.connectionEnded(contact, true);
+		assertEquals(2, store.stalls(contact)[0]);
+		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS);
+		assertFalse("time alone raised the warning",
+				store.isNotRenewing(contact));
+		manager.connectionEnded(contact, false);
+		assertFalse("a connection with nothing outstanding raised the"
+				+ " warning", store.isNotRenewing(contact));
+		assertEquals(2, store.stalls(contact)[0]);
+		assertEquals(0, store.notRenewingRaised.get());
+		manager.connectionEnded(contact, true);
+		assertEquals(3, store.stalls(contact)[0]);
+		assertTrue(store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void threeStallsInAMinuteAndAQuietHourRaiseNothingUntilAFourthIsCounted() {
+		for (int i = 0; i < RootEvolutionManager
+				.NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS; i++) {
+			manager.connectionEnded(contact, true);
+			clock.addAndGet(20_000);
+		}
+		assertFalse(store.isNotRenewing(contact));
+		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_MS);
+		manager.connectionEnded(contact, false);
+		assertFalse(store.isNotRenewing(contact));
+		assertEquals(0, store.notRenewingRaised.get());
+		manager.connectionEnded(contact, true);
+		assertTrue(store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void aRenewalAfterTwoOldStallsLeavesNothingToRaise() {
+		manager.connectionEnded(contact, true);
+		manager.connectionEnded(contact, true);
+		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS);
+		manager.evolved(contact);
+		assertEquals(0, store.stalls(contact)[0]);
+		assertEquals(0, store.notRenewingRaised.get());
+		manager.connectionEnded(contact, true);
+		assertEquals(1, store.stalls(contact)[0]);
+		assertFalse(store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void oneStallIsNeverEnoughHoweverLongAgo() {
+		manager.connectionEnded(contact, true);
+		clock.addAndGet(30 * RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS);
+		manager.connectionEnded(contact, false);
+		assertFalse(store.isNotRenewing(contact));
+		assertEquals(1, store.stalls(contact)[0]);
+	}
+
+	@Test
+	public void aStallBesideAnotherConnectionIsCountedWhenTheLastOneEnds() {
+		manager.stalledBesideAnother(contact);
+		manager.connectionEnded(contact, false);
+		assertEquals(1, store.stalls(contact)[0]);
+		manager.stalledBesideAnother(contact);
+		manager.stalledBesideAnother(contact);
+		manager.connectionEnded(contact, true);
+		assertEquals("counted once per group", 2, store.stalls(contact)[0]);
+		manager.stalledBesideAnother(contact);
+		manager.evolved(contact);
+		manager.connectionEnded(contact, false);
+		assertEquals("a renewal forgets the stall beside it", 0,
+				store.stalls(contact)[0]);
+	}
+
+	@Test
+	public void aStallBesideAnotherConnectionIsForgottenWhenThePeerSaysItIsPaused() {
+		manager.stalledBesideAnother(contact);
+		manager.peerGreeted(contact, true);
+		manager.connectionEnded(contact, false);
+		assertEquals("a stall noted before the peer said it is paused was"
+				+ " counted", 0, store.stalls(contact)[0]);
+		manager.stalledBesideAnother(contact);
+		manager.peerGreeted(contact, false);
+		manager.connectionEnded(contact, false);
+		assertEquals("a greeting that says not paused forgot the stall"
+				+ " beside it", 1, store.stalls(contact)[0]);
+	}
+
+	@Test
+	public void theTimeAPeerWasPausedDoesNotCountTowardTheDay() {
+		long day = RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS;
+		manager.connectionEnded(contact, true);
+		manager.peerGreeted(contact, true);
+		clock.addAndGet(day);
+		assertEquals("the run changed while the peer was paused", 1_000_000L,
+				store.stalls(contact)[1]);
+		manager.peerGreeted(contact, false);
+		assertEquals(1, store.stalls(contact)[0]);
+		assertEquals("the end of the pause did not restart the time of the"
+				+ " run", 1_000_000L + day, store.stalls(contact)[1]);
+		manager.connectionEnded(contact, true);
+		assertEquals(2, store.stalls(contact)[0]);
+		assertFalse("the time the peer was paused counted toward the day",
+				store.isNotRenewing(contact));
+		clock.addAndGet(day - 1);
+		manager.peerGreeted(contact, false);
+		assertEquals("a greeting with no pause before it restarted the time"
+				+ " of the run", 1_000_000L + day, store.stalls(contact)[1]);
+		clock.addAndGet(1);
+		manager.connectionEnded(contact, true);
+		assertEquals(3, store.stalls(contact)[0]);
+		assertTrue("the day after the pause did not count",
+				store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void aPauseThatEndsWithAnOfferOrRunsOutRestartsTheTimeOfTheRun() {
+		long day = RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS;
+		manager.connectionEnded(contact, true);
+		manager.peerGreeted(contact, true);
+		clock.addAndGet(day - 1);
+		manager.peerRenews(contact);
+		assertEquals(1_000_000L + day - 1, store.stalls(contact)[1]);
+		clock.addAndGet(1);
+		manager.connectionEnded(contact, true);
+		assertEquals(2, store.stalls(contact)[0]);
+		assertFalse(store.isNotRenewing(contact));
+
+		ContactId other = new ContactId(8);
+		long started = clock.get();
+		manager.connectionEnded(other, true);
+		manager.peerGreeted(other, true);
+		clock.addAndGet(RootEvolutionManager.PEER_PAUSE_MEMORY_MS);
+		assertFalse(manager.peerPauseRemembered(other));
+		assertEquals(started, store.stalls(other)[1]);
+		manager.connectionEnded(other, true);
+		assertEquals(2, store.stalls(other)[0]);
+		assertEquals("the first stall counted after a pause that ran out"
+				+ " did not restart the time of the run", clock.get(),
+				store.stalls(other)[1]);
+		assertFalse(store.isNotRenewing(other));
+		long restarted = clock.get();
+		clock.addAndGet(day - 1);
+		manager.connectionEnded(other, true);
+		assertEquals("a pause was taken off the run twice", restarted,
+				store.stalls(other)[1]);
+		assertTrue("three stalls with an hour of time without a pause",
+				store.isNotRenewing(other));
+	}
+
+	@Test
+	public void aStallCountedWhileAPauseIsRememberedDoesNotStartTheDay() {
+		long day = RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS;
+		manager.connectionEnded(contact, true);
+		manager.peerGreeted(contact, true);
+		clock.addAndGet(1_000);
+		manager.connectionEnded(contact, true);
+		assertEquals(2, store.stalls(contact)[0]);
+		assertEquals(1_001_000L, store.stalls(contact)[1]);
+		clock.addAndGet(day - 1_000);
+		manager.peerGreeted(contact, false);
+		manager.connectionEnded(contact, true);
+		assertEquals(3, store.stalls(contact)[0]);
+		assertEquals(1_000_000L + day, store.stalls(contact)[1]);
+		assertFalse(store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void aRunThatRaisedTheWarningBeforeAPauseKeepsIt() {
+		long day = RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS;
+		manager.connectionEnded(contact, true);
+		clock.addAndGet(day);
+		manager.connectionEnded(contact, true);
+		assertTrue(store.isNotRenewing(contact));
+		manager.peerGreeted(contact, true);
+		clock.addAndGet(day);
+		manager.peerGreeted(contact, false);
+		assertTrue("the end of a pause took the warning away",
+				store.isNotRenewing(contact));
+		assertEquals(2, store.stalls(contact)[0]);
+		assertEquals(1, store.notRenewingRaised.get());
+		manager.evolved(contact);
+		assertFalse(store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void aClockThatWentBackStartsTheHourAgain() {
+		manager.connectionEnded(contact, true);
+		clock.addAndGet(-500_000L);
+		manager.connectionEnded(contact, true);
+		assertEquals(1, store.stalls(contact)[0]);
+		assertEquals(500_000L, store.stalls(contact)[1]);
+		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_MS - 1);
+		manager.connectionEnded(contact, true);
+		assertFalse(store.isNotRenewing(contact));
 	}
 }

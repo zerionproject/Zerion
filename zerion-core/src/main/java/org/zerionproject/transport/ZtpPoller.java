@@ -48,6 +48,7 @@ public class ZtpPoller implements EventListener {
 	static final int REFRESH_AFTER_FAILURES = 2;
 	static final long MIN_REFRESH_INTERVAL_MS = 2 * 60_000L;
 	static final long LONG_OFFLINE_MS = 30 * 60_000L;
+	static final long QUIET_OFFLINE_MS = 5 * 60_000L;
 	static final int REFRESHES_PER_DROP = 2;
 	static final long SECOND_REFRESH_AFTER_MS = 2 * 60_000L;
 	static final long ARRIVAL_REFRESH_DELAY_MS = 60_000L;
@@ -75,11 +76,13 @@ public class ZtpPoller implements EventListener {
 	private final Map<Integer, ReachOut> reachOuts = new ConcurrentHashMap<>();
 	private final Map<Integer, Long> slowReachOutAt = new ConcurrentHashMap<>();
 	private final Map<Integer, Long> connectedSince = new ConcurrentHashMap<>();
+	private final Set<Integer> quietWaited = ConcurrentHashMap.newKeySet();
 	private volatile long arrivedFrom = 0;
 	private volatile long arrivedUntil = 0;
 	private volatile boolean arrivedRefreshed = false;
 	private volatile long startedAt = 0;
 	private volatile java.util.function.IntPredicate connected = c -> false;
+	private volatile java.util.function.BooleanSupplier quiet = () -> false;
 	private volatile long lastRefreshAt = 0;
 	volatile java.util.function.LongSupplier clock =
 			() -> System.nanoTime() / 1_000_000L;
@@ -145,6 +148,16 @@ public class ZtpPoller implements EventListener {
 		this.connected = connected;
 	}
 
+	private volatile java.util.function.IntPredicate stalled = c -> false;
+
+	public void setQuietCheck(java.util.function.BooleanSupplier quiet) {
+		this.quiet = quiet;
+	}
+
+	public void setStallCheck(java.util.function.IntPredicate stalled) {
+		this.stalled = stalled;
+	}
+
 	public void dialNow(int contactId) {
 		if (!running) return;
 		Contact c;
@@ -197,6 +210,10 @@ public class ZtpPoller implements EventListener {
 
 	private void pollAll() {
 		if (!running) return;
+		if (!quietWaited.isEmpty() && !quiet.getAsBoolean()) {
+			for (Integer contactId : quietWaited) nextDialAt.remove(contactId);
+			quietWaited.clear();
+		}
 		if (transport.isNetworkDegraded()) {
 			long now = clock.getAsLong();
 			if (now >= nextRestartAt) {
@@ -330,6 +347,7 @@ public class ZtpPoller implements EventListener {
 			if (!running) return;
 			if (!connecting.add(contactId)) return;
 			boolean dialed = false;
+			boolean wasQuiet = false;
 			OverlayTransport.DialResult result =
 					OverlayTransport.DialResult.NOT_CONNECTED;
 			String address = null;
@@ -339,12 +357,14 @@ public class ZtpPoller implements EventListener {
 				dialed = true;
 				boolean fast = failStreak.getOrDefault(contactId, 0)
 						< FAST_DIAL_BURST;
+				wasQuiet = quiet.getAsBoolean();
 				result = transport.dial(contactId, address, fast, open);
 			} catch (Exception e) {
 			} finally {
 				connecting.remove(contactId);
 				if (dialed && result.isAttempted()) {
-					recordDialOutcome(contactId, result.getSessionMs(), epoch);
+					recordDialOutcome(contactId, result.getSessionMs(), epoch,
+							wasQuiet);
 					reportPendingOnionOutcome(contact.getId(), address,
 							result.isAuthenticated());
 				} else if (dialed) {
@@ -378,12 +398,15 @@ public class ZtpPoller implements EventListener {
 		}
 	}
 
-	private void recordDialOutcome(int contactId, long sessionMs, long epoch) {
-		boolean connected = sessionMs >= MIN_CONNECTED_MS;
+	private void recordDialOutcome(int contactId, long sessionMs, long epoch,
+			boolean wasQuiet) {
+		boolean connected = sessionMs >= MIN_CONNECTED_MS
+				&& !stalled.test(contactId);
 		long now = clock.getAsLong();
 		if (connected) {
 			failStreak.remove(contactId);
 			nextDialAt.remove(contactId);
+			quietWaited.remove(contactId);
 			lastConnectedAt.put(contactId, now);
 			refreshOwed.put(contactId, new DropRefresh());
 		} else if (backoffEpoch.get() == epoch) {
@@ -393,8 +416,11 @@ public class ZtpPoller implements EventListener {
 				nextDialAt.remove(contactId);
 				return;
 			}
-			nextDialAt.put(contactId, now + (isLongOffline(contactId, now)
-					? slowWait() : backoff(streak)));
+			boolean quietOffline = isQuietOffline(contactId, now, wasQuiet);
+			boolean slow = isLongOffline(contactId, now) || quietOffline;
+			if (quietOffline) quietWaited.add(contactId);
+			nextDialAt.put(contactId,
+					now + (slow ? slowWait() : backoff(streak)));
 		}
 	}
 
@@ -410,10 +436,18 @@ public class ZtpPoller implements EventListener {
 	}
 
 	private boolean isLongOffline(int contactId, long now) {
+		return now - lastSeen(contactId) >= LONG_OFFLINE_MS;
+	}
+
+	private boolean isQuietOffline(int contactId, long now,
+			boolean wasQuiet) {
+		return wasQuiet && now - lastSeen(contactId) >= QUIET_OFFLINE_MS;
+	}
+
+	private long lastSeen(int contactId) {
 		Long last = lastConnectedAt.get(contactId);
 		if (last == null) last = addedAt.get(contactId);
-		long since = last == null ? startedAt : last;
-		return now - since >= LONG_OFFLINE_MS;
+		return last == null ? startedAt : last;
 	}
 
 	private boolean refreshPeerDescriptors(int contactId, long now) {
@@ -447,6 +481,7 @@ public class ZtpPoller implements EventListener {
 		lastConnectedAt.put(contactId, now);
 		Long since = connectedSince.remove(contactId);
 		if (since != null && now - since < MIN_CONNECTED_MS) return;
+		if (stalled.test(contactId)) return;
 		Contact c;
 		try {
 			c = contactManager.getContact(new ContactId(contactId));
@@ -461,6 +496,7 @@ public class ZtpPoller implements EventListener {
 	}
 
 	private void forget(int contactId) {
+		quietWaited.remove(contactId);
 		nextDialAt.remove(contactId);
 		failStreak.remove(contactId);
 		lastConnectedAt.remove(contactId);

@@ -13,6 +13,7 @@ for each layer of the stack.
 | ZPP, the paced cover-traffic scheduler | `zerion-core/.../sync/Zpp*` | ZTP-ZPP.md |
 | ZMM, application records and fragmentation | `zerion-core/.../message` | ZTP-ZPP.md |
 | Mode 3-Full, the per-message post-quantum ratchet | `core/crypto/pcs` | ZWF-MODE3FULL.md |
+| Pairing key schedule (link handshake, nearby key agreement, contact exchange) | `zerion-core/.../contact/Handshake*`, `ContactExchange*`, `core/keyagreement` | PAIRING-HANDSHAKE.md |
 | Contact root evolution | `zerion-core/.../transport/RootEvolution*`, `RootKeyStore` | ZWF-ROOT-EVOLUTION.md |
 | Async sealed-sender envelope | `core/crypto/async` | ASYNC-SEALED-SENDER.md |
 | Bluetooth mesh transport | `zerion-core/.../transport/mesh`, `zerion-android/.../mesh` | MESH-TRANSPORT.md |
@@ -61,8 +62,10 @@ prekey bundle with no interactive handshake.
 | [MESH-TRANSPORT.md](MESH-TRANSPORT.md) | Store-and-forward flooding and the Bluetooth Low Energy link |
 | [EMBEDDED-I2P.md](EMBEDDED-I2P.md) | The embedded I2P carrier of development builds and its privacy trade-off |
 | [VOICE_MEMO_V2.md](VOICE_MEMO_V2.md) | The text forms and encrypted payload of voice memos in private conversations |
-| [MESSAGE-EDIT-DELETE.md](MESSAGE-EDIT-DELETE.md) | Editing a sent message and deleting it for everyone in private conversations |
+| [MESSAGE-EDIT-DELETE.md](MESSAGE-EDIT-DELETE.md) | Editing a sent message, deleting it for everyone and view once photos and videos in private conversations |
 | [CHANNEL-AUTHOR-PQ-BINDING.md](CHANNEL-AUTHOR-PQ-BINDING.md) | Binding channel comment and reaction authors to one ML-DSA-65 key |
+| [DENIABILITY.md](../DENIABILITY.md) | What a record proves to a third party: which records are deniable, which are signed and why, and the transcript simulator that forges deniable records |
+| [NETWORK_PATHS.md](../NETWORK_PATHS.md) | Every network connection of the app: endpoint, route (onion only, clearnet via a Tor exit, direct) and what authenticates it |
 
 ## Cryptographic primitives
 
@@ -114,12 +117,12 @@ project and is not affiliated with or endorsed by the Briar Project.
 | BDF data encoding | `core/data` | unchanged encoding rules |
 | Record layer | `core/record` | used by the pairing handshake and the nearby key agreement; payload caps added by Zerion |
 | Identity and contact management | `core/identity`, `core/contact` | extended with hybrid post-quantum identity keys, downgrade protection and rotating pairing keys |
-| Pairing rendezvous and handshake framework | `core/rendezvous`, `core/contact/HandshakeManagerImpl` | extended with ML-KEM-768 encapsulations to the peer's ephemeral and committed static keys (post-quantum authentication, minor version 3) and static-ephemeral X25519 terms (minor version 4) |
+| Pairing rendezvous and handshake framework | `core/rendezvous`, `core/contact/HandshakeManagerImpl` | extended with ML-KEM-768 encapsulations to the peer's ephemeral and committed static keys (post-quantum authentication, minor version 3) and static-ephemeral X25519 terms (minor version 4); minor version 5 separates the confirmation, contact-exchange and root keys (PAIRING-HANDSHAKE.md) |
 | Nearby key agreement (QR / Bluetooth) | `core/keyagreement` | BQP version 5: hybrid X25519 plus ML-KEM-768 (the released 3.0.11 speaks version 4, classical X25519) |
 | Sync bookkeeping and validation pipeline | `core/sync` | message validation, delivery and dependency tracking; the Bramble sync transport is not used |
 | Plugin and lifecycle machinery, event bus | `core/plugin`, `core/lifecycle`, `core/event` | hosts Zerion's transports |
 | Tor process wrapper | `org.zerionproject.tor` (in tree) | derived from the Briar Project's onionwrapper 0.1.4, modified as recorded in NOTICE.md: pinned executable verification, isolated SOCKS listener and padding in the generated configuration, bounded shutdown, no logging |
-| Tor executable | `packaging/tor-android` (built from the pinned Tor 0.4.9.14 release source with libevent, OpenSSL and zlib at pinned commits, NDK r29) | provenance and hashes in `packaging/tor-android/PROVENANCE.md`; the build and the app verify the bytes against the pin file before packaging and before every start |
-| lyrebird pluggable-transport executable | `packaging/lyrebird-android` (built from the signed upstream lyrebird 0.9.0 tag with Go 1.26.9, the Go modules of the tag's `go.sum` and NDK r29) | up to 3.0.17 the executable came from the Briar Project's prebuilt lyrebird-android 0.6.2 package; the build verifies the tag signature against the committed key, reproduces the bytes in independent environments, and the build and the app verify them against the same pin file as Tor; provenance in `packaging/lyrebird-android/PROVENANCE.md`, licences in NOTICE.md |
+| Tor executable | `packaging/tor-android` (built from the pinned Tor 0.4.9.17 release source with libevent 2.1.13, OpenSSL 3.5.9 and zlib 1.4 at pinned commits, NDK r29) | provenance and hashes in `packaging/tor-android/PROVENANCE.md`; the build and the app verify the bytes against the pin file before packaging and before every start |
+| lyrebird pluggable-transport executable | `packaging/lyrebird-android` (built from the signed upstream lyrebird 0.10.0 tag with Go 1.26.11, the Go modules of the tag's `go.sum` and NDK r29) | up to 3.0.17 the executable came from the Briar Project's prebuilt lyrebird-android 0.6.2 package; the build verifies the tag signature against the committed key, reproduces the bytes in independent environments, and the build and the app verify them against the same pin file as Tor; provenance in `packaging/lyrebird-android/PROVENANCE.md`, licences in NOTICE.md |
 | Messaging, introduction and group frameworks | `zerion-app/.../messaging`, `introduction`, `client` | introductions carry hybrid signatures; groups are Zerion's `grouptr` |
 

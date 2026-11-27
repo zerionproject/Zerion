@@ -88,9 +88,10 @@ public class VaultSetupFragment extends BaseFragment {
 		int passwordLength = passwordInput.getPasswordLength();
 		int confirmPasswordLength = confirmPasswordInput.getPasswordLength();
 
-		if (passwordLength > 0 && passwordLength < 8) {
+		boolean usable = passwordInput.holdsNewVaultPassword();
+		if (passwordLength > 0 && !usable) {
 			passwordLayout.setError(
-					getString(R.string.password_min_8_chars));
+					getString(R.string.vault_password_rule));
 		} else {
 			passwordLayout.setError(null);
 		}
@@ -112,7 +113,7 @@ public class VaultSetupFragment extends BaseFragment {
 			confirmPasswordLayout.setError(null);
 		}
 
-		boolean valid = passwordLength >= 8 && confirmPasswordLength >= 8;
+		boolean valid = usable && confirmPasswordLength > 0;
 		if (valid) {
 			char[] pwd = passwordInput.getPasswordChars();
 			char[] confirmPwd = confirmPasswordInput.getPasswordChars();
@@ -133,9 +134,10 @@ public class VaultSetupFragment extends BaseFragment {
 		char[] confirmPassword = confirmPasswordInput.getPasswordChars();
 
 		try {
-			if (password.length < 8) {
+			if (!com.professor.zerion.android.vault.VaultManager
+					.acceptsNewPassword(password)) {
 				passwordLayout.setError(
-						getString(R.string.password_min_8_chars));
+						getString(R.string.vault_password_rule));
 				return;
 			}
 
@@ -186,10 +188,7 @@ public class VaultSetupFragment extends BaseFragment {
 	}
 
 	private boolean validatePasswordsQuietly() {
-		int passwordLength = passwordInput.getPasswordLength();
-		int confirmPasswordLength = confirmPasswordInput.getPasswordLength();
-
-		if (passwordLength < 8 || confirmPasswordLength < 8) {
+		if (!passwordInput.holdsNewVaultPassword()) {
 			return false;
 		}
 

@@ -10,4 +10,8 @@ public interface ZppPacing {
 	long idleIntervalMs();
 
 	long idleAfterMs();
+
+	default boolean coverTraffic() {
+		return true;
+	}
 }

@@ -8,6 +8,7 @@ import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.identity.Identity;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.sync.MessageFactory;
 import org.zerionproject.core.db.HyperSqlDatabaseForTests;
 import org.zerionproject.core.test.BrambleTestCase;
@@ -123,6 +124,237 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void aSeparatedPendingRootKeepsItsConfirmKeyAcrossARestart()
+			throws Exception {
+		RootKeyStore store = new RootKeyStore(db);
+		SecretKey root = getSecretKey();
+		SecretKey confirmKey = getSecretKey();
+		SecretKey idKey = getSecretKey();
+		assertTrue(store.storePending(contact, 0, root, confirmKey, idKey,
+				true));
+		db.close();
+		db = HyperSqlDatabaseForTests.open(testDir, dbKey, new NoBus(),
+				messageFactory);
+		store = new RootKeyStore(db);
+		ContactRootKeys keys = store.load(contact);
+		assertNotNull(keys);
+		assertTrue(keys.isPendingSeparated());
+		assertTrue(keys.isPendingConfirmed());
+		assertArrayEquals(root.getBytes(), keys.getPending().getBytes());
+		assertArrayEquals(confirmKey.getBytes(),
+				keys.getPendingConfirmKey().getBytes());
+		assertArrayEquals("the pending-id key survives a restart",
+				idKey.getBytes(), keys.getPendingIdKey().getBytes());
+		PcsSessionRow row = db.transactionWithResult(true, txn ->
+				db.getPcsMode2SessionState(txn, contact,
+						DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING));
+		assertArrayEquals(confirmKey.getBytes(), row.getChainKey());
+		assertArrayEquals(idKey.getBytes(), row.getDhPrivateKey());
+		assertTrue(store.promote(contact, 0));
+		keys = store.load(contact);
+		assertEquals(1, keys.getEpoch());
+		assertArrayEquals(root.getBytes(), keys.getCurrent().getBytes());
+		assertNull(keys.getPending());
+		assertNull(keys.getPendingConfirmKey());
+		assertNull(keys.getPendingIdKey());
+		row = db.transactionWithResult(true, txn ->
+				db.getPcsMode2SessionState(txn, contact,
+						DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT));
+		assertNull("the promoted root carries no id key", row.getDhPrivateKey());
+
+		SecretKey unproved = getSecretKey();
+		assertTrue(store.storePending(contact, 1, unproved, getSecretKey(),
+				getSecretKey(), false));
+		keys = store.load(contact);
+		assertTrue(keys.isPendingSeparated());
+		assertNotNull(keys.getPendingIdKey());
+		assertFalse(keys.isPendingConfirmed());
+		assertTrue(store.storePending(contact, 1, getSecretKey(), false));
+		keys = store.load(contact);
+		assertFalse("a version 2 pending root replaces the confirm key",
+				keys.isPendingSeparated());
+		assertNull(keys.getPendingIdKey());
+		try {
+			store.storePending(contact, 1, getSecretKey(), getSecretKey(),
+					null, false);
+			org.junit.Assert.fail();
+		} catch (IllegalArgumentException expected) {
+		}
+	}
+
+	@Test
+	public void aPendingRootStoredByAnEarlierReleaseReadsAsVersionTwo()
+			throws Exception {
+		SecretKey pending = getSecretKey();
+		for (int confirmed = 0; confirmed < 2; confirmed++) {
+			int flag = confirmed;
+			db.transaction(false, txn -> db.setPcsMode2SessionState(txn,
+					contact, DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING,
+					pending, 1, flag, pending, null, null, null, true, null));
+			ContactRootKeys keys = new RootKeyStore(db).load(contact);
+			assertNotNull(keys);
+			assertArrayEquals(pending.getBytes(), keys.getPending().getBytes());
+			assertFalse(keys.isPendingSeparated());
+			assertNull(keys.getPendingConfirmKey());
+			assertNull(keys.getPendingIdKey());
+			assertEquals(confirmed == 1, keys.isPendingConfirmed());
+		}
+	}
+
+	@Test
+	public void aSeparatedPendingRowWithoutAnIdKeyNamesItsRootUnderTheConfirmKey()
+			throws Exception {
+		SecretKey pending = getSecretKey();
+		SecretKey confirmKey = getSecretKey();
+		for (int flags = 2; flags < 4; flags++) {
+			int stored = flags;
+			db.transaction(false, txn -> db.setPcsMode2SessionState(txn,
+					contact, DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING,
+					confirmKey, 1, stored, pending, null, null, null, true,
+					null));
+			ContactRootKeys keys = new RootKeyStore(db).load(contact);
+			assertNotNull(keys);
+			assertArrayEquals(pending.getBytes(), keys.getPending().getBytes());
+			assertTrue("flags " + flags, keys.isPendingSeparated());
+			assertEquals(RootEvolutionRecord.VERSION_SEPARATED,
+					RootEvolutionCrypto.pendingVersion(keys));
+			assertEquals("flags " + flags, flags == 3,
+					keys.isPendingConfirmed());
+			assertArrayEquals(confirmKey.getBytes(),
+					keys.getPendingConfirmKey().getBytes());
+			assertNotNull("flags " + flags, keys.getPendingIdKey());
+			assertArrayEquals("a row without an id key names its root under"
+							+ " another key than its confirm key, flags " + flags,
+					confirmKey.getBytes(), keys.getPendingIdKey().getBytes());
+		}
+	}
+
+	private DatabaseComponent pendingIdKeyReadAs(byte[] idKey) {
+		return (DatabaseComponent) Proxy.newProxyInstance(
+				DatabaseComponent.class.getClassLoader(),
+				new Class<?>[] {DatabaseComponent.class},
+				(proxy, method, args) -> {
+					Object result;
+					try {
+						result = method.invoke(db, args);
+					} catch (InvocationTargetException e) {
+						throw e.getCause();
+					}
+					if (!method.getName().equals("getPcsMode2SessionState")
+							|| result == null || !Integer.valueOf(
+							DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING)
+							.equals(args[2])) {
+						return result;
+					}
+					PcsSessionRow row = (PcsSessionRow) result;
+					return new PcsSessionRow(row.getChainKey(),
+							row.getMessageNumber(),
+							row.getPreviousChainLength(), row.getRootKey(),
+							idKey.clone(), row.getDhPublicKey(),
+							row.getDhRemotePublicKey(), row.isMode2Enabled(),
+							row.getMode3FullStateBlob());
+				});
+	}
+
+	@Test
+	public void aSeparatedPendingRowWithAnIdKeyOfTheWrongLengthUsesTheConfirmKey()
+			throws Exception {
+		SecretKey pending = getSecretKey();
+		SecretKey confirmKey = getSecretKey();
+		SecretKey idKey = getSecretKey();
+		assertTrue(new RootKeyStore(db).storePending(contact, 0, pending,
+				confirmKey, idKey, true));
+		for (int length : new int[] {0, 1, SecretKey.LENGTH - 1,
+				SecretKey.LENGTH + 1, 2 * SecretKey.LENGTH}) {
+			byte[] misread = new byte[length];
+			java.util.Arrays.fill(misread, (byte) 7);
+			ContactRootKeys keys = new RootKeyStore(
+					pendingIdKeyReadAs(misread)).load(contact);
+			assertNotNull("length " + length, keys);
+			assertTrue(keys.isPendingSeparated());
+			assertTrue(keys.isPendingConfirmed());
+			assertArrayEquals(pending.getBytes(), keys.getPending().getBytes());
+			assertArrayEquals(confirmKey.getBytes(),
+					keys.getPendingConfirmKey().getBytes());
+			assertArrayEquals("an id key of " + length + " bytes was used",
+					confirmKey.getBytes(), keys.getPendingIdKey().getBytes());
+		}
+		SecretKey other = getSecretKey();
+		ContactRootKeys keys = new RootKeyStore(
+				pendingIdKeyReadAs(other.getBytes())).load(contact);
+		assertNotNull(keys);
+		assertArrayEquals("an id key of the right length was not used",
+				other.getBytes(), keys.getPendingIdKey().getBytes());
+		keys = new RootKeyStore(db).load(contact);
+		assertNotNull(keys);
+		assertArrayEquals(idKey.getBytes(), keys.getPendingIdKey().getBytes());
+	}
+
+	@Test
+	public void wipingTheCallersKeysLeavesTheStoredKeysIntact()
+			throws Exception {
+		RootKeyStore store = new RootKeyStore(db);
+		SecretKey root = getSecretKey();
+		SecretKey confirmKey = getSecretKey();
+		SecretKey idKey = getSecretKey();
+		byte[] rootCopy = root.getBytes().clone();
+		byte[] confirmCopy = confirmKey.getBytes().clone();
+		byte[] idCopy = idKey.getBytes().clone();
+		assertTrue(store.storePending(contact, 0, root, confirmKey, idKey,
+				true));
+		root.clear();
+		confirmKey.clear();
+		idKey.clear();
+		ContactRootKeys keys = store.load(contact);
+		assertArrayEquals(rootCopy, keys.getPending().getBytes());
+		assertArrayEquals(confirmCopy, keys.getPendingConfirmKey().getBytes());
+		assertArrayEquals(idCopy, keys.getPendingIdKey().getBytes());
+		keys.clear();
+		keys = store.load(contact);
+		assertArrayEquals(idCopy, keys.getPendingIdKey().getBytes());
+		keys.getPending().clear();
+		keys.getCurrent().clear();
+		assertTrue(store.promote(contact, 0));
+		keys = store.load(contact);
+		assertArrayEquals(rootCopy, keys.getCurrent().getBytes());
+		SecretKey pairing = getSecretKey();
+		byte[] pairingCopy = pairing.getBytes().clone();
+		db.transaction(false, txn -> db.setPcsMode2SessionState(txn, contact,
+				PCS_DIRECTION_SEND, pairing, 0, 0, pairing, null, null, null,
+				true, null));
+		pairing.clear();
+		PcsSessionRow row = db.transactionWithResult(true, txn ->
+				db.getPcsMode2SessionState(txn, contact, PCS_DIRECTION_SEND));
+		assertArrayEquals(pairingCopy, row.getRootKey());
+	}
+
+	@Test
+	public void wipingALoadedRowLeavesTheStoredRowIntact() throws Exception {
+		SecretKey k = getSecretKey();
+		byte[] copy = k.getBytes().clone();
+		db.transaction(false, txn -> db.setPcsMode2SessionState(txn, contact,
+				DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING, k, 1, 0, k,
+				null, null, null, true, null));
+		PcsSessionRow first = db.transactionWithResult(true, txn ->
+				db.getPcsMode2SessionState(txn, contact,
+						DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING));
+		java.util.Arrays.fill(first.getRootKey(), (byte) 0);
+		java.util.Arrays.fill(first.getChainKey(), (byte) 0);
+		PcsSessionRow second = db.transactionWithResult(true, txn ->
+				db.getPcsMode2SessionState(txn, contact,
+						DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING));
+		assertArrayEquals(copy, second.getRootKey());
+		assertArrayEquals(copy, second.getChainKey());
+		RootKeyStore store = new RootKeyStore(db);
+		ContactRootKeys keys = store.load(contact);
+		keys.getCurrent().clear();
+		keys.getPending().clear();
+		keys = store.load(contact);
+		assertArrayEquals(pairingRoot.getBytes(), keys.getCurrent().getBytes());
+		assertArrayEquals(copy, keys.getPending().getBytes());
+	}
+
+	@Test
 	public void theKeysGoWithTheContact() throws Exception {
 		RootKeyStore store = new RootKeyStore(db);
 		assertTrue(store.storePending(contact, 0, getSecretKey(), false));
@@ -130,6 +362,56 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 		assertTrue(store.storePending(contact, 1, getSecretKey(), true));
 		db.transaction(false, txn -> db.removeContact(txn, contact));
 		assertNull(store.load(contact));
+	}
+
+	@Test
+	public void aConnectionEndingAfterItsContactWasRemovedStoresNothing()
+			throws Exception {
+		RootEvolutionTestBed bed = new RootEvolutionTestBed();
+		RootKeyStore store = new RootKeyStore(db);
+		RootEvolutionManager manager = new RootEvolutionManager(store,
+				bed.crypto, bed.mlKem, () -> 5_000_000L);
+		String stalls = RootKeyStore.STALLS_KEY_PREFIX + contact.getInt();
+		String since = RootKeyStore.STALLED_SINCE_KEY_PREFIX + contact.getInt();
+		String notRenewing =
+				RootKeyStore.NOT_RENEWING_KEY_PREFIX + contact.getInt();
+		assertTrue(store.hasContact(contact));
+		store.setPeerEnforces(contact, true);
+
+		RootEvolution counted = new RootEvolution(manager, contact, true);
+		counted.start(ZwfControlHandler.eager(p -> {
+		}));
+		counted.onPeerStreamAuthenticated(0);
+		counted.close();
+		assertArrayEquals("a connection that ended before the greeting of a"
+				+ " contact that is still there was not counted",
+				new long[] {1, 5_000_000L}, store.stalls(contact));
+		assertTrue(manager.recentlyStalled(contact.getInt()));
+
+		RootEvolution open = new RootEvolution(manager, contact, true);
+		open.start(ZwfControlHandler.eager(p -> {
+		}));
+		open.onPeerStreamAuthenticated(0);
+		db.transaction(false, txn -> {
+			db.removeContact(txn, contact);
+			Settings forgotten = new Settings();
+			forgotten.putInt(stalls, 0);
+			forgotten.putLong(since, 0);
+			forgotten.putBoolean(notRenewing, false);
+			db.mergeSettings(txn, forgotten, RootKeyStore.SETTINGS_NAMESPACE);
+		});
+		manager.forget(contact);
+		assertFalse(store.hasContact(contact));
+		open.close();
+		open.close();
+
+		Settings s = db.transactionWithResult(true, txn ->
+				db.getSettings(txn, RootKeyStore.SETTINGS_NAMESPACE));
+		assertEquals("a stalled connection was stored for a removed contact",
+				0, s.getInt(stalls, -1));
+		assertEquals(0, s.getLong(since, -1));
+		assertFalse(s.getBoolean(notRenewing, true));
+		assertFalse(manager.recentlyStalled(contact.getInt()));
 	}
 
 	@Test
@@ -202,6 +484,31 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 		assertTrue(store.isOutOfSync(contact));
 		store.markOutOfSync(contact, false);
 		assertFalse(store.isOutOfSync(contact));
+	}
+
+	@Test
+	public void theRenewalStateIsStoredAndClearedByARenewal()
+			throws Exception {
+		RootKeyStore store = new RootKeyStore(db);
+		assertArrayEquals(new long[] {0, 0}, store.stalls(contact));
+		assertFalse(store.isNotRenewing(contact));
+		store.setStalls(contact, 4, 1234);
+		store.markNotRenewing(contact, true);
+		store.markOutOfSync(contact, true);
+		db.close();
+		db = HyperSqlDatabaseForTests.open(testDir, dbKey, new NoBus(),
+				messageFactory);
+		store = new RootKeyStore(db);
+		assertArrayEquals(new long[] {4, 1234}, store.stalls(contact));
+		assertTrue(store.isNotRenewing(contact));
+		store.renewed(contact, 5678);
+		assertArrayEquals(new long[] {0, 0}, store.stalls(contact));
+		assertFalse(store.isNotRenewing(contact));
+		assertFalse(store.isOutOfSync(contact));
+		assertEquals(5678, store.evolvedAt(contact));
+		store.markNotRenewing(contact, true);
+		store.markNotRenewing(contact, false);
+		assertFalse(store.isNotRenewing(contact));
 	}
 
 	@Test

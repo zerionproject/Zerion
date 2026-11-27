@@ -13,6 +13,7 @@ import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -21,17 +22,18 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 @NotNullByDefault
-final class InstallSource {
+public final class InstallSource {
+
+	public static final List<String> FDROID_CLIENTS =
+			Collections.unmodifiableList(Arrays.asList("org.fdroid.fdroid",
+					"org.fdroid.basic", "com.looker.droidify",
+					"com.machiav3lli.fdroid", "eu.bubu1.fdroidclassic"));
 
 	private static final Map<String, String> STORES = new HashMap<>();
 
 	static {
 		STORES.put("com.android.vending", "Google Play");
-		STORES.put("org.fdroid.fdroid", "F-Droid");
-		STORES.put("org.fdroid.basic", "F-Droid");
-		STORES.put("com.looker.droidify", "F-Droid");
-		STORES.put("com.machiav3lli.fdroid", "F-Droid");
-		STORES.put("eu.bubu1.fdroidclassic", "F-Droid");
+		for (String pkg : FDROID_CLIENTS) STORES.put(pkg, "F-Droid");
 		STORES.put("dev.imranr.obtainium", "Obtainium");
 		STORES.put("app.accrescent.client", "Accrescent");
 		STORES.put("com.aurora.store", "Aurora Store");
@@ -42,7 +44,7 @@ final class InstallSource {
 
 	@Nullable
 	static String storeLabel(Context ctx) {
-		return labelFor(installer(ctx));
+		return labelFor(installerPackage(ctx));
 	}
 
 	@Nullable
@@ -50,8 +52,13 @@ final class InstallSource {
 		return installerPackage == null ? null : STORES.get(installerPackage);
 	}
 
+	public static boolean isFdroidClient(@Nullable String installerPackage) {
+		return installerPackage != null
+				&& FDROID_CLIENTS.contains(installerPackage);
+	}
+
 	@Nullable
-	private static String installer(Context ctx) {
+	public static String installerPackage(Context ctx) {
 		PackageManager pm = ctx.getPackageManager();
 		String pkg = ctx.getPackageName();
 		try {

@@ -22,6 +22,8 @@ public class PrivateMessageHeader extends ConversationMessageHeader {
 	private final MessageId replyToId;
 	private final boolean mesh;
 	private final boolean edited;
+	private final boolean viewOnce;
+	private final boolean viewOnceOpened;
 
 	public PrivateMessageHeader(MessageId id, GroupId groupId, long timestamp,
 			boolean local, boolean read, boolean sent, boolean seen,
@@ -52,12 +54,32 @@ public class PrivateMessageHeader extends ConversationMessageHeader {
 			boolean hasText, List<AttachmentHeader> headers,
 			long autoDeleteTimer, @Nullable MessageId replyToId, boolean mesh,
 			boolean edited) {
+		this(id, groupId, timestamp, local, read, sent, seen, hasText,
+				headers, autoDeleteTimer, replyToId, mesh, edited, false,
+				false);
+	}
+
+	public PrivateMessageHeader(MessageId id, GroupId groupId, long timestamp,
+			boolean local, boolean read, boolean sent, boolean seen,
+			boolean hasText, List<AttachmentHeader> headers,
+			long autoDeleteTimer, @Nullable MessageId replyToId, boolean mesh,
+			boolean edited, boolean viewOnce, boolean viewOnceOpened) {
 		super(id, groupId, timestamp, local, read, sent, seen, autoDeleteTimer);
 		this.hasText = hasText;
 		this.attachmentHeaders = headers;
 		this.replyToId = replyToId;
 		this.mesh = mesh;
 		this.edited = edited;
+		this.viewOnce = viewOnce;
+		this.viewOnceOpened = viewOnce && viewOnceOpened;
+	}
+
+	public boolean isViewOnce() {
+		return viewOnce;
+	}
+
+	public boolean isViewOnceOpened() {
+		return viewOnceOpened;
 	}
 
 	public boolean isEdited() {

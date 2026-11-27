@@ -1,5 +1,7 @@
 package org.zerionproject.transport;
 
+import org.zerionproject.tor.TorActivitySink;
+import org.zerionproject.tor.TorActivitySink.Activity;
 import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
 import org.zerionproject.tor.TorWrapper.TorState;
@@ -86,6 +88,7 @@ public class ZtpTorTransport implements OverlayTransport {
 	private final TorProcessWatch processWatch;
 	private final OnionTargetFactory targets;
 	private final AtomicBoolean running = new AtomicBoolean(false);
+	private volatile boolean reducedConnectionPadding = false;
 	private final AtomicBoolean torDead = new AtomicBoolean(false);
 	private final AtomicBoolean restarting = new AtomicBoolean(false);
 	private final java.util.concurrent.atomic.AtomicInteger losses =
@@ -128,6 +131,7 @@ public class ZtpTorTransport implements OverlayTransport {
 	private volatile Runnable torReconfiguredListener;
 	@Nullable
 	private volatile DialListener dialListener;
+	private volatile TorActivitySink activity = TorActivitySink.NONE;
 
 	public interface DialListener {
 		void dialSucceeded(int contactId, String onion);
@@ -135,6 +139,10 @@ public class ZtpTorTransport implements OverlayTransport {
 
 	public void setDialListener(@Nullable DialListener listener) {
 		this.dialListener = listener;
+	}
+
+	public void setActivitySink(TorActivitySink activity) {
+		this.activity = activity;
 	}
 
 	public ZtpTorTransport(TorWrapper tor, SocketFactory socketFactory,
@@ -279,10 +287,20 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 	}
 
+	public void setReducedConnectionPadding(boolean reduced) {
+		reducedConnectionPadding = reduced;
+		if (!running.get()) return;
+		try {
+			tor.enableReducedConnectionPadding(reduced);
+		} catch (IOException | RuntimeException ignored) {
+		}
+	}
+
 	private void startTor() throws IOException, InterruptedException {
 		tor.start();
 		try {
 			tor.enableConnectionPadding(true);
+			tor.enableReducedConnectionPadding(reducedConnectionPadding);
 			privacyConfigurator.applyAndVerify();
 		} catch (IOException e) {
 			try {
@@ -467,6 +485,7 @@ public class ZtpTorTransport implements OverlayTransport {
 				}
 				continue;
 			}
+			activity.noteActivity(Activity.CONNECTION_ATTEMPT);
 			if (!budget.inbound.tryAcquire()) {
 				closeQuietly(socket);
 				continue;
@@ -511,7 +530,7 @@ public class ZtpTorTransport implements OverlayTransport {
 			}
 			InputStream in = new PreambleDeadlineInputStream(
 					socket.getInputStream(), TAG_LENGTH, onTagDelivered,
-					clock, tagTimeout);
+					clock, tagTimeout, socket);
 			handler.handleIncoming(TorConstants.ID, in,
 					socket.getOutputStream(), authorized, localOnion);
 		} catch (IOException e) {
@@ -524,26 +543,62 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 	}
 
+	static final class SocketReadTimeoutInputStream
+			extends java.io.FilterInputStream
+			implements ZtpReadTimeoutControl {
+
+		private final Socket socket;
+
+		SocketReadTimeoutInputStream(InputStream in, Socket socket) {
+			super(in);
+			this.socket = socket;
+		}
+
+		@Override
+		public void setReadTimeout(int timeoutMs) throws IOException {
+			socket.setSoTimeout(timeoutMs);
+		}
+	}
+
 	static final class PreambleDeadlineInputStream
-			extends java.io.FilterInputStream {
+			extends java.io.FilterInputStream
+			implements ZtpReadTimeoutControl {
 
 		private final int preambleLength;
 		private final Runnable onPreambleDelivered;
 		private final LongSupplier clock;
 		private final long deadlineMs;
 		private final long startedMs;
+		@Nullable
+		private final Socket socket;
 		private long delivered = 0;
 		private boolean signalled = false;
 
 		PreambleDeadlineInputStream(InputStream in, int preambleLength,
 				Runnable onPreambleDelivered, LongSupplier clock,
 				long deadlineMs) {
+			this(in, preambleLength, onPreambleDelivered, clock, deadlineMs,
+					null);
+		}
+
+		PreambleDeadlineInputStream(InputStream in, int preambleLength,
+				Runnable onPreambleDelivered, LongSupplier clock,
+				long deadlineMs, @Nullable Socket socket) {
 			super(in);
 			this.preambleLength = preambleLength;
 			this.onPreambleDelivered = onPreambleDelivered;
 			this.clock = clock;
 			this.deadlineMs = deadlineMs;
 			this.startedMs = clock.getAsLong();
+			this.socket = socket;
+		}
+
+		@Override
+		public void setReadTimeout(int timeoutMs) throws IOException {
+			Socket s = socket;
+			if (s == null) throw new IOException("no socket");
+			if (!signalled) return;
+			s.setSoTimeout(timeoutMs);
 		}
 
 		private void checkDeadline() throws IOException {
@@ -591,6 +646,7 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 		SocketFactory factory = fast ? fastSocketFactory : socketFactory;
 		Socket socket;
+		activity.noteActivity(Activity.CONNECTION_ATTEMPT);
 		try {
 			socket = factory.createSocket(peerOnion + ".onion",
 					REMOTE_ONION_PORT);
@@ -604,7 +660,8 @@ public class ZtpTorTransport implements OverlayTransport {
 		try {
 			configureSocket(socket);
 			authenticated = handler.handleOutgoingSession(TorConstants.ID,
-					contactId, socket.getInputStream(),
+					contactId, new SocketReadTimeoutInputStream(
+							socket.getInputStream(), socket),
 					socket.getOutputStream(), refusalExpected);
 		} catch (IOException e) {
 		} finally {

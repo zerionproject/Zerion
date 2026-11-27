@@ -26,12 +26,16 @@ import static org.zerionproject.core.api.sync.RecordTypes.OFFER;
 import static org.zerionproject.core.api.sync.RecordTypes.PRIORITY;
 import static org.zerionproject.core.api.sync.RecordTypes.REQUEST;
 import static org.zerionproject.core.api.sync.RecordTypes.VERSIONS;
+import static org.zerionproject.core.api.sync.SyncConstants.MESSAGE_FRAGMENT_PAYLOAD_BYTES;
 import static org.zerionproject.core.api.sync.SyncConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.api.UniqueId.LENGTH;
 
 @NotThreadSafe
 @NotNullByDefault
 class SyncRecordWriterImpl implements SyncRecordWriter {
+
+	private static final java.security.SecureRandom COVER_RANDOM =
+			new java.security.SecureRandom();
 
 	private final MessageFactory messageFactory;
 	private final RecordWriter writer;
@@ -56,7 +60,8 @@ class SyncRecordWriterImpl implements SyncRecordWriter {
 
 	private static final int FRAGMENT_HEADER_LEN = LENGTH + 4;
 	private static final int FRAGMENT_THRESHOLD_BYTES = 900;
-	private static final int FRAGMENT_PAYLOAD_BYTES = 768;
+	private static final int FRAGMENT_PAYLOAD_BYTES =
+			MESSAGE_FRAGMENT_PAYLOAD_BYTES;
 
 	@Override
 	public void writeMessage(Message m) throws IOException {
@@ -113,7 +118,7 @@ class SyncRecordWriterImpl implements SyncRecordWriter {
 	public void writeCover(int paddingBytes) throws IOException {
 		if (paddingBytes < 0) paddingBytes = 0;
 		byte[] padding = new byte[paddingBytes];
-		java.util.concurrent.ThreadLocalRandom.current().nextBytes(padding);
+		COVER_RANDOM.nextBytes(padding);
 		writer.writeRecord(new Record(PROTOCOL_VERSION, COVER, padding));
 	}
 

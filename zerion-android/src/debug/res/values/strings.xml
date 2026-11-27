@@ -28,6 +28,13 @@
 	<string name="lifecycle_force_not_announcing" translatable="false">No rotation in progress</string>
 	<string name="lifecycle_failed" translatable="false">The step failed. Check that Tor is running</string>
 	<string name="lifecycle_detail_none" translatable="false">none</string>
+	<string name="lifecycle_puzzle_title" translatable="false">Measure invite puzzle</string>
+	<string name="lifecycle_puzzle_summary" translatable="false">Solve 16, 20 and 24 bit invite puzzles with the real solver on this phone</string>
+	<string name="lifecycle_puzzle_running" translatable="false">Measuring. A slow phone can take minutes for 24 bits</string>
+	<string name="lifecycle_puzzle_result" translatable="false">%1$d bits: %2$s</string>
+	<string name="lifecycle_puzzle_not_solved" translatable="false">not solved</string>
+	<string name="lifecycle_puzzle_ms" translatable="false">%1$d ms</string>
+	<string name="lifecycle_puzzle_rate" translatable="false">Measured hash rate: %1$d hashes per second</string>
 	<string name="lifecycle_detail_yes" translatable="false">yes</string>
 	<string name="lifecycle_detail_no" translatable="false">no</string>
 	<string name="lifecycle_detail_own_rotation" translatable="false">Own open address rotation: %1$s, announced %2$s</string>

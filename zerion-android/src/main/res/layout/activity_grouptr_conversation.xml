@@ -100,6 +100,8 @@
 		android:orientation="vertical"
 		app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+		<include layout="@layout/pinned_message_banner" />
+
 		<TextView
 			android:id="@+id/reachBanner"
 			android:layout_width="match_parent"
@@ -193,27 +195,32 @@
 				android:paddingTop="8dp"
 				android:paddingBottom="8dp">
 
-				<FrameLayout
+				<LinearLayout
+					android:id="@+id/inputBox"
 					android:layout_width="0dp"
 					android:layout_height="wrap_content"
 					android:layout_gravity="center_vertical"
 					android:layout_marginEnd="4dp"
-					android:layout_weight="1">
+					android:layout_weight="1"
+					android:background="@drawable/text_input_background"
+					android:gravity="center_vertical"
+					android:orientation="horizontal">
 
 					<com.vanniktech.emoji.EmojiEditText
 						android:id="@+id/messageInput"
-						android:layout_width="match_parent"
+						android:layout_width="0dp"
 						android:layout_height="wrap_content"
-						android:background="@drawable/text_input_background"
+						android:layout_weight="1"
+						android:background="@android:color/transparent"
 						android:hint="@string/grouptr_input_hint"
 						android:imeOptions="flagNoPersonalizedLearning|actionSend"
 						android:importantForAutofill="no"
 						android:inputType="textMultiLine|textCapSentences|textNoSuggestions"
 						android:maxLines="6"
 						android:minHeight="48dp"
-						android:paddingStart="40dp"
+						android:paddingStart="16dp"
 						android:paddingTop="12dp"
-						android:paddingEnd="16dp"
+						android:paddingEnd="4dp"
 						android:paddingBottom="12dp"
 						android:privateImeOptions="nm"
 						android:scrollbars="vertical"
@@ -221,21 +228,21 @@
 						android:textColorHint="?attr/zerionColorOnSurfaceMuted"
 						android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
-				</FrameLayout>
+					<androidx.appcompat.widget.AppCompatImageButton
+						android:id="@+id/attachmentButton"
+						android:layout_width="48dp"
+						android:layout_height="48dp"
+						android:layout_gravity="center_vertical"
+						android:background="?attr/selectableItemBackgroundBorderless"
+						android:clickable="true"
+						android:contentDescription="@string/add_attachment"
+						android:focusable="true"
+						android:padding="12dp"
+						android:scaleType="center"
+						app:srcCompat="@drawable/ic_add_circle"
+						app:tint="?attr/zerionColorAccentIcon" />
 
-				<androidx.appcompat.widget.AppCompatImageButton
-					android:id="@+id/attachmentButton"
-					android:layout_width="48dp"
-					android:layout_height="48dp"
-					android:layout_gravity="center_vertical"
-					android:background="?attr/selectableItemBackground"
-					android:clickable="true"
-					android:contentDescription="@string/add_attachment"
-					android:focusable="true"
-					android:padding="12dp"
-					android:scaleType="center"
-					app:srcCompat="@drawable/ic_add_circle"
-					app:tint="?attr/zerionColorAccentIcon" />
+				</LinearLayout>
 
 				<FrameLayout
 					android:layout_width="48dp"

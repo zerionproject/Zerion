@@ -1,14 +1,18 @@
 package com.professor.zerion.android.vault.ui;
 
 import android.content.Context;
+import android.os.Build;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 
 import com.google.android.material.textfield.TextInputEditText;
+import com.professor.zerion.android.vault.VaultManager;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -44,6 +48,10 @@ public class SecurePasswordEditText extends TextInputEditText {
 		setImeOptions(getImeOptions() | EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
 		setPrivateImeOptions("nm");
 		setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+		if (Build.VERSION.SDK_INT >= 34) {
+			setAccessibilityDataSensitive(
+					View.ACCESSIBILITY_DATA_SENSITIVE_YES);
+		}
 
 		addTextChangedListener(new TextWatcher() {
 			@Override
@@ -82,6 +90,15 @@ public class SecurePasswordEditText extends TextInputEditText {
 		return passwordChars.length;
 	}
 
+	public boolean holdsNewVaultPassword() {
+		char[] typed = getPasswordChars();
+		try {
+			return VaultManager.acceptsNewPassword(typed);
+		} finally {
+			Arrays.fill(typed, '\0');
+		}
+	}
+
 	public boolean isPasswordEmpty() {
 		return getPasswordLength() == 0;
 	}
@@ -98,6 +115,30 @@ public class SecurePasswordEditText extends TextInputEditText {
 		if (passwordChars.length > 0) {
 			Arrays.fill(passwordChars, '\0');
 		}
+	}
+
+	@Override
+	public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+		super.onInitializeAccessibilityNodeInfo(info);
+		IncognitoInputHelper.maskNode(this, info);
+	}
+
+	@Override
+	public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+		super.onInitializeAccessibilityEvent(event);
+		IncognitoInputHelper.maskEvent(this, event);
+	}
+
+	@Override
+	public void onPopulateAccessibilityEvent(AccessibilityEvent event) {
+		super.onPopulateAccessibilityEvent(event);
+		IncognitoInputHelper.maskEvent(this, event);
+	}
+
+	@Override
+	public void sendAccessibilityEventUnchecked(AccessibilityEvent event) {
+		IncognitoInputHelper.maskEvent(this, event);
+		super.sendAccessibilityEventUnchecked(event);
 	}
 
 	@Override

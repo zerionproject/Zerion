@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @NotNullByDefault
 public final class CacheSweeper {
 
+	public static final String CLEAN_SHARE_DIR = "clean_share";
+
 	private static final String[] TEMP_FILE_PREFIXES = {
 			"vault_pdf_",
 			"vview",
@@ -33,6 +35,7 @@ public final class CacheSweeper {
 	private static final String[] TEMP_DIRS = {
 			"vault_share",
 			"zenc_share",
+			CLEAN_SHARE_DIR,
 			"media_docs",
 			"camera_photos",
 			"grouptr_view",
@@ -53,6 +56,14 @@ public final class CacheSweeper {
 			"media_docs",
 			"grouptr_view",
 			"channel_attach_view",
+	};
+
+	private static final String[] HANDOFF_CACHE_DIRS = {
+			"vault_share",
+			"zenc_share",
+			CLEAN_SHARE_DIR,
+			"camera_photos",
+			ExternalHandoff.DIR,
 	};
 
 	static final String[] DATA_DIRS = {
@@ -91,6 +102,13 @@ public final class CacheSweeper {
 		SecureMemory.secureDeleteDir(new File(cache, name), 0L);
 	}
 
+	public static void sweepDirOlderThan(Context ctx, String name,
+			long before) {
+		File cache = ctx.getCacheDir();
+		if (cache == null) return;
+		sweepOlderThan(new File(cache, name), before);
+	}
+
 	public static void sweep(Context ctx) {
 		com.professor.zerion.android.vault.share.VaultShareRegistry
 				.releaseAll();
@@ -127,7 +145,7 @@ public final class CacheSweeper {
 				if (files != null) {
 					for (File f : files) {
 						if (f.isFile() && hasTempPrefix(f.getName())
-								&& f.lastModified() < processStartedAt
+								&& isLeftover(f, processStartedAt)
 								&& !inUse(f)) {
 							SecureMemory.secureDeleteFile(f, 0L, false);
 						}
@@ -138,8 +156,58 @@ public final class CacheSweeper {
 			for (String dir : PRIVATE_TEMP_DIRS) {
 				SecureMemory.secureDeleteDir(new File(cache, dir), 0L);
 			}
+			for (String dir : HANDOFF_CACHE_DIRS) {
+				sweepLeftoversIn(new File(cache, dir), processStartedAt);
+			}
+		}
+		File files = ctx.getFilesDir();
+		if (files != null) {
+			for (String dir : FILES_DIRS) {
+				sweepLeftoversIn(new File(files, dir), processStartedAt);
+			}
 		}
 		sweepNoBackupDirs(ctx);
+	}
+
+	static boolean isLeftover(File f, long processStartedAt) {
+		long modified = f.lastModified();
+		long readAfterTheFileTime = System.currentTimeMillis();
+		return modified < processStartedAt
+				|| modified > readAfterTheFileTime;
+	}
+
+	private static void sweepLeftoversIn(File dir, long processStartedAt) {
+		File[] files;
+		try {
+			files = dir.listFiles();
+		} catch (SecurityException e) {
+			return;
+		}
+		if (files == null) return;
+		for (File f : files) {
+			if (f.isDirectory()) {
+				SecureMemory.secureDeleteDir(f, 0L);
+			} else if (isLeftover(f, processStartedAt) && !inUse(f)) {
+				SecureMemory.secureDeleteFile(f, 0L, false);
+			}
+		}
+	}
+
+	private static void sweepOlderThan(File dir, long before) {
+		File[] files;
+		try {
+			files = dir.listFiles();
+		} catch (SecurityException e) {
+			return;
+		}
+		if (files == null) return;
+		for (File f : files) {
+			if (f.isDirectory()) {
+				SecureMemory.secureDeleteDir(f, 0L);
+			} else if (f.lastModified() < before && !inUse(f)) {
+				SecureMemory.secureDeleteFile(f, 0L, false);
+			}
+		}
 	}
 
 	public static void sweepFilesDirs(Context ctx) {

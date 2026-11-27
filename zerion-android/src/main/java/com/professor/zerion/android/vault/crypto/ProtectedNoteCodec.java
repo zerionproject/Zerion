@@ -2,6 +2,10 @@ package com.professor.zerion.android.vault.crypto;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -27,12 +31,42 @@ public final class ProtectedNoteCodec {
 	private static final int V1_ITERATIONS = 200000;
 	private static final int IV_BYTES = 12;
 	private static final int KEY_BYTES = 32;
+	private static final int TAG_BYTES = 16;
+	private static final int SHORTEST_SEALED_BYTES =
+			V1_HEADER_BYTES + TAG_BYTES;
 
 	private ProtectedNoteCodec() {
 	}
 
+	public static String plainTitle(String title) {
+		String plain = title;
+		while (plain.startsWith(TITLE_PREFIX)) {
+			plain = plain.substring(TITLE_PREFIX.length());
+		}
+		return plain;
+	}
+
+	public static boolean couldBeSealed(byte[] stored) {
+		if (stored.length < SHORTEST_SEALED_BYTES) return false;
+		return !isText(stored);
+	}
+
+	private static boolean isText(byte[] stored) {
+		try {
+			CharBuffer decoded = StandardCharsets.UTF_8.newDecoder()
+					.onMalformedInput(CodingErrorAction.REPORT)
+					.onUnmappableCharacter(CodingErrorAction.REPORT)
+					.decode(ByteBuffer.wrap(stored));
+			if (decoded.hasArray()) Arrays.fill(decoded.array(), '\0');
+			return true;
+		} catch (CharacterCodingException e) {
+			return false;
+		}
+	}
+
 	public static byte[] seal(String content, char[] password)
 			throws Exception {
+		NewPassword.requireTypable(password);
 		byte[] salt = new byte[V2_SALT_BYTES];
 		new SecureRandom().nextBytes(salt);
 		byte[] passwordKey = null;

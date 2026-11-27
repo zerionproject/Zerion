@@ -2,8 +2,9 @@
 #
 # Builds the app the way F-Droid's build server does: `fdroid build --test
 # --on-server` in registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie,
-# with fdroidserver master and the metadata written by fdroid-metadata.py on
-# top of fdroiddata master. Tor and Monero are compiled from pinned source by
+# with fdroidserver and fdroiddata at the commits pinned below (see
+# docs/FDROID.md) and the metadata written by fdroid-metadata.py on top of
+# that fdroiddata. Tor and Monero are compiled from pinned source by
 # the recipe and every Gradle release gate runs (dependency verification,
 # native pins, enforceNoLogs, verifyTranslations, R8, the wallet regression
 # suite). The unsigned APK and the build log land in /out.
@@ -15,19 +16,27 @@
 set -euo pipefail
 : "${VERCODE:?}"
 APPID=com.professor.zerion
+FDROIDDATA_COMMIT=e3d332b139f35112ffe1503ec93606dbfd05ab40
+FDROIDSERVER_COMMIT=0c3166f227d5917c913fa0d66a1ecab3bc7362b8
+fetch_pinned() {
+	git init -q "$1"
+	git -C "$1" fetch -q --depth 1 "$2" "$3"
+	git -C "$1" checkout -q --detach FETCH_HEAD
+	test "$(git -C "$1" rev-parse HEAD)" = "$3"
+}
 git config --system --add safe.directory '*'
 source /etc/profile.d/bsenv.sh
 export CI_PROJECT_DIR=/builds/fdroid/fdroiddata
 export DEBIAN_FRONTEND=noninteractive
 mkdir -p /builds/fdroid
-git clone -q --depth 1 https://gitlab.com/fdroid/fdroiddata.git "$CI_PROJECT_DIR"
+fetch_pinned "$CI_PROJECT_DIR" https://gitlab.com/fdroid/fdroiddata.git "$FDROIDDATA_COMMIT"
 cp /in/metadata.yml "$CI_PROJECT_DIR/metadata/$APPID.yml"
 cd "$CI_PROJECT_DIR"
 test -d build || mkdir build
 apt-get update >/dev/null && apt-get -qy dist-upgrade >/dev/null
 yes | sdkmanager "platform-tools" "build-tools;31.0.0" >/dev/null 2>&1 || true
 rm -rf "$fdroidserver"
-git clone -q --depth 1 https://gitlab.com/fdroid/fdroidserver.git "$fdroidserver"
+fetch_pinned "$fdroidserver" https://gitlab.com/fdroid/fdroidserver.git "$FDROIDSERVER_COMMIT"
 {
 	echo "fdroiddata $(git log -1 --format=%H)"
 	echo "fdroidserver $(git -C "$fdroidserver" log -1 --format=%H)"

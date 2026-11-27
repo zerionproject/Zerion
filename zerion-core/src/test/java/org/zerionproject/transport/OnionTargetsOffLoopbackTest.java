@@ -39,6 +39,8 @@ public class OnionTargetsOffLoopbackTest {
 	private final ExecutorService exec = Executors.newCachedThreadPool();
 	private final List<String> publishedTargets =
 			Collections.synchronizedList(new ArrayList<>());
+	private final List<String> publishedKeys =
+			Collections.synchronizedList(new ArrayList<>());
 	private final List<Boolean> seen =
 			Collections.synchronizedList(new ArrayList<>());
 	private final CountDownLatch twoIncoming = new CountDownLatch(2);
@@ -56,6 +58,7 @@ public class OnionTargetsOffLoopbackTest {
 		public HiddenServiceProperties publishHiddenService(String target,
 				int remotePort, @Nullable String privateKey) {
 			publishedTargets.add(target);
+			publishedKeys.add(privateKey);
 			return new HiddenServiceProperties(
 					"onion" + publishedTargets.size(),
 					privateKey == null ? "generated" : privateKey);
@@ -186,6 +189,65 @@ public class OnionTargetsOffLoopbackTest {
 		assertEquals(target, publishedTargets.get(1));
 		assertEquals("generated", h.getPrivateKey());
 		t.stop();
+	}
+
+	@Test(timeout = 30_000)
+	public void aDialOnlyEndpointPublishesNothingAndDialsTheOtherRole()
+			throws Exception {
+		ZtpTorTransport t = transport();
+		t.start(null);
+		TorRendezvousCrypto bySeed = new TorRendezvousCrypto() {
+			@Override
+			public String getOnion(byte[] seed) {
+				return "onion" + seed[0];
+			}
+
+			@Override
+			public String getPrivateKeyBlob(byte[] seed) {
+				return "ED25519-V3:" + seed[0];
+			}
+		};
+		ZtpDuplexPlugin plugin = new ZtpDuplexPlugin(exec, exec, null,
+				SocketFactory.getDefault(), new ZtpTorTransportTest.StubTor(),
+				t, null, bySeed, null, null, null, null, null);
+		int before = publishedTargets.size();
+		RendezvousEndpoint dialer =
+				plugin.createDialOnlyRendezvousEndpoint(seeds(), true);
+		assertNotNull(dialer);
+		assertEquals(before, publishedTargets.size());
+		assertEquals("onion2", dialer.getRemoteTransportProperties()
+				.get(org.zerionproject.core.api.plugin.TorConstants
+						.PROP_ONION_V3));
+		RendezvousEndpoint publisher = plugin.createRendezvousEndpoint(
+				seeds(), false, new ConnectionHandler() {
+					@Override
+					public void handleConnection(DuplexTransportConnection c) {
+					}
+
+					@Override
+					public void handleReader(TransportConnectionReader r) {
+					}
+
+					@Override
+					public void handleWriter(TransportConnectionWriter w) {
+					}
+				});
+		assertNotNull(publisher);
+		assertEquals("ED25519-V3:2",
+				publishedKeys.get(publishedKeys.size() - 1));
+		dialer.close();
+		publisher.close();
+		t.stop();
+	}
+
+	private static org.zerionproject.core.api.rendezvous.KeyMaterialSource
+			seeds() {
+		int[] calls = {0};
+		return n -> {
+			byte[] b = new byte[n];
+			java.util.Arrays.fill(b, (byte) ++calls[0]);
+			return b;
+		};
 	}
 
 	private ZtpDuplexPlugin plugin(ZtpTorTransport t) {

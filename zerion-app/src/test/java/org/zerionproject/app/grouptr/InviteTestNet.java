@@ -5,10 +5,13 @@ import org.zerionproject.app.api.messaging.event.GroupEpochCommitEvent;
 import org.zerionproject.app.api.messaging.event.GroupMemberListSnapshotEvent;
 import org.zerionproject.app.api.messaging.event.GroupMembershipChangedEvent;
 import org.zerionproject.app.api.messaging.event.GroupMembershipChangedEvent.ChangeKind;
+import org.zerionproject.app.api.messaging.event.GroupPostDeleteReceivedEvent;
 import org.zerionproject.app.api.messaging.event.GroupPostReceivedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrInviteOfferReceivedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrInviteResponseReceivedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrMemberInviteRecordEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrRelayRecordEvent;
+import org.zerionproject.app.messaging.UnsignedFormsMemory;
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.contact.Contact;
@@ -116,6 +119,7 @@ final class InviteTestNet {
 		final byte[] mlDsa;
 		final LocalAuthor local;
 		GroupTrManagerImpl manager;
+		UnsignedFormsMemory memory;
 		final List<Object> broadcasts = new ArrayList<>();
 		final Map<String, Settings> settings = new HashMap<>();
 		private final List<Event> pendingEvents = new ArrayList<>();
@@ -166,15 +170,20 @@ final class InviteTestNet {
 		}
 
 		private GroupTrManagerImpl newManager() {
-			return new GroupTrManagerImpl(
-					fake(DatabaseComponent.class, this::db),
-					Runnable::run,
-					fake(SettingsManager.class, this::settingsCall),
+			DatabaseComponent db = fake(DatabaseComponent.class, this::db);
+			SettingsManager settingsManager =
+					fake(SettingsManager.class, this::settingsCall);
+			ContactManager contactManager =
+					fake(ContactManager.class, this::contactsCall);
+			MessagingManager messagingManager =
+					fake(MessagingManager.class, this::messaging);
+			memory = new UnsignedFormsMemory(db, settingsManager,
+					contactManager, messagingManager);
+			return new GroupTrManagerImpl(db, Runnable::run, settingsManager,
 					fake(ClientHelper.class, this::client),
 					fake(CryptoComponent.class, this::crypto),
 					fake(IdentityManager.class, this::identity),
-					fake(ContactManager.class, this::contactsCall),
-					fake(MessagingManager.class, this::messaging),
+					contactManager, messagingManager,
 					fake(EventBus.class, (n, a) -> {
 						if (n.equals("broadcast")) {
 							broadcasts.add(a[0]);
@@ -195,7 +204,9 @@ final class InviteTestNet {
 									((Runnable) a[0]).run();
 								}
 								return null;
-							}));
+							}),
+					id -> {
+				}, memory);
 		}
 
 		void runScheduled() {
@@ -241,13 +252,26 @@ final class InviteTestNet {
 		}
 
 		void versionUpdated(Node other, int minor) {
-			ContactId c = contactIdOf(other);
-			versions.put(c, minor);
+			ContactId c = versionStored(other, minor);
 			manager.eventOccurred(new org.zerionproject.core.api.versioning
 					.event.ClientVersionUpdatedEvent(c,
 					new org.zerionproject.core.api.versioning.ClientVersion(
 							MessagingManager.CLIENT_ID,
 							MessagingManager.MAJOR_VERSION, minor)));
+		}
+
+		ContactId versionStored(Node other, int minor) {
+			ContactId c = contactIdOf(other);
+			versions.put(c, minor);
+			try {
+				memory.remoteVersionStored(new Transaction(null, false), c,
+						new org.zerionproject.core.api.versioning
+								.ClientVersion(MessagingManager.CLIENT_ID,
+								MessagingManager.MAJOR_VERSION, minor));
+			} catch (org.zerionproject.core.api.db.DbException e) {
+				throw new AssertionError(e);
+			}
+			return c;
 		}
 
 		void forgetContact(Node other) {
@@ -695,6 +719,15 @@ final class InviteTestNet {
 							snapshotSignedInput(gid, (int) epoch, ts, mc),
 							p.bytes);
 				}
+				case 47:
+					return new GroupPostDeleteReceivedEvent(from,
+							new MessageId(getRandomId()), r.getRaw(1),
+							r.getLong(2), r.getRaw(3), r.getRaw(4), r.getLong(5),
+							r.getRaw(6));
+				case 60:
+				case 61:
+					return new GroupTrRelayRecordEvent(from,
+							new MessageId(getRandomId()), type, r, p.timestamp);
 				case 42:
 					return new GroupTrInviteOfferReceivedEvent(from,
 							new MessageId(getRandomId()), r.getRaw(1),

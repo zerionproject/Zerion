@@ -18,6 +18,9 @@ public interface TorWrapper {
 
 	void setObserver(@Nullable Observer observer);
 
+	default void setStateStore(@Nullable TorStateStore store) {
+	}
+
 	TorState getTorState();
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -42,6 +45,10 @@ public interface TorWrapper {
 	void disableBridges() throws IOException;
 
 	void enableConnectionPadding(boolean enable) throws IOException;
+
+	default void enableReducedConnectionPadding(boolean enable)
+			throws IOException {
+	}
 
 	void enableIpv6(boolean ipv6Only) throws IOException;
 

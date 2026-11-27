@@ -11,8 +11,12 @@ client they announce (`MessagingManager.MINOR_VERSION`). Minor version 8
 at the recipient's announced version before using any of them:
 
 - **Large posts.** A receiver on version 8 keeps a post's body in the
-  message only, so it takes in a post as large as a message allows (the
-  composer allows about 9.5 MB). A receiver on an earlier version copies the
+  message only, so it takes in a post as large as a message allows. From
+  3.0.19 the composer and `sendGroupPost` allow a post body of at most
+  977,368 bytes (`GroupTrManager.MAX_POST_BODY_LENGTH`), so that the post
+  and its relay request each fit one sync record; larger posts, which the
+  composer of 3.0.15 to 3.0.18 allowed up to about 9.5 MB, showed as sent
+  and never arrived. A receiver on an earlier version copies the
   body into the message's metadata, which holds no value longer than 64 KiB,
   and refuses a larger post as invalid. A sender therefore sends a post with
   a body larger than 64 KiB (65,536 bytes) only to members that announce
@@ -85,11 +89,49 @@ probe (58) records, and carries a binding in the invitation records. A
 contact that announces less than 13 cannot be invited to such a group.
 Groups created earlier are unchanged. See "Member keys in private groups".
 
+Minor version 17 (Android 3.0.19, `GROUP_BINDING_V2_MIN_VERSION`) changes
+one slot of the binding: towards a contact that has announced 17 or more at
+any time the `identitySig` slot is empty, so the account key no longer signs the binding
+and the binding is bound to the account only by the authenticated contact
+connection it arrives on and by the member key signature, whose input names
+that account key. Towards a contact whose known version is below 17 and that
+never announced 17 the account key still signs it. A receiver on 17 takes
+both forms. See "Binding (57
+GROUP_KEY_BINDING and the binding slot)".
+
+Minor version 17 (Android 3.0.19, `GROUP_POST_RELAY_MIN_VERSION`) adds two
+records: the relay request (msgType 60), with which a member hands a post (32)
+or a delete for everyone (47) to the creator for the members it cannot reach,
+and the member keys record (msgType 61), with which the creator tells a member
+the ML-DSA-65 key of an author that is not that member's contact. A member on
+17 takes a post or a delete of another member from the creator's device;
+earlier versions take such a record only from the contact that signed it, so
+the creator passes nothing on to them and a member on an earlier version asks
+the creator for nothing. See "Who receives a post".
+
+Minor version 16 (Android 3.0.19, `GROUP_SETTINGS_RELAY_MIN_VERSION`) changes
+no record format: a member on it takes the creator's settings record (46)
+also from another member and hands it on to each fellow member once, a short
+random delay after it took it, without waiting for a post (see msgType 46).
+The same version adds the mesh link keys record to one-to-one chats (type 16,
+"Contacts only
+mode" in [MESH-TRANSPORT.md](../protocol/MESH-TRANSPORT.md)). Minor version 15
+adds pinned messages (msgType 59 and the one-to-one pin record).
+
+Minor version 14 (Android 3.0.19, `VIEW_ONCE_MIN_VERSION`) changes no group
+record: it adds view once photos and videos to one-to-one chats (slot 6 of a
+type 0 body and record type 14, "View once photos and videos" in
+[MESSAGE-EDIT-DELETE.md](../protocol/MESSAGE-EDIT-DELETE.md)). iOS parity: an
+iOS client must refuse slot 6 values other than 1, show view once media only
+once and send and apply record 14 before it announces 14. The same holds for
+the desktop client: a build that does not implement view once announces 13
+(`FeatureFlags.shouldEnableViewOnce` returns false).
+
 ## Two layers: silent membership fan-out + an explicit invite handshake
 
 GroupTr has **two** distinct wire layers, and iOS must implement both:
 
-1. **Membership records (msgTypes 33–41) are silent fan-out.** These are
+1. **Membership records (msgTypes 33 to 41) are silent fan-out.** These are
    signed state-transition records consumed by the membership state machine.
    They are NOT shown in any chat thread and require no user action.
 2. **The invite handshake (msgTypes 42 OFFER / 43 ACCEPT / 44 DECLINE),
@@ -101,7 +143,7 @@ GroupTr has **two** distinct wire layers, and iOS must implement both:
 So the earlier framing - "there is no group invite or accept wire message,
 GroupTr is fan-out-of-signed-records, not invitation-and-accept" - is no
 longer accurate as of the 2026-05 invite layer. Both statements describe the
-membership records (33–41) correctly, but the 42/43/44 handshake layer now
+membership records (33 to 41) correctly, but the 42/43/44 handshake layer now
 sits on top.
 
 When Alice (creator) directly adds Peter to a group via `addMember` (Android
@@ -180,14 +222,18 @@ Alice's pairwise messaging Group with Peter (pairwise contact group)
 | 54 | `GROUPTR_GRANTED_INVITE_OFFER` | A member that holds that right offers a contact an invitation (version 11). Signing label `org.zerionproject/GROUPTR_GRANTED_INVITE_OFFER`. |
 | 55 | `GROUPTR_INVITE_ACCEPT_INCOGNITO` | The invitee accepts a creator's offer under its incognito name (version 11). Carries the signature of 43. |
 | 56 | `GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO` | The invited contact accepts a member's invitation under its incognito name (version 11). Carries the signature of 50. |
-| 57 | `GROUP_KEY_BINDING` | Links the sending contact's account key to its member key in one group, signed by both (version 13). Signing label `org.zerionproject/GROUP_KEY_BINDING`. |
+| 57 | `GROUP_KEY_BINDING` | Links the sending contact's account key to its member key in one group, signed by the member key over an input that names the account key, and towards a contact below version 17 also by the account key (version 13; from version 17 the account signature slot is empty). Signing label `org.zerionproject/GROUP_KEY_BINDING`. |
 | 58 | `GROUP_KEY_PROBE` | Carries the sender's binding under a tag only holders of the group id recognise, and asks a contact that holds the group to answer with its binding if the sender's key is a current member (version 13). |
+| 59 | `GROUP_PIN` | The creator pins one post for every member, or unpins it (version 15 and later). Signing label `org.zerionproject/GROUP_PIN`. |
+| 60 | `GROUP_RELAY_REQUEST` | A member hands one of its own records (a 32 or a 47) to the creator for the listed members it cannot reach; the creator passes the record on unchanged (version 17 and later). No signature of its own: the record inside carries the author's. |
+| 61 | `GROUP_MEMBER_KEYS` | The creator names a member's Ed25519 key and ML-DSA-65 key for a member that is not that member's contact, so a passed-on record can be verified (version 17 and later). Signing label `org.zerionproject/GROUP_MEMBER_KEYS`. |
 
 `32`'s record format is summarised below; this doc covers 33 to 38 and 41
 (the membership records), 42 to 44 (the invite handshake), 46 (the group
 settings), 47 (delete for everyone), 48 to 52 (member invitations, see
 "Member invitations"), 53 and 54 (see "Per-member add rights"), 55 and 56
 (see "Incognito names"), 57 and 58 (see "Member keys in private groups"),
+60 and 61 (see "Who receives a post"),
 and the post bodies carried in slot 5 of msgType 32. msgTypes 39 and 40 are reserved constants only - no validator
 path encodes or accepts them.
 
@@ -218,7 +264,9 @@ post leaves the screen when the timer has run from the time it was sent, and
 each stored copy carries the timer as a cleanup duration that starts when the
 member acknowledges the copy, so a copy still on its way to a member is kept
 until it gets there. A copy that is never acknowledged stays, as a sent
-message does in a conversation (there is no relay). Every stored copy is due
+message does in a conversation (the one exception is the copy the creator
+queues for a member on an author's request, see "Who receives a post", which
+is kept at most 7 days). Every stored copy is due
 for cleanup when its timer runs out; the group screen hides the post at the
 same moment. An earlier version counted every copy from the sender's
 timestamp and scanned every stored post at each start to find expired ones;
@@ -315,12 +363,12 @@ is chosen for display, as before, and removed if its signature fails.
 
 ### Retention of other group records
 
-Group records other than posts (33-38, 41, 43, 44, 46, 47, 48, 50 to 53, 55, 56) are consumed when
+Group records other than posts (33-38, 41, 43, 44, 46, 47, 48, 50 to 53, 55, 56, 60, 61) are consumed when
 they arrive. A received record is kept for 5 minutes, a sent record for 5
 minutes after the contact acknowledged it (a record that is never acknowledged
 stays queued and is sent again). An invite offer (42) is a conversation card
 and is kept like a message, and so is a member invitation offer (49 and 54). What a delete (47) leaves behind on the receiving
-device is described under msgType 47. From 3.0.18 each member this device took out by a removal (34) or a leaving (35) leaves its
+device is described under msgType 47. A copy of a 32 or a 47 that the creator queues for a member on an author's request (see msgType 60) is kept at most 7 days and no longer than the post's own timer, whether or not that member fetched it. From 3.0.18 each member this device took out by a removal (34) or a leaving (35) leaves its
 key and one epoch in the group's settings (`grouptr-order:<groupHex>`, at most 256 members per group, the oldest goes first), until a
 33 of the creator at a higher epoch clears it (see msgTypes 34, 35 and 41); the record goes when the group is removed from the
 device. Epoch commits that earlier 3.0.18 test builds kept there are deleted when the app starts.
@@ -531,9 +579,18 @@ limited form, a snapshot at its own epoch:
   is not dissolved, the snapshot's epoch is strictly higher than the
   local epoch, the list has at most 256 entries and the signature
   verifies against the creator's keys. It replaces the member list;
-  names, joinedAt and ML-DSA keys come from the previous local entry or
-  the contact list, not from the snapshot; and it sets the local epoch
-  to the snapshot's epoch. From 3.0.18 it leaves out a member that this
+  names and joinedAt come from the previous local entry or the contact
+  list, not from the snapshot. ML-DSA keys do not come from the snapshot
+  either: in a group with account keys (from Android 3.0.19) they come
+  from the contact record, then this device's own key, then the previous
+  local entry of the same group, so an entry whose key differs from the
+  contact record is not kept and no key is taken from another group's
+  member list, and a lookup outside a known group (joining, member
+  invitations) uses the contact record and this device's own key only
+  (earlier releases took the previous entry first and could fall back to
+  another group's entries); in a group with member keys they
+  come from the previous local entry or that group's own key records. It
+  sets the local epoch to the snapshot's epoch. From 3.0.18 it leaves out a member that this
   device recorded as removed or left (see below).
 - **Equal epoch (Android from 3.0.18).** A snapshot whose epoch equals
   the local epoch passes the same checks (group exists and is not
@@ -603,17 +660,129 @@ conversation timer is refused. Signed input
 label `org.zerionproject/GROUP_SETTINGS`.
 
 The creator sends the record to every member on version 8 when it sets the
-timer, to a member it adds while a timer is set, and to a member whose
-announced messaging version reaches 8 after the timer was set or whose
-version was not yet known when it was set (each re-signed over the same
-timestamp, so every copy orders the same and a member that holds it drops the
-copy as not newer). A timer set under an earlier version has no timestamp and
-was never sent; the first start of version 8 dates it with the current time
-and sends it. A receiver applies the record only for a live group, only when
-the pairwise sender is the creator, only when its timestamp is newer than the
-settings it holds, and only when the creator's hybrid signature verifies. The
-timer then applies to the posts the member sends (when they carry none or a
-longer one) and to the posts it receives, counted from their arrival.
+timer, to a member it adds once a setting was ever chosen (until 3.0.18 only
+while a timer was set), and to a member whose announced messaging version
+reaches 8 after the timer was set or whose version was not yet known when it
+was set (each re-signed over the same timestamp, so every copy orders the
+same). A timer set under an earlier version has no timestamp and was never
+sent; the first start of version 8 dates it with the current time and sends
+it. A receiver takes the record as the setting in force only for a live
+group, only when the pairwise sender is the creator or a member of the group,
+only when its timestamp is newer than the settings it holds, and only when the
+creator's hybrid signature verifies. The creator's own device takes none.
+Until 3.0.18 the pairwise sender had to be the creator, and a device on that
+version still ignores a record a member passes on. The timer then applies to
+the posts the member sends (when they carry none or a longer one) and to the
+posts it receives, counted from their arrival.
+
+From 3.0.19 (messaging version 16) the timer no longer depends on the one
+copy the creator sends:
+
+- A member keeps the creator's signature with the setting (settings key
+  `settingsSig`) and passes the record on unchanged, once per setting and
+  fellow member, without waiting for a post, on four occasions:
+  - A short random delay after it took the record, 30 to 120 seconds, it
+    sends the record to every fellow member it reaches as a contact and
+    has not sent it to yet. There is at most one such pass per group per
+    ten minutes: a pass already waiting for the group is not planned a
+    second time, a record that arrives less than ten minutes after the
+    group's previous pass waits until those ten minutes are over, and a
+    pass hands on the record the device holds when it runs, so of several
+    records that arrived in the meantime only the newest is sent. The
+    delay spreads the copies of the members of a group over time, and the
+    ten minutes bound what a creator who changes the timer again and
+    again can make every member send. The plan is kept in memory only;
+    after a restart the next occasion covers the members still missing.
+    The ten minutes are kept in memory too and start afresh with the app
+    or when the clock reads earlier than the previous pass.
+  - To a fellow member it has not sent the record to (not yet a contact
+    or not yet a member at the time of the pass, or the app was closed
+    before the pass ran) the next time that contact connects.
+  - To a fellow member on an earlier version when that contact reaches
+    version 16.
+  - In answer to a post that arrives signed with a timer other than the
+    group's, regardless of the note below, when the post's author
+    delivered it itself; a copy of a post that another contact handed on
+    is not answered.
+
+  It notes per group which contacts were sent the setting in force
+  (settings key `settingsSentTo`: the setting's timestamp followed by the
+  contact ids; ids of contacts that are no longer members drop out
+  whenever a pass or a hand-over writes the note, and a newer setting
+  starts it afresh, so after each write it holds no more ids than the group has
+  members). The contact the record came from counts as sent and is noted
+  together with the record. A copy of the setting the device already holds,
+  arriving from a fellow member, is noted afterwards on a background thread
+  under the group's lock, and only if the device still holds that same
+  setting and signature then; a member noted after a pass already sent to it
+  gets one extra copy. A pass is skipped only when every current fellow
+  member it reaches as a contact is noted; ids of former members are not
+  counted. The other settings writes of this step, taking a newer record or
+  a confirmation from the creator, still run on the thread that delivers the
+  received record. A connection of a contact that is already
+  noted costs one read of the group's settings and no write. Sending a
+  post hands nothing on. The creator answers a post without the timer the
+  same way with a record it signs again over the same timestamp. A device that
+  is handed a record older than the one it holds answers with the one it
+  holds. The answers to a post and to an older record are limited to one
+  per ten minutes per member and setting (the limit is kept in memory and
+  starts afresh with the app). A member sends a passed-on record only to
+  members on version 16; an earlier version ignores it. The record travels
+  as a one-to-one message in the pairwise conversation, so a copy queued
+  for a contact that is offline is carried over at the next connection,
+  and a copy that arrives this way is taken exactly like one that arrives
+  with a post.
+- A record a member passed on applies from then on: to the posts the device
+  sends and to the posts that arrive after it. It does not touch posts the
+  device already holds, because a member can only show that the creator
+  signed the setting once, not that it is still the creator's setting.
+- A copy that comes from the creator's own contact also reaches the posts
+  the device already holds, each setting for its own period: from its
+  timestamp up to the timestamp of the next setting the device knows of, or
+  without an end if it is the newest. The device notes such copies (settings
+  key `settingsPending`, at most 16; `settingsConfirmed` marks the setting in
+  force as seen from the creator) and applies them two minutes later, off the
+  main thread, so that several settings the creator had waiting for the
+  device are all in before a post is touched; a note that is still there at
+  the next start is applied then. This also covers a copy with the timestamp
+  the device already holds, when it first took that setting from a member,
+  and a copy older than the setting it holds. Within a period, a post that
+  arrived in it, and an own post made in it, that has no timer or a longer
+  one takes that setting's timer, counted from its arrival or, for an own
+  post, from its own time (`groupEffectiveTtl` and the cleanup deadline of
+  the stored copy, and the copy held in memory). An own copy that its member
+  has not yet received gets the timer as its duration, lowered if it carried
+  a longer one; it starts when the member has the copy. A setting that
+  switches the timer off or makes it longer changes no post already held.
+  A device updated from 3.0.18 holds its setting without that mark, so the
+  creator's next copy, which the creator sends when the member's new version
+  is announced, reaches back to the setting's timestamp once.
+- The creator sends the record to a member it adds whenever a setting was
+  ever chosen, also while the timer is off, so a new member holds the newest
+  record.
+
+Limits. A device learns the timer only from a record the creator signed, so a
+member that reaches neither the creator nor a member holding the record keeps
+posting without the timer until it does; the other members' devices still
+apply the timer to its posts. Posts that two such members exchanged before
+the setting reached either of them keep no timer until the creator's own copy
+of that setting arrives; a creator on 3.0.19 or 3.0.18 keeps each copy
+waiting for a member until it is delivered. A member can pass an older record
+the creator signed on to a device that holds none newer; that device then
+applies the older setting to what it sends and receives from then on, until a
+newer record reaches it, which happens when it exchanges a post with a member
+on version 16 that holds the newer record and its signature. If the
+connection to the creator breaks between two settings the creator had
+waiting and stays down for more than the two minutes, the earlier one is
+applied without an end until the later one arrives, and posts from after the
+later setting can then be shortened by the earlier timer. The timestamp is
+the creator's clock, compared with the device's own clock for the posts it
+holds: a creator can date a setting back as far as it likes and so shorten
+the posts members hold since then, a far-future timestamp cannot be replaced
+by a later setting, and a device whose clock differs from the creator's draws
+each line that much earlier or later. iOS and the desktop client take the
+record from the creator only until they implement this and announce
+version 16.
 
 ### 47 - GROUP_POST_DELETE
 
@@ -653,7 +822,11 @@ otherwise ignores it without a trace:
 2. the pairwise contact that delivered the record is a member or the creator,
    and so is `senderPubKey` (the same rule as for a post);
 3. the Ed25519 and ML-DSA-65 keys of `senderPubKey` are known (a member entry,
-   the local identity or a contact);
+   the local identity or a contact); from 3.0.19 a record that passes rule 2
+   but whose author key is not yet known is held instead of dropped (at most
+   32 per group, for 7 days, `grouptr-removed:<groupHex>` key `held`) and
+   checked by rules 4 and 5 when the creator's keys record (61) for that
+   author arrives;
 4. both halves of `sig` verify over the signed input (the same rule as for
    every group record, see "Verification");
 5. the target post's signer is `senderPubKey`: only the author of a post can
@@ -703,6 +876,181 @@ minutes later.
 
 Delete for me removes every local copy of the selected posts and sends
 nothing; a copy of such a post that arrives again within 7 days is dropped.
+
+### 59 - GROUP_PIN
+
+```
+BdfList.of(
+    59L,                       // msgType
+    groupId,                   // 32 bytes
+    postId,                    // 32 bytes: the post identity to pin, or null to unpin
+    timestamp,                 // Long: when the creator pinned or unpinned
+    sig                        // hybrid signature of the CREATOR
+)
+```
+
+Validator size: exactly **5 slots**; slot 2 is a 32-byte raw or null; the
+signature is 1 to 4096 bytes. Signed input
+`[32B groupId][1B flag][32B postId or 32 zero bytes][8B BE timestamp][0x0C]`
+(74 bytes) under the label `org.zerionproject/GROUP_PIN`, where `flag` is
+`0x01` for a pin and `0x00` for an unpin.
+
+The creator sends the record to every member that announces messaging
+minor version 15 or later when it pins or unpins, to a member it adds while
+a pin is set, and to a member whose announced version reaches 15 after the
+pin was set (re-signed over the same timestamp). Members on 14 or earlier
+are counted and shown to the creator as not seeing the pin. A receiver
+applies the record only for a live group, only when the pairwise sender is
+the creator, only when its timestamp is newer than the pin it holds (an
+unpin takes its place in that order), and only when the creator's hybrid
+signature verifies. The pinned post identity and the timestamp are kept in
+the group's settings namespace (`pinnedPostId`, `pinnedTimestamp`); a post
+that is deleted on a device is unpinned there. The admin role has no pin
+right; only the creator's key signs. The creator writes the pin into its
+settings inside the transaction that queues the record, so a send that fails
+leaves no pin, and when the creator deletes the pinned post it records the
+unpin at a later timestamp, so the record re-signed for a member that joins
+or updates later carries a time newer than the pin it replaces.
+The receiver checks only that the pinned post identity is 32 bytes signed by
+the creator, not that it names a post of the group: it stores any such id,
+and a pin of a post the member does not hold shows no banner.
+
+### 60 - GROUP_RELAY_REQUEST
+
+```
+BdfList.of(
+    60L,                       // msgType
+    groupId,                   // 32 bytes
+    members,                   // BdfList of 1 to 256 raw 32-byte member Ed25519 keys the author cannot reach
+    record                     // BdfList: the complete 32 or 47 the author sent to its reachable members
+)
+```
+
+Validator size: exactly **4 slots**, and the record must end the message.
+groupId is exactly 32 bytes; slot 2 is a list of 1 to 256 distinct raw
+entries of exactly 32 bytes (a key listed twice is refused, so a request
+cannot make the creator queue more than one copy per member); slot 3 is a
+list whose slot 0 is 32 or 47 and which passes
+the validator of that type unchanged (for a 32 that includes the Ed25519
+check of the post signature over the message timestamp, so the request
+carries the same timestamp as the post it wraps), and whose groupId equals
+slot 1; anything else is refused as invalid. The validator stores metadata
+only (`groupId`, `groupSenderPubKey` taken from the inner record). A wrapped
+record that would make the message longer than a sync message may be is not
+sent.
+
+Sender (a member on version 17 that is not the creator): right after it has
+queued a post (32) or a delete for everyone (47) to every member that is its
+contact, when at least one member other than itself and the creator has no
+contact of its own, and when the creator is its contact and announces
+messaging minor version 17 or later, it queues one request to the creator
+listing exactly those members. Replies are posts and travel the same way.
+Pins (59) and settings (46) are creator records and need no request; a
+member's leave (35) is covered by the inviter forwarding described under
+"Delivery and authorization". The request is queued to the creator with the
+post's timestamp and kept like any other record (5 minutes after the
+creator acknowledged it).
+
+Receiver (the creator's device only; any other device ignores the record):
+the pairwise sender must be a current member and the inner record's
+`senderPubKey` must be that member's key, so a member can only have its own
+records passed on; the list may not be longer than the member list; the inner
+record is verified exactly as a directly received record of its type (both
+halves of the author's hybrid signature over the same signed input; an
+expired post is dropped); the author's ML-DSA-65 key must be known to the
+creator (it is, from the binding or the contact record). The creator
+remembers the identity of every record it passed on (a hash of the signed
+input, `grouptr-relayed:<groupHex>`, the last 512 per group, the oldest
+going first, so a request replayed after 512 newer ones is passed on again
+and the receivers drop the second copy by their own seen set) and ignores a
+request for a record it already handled. For each listed key that is a
+current member, is not the author or the creator, is the creator's contact
+and announces version 17 or later (a key listed more than once counts once),
+the creator queues the inner record unchanged, with the request's timestamp,
+in that member's pairwise queue. The first time it passes a record of that
+author on to that member since the member joined, it queues before it a 61
+naming the author's keys, with a timestamp one millisecond below the
+record's (or the current time when that is lower): the pairwise queue is
+sent in timestamp order, so the keys reach the member before the record.
+The pairs are remembered as member key, the member's joinedAtEpoch and
+author (`keysSent`, at most 2048 per group) and forgotten for a member the
+creator removes or whose leave it confirms, so a member added again, or one
+that comes back under the same key at a later epoch, is sent the keys again.
+A member on an earlier version, or one that is not the creator's contact,
+is skipped silently: it keeps the behaviour of 3.0.18. Privacy: the list in
+the request tells the creator which members are not the author's contacts,
+which the creator did not learn before 3.0.19; nothing else about the
+author's contacts is disclosed, and no member other than the creator sees
+the list. The queued copy carries a
+cleanup duration of 7 days, or the post's effective timer when that is
+shorter, started when it is queued, so a copy a member never fetches does not
+outlive the post. The creator does not take the record into its own group
+from the request: it receives the author's record directly like every other
+contact of the author.
+
+The author learns nothing about whether the creator passed a record on; its
+post stays "sent" (see "Who receives a post"), and the copies it holds are
+unchanged.
+
+### 61 - GROUP_MEMBER_KEYS
+
+```
+BdfList.of(
+    61L,                       // msgType
+    groupId,                   // 32 bytes
+    memberPubKey,              // 32 bytes: a member's Ed25519 key, as slot 3 of its msgType 32
+    memberMlDsaPubKey,         // 1952 bytes: that member's ML-DSA-65 public key
+    timestamp,                 // Long: when the creator signed
+    sig                        // hybrid signature of the CREATOR
+)
+```
+
+Validator size: exactly **6 slots**; slot 3 is exactly 1952 bytes; the
+signature is 1 to 4096 bytes. Signed input
+`[32B groupId][32B memberPubKey][32B H(label="org.zerionproject/GROUP_MEMBER_KEYS_ML_DSA", memberMlDsaPubKey)][8B BE timestamp][0x0E]`
+(105 bytes) under the label `org.zerionproject/GROUP_MEMBER_KEYS`.
+
+The creator sends it only together with the first record of an author it
+passes on to a member (see msgType 60). A receiver applies it only for a live
+group, only when the pairwise sender is the creator, only for a key that is a
+current member and neither its own nor the creator's, only when it does not
+already know an ML-DSA-65 key for that member (a key known from a binding, a
+contact record or the member list is never replaced), and only when the
+creator's hybrid signature verifies. It stores the key in the member's entry
+of the group's member list, where the usual lookup (`MlDsaKeyDirectory`,
+"Member keys in private groups") finds it, applies a delete (47) of that
+author it was holding because the key was unknown (see msgType 47), and then
+decides again the posts of that author it was holding as pending, so they
+show and count at once without the group being opened. Trust: the receiver takes the
+author's post-quantum key on the creator's word, as an invitee already takes
+the creator's key on the inviting member's word (see "Trust model"); the
+author's Ed25519 half is the key the creator-signed membership lists name,
+so a creator that lied about the ML-DSA-65 key could only make a forged post
+acceptable to a member if it also broke Ed25519, and a creator can in any
+case add members of its own choosing.
+
+#### Domain bytes of signed inputs
+
+Every signed input of a group record ends in one domain byte; together with
+the signing label it keeps the inputs of different records apart. This is the
+complete list, so a new record takes the next free byte.
+
+| Byte | Signed input | Label |
+| --- | --- | --- |
+| `0x01` | GROUP_MEMBER_ADDED (msgType 33) | `org.zerionproject/GROUP_MEMBERSHIP` |
+| `0x02` | GROUP_MEMBER_REMOVED (34) | `org.zerionproject/GROUP_MEMBERSHIP` |
+| `0x03` | GROUP_MEMBER_LEFT (35) | `org.zerionproject/GROUP_MEMBERSHIP` |
+| `0x04` | GROUP_DISSOLVED (36) | `org.zerionproject/GROUP_MEMBERSHIP` |
+| `0x05` | GROUP_EPOCH_COMMIT (37) | `org.zerionproject/GROUP_EPOCH_COMMIT` |
+| `0x06` | GROUP_MEMBER_ROLE_CHANGED (38) | `org.zerionproject/GROUP_MEMBERSHIP` |
+| `0x07` | GROUP_MEMBER_LIST_SNAPSHOT (41) | `org.zerionproject/GROUP_MEMBER_LIST_SNAPSHOT` |
+| `0x08` | GROUP_SETTINGS (46) | `org.zerionproject/GROUP_SETTINGS` |
+| `0x09` | GROUP_POST_DELETE (47), and the member permissions input of the member invites | `org.zerionproject/GROUP_POST_DELETE` and `org.zerionproject/GROUP_PERMISSIONS`: the one byte is shared, the two inputs are kept apart by their labels and by their lengths (109 and 49 bytes); a later format change should give GROUP_PERMISSIONS its own byte |
+| `0x0A` | inviter grant of the member invites | `org.zerionproject/GROUP_INVITER_GRANT` |
+| `0x0B` | per-group key binding | `org.zerionproject/GROUP_KEY_BINDING` |
+| `0x0C` | GROUP_PIN (59) | `org.zerionproject/GROUP_PIN` |
+| `0x0D` | group secret | `org.zerionproject/GROUP_SECRET` |
+| `0x0E` | GROUP_MEMBER_KEYS (61) | `org.zerionproject/GROUP_MEMBER_KEYS` |
 
 ## Invite handshake (msgTypes 42 / 43 / 44, added 2026-05)
 
@@ -853,8 +1201,9 @@ not change: only the creator's device ever signs membership records (33 to 38,
 device adds it, which it does by itself while the setting is on. Joining
 therefore completes once the creator's phone is online.
 
-There is no relay. Each record below travels over the pairwise messaging
-channel between the two devices named, like every other GroupTr record.
+Each record below travels over the pairwise messaging channel between the
+two devices named, like every other GroupTr record; none of them is passed
+on by a third device.
 
 ### Flow
 
@@ -1214,7 +1563,8 @@ key being the one from the offer.
   records under the existing rules (signer the creator, sender not checked;
   a snapshot at a strictly higher epoch replaces the list, one at the
   invitee's own epoch can only add members, see msgType 41). The invitee
-  still receives no 46 or 48,
+  still receives no 48, and a 46 only when a member passes it on (from
+  3.0.19),
   and nothing reaches it once its inviting member has left the group.
 
 ### Version gate, older clients and iOS
@@ -1449,7 +1799,7 @@ invitations), `MlDsaKeyDirectory.lookupIn` (group-scoped ML-DSA lookup),
 ### Version gate
 
 Messaging minor version 13 (`MessagingManager.GROUP_MEMBER_KEYS_MIN_VERSION`)
-carries member keys. Android announces 13 while
+carries member keys. Android announces 14 from 3.0.19 (13 in 3.0.18) while
 `B3Constants.B3_PROOF_ENABLED` is on and 5 otherwise (5 carries no group
 protocol at all). The creator refuses to invite a contact that announces less
 than 13 (`GroupTrAuthException.Reason.CONTACT_MUST_UPDATE`), a member refuses
@@ -1515,6 +1865,7 @@ made by the signer's member key in that group:
 | 44 decline | none | the invitee's account key (sent only to the creator) |
 | 46 settings | none | the creator's member key |
 | 47 post delete | sender = the author's member key | the author's member key |
+| 59 pin | none | the creator's member key |
 | 48 permissions | none | the creator's member key |
 | 49 and 54 member offer | creator and inviter member keys; a binding in slot 13 | the inviter's member key, invitee slot all zero |
 | 50 and 56 member accept | inviter member key; a binding in the last slot | the invitee's member key |
@@ -1535,13 +1886,13 @@ is a list of five fields:
 
 ```
 binding = [groupEd25519 (32 B), groupMlDsa (1952 B), timestamp (Long >= 0),
-           identitySig (3373 B), groupSig (3373 B)]
+           identitySig (0 B or 3373 B), groupSig (3373 B)]
 
 57:  BdfList.of(57L, groupId (32 B), binding)
 ```
 
-Both signatures are hybrid signatures with label
-`org.zerionproject/GROUP_KEY_BINDING` over the same 137 bytes
+`groupSig`, and `identitySig` when it is present, are hybrid signatures with
+label `org.zerionproject/GROUP_KEY_BINDING` over the same 137 bytes
 (`GroupTrKeys.bindingInput`):
 
 ```
@@ -1550,9 +1901,35 @@ Both signatures are hybrid signatures with label
 [8B BE timestamp][1B 0x0B]
 ```
 
-`identitySig` is made with the account key (Ed25519 and ML-DSA-65),
-`groupSig` with the member key. The account key is not a field of the
-record: the receiver takes it from the pairwise contact the record came from.
+`groupSig` is made with the member key, `identitySig` with the account key
+(Ed25519 and ML-DSA-65). The account key is not a field of the record: the
+receiver takes it from the pairwise contact the record came from, and the
+member key signature covers it, so a binding is valid for exactly one
+contact whichever form it has. From version 17 (`GROUP_BINDING_V2_MIN_VERSION`)
+a device leaves the `identitySig` slot empty in every binding it sends to a
+contact that has announced 17 or more at any time (the invitation slots, 57
+and the sealed probe entry alike) and still signs with the account key
+towards a contact whose known version is below 17 and that never announced
+17 (`GroupTrManagerImpl.bindingIdentitySigned`). That a contact announced 17
+is recorded in the transaction that stores its version update and kept
+across restarts and re-keys until the contact is removed
+(`UnsignedFormsMemory`, shared with the mesh), so announcing a lower version
+later does not bring the account signature back. For a contact whose
+version is not known yet no binding is made: accepting its invitation or
+member invitation fails and can be repeated, and a probe that needs an
+answer is kept as pending and answered once the version is known
+(`GroupTrKeyExchange.contactUpgraded`). A contact that announces a lower
+version from the start, or that is removed and added again, still gets the
+signed form. A contact that once announced 17 and then runs a build below
+17 cannot take the unsigned bindings this device keeps sending, so
+invitations, answers and probes between the two do not complete until it
+announces 17 again. The
+account signature gave the receiver nothing it did not already have, because
+the authenticated contact connection the binding arrives on proves which
+account sent it; it only made a proof that could be shown to a third party,
+with everything the member key ever signed. A binding is never forwarded: the
+join request (52) carries the invitee's member key and ML-DSA key, which the
+inviter checked against the invitee's binding, never the binding itself.
 A binding travels only pairwise to a contact: as 57, inside a probe entry
 (58), as slot 8 of 42 (the creator's), slot 13 of 49 and 54 (the inviter's)
 and the binding slot of 43, 55, 50 and 56 (the invitee's).
@@ -1563,9 +1940,14 @@ The receiver accepts a binding only if
   holds its own member key for it;
 - the bound key is not the receiver's own member key and differs from the
   sending contact's account key;
-- `identitySig` verifies with the sending contact's account Ed25519 key and
-  the contact's ML-DSA key (a contact without an ML-DSA key cannot bind), and
-  `groupSig` verifies with the bound key and the ML-DSA key in the record;
+- `groupSig` verifies with the bound key and the ML-DSA key in the record
+  over the input that names the sending contact's account Ed25519 key, taken
+  from the contact record of the connection the record came on, never from
+  the record (`GroupTrKeys.verify(groupId, binding, contact)`); the sending
+  contact has an ML-DSA key (a contact without one cannot bind); and
+  `identitySig`, when present, verifies with that account key and the
+  contact's ML-DSA key. The validator refuses an `identitySig` of any length
+  other than 0 or 3373 bytes;
 - if the group lists the bound key with an ML-DSA key, it is the same key;
 - the bound key is a current member or the creator of the group. A key that
   is not listed yet is kept as a pending entry (one per contact, at most 32
@@ -1575,8 +1957,9 @@ The receiver accepts a binding only if
   current member is replaced only by a later timestamp; a binding to a key
   that has left or was removed is replaced whatever the timestamps.
 
-A binding signed for another group, forwarded by another contact, signed by
-another account or carrying only one valid signature fails these checks. The
+A binding signed for another group, forwarded by another contact, made for
+another account (the account key is part of the signed input) or carrying an
+invalid signature in a slot that is present fails these checks. The
 receiver stores `contactId -> (account key, member key, ML-DSA key,
 timestamp)` in `grouptr.b.<groupId>`. A 57 is only ever an answer to a probe
 and is never answered. In 42 the binding timestamp equals the offer timestamp
@@ -1649,18 +2032,22 @@ device asks with a probe sealed under the current group secret S:
 ```
 entry = [nonce (32 random bytes),
          H("org.zerionproject/GROUP_KEY_PROBE", S, nonce) (32 B),
-         sealed binding (8754 B)]
+         sealed binding (8754 B, or 5381 B without identitySig)]
 sealed binding = AES-256-GCM (128-bit tag, all-zero 96-bit IV) under
   K = H("org.zerionproject/GROUP_KEY_PROBE_KEY", S, nonce) of
   [32B groupEd25519][1952B groupMlDsa][8B BE timestamp]
-  [3373B identitySig][3373B groupSig]
+  [0B or 3373B identitySig][3373B groupSig]
 58:  BdfList.of(58L, [entry, ...])      1 to 16 entries
 ```
 
 The key K is fresh for every nonce, so the fixed IV is never reused under one
-key. A padding entry is 32, 32 and 8754 random bytes, the same lengths as a
-real entry, so without S an entry cannot be told from padding and shows no
-key, no timestamp and nothing of the group.
+key. The sealed binding is 8754 bytes towards a contact that gets the signed
+form and 5381 bytes towards a contact that has announced 17 or more (the
+account signature is left out, see "Binding"); the validator takes both lengths and the receiver tells
+the form from the length. A padding entry is 32, 32 and 8754 (or 5381) random
+bytes, the same lengths as the real entries of the same record, so without S
+an entry cannot be told from padding and shows no key, no timestamp and
+nothing of the group.
 
 - When a device receives its first secret for a group (on joining, or when
   the creator of an older group makes one), it waits a
@@ -1711,9 +2098,11 @@ secret, a member removed or departed by that rotation included.
 
 - A post (32), a post delete (47) or a leave (35) delivered by contact C is
   taken only if it is signed by the member key bound to C in that group, and
-  that key is a member (or the creator). A member cannot relay another
-  member's post; a key of another group, an account key and a key bound to
-  another contact are refused.
+  that key is a member (or the creator). From 3.0.19 a post or a post delete
+  signed by a current member's key is also taken when C is the creator, which
+  passes it on at the author's request (msgTypes 60 and 61, "Who receives a
+  post"). No other member can relay another member's post; a key of another
+  group, an account key and a key bound to another contact are refused.
 - One exception, for a leave the creator could not otherwise see: a member
   that receives a valid 35 from the member it invited (the invitee recorded
   when it passed on the creator's snapshot) forwards the unchanged record to
@@ -1725,8 +2114,9 @@ secret, a member removed or departed by that rotation included.
   leave. Every other device refuses a relayed 35.
 - Creator records 36, 38 and 41 are accepted from any contact and verified
   with the creator's member key taken from the group (and from the group id),
-  as in scheme 1. Records 33, 34, 46, 48 and 53 must come from the contact
-  bound to the creator's member key.
+  as in scheme 1. Records 33, 34, 48 and 53 must come from the contact
+  bound to the creator's member key; a 46 from the contact bound to the
+  creator's or a member's key (from 3.0.19).
 - Only the creator adds members (33 and 41 list member keys only) and only
   the creator's member key can remove a member (34). A member's invitation
   (49 or 54) and the inviting member's join request (52) carry the invitee's
@@ -1860,6 +2250,14 @@ total: 109 bytes
 total: 81 bytes
 ```
 
+### GROUP_MEMBER_KEYS (`GroupTrManagerImpl.memberKeysSignedInput`)
+
+```
+mlHash = H(label="org.zerionproject/GROUP_MEMBER_KEYS_ML_DSA", memberMlDsaPubKey)
+signedInput = [32B groupId][32B memberPubKey][32B mlHash][8B BE timestamp][0x0E]
+total: 105 bytes
+```
+
 ### LIST_SNAPSHOT (`snapshotSignedInput`)
 
 ```
@@ -1897,6 +2295,7 @@ Labels used in GroupTr:
 - `"org.zerionproject/GROUP_MEMBER_LIST_SNAPSHOT"` for msgType 41
 - `"org.zerionproject/GROUP_SETTINGS"` for msgType 46
 - `"org.zerionproject/GROUP_POST_DELETE"` for msgType 47
+- `"org.zerionproject/GROUP_PIN"` for msgType 59
 - `"org.zerionproject/GROUPTR_INVITE_OFFER"` for msgType 42
 - `"org.zerionproject/GROUPTR_INVITE_ACCEPT"` for msgType 43
 - `"org.zerionproject/GROUPTR_INVITE_DECLINE"` for msgType 44
@@ -1927,7 +2326,10 @@ For each membership record, after the validator's structural check, `GroupTrMana
          the pairwise sender must be the CREATOR; signer = CREATOR
      - MEMBER_LEFT:
          signer = the leaving member (never the creator); sender not checked
-     - GROUP_SETTINGS, GROUP_PERMISSIONS:
+     - GROUP_SETTINGS:
+         the pairwise sender must be the CREATOR or a member (from 3.0.19,
+         the CREATOR before); signer = CREATOR
+     - GROUP_PERMISSIONS:
          the pairwise sender must be the CREATOR; signer = CREATOR
      - GROUP_INVITER_GRANT:
          the pairwise sender must be the CREATOR; signer = CREATOR; the
@@ -1938,8 +2340,16 @@ For each membership record, after the validator's structural check, `GroupTrMana
          signer = CREATOR; sender not checked
      - GROUP_POST_DELETE:
          signer = senderPubKey of the record; the pairwise sender and the
-         signer must both be members (or the creator); the record removes a
-         post only if that post's signer is the same key
+         signer must both be members (or the creator); in a group with
+         member keys the pairwise sender must be the signer or, from 3.0.19,
+         the creator; the record removes a post only if that post's signer
+         is the same key
+     - GROUP_RELAY_REQUEST (creator's device only):
+         the pairwise sender must be a member and the inner record's
+         senderPubKey; the inner record is verified as its own type
+     - GROUP_MEMBER_KEYS:
+         the pairwise sender must be the CREATOR; signer = CREATOR; the key
+         must name a current member whose ML-DSA-65 key is not yet known
 4. Verify the signature (GroupTrManagerImpl.verify, same rule for every record):
      if the signed input is empty: drop
      mlDsaPub = ML-DSA-65 public key known locally for the signer's Ed25519 key
@@ -2001,15 +2411,36 @@ Membership records are never buffered. Only group posts are buffered, in memory:
 
 ## Who receives a post
 
-There is no relay: a member sends each post over the pairwise channel to every
-member that is its own contact, and members do not pass posts on. A member
-that is not the sender's contact does not receive the post, and its posts do
-not reach the sender. The group screen says how many members are out of reach
-and lists them (`getMembersOutOfReach`); the member list marks them. Relaying
-posts through other members was considered and not adopted: it would reveal to
+A member sends each post over the pairwise channel to every member that is
+its own contact. Up to 3.0.18 nobody passed posts on: a member that was not
+the sender's contact did not receive the post, and its posts did not reach
+the sender. From 3.0.19 (messaging minor version 17) the creator's device
+passes an author's signed records on to the members the author cannot reach:
+the author hands the record to the creator in a relay request (msgType 60)
+listing those members, the creator verifies it, tells each such member the
+author's keys once (msgType 61) and queues the unchanged record in that
+member's pairwise queue, where it waits until the member is online, for at
+most 7 days. The receiving member verifies the record under the author's own
+hybrid signature exactly as a copy from the author, so the creator can
+neither alter nor forge a post; it can only withhold one. The creator is a
+contact of every member it added itself; a member's invitee (msgTypes 48-52)
+joins the group without becoming the creator's contact, and the creator
+passes nothing on to or from such a member until the two add each other.
+So every member that is the creator's contact can reach every other such
+member as long as the creator's phone comes online; posts arrive once it has
+passed them on. The administrator's guide is [docs/TEAM_SETUP.md](../TEAM_SETUP.md). A copy from the author and a copy from the
+creator of the same post show once (the post identity is the same). Nobody
+passes the creator's own posts on; the creator reaches every member
+directly. Members do not pass posts on for each other: that would reveal to
 each relaying member which members it can reach for others and would need
-relay authorisation and loop control, and adding the members as contacts
-already gives the same reach without a third party.
+relay authorisation and loop control. When the local user is the creator, or
+the creator runs 3.0.18 or earlier, or a member runs 3.0.18 or earlier, that
+member stays out of reach as before. The group screen says how many members
+are out of reach and lists them (`getMembersOutOfReach`); the member list
+marks them; from 3.0.19 both say, when the creator passes records on
+(`ownerPassesPostsOn`), that those members are reached through the group
+owner's phone, and otherwise that they do not get the posts. Adding the
+members as contacts gives a direct path either way.
 
 **What the sender is shown (device behaviour, no wire change).** Each copy
 of a post is a message of its own in the pairwise conversation with one
@@ -2031,8 +2462,9 @@ the post:
   joined at or before the post's epoch holds an acknowledged copy.
 
 A post stays "sent" while a member of the group never got it: one out of
-reach, one whose app is too old for a post this large, or one whose copy
-could not be stored. A member removed before its copy arrived keeps the
+reach (also one the creator passes the post on to, since this device holds
+no copy for it and learns nothing from the creator), one whose app is too
+old for a post this large, or one whose copy could not be stored. A member removed before its copy arrived keeps the
 post "sent" too, because this device still holds that unacknowledged copy.
 A member skipped for an old app, or whose copy could not be stored, has no
 copy on this device, so once that member is removed the post can turn
@@ -2056,7 +2488,7 @@ its time only.
 
 Concrete checklist:
 
-1. **Do not reuse the legacy private-group invitation carrier** (the `privategroup.invitation` client inherited from upstream). GroupTr replaced it. The invite layer GroupTr DOES use is the 42/43/44 handshake on the pairwise messaging channel documented above - implement that, not the upstream invitation client. The membership records (33–41) are still silent fan-out and must NOT appear as visible chat messages.
+1. **Do not reuse the legacy private-group invitation carrier** (the `privategroup.invitation` client inherited from upstream). GroupTr replaced it. The invite layer GroupTr DOES use is the 42/43/44 handshake on the pairwise messaging channel documented above - implement that, not the upstream invitation client. The membership records (33 to 41) are still silent fan-out and must NOT appear as visible chat messages.
 2. **In the iOS group-create UI**: `createGroup(name)` must be purely local. Do NOT send anything over the wire when a group is created. The group is invisible to peers until the first `addMember` call.
 3. **In the iOS "add member" handler**: build the msgType-33 record exactly as specified above, sign with the hybrid key, and send it to the new member AND every other existing member over their pairwise messaging channels.
 4. **In the iOS private-message receive path**: when a record's first BdfList element is `33L`, route to a membership handler. Do NOT show it as a visible chat message. Just verify the signature and apply.
@@ -2080,4 +2512,4 @@ When iOS is wired up, the smallest test that proves the protocol works end-to-en
 4. Peter's iOS Zerion receives, validates the signature, applies the state.
 5. **Peter's group "Test" advances to Alice's epoch** without any further user action.
 
-If that flow fails on iOS, the bug is in steps 4–5 (receive routing or state apply). Send the BdfList bytes of the msgType-33 record from the wire dump and Android can verify byte-exact equality against what its validator expects.
+If that flow fails on iOS, the bug is in steps 4 to 5 (receive routing or state apply). Send the BdfList bytes of the msgType-33 record from the wire dump and Android can verify byte-exact equality against what its validator expects.

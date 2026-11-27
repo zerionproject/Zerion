@@ -4,6 +4,7 @@ import com.professor.zerion.android.update.BridgeListDebug;
 
 import org.zerionproject.core.account.AndroidAccountManager;
 import org.zerionproject.tor.BridgeListKeys;
+import org.zerionproject.tor.TorActivitySink;
 import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.plugin.FastConnectSocketFactory;
@@ -34,10 +35,12 @@ public class ZerionTorModule {
 			org.zerionproject.transport.TorPrivacyConfiguratorImpl
 					privacyConfigurator,
 			org.zerionproject.transport.TorProcessWatch processWatch,
-			OnionTargetFactory onionTargets) {
-		return new ZtpTorTransport(tor, torSocketFactory, fastSocketFactory,
-				ioExecutor, handler, bridgeConfigurator, privacyConfigurator,
-				processWatch, onionTargets);
+			OnionTargetFactory onionTargets, TorActivitySink activity) {
+		ZtpTorTransport transport = new ZtpTorTransport(tor, torSocketFactory,
+				fastSocketFactory, ioExecutor, handler, bridgeConfigurator,
+				privacyConfigurator, processWatch, onionTargets);
+		transport.setActivitySink(activity);
+		return transport;
 	}
 
 	@Provides

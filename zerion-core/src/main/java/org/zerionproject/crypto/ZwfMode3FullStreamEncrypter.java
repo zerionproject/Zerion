@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
@@ -62,6 +63,8 @@ public class ZwfMode3FullStreamEncrypter {
 
 	private PcsSessionState sendState;
 	private long ownSendsSinceRotation = 0;
+	@Nullable
+	private AtomicLong receivedSinceRotation;
 	private SecretKey streamChainKey;
 	private int streamMessageNumber;
 	private long frameNumber;
@@ -120,6 +123,10 @@ public class ZwfMode3FullStreamEncrypter {
 		this.streamMessageNumber = 0;
 	}
 
+	public void setReceivedSinceRotation(@Nullable AtomicLong counter) {
+		receivedSinceRotation = counter;
+	}
+
 	public int getMaxPayloadLength() {
 		return maxPayloadFor(headerCodec.getMode3FullHeaderSize());
 	}
@@ -175,14 +182,19 @@ public class ZwfMode3FullStreamEncrypter {
 					sendState = sendState.withMode3FullState(m3fState);
 				}
 			}
+			AtomicLong received = receivedSinceRotation;
+			long receivedCount = received == null ? 0 : received.get();
 			try {
 				mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState,
-						ownSendsSinceRotation);
+						ownSendsSinceRotation, receivedCount);
 			} catch (RuntimeException e) {
 				throw new IOException("Mode 3-Full peer key rejected");
 			}
 			ownSendsSinceRotation = mode3FullSend.isRotated() ? 0
 					: ownSendsSinceRotation + 1;
+			if (mode3FullSend.isRotated() && received != null) {
+				received.addAndGet(-receivedCount);
+			}
 			sendState = sendState.withMode3FullState(mode3FullSend.getNewState());
 			if (m3fCallback != null) {
 				m3fCallback.accept(mode3FullSend.getNewState());

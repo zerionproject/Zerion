@@ -9,7 +9,7 @@ import org.zerionproject.core.api.contact.PendingContact;
 import org.zerionproject.core.api.contact.PendingContactState;
 import com.professor.zerion.R;
 import com.professor.zerion.android.account.SetupActivity;
-import com.professor.zerion.android.contact.add.remote.PendingContactListActivity;
+import com.professor.zerion.android.contact.request.RequestsActivity;
 import com.professor.zerion.android.navdrawer.NavDrawerActivity;
 import com.professor.zerion.android.splash.SplashScreenActivity;
 import org.hamcrest.Matcher;
@@ -30,7 +30,6 @@ import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.replaceText;
-import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.contrib.RecyclerViewActions.actionOnItemAtPosition;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
@@ -138,37 +137,33 @@ public class PromoVideoTest extends ScreenshotTest {
 		doClick(withId(R.id.fab_main));
 		sleep(DELAY_MEDIUM);
 
-		doClick(withText(R.string.add_contact_remotely_title));
+		doClick(withText(R.string.add_contact_send_invite_title));
 		sleep(DELAY_LONG);
 
-		String link =
-				"briar://ab54fpik6sjyetzjhlwto2fv7tspibx2uhpdnei4tdidkvjpbphvy";
-		doClick(withId(R.id.pasteButton));
-		onView(withId(R.id.linkInput))
+		StringBuilder body = new StringBuilder("ae");
+		while (body.length() < 104) body.append('a');
+		String link = "zerion://" + body;
+		onView(withId(R.id.inviteLinkInput))
 				.perform(waitUntilMatches(isDisplayed()))
 				.perform(replaceText(link));
 		sleep(DELAY_MEDIUM);
 
-		doClick(withId(R.id.addButton));
-		sleep(DELAY_MEDIUM);
-
 		String contactName = getApplicationContext()
 				.getString(R.string.screenshot_bob);
-		doClick(withId(R.id.contactNameInput), 1000);
-		onView(withId(R.id.contactNameInput))
+		doClick(withId(R.id.inviteAliasInput), 1000);
+		onView(withId(R.id.inviteAliasInput))
 				.perform(waitUntilMatches(isDisplayed()))
 				.perform(replaceText(contactName));
 		sleep(DELAY_SMALL);
-		closeKeyboard(withId(R.id.contactNameInput));
+		closeKeyboard(withId(R.id.inviteAliasInput));
 		sleep(DELAY_SMALL);
 
-		onView(withId(R.id.addButton)).perform(scrollTo());
-		doClick(withId(R.id.addButton));
+		doClick(withId(R.id.inviteSendButton));
 		sleep(DELAY_LONG);
 
 		if (!isFilming) {
-			waitFor(PendingContactListActivity.class);
-			waitFor(allOf(withText(R.string.pending_contact_requests),
+			waitFor(RequestsActivity.class);
+			waitFor(allOf(withText(R.string.requests_title),
 					isDisplayed()));
 		}
 

@@ -22,13 +22,13 @@ import static org.junit.Assert.fail;
 public class TorBinaryPinsTest {
 
 	private static final String TOR_ARM64 =
-			"21604deaa31ecfd954220b25800c96374f92b450df2327aea916836799fbdc47";
+			"a083169439bee6689b35d615dcaa714887d5a0b91e05631b7d66f15bba960409";
 	private static final String TOR_ARM32 =
-			"75ee09598e7efec2a242a96ce189d3aceab55089ce6d8df5966173ca5e6fc9da";
+			"de2d37d054783a0cff6ee667a6b4bfbaeef2d59a84c140b382c24eb4c1741f90";
 	private static final String LYREBIRD_ARM64 =
-			"9a89df982f1137b120fae152d46ab400558cef7d633987d5518c4ff24a088869";
+			"9de80888ad67dfc30b8a0494e24f796a86fa7b3f589fb0bcdaef980ad6356ea1";
 	private static final String LYREBIRD_ARM32 =
-			"1e521cb83a15fcbbe26a06683b3212d1a924d45c316dde46f0e0a9b25dd5e135";
+			"fbc7865b52623bcfc3efe670c0a56797067bcfe33c788b972e93a5e82d897be0";
 
 	@Rule
 	public final TemporaryFolder tmp = new TemporaryFolder();

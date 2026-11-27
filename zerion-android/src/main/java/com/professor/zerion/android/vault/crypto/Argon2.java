@@ -27,17 +27,75 @@ public class Argon2 {
 	public static final int WALLET_MEMORY_KB = 64 * 1024;
 
 	public static final int MAX_MEMORY_KB = DEFAULT_MEMORY_KB;
+	public static final int PORTABLE_MAX_MEMORY_KB = MAX_MEMORY_KB;
+	public static final int VAULT_HEADER_MAX_MEMORY_KB = 1024 * 1024;
+	public static final int JAVA_FALLBACK_MAX_MEMORY_KB = DEFAULT_MEMORY_KB;
 	public static final int MIN_MEMORY_KB = 1024;
 	public static final int MAX_ITERATIONS = 10;
 	public static final int MAX_PARALLELISM = 4;
 
+	static final int SELF_TEST_MEMORY_KB = MIN_MEMORY_KB;
+	private static final byte[] SELF_TEST_PASSWORD =
+			"zerion argon2 self test".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] SELF_TEST_SALT =
+			"zerion argon2 salt".getBytes(StandardCharsets.UTF_8);
+
 	public static void requireSaneParams(int memoryKb, int iterations,
 			int parallelism) {
-		if (memoryKb < MIN_MEMORY_KB || memoryKb > MAX_MEMORY_KB
+		requireSaneParams(memoryKb, iterations, parallelism,
+				PORTABLE_MAX_MEMORY_KB);
+	}
+
+	public static void requireSaneVaultHeaderParams(int memoryKb,
+			int iterations, int parallelism) {
+		requireSaneParams(memoryKb, iterations, parallelism,
+				VAULT_HEADER_MAX_MEMORY_KB);
+	}
+
+	private static void requireSaneParams(int memoryKb, int iterations,
+			int parallelism, int maxMemoryKb) {
+		if (memoryKb < MIN_MEMORY_KB || memoryKb > maxMemoryKb
 				|| iterations < 1 || iterations > MAX_ITERATIONS
 				|| parallelism < 1 || parallelism > MAX_PARALLELISM) {
 			throw new IllegalArgumentException("Argon2 parameters out of range");
 		}
+	}
+
+	public static final class NativeRequiredException
+			extends RuntimeException {
+
+		public NativeRequiredException() {
+			super("Argon2 memory needs the native library");
+		}
+	}
+
+	private static volatile Boolean nativeSelfTest = null;
+
+	public static boolean nativeSelfTestPasses() {
+		Boolean cached = nativeSelfTest;
+		if (cached != null) return cached;
+		boolean ok;
+		try {
+			ok = runNativeSelfTest();
+		} catch (RuntimeException | OutOfMemoryError e) {
+			ok = false;
+		}
+		nativeSelfTest = ok;
+		return ok;
+	}
+
+	static boolean runNativeSelfTest() {
+		if (!NativeArgon2.isAvailable()) return false;
+		Argon2Params params = new Argon2Params(SELF_TEST_MEMORY_KB, 1,
+				DEFAULT_PARALLELISM, DEFAULT_HASH_LENGTH);
+		byte[] nativeOut = NativeArgon2.deriveOrNull(
+				SELF_TEST_PASSWORD.clone(), SELF_TEST_SALT.clone(),
+				params.memoryKb, params.iterations, params.parallelism,
+				params.hashLength);
+		if (nativeOut == null) return false;
+		byte[] javaOut = deriveKeyBouncyCastle(SELF_TEST_PASSWORD.clone(),
+				SELF_TEST_SALT.clone(), params);
+		return constantTimeEquals(nativeOut, javaOut);
 	}
 	public static final int WALLET_ITERATIONS = 3;
 
@@ -46,6 +104,8 @@ public class Argon2 {
 	public byte[] deriveKey(char[] password, byte[] salt, Argon2Params params) {
 		try {
 			return deriveKeyArgon2id(password, salt, params);
+		} catch (NativeRequiredException e) {
+			throw e;
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to derive key", e);
 		}
@@ -64,6 +124,9 @@ public class Argon2 {
 					params.hashLength);
 			if (nativeOut != null) {
 				return nativeOut;
+			}
+			if (params.memoryKb > JAVA_FALLBACK_MAX_MEMORY_KB) {
+				throw new NativeRequiredException();
 			}
 			byte[] output = deriveKeyBouncyCastle(passwordBytes, salt, params);
 			return output;

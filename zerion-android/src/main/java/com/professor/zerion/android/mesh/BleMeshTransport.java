@@ -11,9 +11,11 @@ import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.bluetooth.le.AdvertiseCallback;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
 import android.bluetooth.le.AdvertiseData;
-import android.bluetooth.le.AdvertiseSettings;
+import android.bluetooth.le.AdvertisingSetCallback;
+import android.bluetooth.le.AdvertisingSetParameters;
 import android.bluetooth.le.BluetoothLeAdvertiser;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -26,8 +28,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.ParcelUuid;
 
+import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLock;
+import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
+import org.zerionproject.core.api.system.TaskScheduler;
 import org.zerionproject.transport.mesh.MeshForwarder;
 import org.zerionproject.transport.mesh.MeshLink;
+import org.zerionproject.transport.mesh.MeshWorkQueue;
 import org.zerionproject.core.util.StringUtils;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -35,10 +41,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
@@ -47,6 +53,68 @@ import javax.annotation.Nullable;
 public class BleMeshTransport implements MeshLink {
 
 	public static final String LINK_ID = "ble";
+
+	public interface PrivatePeers {
+
+		@Nullable
+		byte[] ownAdvertKey();
+
+		List<MeshPeer> peers();
+	}
+
+	private static final class Pending {
+
+		@Nullable
+		private final MeshPeer peer;
+		@Nullable
+		private final UUID advert;
+		@Nullable
+		private volatile byte[] dialerNonce;
+		@Nullable
+		private volatile byte[] answererNonce;
+		@Nullable
+		private volatile BluetoothSocket socket;
+		private volatile boolean connected;
+
+		private Pending(@Nullable MeshPeer peer, @Nullable UUID advert) {
+			this.peer = peer;
+			this.advert = advert;
+		}
+	}
+
+	private static final class Channel {
+
+		private final BluetoothSocket socket;
+		private final java.io.InputStream in;
+		private final java.io.OutputStream out;
+
+		private Channel(BluetoothSocket socket) throws java.io.IOException {
+			this.socket = socket;
+			this.in = socket.getInputStream();
+			this.out = socket.getOutputStream();
+		}
+
+		private void close() {
+			try {
+				socket.close();
+			} catch (java.io.IOException | RuntimeException e) {
+			}
+		}
+	}
+
+	static final long HANDSHAKE_TIMEOUT_MS = 15_000L;
+	static final long WRITE_TIMEOUT_MS = 5_000L;
+	static final int MAX_UNPROVED_FRAME_BYTES = MeshPrivateLink.HELLO_BYTES;
+	private static final int FIRST_CHANNEL = 0x80;
+	static final long PREVIOUS_ADVERT_MS = 30_000L;
+	static final long DUPLICATE_WINDOW_MS = 20_000L;
+	static final long SHORT_LINK_MS = 60_000L;
+	static final long REDIAL_PAUSE_MS = 60_000L;
+	static final int MAX_UNPROVED_CENTRALS = 3;
+	private static final int MAX_DIALS_PER_CONTACT = 2;
+	private static final int MAX_HELLOS_PER_LINK = 2;
+	private static final int MAX_ADVERTS_REMEMBERED = 1024;
+	private static final int[] NO_CONTACTS = new int[0];
 
 	private static final UUID GATT_SERVICE_UUID =
 			UUID.fromString("9f2a7c14-6b38-4d0e-8a51-c3e7d924b6f8");
@@ -67,10 +135,16 @@ public class BleMeshTransport implements MeshLink {
 	private static final long CLIENT_STALE_MS = 60_000;
 
 	private static final int MANUFACTURER_ID = 0xFFFF;
+	private static final long SWAP_WAKE_LOCK_MS = 3_000L;
+	private static final long ADVERTISING_RETRY_MS = 10_000L;
 	private static final long CONNECT_COOLDOWN_MS = 4000;
 	private final MeshLinkPolicy policy =
 			new MeshLinkPolicy(new java.security.SecureRandom());
+	private final java.security.SecureRandom advertisingRandom =
+			new java.security.SecureRandom();
 	private volatile byte[] sessionNonce;
+	private volatile int txPowerLevel =
+			AdvertisingSetParameters.TX_POWER_MEDIUM;
 	@Nullable
 	private volatile java.util.concurrent.ScheduledExecutorService nonceRotator;
 	private long scanEpoch = Long.MIN_VALUE;
@@ -78,19 +152,31 @@ public class BleMeshTransport implements MeshLink {
 	private final Context appContext;
 	private final MeshForwarder forwarder;
 	private final BluetoothManager bluetoothManager;
+	private final MeshScreenPause screenPause;
+	@Nullable
+	private final AndroidWakeLockManager wakeLocks;
+	@Nullable
+	private final TaskScheduler scheduler;
+	private final AtomicReference<Runnable> swapRelease =
+			new AtomicReference<>();
+	private volatile long advertisingRetryMs = ADVERTISING_RETRY_MS;
 	@Nullable
 	private final Runnable beforeRadioUp;
 	@Nullable
 	private final Runnable onPeerConnected;
 
-	private final ExecutorService sendExecutor =
-			Executors.newSingleThreadExecutor();
-	private final ExecutorService receiveExecutor =
-			Executors.newSingleThreadExecutor();
+	private final MeshWorkQueue sendExecutor =
+			new MeshWorkQueue("BleMeshSend");
+	private final MeshWorkQueue receiveExecutor =
+			new MeshWorkQueue("BleMeshReceive");
+	private final MeshWorkQueue scanMatcher =
+			new MeshWorkQueue("BleMeshScan");
 	private final Semaphore opComplete = new Semaphore(0);
 
 	@Nullable
 	private volatile BluetoothLeAdvertiser advertiser;
+	@Nullable
+	private volatile AdvertisingSetCallback advertiseCallback;
 	@Nullable
 	private volatile BluetoothLeScanner scanner;
 	@Nullable
@@ -100,7 +186,8 @@ public class BleMeshTransport implements MeshLink {
 
 	private final Object radioLock = new Object();
 	private volatile boolean running;
-	private boolean radioUp;
+	private volatile boolean paused;
+	private volatile boolean radioUp;
 	private boolean receiverRegistered;
 
 	private final Map<String, BluetoothDevice> connectedCentrals =
@@ -118,16 +205,202 @@ public class BleMeshTransport implements MeshLink {
 	private final java.util.Set<String> activeNonces =
 			ConcurrentHashMap.newKeySet();
 
+	@Nullable
+	private volatile PrivatePeers privatePeers;
+	private volatile List<MeshPeer> peerSnapshot =
+			java.util.Collections.emptyList();
+	@Nullable
+	private volatile byte[] ownAdvertKey;
+	@Nullable
+	private volatile UUID ownAdvert;
+	@Nullable
+	private volatile UUID startingAdvert;
+	@Nullable
+	private volatile UUID previousOwnAdvert;
+	private volatile long previousAdvertUntil;
+	private volatile long advertsEpoch = Long.MIN_VALUE;
+	private final Object linkLock = new Object();
+	private final Map<String, Integer> linkedContact =
+			new ConcurrentHashMap<>();
+	private final Map<String, Long> linkedSince = new ConcurrentHashMap<>();
+	private final Map<String, Pending> pendingLinks =
+			new ConcurrentHashMap<>();
+	private final Map<String, Integer> hellosSeen = new ConcurrentHashMap<>();
+	private final Map<String, Object> handshakeDue = new ConcurrentHashMap<>();
+	private final Map<UUID, int[]> advertsSeen = remembered();
+	private final Map<String, Boolean> failedDials = remembered();
+	private final Map<String, Channel> channels = new ConcurrentHashMap<>();
+	@Nullable
+	private volatile BluetoothServerSocket listener;
+	private volatile int listenChannel = -1;
+	private final java.util.concurrent.ExecutorService linkThreads =
+			java.util.concurrent.Executors.newCachedThreadPool(r -> {
+				Thread thread = new Thread(r, "BleMeshLink");
+				thread.setDaemon(true);
+				return thread;
+			});
+	private final Map<Integer, Long> redialAfter = new ConcurrentHashMap<>();
+
+	private static <K, V> Map<K, V> remembered() {
+		return java.util.Collections.synchronizedMap(
+				new java.util.LinkedHashMap<K, V>(64, 0.75f, true) {
+					@Override
+					protected boolean removeEldestEntry(
+							Map.Entry<K, V> eldest) {
+						return size() > MAX_ADVERTS_REMEMBERED;
+					}
+				});
+	}
+
 	public BleMeshTransport(Context context, MeshForwarder forwarder,
 			@Nullable Runnable beforeRadioUp,
 			@Nullable Runnable onPeerConnected) {
+		this(context, forwarder, beforeRadioUp, onPeerConnected, null, null);
+	}
+
+	public BleMeshTransport(Context context, MeshForwarder forwarder,
+			@Nullable Runnable beforeRadioUp,
+			@Nullable Runnable onPeerConnected,
+			@Nullable AndroidWakeLockManager wakeLocks,
+			@Nullable TaskScheduler scheduler) {
+		this(context, forwarder, beforeRadioUp, onPeerConnected,
+				(BluetoothManager) context.getApplicationContext()
+						.getSystemService(Context.BLUETOOTH_SERVICE),
+				MeshScreenPause.PAUSE_AFTER_MS, wakeLocks, scheduler);
+	}
+
+	BleMeshTransport(Context context, MeshForwarder forwarder,
+			@Nullable Runnable beforeRadioUp,
+			@Nullable Runnable onPeerConnected,
+			BluetoothManager bluetoothManager) {
+		this(context, forwarder, beforeRadioUp, onPeerConnected,
+				bluetoothManager, MeshScreenPause.PAUSE_AFTER_MS);
+	}
+
+	BleMeshTransport(Context context, MeshForwarder forwarder,
+			@Nullable Runnable beforeRadioUp,
+			@Nullable Runnable onPeerConnected,
+			BluetoothManager bluetoothManager, long pauseAfterMs) {
+		this(context, forwarder, beforeRadioUp, onPeerConnected,
+				bluetoothManager, pauseAfterMs, null, null);
+	}
+
+	BleMeshTransport(Context context, MeshForwarder forwarder,
+			@Nullable Runnable beforeRadioUp,
+			@Nullable Runnable onPeerConnected,
+			BluetoothManager bluetoothManager, long pauseAfterMs,
+			@Nullable AndroidWakeLockManager wakeLocks,
+			@Nullable TaskScheduler scheduler) {
 		this.appContext = context.getApplicationContext();
 		this.forwarder = forwarder;
 		this.beforeRadioUp = beforeRadioUp;
 		this.onPeerConnected = onPeerConnected;
-		this.bluetoothManager = (BluetoothManager)
-				appContext.getSystemService(Context.BLUETOOTH_SERVICE);
+		this.bluetoothManager = bluetoothManager;
+		this.wakeLocks = wakeLocks;
+		this.scheduler = scheduler;
+		this.screenPause = new MeshScreenPause(new ScreenRadio(),
+				this::schedulePause, pauseAfterMs);
 		sessionNonce = policy.freshNonce();
+	}
+
+	private MeshScreenPause.Cancellable schedulePause(Runnable task,
+			long delayMs) {
+		TaskScheduler s = scheduler;
+		if (s == null) return scheduleOnRotator(task, delayMs);
+		org.zerionproject.core.api.Cancellable c =
+				s.schedule(task, Runnable::run, delayMs, TimeUnit.MILLISECONDS);
+		return c::cancel;
+	}
+
+	public void setPauseWhenScreenOff(boolean pause) {
+		screenPause.setEnabled(pause);
+	}
+
+	public void setPrivatePeers(@Nullable PrivatePeers peers) {
+		privatePeers = peers;
+	}
+
+	private boolean contactsOnly() {
+		return privatePeers != null;
+	}
+
+	private void refreshPeers() {
+		PrivatePeers source = privatePeers;
+		if (source == null) return;
+		try {
+			long epoch = MeshPrivateLink.currentEpoch();
+			if (epoch != advertsEpoch) {
+				advertsEpoch = epoch;
+				advertsSeen.clear();
+			}
+			byte[] key = source.ownAdvertKey();
+			List<MeshPeer> list = source.peers();
+			byte[] before = ownAdvertKey;
+			ownAdvertKey = key;
+			if (list != peerSnapshot) {
+				peerSnapshot = list;
+				advertsSeen.clear();
+				dropLinksOfFormerPeers(list);
+			}
+			if (key != null && !java.util.Arrays.equals(before, key)
+					&& running && radioUp) {
+				byte[] fresh = policy.freshNonce();
+				sendExecutor.execute(() -> switchAdvertisingSet(fresh));
+			}
+		} catch (RuntimeException e) {
+		}
+	}
+
+	private void dropLinksOfFormerPeers(List<MeshPeer> list) {
+		java.util.Set<Integer> current = new java.util.HashSet<>();
+		for (MeshPeer p : list) current.add(p.contact);
+		for (Map.Entry<String, Integer> e : linkedContact.entrySet()) {
+			if (!current.contains(e.getValue())) dropLink(e.getKey());
+		}
+	}
+
+	private final class ScreenRadio implements MeshScreenPause.Radio {
+
+		@Override
+		public void pause() {
+			paused = true;
+			runOnRotator(BleMeshTransport.this::stopRadio);
+		}
+
+		@Override
+		public void resume() {
+			paused = false;
+			runOnRotator(() -> {
+				BluetoothAdapter adapter = bluetoothManager.getAdapter();
+				if (adapter != null && adapter.isEnabled()) {
+					startRadio(adapter);
+				}
+			});
+		}
+	}
+
+	private void runOnRotator(Runnable task) {
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (rot == null) return;
+		try {
+			rot.execute(task);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+		}
+	}
+
+	private MeshScreenPause.Cancellable scheduleOnRotator(Runnable task,
+			long delayMs) {
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (rot == null) return () -> {
+		};
+		try {
+			java.util.concurrent.ScheduledFuture<?> f =
+					rot.schedule(task, delayMs, TimeUnit.MILLISECONDS);
+			return () -> f.cancel(false);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+			return () -> {
+			};
+		}
 	}
 
 	@Override
@@ -136,6 +409,9 @@ public class BleMeshTransport implements MeshLink {
 	}
 
 	public int getPeerCount() {
+		if (contactsOnly()) {
+			return new java.util.HashSet<>(linkedContact.values()).size();
+		}
 		java.util.Set<String> addrs =
 				new java.util.HashSet<>(connectedCentrals.keySet());
 		addrs.addAll(connectedClients.keySet());
@@ -146,15 +422,19 @@ public class BleMeshTransport implements MeshLink {
 		if (android.os.Build.VERSION.SDK_INT
 				< android.os.Build.VERSION_CODES.S) return;
 		running = true;
-		registerStateReceiver();
 		forwarder.addLink(this);
-		java.util.concurrent.ScheduledExecutorService rot =
+		java.util.concurrent.ScheduledThreadPoolExecutor rot =
 				new java.util.concurrent.ScheduledThreadPoolExecutor(1, r -> {
 					Thread t = new Thread(r, "BleNonceRotate");
 					t.setDaemon(true);
 					return t;
 				});
+		rot.setRemoveOnCancelPolicy(true);
 		nonceRotator = rot;
+		registerStateReceiver();
+		android.os.PowerManager pm = (android.os.PowerManager)
+				appContext.getSystemService(Context.POWER_SERVICE);
+		if (pm != null && !pm.isInteractive()) screenPause.onScreenOff();
 		scheduleAdvertisingRotation(rot);
 		rot.scheduleWithFixedDelay(this::reap, REAP_INTERVAL_MS,
 				REAP_INTERVAL_MS, TimeUnit.MILLISECONDS);
@@ -162,6 +442,7 @@ public class BleMeshTransport implements MeshLink {
 				MeshLinkPolicy.NONCE_ANNOUNCE_INTERVAL_MS,
 				MeshLinkPolicy.NONCE_ANNOUNCE_INTERVAL_MS,
 				TimeUnit.MILLISECONDS);
+		refreshPeers();
 		BluetoothAdapter adapter = bluetoothManager.getAdapter();
 		if (adapter != null && adapter.isEnabled()) {
 			startRadio(adapter);
@@ -170,8 +451,9 @@ public class BleMeshTransport implements MeshLink {
 
 	private void startRadio(BluetoothAdapter adapter) {
 		synchronized (radioLock) {
-			if (radioUp || !running) return;
+			if (radioUp || !running || paused) return;
 		}
+		refreshPeers();
 		Runnable hook = beforeRadioUp;
 		if (hook != null) {
 			try {
@@ -180,10 +462,11 @@ public class BleMeshTransport implements MeshLink {
 			}
 		}
 		synchronized (radioLock) {
-			if (radioUp || !running) return;
+			if (radioUp || !running || paused) return;
 			radioUp = true;
 			try {
-				openServer();
+				if (contactsOnly()) openListener(adapter);
+				else openServer();
 			} catch (Exception e) {
 			}
 			try {
@@ -203,10 +486,7 @@ public class BleMeshTransport implements MeshLink {
 			radioUp = false;
 			BluetoothLeAdvertiser a = advertiser;
 			if (a != null) {
-				try {
-					a.stopAdvertising(advertiseCallback);
-				} catch (Exception e) {
-				}
+				stopAdvertisingSet(a);
 				advertiser = null;
 			}
 			BluetoothLeScanner s = scanner;
@@ -229,11 +509,24 @@ public class BleMeshTransport implements MeshLink {
 			}
 			frameCharacteristic = null;
 			connectedCentrals.clear();
+			closeLinks();
 			reassemblers.clear();
 			mtuByDevice.clear();
 			lastConnectAttempt.clear();
 			clientNonce.clear();
 			activeNonces.clear();
+			synchronized (linkLock) {
+				linkedContact.clear();
+				linkedSince.clear();
+				pendingLinks.clear();
+			}
+			hellosSeen.clear();
+			handshakeDue.clear();
+			advertsSeen.clear();
+			redialAfter.clear();
+			ownAdvert = null;
+			startingAdvert = null;
+			previousOwnAdvert = null;
 			policy.clear();
 		}
 	}
@@ -260,7 +553,21 @@ public class BleMeshTransport implements MeshLink {
 		}
 		appContext.registerReceiver(stateReceiver,
 				new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
+		IntentFilter screen = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+		screen.addAction(Intent.ACTION_SCREEN_ON);
+		appContext.registerReceiver(screenReceiver, screen);
 	}
+
+	private final BroadcastReceiver screenReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+				screenPause.onScreenOff();
+			} else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
+				screenPause.onScreenOn();
+			}
+		}
+	};
 
 	private final BroadcastReceiver stateReceiver = new BroadcastReceiver() {
 		@Override
@@ -316,26 +623,106 @@ public class BleMeshTransport implements MeshLink {
 			synchronized (radioLock) {
 				if (!radioUp || !running) return;
 			}
-			doBroadcast(withLengthPrefix(MeshLinkPolicy.encodeAnnounce(fresh)),
-					null);
+			if (!contactsOnly()) {
+				doBroadcast(withLengthPrefix(
+						MeshLinkPolicy.encodeAnnounce(fresh)), null);
+			}
 			synchronized (radioLock) {
 				if (!radioUp || !running) return;
 				BluetoothAdapter adapter = bluetoothManager.getAdapter();
 				if (adapter == null || !adapter.isEnabled()) return;
+				holdAwakeForSwap();
 				BluetoothLeAdvertiser a = advertiser;
-				if (a != null) a.stopAdvertising(advertiseCallback);
-				startAdvertising(adapter, fresh);
+				if (a != null) stopAdvertisingSet(a);
+				sessionNonce = fresh;
 				BluetoothLeScanner sc = scanner;
-				if (sc != null && MeshDiscovery.currentEpoch() != scanEpoch) {
+				if (sc != null && !contactsOnly()
+						&& MeshDiscovery.currentEpoch() != scanEpoch) {
 					sc.stopScan(scanCallback);
 					startScanning(adapter);
 				}
 			}
+			scheduleAdvertisingStart(fresh);
+		} catch (Exception e) {
+		}
+	}
+
+	private void scheduleAdvertisingStart(byte[] fresh) {
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (rot == null) return;
+		try {
+			rot.schedule(() -> resumeAdvertising(fresh),
+					BleAdvertising.replacementDelayMs(advertisingRandom),
+					TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+			releaseSwapWakeLock();
+		}
+	}
+
+	private void holdAwakeForSwap() {
+		AndroidWakeLockManager w = wakeLocks;
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (w == null || rot == null) return;
+		AndroidWakeLock lock = w.createWakeLock("MeshAdvertisingSwap");
+		lock.acquire();
+		AtomicBoolean released = new AtomicBoolean(false);
+		Runnable release = () -> {
+			if (released.compareAndSet(false, true)) lock.release();
+		};
+		Runnable previous = swapRelease.getAndSet(release);
+		if (previous != null) previous.run();
+		try {
+			rot.schedule(release, SWAP_WAKE_LOCK_MS, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+			release.run();
+		}
+	}
+
+	private void releaseSwapWakeLock() {
+		Runnable release = swapRelease.getAndSet(null);
+		if (release != null) release.run();
+	}
+
+	private void resumeAdvertising(byte[] fresh) {
+		try {
+			synchronized (radioLock) {
+				if (!radioUp || !running || advertiseCallback != null) return;
+				BluetoothAdapter adapter = bluetoothManager.getAdapter();
+				if (adapter == null || !adapter.isEnabled()) return;
+				startAdvertising(adapter, fresh);
+			}
+		} catch (Exception e) {
+		} finally {
+			releaseSwapWakeLock();
+		}
+	}
+
+	private void onAdvertisingFailed(AdvertisingSetCallback cb) {
+		synchronized (radioLock) {
+			if (advertiseCallback != cb) return;
+			advertiseCallback = null;
+		}
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (rot == null) return;
+		try {
+			rot.schedule(() -> resumeAdvertising(policy.freshNonce()),
+					advertisingRetryMs, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+		}
+	}
+
+	private void stopAdvertisingSet(BluetoothLeAdvertiser a) {
+		AdvertisingSetCallback cb = advertiseCallback;
+		advertiseCallback = null;
+		if (cb == null) return;
+		try {
+			a.stopAdvertisingSet(cb);
 		} catch (Exception e) {
 		}
 	}
 
 	private void announceNonce() {
+		if (contactsOnly()) return;
 		try {
 			synchronized (radioLock) {
 				if (!radioUp || !running) return;
@@ -345,8 +732,22 @@ public class BleMeshTransport implements MeshLink {
 			}
 			byte[] framed = withLengthPrefix(
 					MeshLinkPolicy.encodeAnnounce(sessionNonce));
-			sendExecutor.execute(() -> doBroadcast(framed, null));
+			sendExecutor.offerOwn(() -> doBroadcast(framed, null),
+					framed.length);
 		} catch (Exception e) {
+		}
+	}
+
+	public void setShortRange(boolean shortRange) {
+		int level = shortRange ? AdvertisingSetParameters.TX_POWER_LOW
+				: AdvertisingSetParameters.TX_POWER_MEDIUM;
+		if (level == txPowerLevel) return;
+		txPowerLevel = level;
+		if (!running) return;
+		byte[] fresh = policy.freshNonce();
+		try {
+			sendExecutor.execute(() -> switchAdvertisingSet(fresh));
+		} catch (java.util.concurrent.RejectedExecutionException e) {
 		}
 	}
 
@@ -360,14 +761,22 @@ public class BleMeshTransport implements MeshLink {
 					appContext.unregisterReceiver(stateReceiver);
 				} catch (IllegalArgumentException e) {
 				}
+				try {
+					appContext.unregisterReceiver(screenReceiver);
+				} catch (IllegalArgumentException e) {
+				}
 			}
 		}
 		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
 		if (rot != null) rot.shutdownNow();
 		nonceRotator = null;
+		releaseSwapWakeLock();
 		stopRadio();
+		closeLinks();
 		sendExecutor.shutdownNow();
 		receiveExecutor.shutdownNow();
+		scanMatcher.shutdownNow();
+		linkThreads.shutdownNow();
 	}
 
 	@Override
@@ -378,17 +787,27 @@ public class BleMeshTransport implements MeshLink {
 	@Override
 	public void broadcast(byte[] frame, @Nullable String exceptPeerId) {
 		byte[] framed = withLengthPrefix(frame);
-		sendExecutor.execute(() -> doBroadcast(framed, exceptPeerId));
+		Runnable send = () -> doBroadcast(framed, exceptPeerId);
+		if (exceptPeerId == null) sendExecutor.offerOwn(send, framed.length);
+		else sendExecutor.offer(send, framed.length);
 	}
 
 	private void doBroadcast(byte[] framed, @Nullable String exceptPeerId) {
+		if (contactsOnly()) {
+			for (Map.Entry<String, Channel> e : channels.entrySet()) {
+				String key = e.getKey();
+				if (key.equals(exceptPeerId)) continue;
+				if (!linkedContact.containsKey(key)) continue;
+				write(key, e.getValue(), framed);
+			}
+			return;
+		}
 		BluetoothGattServer server = gattServer;
 		BluetoothGattCharacteristic ch = frameCharacteristic;
 		if (server != null && ch != null) {
 			for (BluetoothDevice central : connectedCentrals.values()) {
-				if (serverKey(central.getAddress()).equals(exceptPeerId)) {
-					continue;
-				}
+				String key = serverKey(central.getAddress());
+				if (key.equals(exceptPeerId)) continue;
 				try {
 					notifyInChunks(server, central, ch, framed);
 				} catch (Exception e) {
@@ -396,11 +815,526 @@ public class BleMeshTransport implements MeshLink {
 			}
 		}
 		for (Map.Entry<String, BluetoothGatt> e : connectedClients.entrySet()) {
-			if (clientKey(e.getKey()).equals(exceptPeerId)) continue;
+			String key = clientKey(e.getKey());
+			if (key.equals(exceptPeerId)) continue;
 			try {
 				writeInChunks(e.getValue(), e.getKey(), framed);
 			} catch (Exception ex) {
 			}
+		}
+	}
+
+	private void sendTo(String key, byte[] frame) {
+		byte[] framed = withLengthPrefix(frame);
+		sendExecutor.offerOwn(() -> doSendTo(key, framed), framed.length);
+	}
+
+	private void doSendTo(String key, byte[] framed) {
+		Channel ch = channels.get(key);
+		if (ch != null) write(key, ch, framed);
+	}
+
+	private void write(String key, Channel ch, byte[] framed) {
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		java.util.concurrent.ScheduledFuture<?> guard = null;
+		try {
+			if (rot != null) {
+				guard = rot.schedule(() -> closeChannel(key, ch),
+						WRITE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+			}
+			synchronized (ch) {
+				ch.out.write(framed);
+				ch.out.flush();
+			}
+		} catch (java.io.IOException | RuntimeException e) {
+			closeChannel(key, ch);
+		} finally {
+			if (guard != null) guard.cancel(false);
+		}
+	}
+
+	private void closeChannel(String key, Channel ch) {
+		if (!channels.remove(key, ch)) return;
+		ch.close();
+		forgetLink(key);
+		policy.onLinkDown(key);
+	}
+
+	private void openListener(BluetoothAdapter adapter)
+			throws java.io.IOException {
+		BluetoothServerSocket socket =
+				adapter.listenUsingInsecureL2capChannel();
+		listener = socket;
+		listenChannel = socket.getPsm();
+		linkThreads.execute(() -> acceptLinks(socket));
+	}
+
+	private void closeLinks() {
+		closeListener();
+		for (Pending p : pendingLinks.values()) closeDial(p);
+		for (Channel ch : channels.values()) ch.close();
+		channels.clear();
+	}
+
+	private static void closeDial(Pending p) {
+		BluetoothSocket socket = p.socket;
+		if (socket == null) return;
+		try {
+			socket.close();
+		} catch (java.io.IOException | RuntimeException e) {
+		}
+	}
+
+	private void reopenListener() {
+		if (!contactsOnly() || listener != null) return;
+		synchronized (radioLock) {
+			if (!radioUp || !running || listener != null) return;
+			BluetoothAdapter adapter = bluetoothManager.getAdapter();
+			if (adapter == null || !adapter.isEnabled()) return;
+			try {
+				openListener(adapter);
+			} catch (Exception e) {
+				return;
+			}
+		}
+		byte[] fresh = policy.freshNonce();
+		try {
+			sendExecutor.execute(() -> switchAdvertisingSet(fresh));
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+		}
+	}
+
+	private void closeListener() {
+		BluetoothServerSocket socket = listener;
+		listener = null;
+		listenChannel = -1;
+		if (socket == null) return;
+		try {
+			socket.close();
+		} catch (java.io.IOException | RuntimeException e) {
+		}
+	}
+
+	private void acceptLinks(BluetoothServerSocket socket) {
+		while (listener == socket) {
+			BluetoothSocket dialled;
+			try {
+				dialled = socket.accept();
+			} catch (java.io.IOException | RuntimeException e) {
+				dialled = null;
+			}
+			if (dialled == null) {
+				if (listener == socket) closeListener();
+				return;
+			}
+			onDialledIn(dialled);
+		}
+	}
+
+	private void onDialledIn(BluetoothSocket socket) {
+		Channel ch;
+		String key;
+		try {
+			key = serverKey(socket.getRemoteDevice().getAddress());
+			ch = new Channel(socket);
+		} catch (java.io.IOException | RuntimeException e) {
+			try {
+				socket.close();
+			} catch (java.io.IOException | RuntimeException ignored) {
+			}
+			return;
+		}
+		if (!contactsOnly() || !radioUp || channels.containsKey(key)) {
+			ch.close();
+			return;
+		}
+		admitUnproved();
+		channels.put(key, ch);
+		policy.onLinkUp(key, clock());
+		expectHandshake(key);
+		if (!radioUp) {
+			closeChannel(key, ch);
+			return;
+		}
+		try {
+			linkThreads.execute(() -> readFrames(key, ch));
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+			closeChannel(key, ch);
+		}
+	}
+
+	private void readFrames(String key, Channel ch) {
+		boolean close = true;
+		try {
+			java.io.DataInputStream in = new java.io.DataInputStream(ch.in);
+			while (channels.get(key) == ch) {
+				int length = in.readInt();
+				boolean proved = linkedContact.containsKey(key);
+				int limit = proved ? MAX_FRAME_BYTES
+						: MAX_UNPROVED_FRAME_BYTES;
+				if (length <= 0 || length > limit) {
+					close = proved;
+					break;
+				}
+				byte[] frame = new byte[length];
+				in.readFully(frame);
+				onFrame(key, frame);
+			}
+		} catch (java.io.IOException | RuntimeException e) {
+		} finally {
+			if (close) closeChannel(key, ch);
+		}
+	}
+
+	private void forgetLink(String key) {
+		Pending unproved;
+		Integer contact;
+		Long since;
+		synchronized (linkLock) {
+			contact = linkedContact.remove(key);
+			since = linkedSince.remove(key);
+			unproved = pendingLinks.remove(key);
+		}
+		if (contact != null && since != null && key.startsWith(CLIENT_PREFIX)
+				&& clock() - since < SHORT_LINK_MS) {
+			redialAfter.put(contact, clock() + REDIAL_PAUSE_MS);
+		}
+		hellosSeen.remove(key);
+		handshakeDue.remove(key);
+		if (unproved == null || !key.startsWith(CLIENT_PREFIX)) return;
+		closeDial(unproved);
+		MeshPeer peer = unproved.peer;
+		UUID advert = unproved.advert;
+		if (peer != null && advert != null && unproved.connected) {
+			failedDials.put(advert + ":" + peer.contact, Boolean.TRUE);
+		}
+	}
+
+	private void dropLink(String key) {
+		Channel ch = channels.get(key);
+		if (ch != null) {
+			closeChannel(key, ch);
+			return;
+		}
+		forgetLink(key);
+	}
+
+	private void expectHandshake(String key) {
+		if (!contactsOnly()) return;
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (rot == null) return;
+		Object attempt = new Object();
+		handshakeDue.put(key, attempt);
+		try {
+			rot.schedule(() -> {
+				if (!handshakeDue.remove(key, attempt)) return;
+				if (contactsOnly() && !linkedContact.containsKey(key)) {
+					dropLink(key);
+				}
+			}, HANDSHAKE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+		}
+	}
+
+	private boolean isUp(String key) {
+		return channels.containsKey(key);
+	}
+
+	private int dialsUnderWay(int contact) {
+		int count = 0;
+		for (Map.Entry<String, Pending> e : pendingLinks.entrySet()) {
+			MeshPeer peer = e.getValue().peer;
+			if (peer != null && peer.contact == contact
+					&& e.getKey().startsWith(CLIENT_PREFIX)) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	@Nullable
+	private MeshPeer peer(int contact) {
+		for (MeshPeer p : peerSnapshot) {
+			if (p.contact == contact) return p;
+		}
+		return null;
+	}
+
+	private int[] contactsRecognising(UUID seen) {
+		if (!MeshPrivateLink.looksRandom(seen)) return NO_CONTACTS;
+		int[] known = advertsSeen.get(seen);
+		if (known != null) return known;
+		long epoch = MeshPrivateLink.currentEpoch();
+		List<Integer> found = new java.util.ArrayList<>();
+		for (MeshPeer p : peerSnapshot) {
+			if (MeshPrivateLink.recognises(p.advertKey, seen, epoch)) {
+				found.add(p.contact);
+			}
+		}
+		int[] contacts = found.isEmpty() ? NO_CONTACTS : new int[found.size()];
+		for (int i = 0; i < contacts.length; i++) contacts[i] = found.get(i);
+		advertsSeen.put(seen, contacts);
+		return contacts;
+	}
+
+	private void onContactAdvert(ScanResult result) {
+		android.bluetooth.le.ScanRecord record = result.getScanRecord();
+		if (record == null) return;
+		List<ParcelUuid> uuids = record.getServiceUuids();
+		if (uuids == null) return;
+		BluetoothDevice device = result.getDevice();
+		String address = device.getAddress();
+		if (channels.containsKey(clientKey(address))
+				|| pendingLinks.containsKey(clientKey(address))) {
+			return;
+		}
+		for (ParcelUuid uuid : uuids) {
+			UUID advert = uuid.getUuid();
+			for (int contact : contactsRecognising(advert)) {
+				if (failedDials.containsKey(advert + ":" + contact)) continue;
+				MeshPeer peer = peer(contact);
+				if (peer != null && MeshPrivateLink.channelOf(peer.advertKey,
+						advert) < FIRST_CHANNEL) {
+					continue;
+				}
+				Long pause = redialAfter.get(contact);
+				if (peer == null || linkedContact.containsValue(contact)
+						|| (pause != null && clock() < pause)
+						|| dialsUnderWay(contact) >= MAX_DIALS_PER_CONTACT) {
+					continue;
+				}
+				dialContact(device, address, advert, peer);
+				return;
+			}
+		}
+	}
+
+	private void dialContact(BluetoothDevice device, String address,
+			UUID advert, MeshPeer peer) {
+		long now = clock();
+		Long last = lastConnectAttempt.get(address);
+		if (last != null && now - last < CONNECT_COOLDOWN_MS) return;
+		List<String> dialled = new java.util.ArrayList<>();
+		for (String k : channels.keySet()) {
+			if (k.startsWith(CLIENT_PREFIX)) dialled.add(k);
+		}
+		int underWay = 0;
+		for (String k : pendingLinks.keySet()) {
+			if (k.startsWith(CLIENT_PREFIX) && !channels.containsKey(k)) {
+				underWay++;
+			}
+		}
+		if (dialled.size() + underWay >= MAX_CLIENTS) {
+			String victim = policy.idleLinkToEvict(dialled, now);
+			if (victim == null) return;
+			dropLink(victim);
+		}
+		lastConnectAttempt.put(address, now);
+		String key = clientKey(address);
+		Pending pending = new Pending(peer, advert);
+		pendingLinks.put(key, pending);
+		expectHandshake(key);
+		int channel = MeshPrivateLink.channelOf(peer.advertKey, advert);
+		try {
+			linkThreads.execute(() -> openChannel(device, key, channel,
+					pending));
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+			forgetLink(key);
+		}
+	}
+
+	private void openChannel(BluetoothDevice device, String key, int channel,
+			Pending pending) {
+		Channel ch;
+		try {
+			BluetoothSocket socket = device.createInsecureL2capChannel(channel);
+			pending.socket = socket;
+			if (pendingLinks.get(key) != pending || !radioUp) {
+				closeDial(pending);
+				return;
+			}
+			socket.connect();
+			ch = new Channel(socket);
+		} catch (java.io.IOException | RuntimeException e) {
+			closeDial(pending);
+			if (pendingLinks.get(key) == pending) forgetLink(key);
+			return;
+		}
+		pending.connected = true;
+		if (pendingLinks.get(key) != pending || !radioUp
+				|| channels.putIfAbsent(key, ch) != null) {
+			ch.close();
+			return;
+		}
+		policy.onLinkUp(key, clock());
+		sendHello(key);
+		readFrames(key, ch);
+	}
+
+	private void sendHello(String key) {
+		if (linkedContact.containsKey(key)) return;
+		Pending p = pendingLinks.get(key);
+		MeshPeer peer = p == null ? null : p.peer;
+		UUID advert = p == null ? null : p.advert;
+		if (p == null || peer == null || advert == null) {
+			dropLink(key);
+			return;
+		}
+		if (p.dialerNonce != null) return;
+		byte[] nonce = new byte[MeshPrivateLink.NONCE_BYTES];
+		advertisingRandom.nextBytes(nonce);
+		p.dialerNonce = nonce;
+		sendTo(key, MeshPrivateLink.hello(peer.linkKey, advert, nonce));
+	}
+
+	private void onHandshake(String key, byte[] frame) {
+		if (linkedContact.containsKey(key)) return;
+		boolean inbound = key.startsWith(SERVER_PREFIX);
+		if (frame[1] == MeshPrivateLink.TYPE_HELLO) {
+			if (inbound) onHello(key, frame);
+		} else if (frame[1] == MeshPrivateLink.TYPE_REPLY) {
+			if (!inbound) onReply(key, frame);
+		} else if (inbound) {
+			onConfirm(key, frame);
+		}
+	}
+
+	private List<UUID> advertsAnswered() {
+		List<UUID> out = new java.util.ArrayList<>(3);
+		UUID current = ownAdvert;
+		UUID starting = startingAdvert;
+		UUID previous = previousOwnAdvert;
+		if (current != null) out.add(current);
+		if (starting != null) out.add(starting);
+		if (previous != null && clock() < previousAdvertUntil) {
+			out.add(previous);
+		}
+		return out;
+	}
+
+	private void onHello(String key, byte[] frame) {
+		byte[] dialerNonce = MeshPrivateLink.helloNonce(frame);
+		if (dialerNonce == null || pendingLinks.containsKey(key)) return;
+		int seen = hellosSeen.merge(key, 1, Integer::sum);
+		if (seen > MAX_HELLOS_PER_LINK) {
+			dropLink(key);
+			return;
+		}
+		List<UUID> adverts = advertsAnswered();
+		for (MeshPeer p : peerSnapshot) {
+			boolean matches = false;
+			for (UUID advert : adverts) {
+				matches |= MeshPrivateLink.helloMatches(frame, p.linkKey,
+						advert);
+			}
+			if (!matches) continue;
+			byte[] answererNonce = new byte[MeshPrivateLink.NONCE_BYTES];
+			advertisingRandom.nextBytes(answererNonce);
+			Pending pending = new Pending(p, null);
+			pending.dialerNonce = dialerNonce;
+			pending.answererNonce = answererNonce;
+			if (pendingLinks.putIfAbsent(key, pending) != null) return;
+			sendTo(key, MeshPrivateLink.reply(p.linkKey, dialerNonce,
+					answererNonce));
+			return;
+		}
+	}
+
+	private void onReply(String key, byte[] frame) {
+		Pending p = pendingLinks.get(key);
+		MeshPeer peer = p == null ? null : p.peer;
+		byte[] dialerNonce = p == null ? null : p.dialerNonce;
+		if (p == null || peer == null || dialerNonce == null
+				|| p.answererNonce != null) {
+			return;
+		}
+		byte[] answererNonce = MeshPrivateLink.replyNonce(frame, peer.linkKey,
+				dialerNonce);
+		if (answererNonce == null) return;
+		p.answererNonce = answererNonce;
+		sendTo(key, MeshPrivateLink.confirm(peer.linkKey, dialerNonce,
+				answererNonce));
+		onAuthenticated(key, peer, p);
+	}
+
+	private void onConfirm(String key, byte[] frame) {
+		Pending p = pendingLinks.get(key);
+		MeshPeer peer = p == null ? null : p.peer;
+		byte[] dialerNonce = p == null ? null : p.dialerNonce;
+		byte[] answererNonce = p == null ? null : p.answererNonce;
+		if (p == null || peer == null || dialerNonce == null
+				|| answererNonce == null) {
+			return;
+		}
+		if (!MeshPrivateLink.confirmMatches(frame, peer.linkKey, dialerNonce,
+				answererNonce)) {
+			return;
+		}
+		onAuthenticated(key, peer, p);
+	}
+
+	private void onAuthenticated(String key, MeshPeer peer, Pending proved) {
+		long now = clock();
+		String drop = null;
+		synchronized (linkLock) {
+			if (!isUp(key) || !pendingLinks.remove(key, proved)) return;
+			String other = null;
+			for (Map.Entry<String, Integer> e : linkedContact.entrySet()) {
+				if (e.getValue() == peer.contact) other = e.getKey();
+			}
+			linkedContact.put(key, peer.contact);
+			linkedSince.put(key, now);
+			if (other != null) {
+				Long since = linkedSince.get(other);
+				boolean together = since != null
+						&& now - since < DUPLICATE_WINDOW_MS;
+				boolean ownDial = key.startsWith(CLIENT_PREFIX);
+				boolean otherOwnDial = other.startsWith(CLIENT_PREFIX);
+				if (!together || ownDial == otherOwnDial) {
+					drop = other;
+				} else {
+					drop = ownDial == peer.keepsOwnDial ? other : key;
+				}
+			}
+		}
+		hellosSeen.remove(key);
+		handshakeDue.remove(key);
+		if (drop != null) dropLink(drop);
+		if (key.equals(drop)) return;
+		if (key.startsWith(SERVER_PREFIX) && !keepsProvedCentral(key, now)) {
+			return;
+		}
+		firePeerConnected();
+	}
+
+	private boolean keepsProvedCentral(String key, long now) {
+		List<String> proved = new java.util.ArrayList<>();
+		for (String k : linkedContact.keySet()) {
+			if (k.startsWith(SERVER_PREFIX)) proved.add(k);
+		}
+		if (proved.size() <= MAX_CENTRALS) return true;
+		proved.remove(key);
+		String victim = policy.idleLinkToEvict(proved, now);
+		if (victim == null) {
+			dropLink(key);
+			return false;
+		}
+		dropLink(victim);
+		return true;
+	}
+
+	private void admitUnproved() {
+		List<String> unproved = new java.util.ArrayList<>();
+		String silent = null;
+		for (String key : channels.keySet()) {
+			if (key.startsWith(SERVER_PREFIX)
+					&& !linkedContact.containsKey(key)) {
+				unproved.add(key);
+				if (!pendingLinks.containsKey(key)) silent = key;
+			}
+		}
+		if (unproved.size() >= MAX_UNPROVED_CENTRALS) {
+			dropLink(silent != null ? silent : unproved.get(0));
 		}
 	}
 
@@ -447,6 +1381,7 @@ public class BleMeshTransport implements MeshLink {
 						connectedCentrals.remove(device.getAddress());
 						reassemblers.remove(serverKey(device.getAddress()));
 						mtuByDevice.remove(device.getAddress());
+						forgetLink(serverKey(device.getAddress()));
 						policy.onLinkDown(serverKey(device.getAddress()));
 					}
 				}
@@ -502,6 +1437,7 @@ public class BleMeshTransport implements MeshLink {
 		BluetoothDevice old = connectedCentrals.remove(victimAddress);
 		reassemblers.remove(victim);
 		mtuByDevice.remove(victimAddress);
+		forgetLink(victim);
 		policy.onLinkDown(victim);
 		if (old != null && server != null) {
 			try {
@@ -519,6 +1455,7 @@ public class BleMeshTransport implements MeshLink {
 		reassemblers.remove(clientKey(address));
 		mtuByDevice.remove(address);
 		lastConnectAttempt.remove(address);
+		forgetLink(clientKey(address));
 		policy.onLinkDown(clientKey(address));
 	}
 
@@ -529,10 +1466,19 @@ public class BleMeshTransport implements MeshLink {
 		long epoch = MeshDiscovery.currentEpoch();
 		scanEpoch = epoch;
 		List<ScanFilter> filters = new java.util.ArrayList<>();
-		for (long e = epoch - 3; e <= epoch + 3; e++) {
-			filters.add(new ScanFilter.Builder()
-					.setServiceUuid(new ParcelUuid(MeshDiscovery.discoveryUuid(e, GATT_SERVICE_UUID)))
+		if (contactsOnly()) {
+			filters.add(new ScanFilter.Builder().setServiceUuid(
+					new ParcelUuid(MeshPrivateLink.RANDOM_UUID_BITS),
+					new ParcelUuid(MeshPrivateLink.RANDOM_UUID_MASK))
 					.build());
+		} else {
+			for (long e = epoch - 3; e <= epoch + 3; e++) {
+				filters.add(new ScanFilter.Builder()
+						.setServiceUuid(new ParcelUuid(
+								MeshDiscovery.discoveryUuid(e,
+										GATT_SERVICE_UUID)))
+						.build());
+			}
 		}
 		ScanSettings settings = new ScanSettings.Builder()
 				.setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
@@ -543,6 +1489,10 @@ public class BleMeshTransport implements MeshLink {
 	private final ScanCallback scanCallback = new ScanCallback() {
 		@Override
 		public void onScanResult(int callbackType, ScanResult result) {
+			if (contactsOnly()) {
+				scanMatcher.offer(() -> onContactAdvert(result), 64);
+				return;
+			}
 			BluetoothDevice device = result.getDevice();
 			String address = device.getAddress();
 			if (connectedClients.containsKey(address)) return;
@@ -658,25 +1608,55 @@ public class BleMeshTransport implements MeshLink {
 		BluetoothLeAdvertiser a = adapter.getBluetoothLeAdvertiser();
 		if (a == null) return;
 		advertiser = a;
-		AdvertiseSettings settings = new AdvertiseSettings.Builder()
-				.setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
-				.setConnectable(true)
-				.setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
-				.build();
-		AdvertiseData data = new AdvertiseData.Builder()
-				.setIncludeDeviceName(false)
-				.addServiceUuid(new ParcelUuid(MeshDiscovery.discoveryUuid(MeshDiscovery.currentEpoch(), GATT_SERVICE_UUID)))
-				.build();
-		AdvertiseData scanResponse = new AdvertiseData.Builder()
-				.setIncludeDeviceName(false)
-				.addManufacturerData(MANUFACTURER_ID, nonce)
-				.build();
-		a.startAdvertising(settings, data, scanResponse, advertiseCallback);
+		AdvertiseData data;
+		AdvertiseData scanResponse;
+		if (contactsOnly()) {
+			byte[] key = ownAdvertKey;
+			int channel = listenChannel;
+			if (key == null || channel < 0 || channel > 0xFF) return;
+			UUID advert = MeshPrivateLink.advert(key, advertisingRandom,
+					MeshPrivateLink.currentEpoch(), channel);
+			startingAdvert = advert;
+			data = new AdvertiseData.Builder()
+					.setIncludeDeviceName(false)
+					.addServiceUuid(new ParcelUuid(advert))
+					.build();
+			scanResponse = null;
+		} else {
+			data = new AdvertiseData.Builder()
+					.setIncludeDeviceName(false)
+					.addServiceUuid(new ParcelUuid(
+							MeshDiscovery.discoveryUuid(
+									MeshDiscovery.currentEpoch(),
+									GATT_SERVICE_UUID)))
+					.build();
+			scanResponse = new AdvertiseData.Builder()
+					.setIncludeDeviceName(false)
+					.addManufacturerData(MANUFACTURER_ID, nonce)
+					.build();
+		}
+		AdvertisingSetCallback cb = new AdvertisingSetCallback() {
+			@Override
+			public void onAdvertisingSetStarted(
+					@Nullable android.bluetooth.le.AdvertisingSet set,
+					int txPower, int status) {
+				if (status != ADVERTISE_SUCCESS) {
+					onAdvertisingFailed(this);
+					return;
+				}
+				UUID started = startingAdvert;
+				if (started == null || advertiseCallback != this) return;
+				previousOwnAdvert = ownAdvert;
+				previousAdvertUntil = clock() + PREVIOUS_ADVERT_MS;
+				ownAdvert = started;
+				startingAdvert = null;
+			}
+		};
+		advertiseCallback = cb;
+		a.startAdvertisingSet(
+				BleAdvertising.parameters(txPowerLevel, advertisingRandom),
+				data, scanResponse, null, null, cb);
 	}
-
-	private final AdvertiseCallback advertiseCallback =
-			new AdvertiseCallback() {
-			};
 
 	private void onBytes(String key, @Nullable byte[] value) {
 		if (value == null || value.length == 0) return;
@@ -684,24 +1664,30 @@ public class BleMeshTransport implements MeshLink {
 				k -> new MeshFrameReassembler(MAX_FRAME_BYTES));
 		r.append(value);
 		byte[] frame;
-		while ((frame = r.poll()) != null) {
-			if (MeshLinkPolicy.isControl(frame)) {
-				byte[] announced = MeshLinkPolicy.decodeAnnounce(frame);
-				if (announced != null) {
-					policy.onAnnounce(key, announced, clock());
+		while ((frame = r.poll()) != null) onFrame(key, frame);
+	}
+
+	private void onFrame(String key, byte[] frame) {
+		if (MeshLinkPolicy.isControl(frame)) {
+			if (contactsOnly()) {
+				if (MeshPrivateLink.isHandshake(frame)) {
+					onHandshake(key, frame);
 				}
-				continue;
+				return;
 			}
-			byte[] f = frame;
-			try {
-				receiveExecutor.execute(() -> {
-					if (forwarder.onReceive(f, LINK_ID, key)) {
-						policy.onUseful(key, clock());
-					}
-				});
-			} catch (java.util.concurrent.RejectedExecutionException e) {
+			byte[] announced = MeshLinkPolicy.decodeAnnounce(frame);
+			if (announced != null) {
+				policy.onAnnounce(key, announced, clock());
 			}
+			return;
 		}
+		if (contactsOnly() && !linkedContact.containsKey(key)) return;
+		receiveExecutor.offer(() -> forwarder.onReceive(frame, LINK_ID, key),
+				frame.length);
+	}
+
+	public void onOpenedFrom(String peerKey) {
+		policy.onUseful(peerKey, clock());
 	}
 
 	private static final String SERVER_PREFIX = "s:";
@@ -793,6 +1779,11 @@ public class BleMeshTransport implements MeshLink {
 
 	private void reap() {
 		if (!radioUp || !running) return;
+		refreshPeers();
+		reopenListener();
+		for (String key : linkedContact.keySet()) {
+			if (!isUp(key)) forgetLink(key);
+		}
 		long now = clock();
 		try {
 			for (Map.Entry<String, BluetoothGatt> e :
@@ -812,6 +1803,7 @@ public class BleMeshTransport implements MeshLink {
 					reassemblers.remove(clientKey(addr));
 					mtuByDevice.remove(addr);
 					lastConnectAttempt.remove(addr);
+					forgetLink(clientKey(addr));
 					policy.onLinkDown(clientKey(addr));
 				}
 			}
@@ -824,6 +1816,7 @@ public class BleMeshTransport implements MeshLink {
 					connectedCentrals.remove(addr);
 					reassemblers.remove(serverKey(addr));
 					mtuByDevice.remove(addr);
+					forgetLink(serverKey(addr));
 					policy.onLinkDown(serverKey(addr));
 				}
 			}

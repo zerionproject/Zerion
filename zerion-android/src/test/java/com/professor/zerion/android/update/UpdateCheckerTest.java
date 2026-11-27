@@ -32,8 +32,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.robolectric.Shadows.shadowOf;
@@ -116,6 +118,11 @@ public class UpdateCheckerTest {
 	}
 
 	private UpdateChecker checker(long installed) {
+		prefs.edit().putBoolean(UpdateChecker.PREF_AUTO, true).commit();
+		return newChecker(installed);
+	}
+
+	private UpdateChecker newChecker(long installed) {
 		AnnouncementSource source = () -> {
 			fetches++;
 			if (failNext) throw new IOException("no route");
@@ -219,6 +226,39 @@ public class UpdateCheckerTest {
 		idle();
 		assertEquals(UpdateChecker.Outcome.TOR_NOT_READY, checkNow(c).outcome);
 		assertEquals(0, fetches);
+	}
+
+	@Test
+	public void aNewInstallationDoesNotCheckUntilTheUserSwitchesItOn()
+			throws Exception {
+		announce("3.0.17", 31700);
+		UpdateChecker c = newChecker(31600);
+		assertFalse(c.isAutomaticEnabled());
+		torConnects();
+		c.onAppForeground();
+		idle();
+		assertEquals(0, fetches);
+		assertNull(c.getPopup().getValue());
+
+		c.setAutomaticEnabled(true);
+		idle();
+		assertTrue(c.isAutomaticEnabled());
+		assertEquals(1, fetches);
+		assertNotNull(c.getPopup().getValue());
+	}
+
+	@Test
+	public void anEarlierChoiceSurvivesTheNewDefault() throws Exception {
+		announce("3.0.17", 31700);
+		prefs.edit().putBoolean(UpdateChecker.PREF_AUTO, true).commit();
+		UpdateChecker on = newChecker(31600);
+		assertTrue(on.isAutomaticEnabled());
+		torConnects();
+		assertEquals(1, fetches);
+
+		prefs.edit().clear().putBoolean(UpdateChecker.PREF_AUTO, false)
+				.commit();
+		assertFalse(newChecker(31600).isAutomaticEnabled());
 	}
 
 	@Test

@@ -3,6 +3,7 @@ package com.professor.zerion.android.conversation;
 import android.content.Context;
 import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
+import android.view.textclassifier.TextClassifier;
 import android.widget.FrameLayout;
 
 import com.professor.zerion.R;
@@ -30,6 +31,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -134,6 +136,29 @@ public class ConversationMessageStyleTest {
 				v.findViewById(R.id.playPauseButton);
 		assertEquals(ctx.getColor(R.color.bubble_pink),
 				play.getIconTint().getDefaultColor());
+	}
+
+	@Test
+	public void messageAndNoticeTextOffersNoSystemOpenAction() {
+		for (ConversationItemViewHolder h : bindAll(adapter())) {
+			android.widget.TextView notice =
+					h.itemView.findViewById(R.id.msgText);
+			assertSame(TextClassifier.NO_OP, notice.getTextClassifier());
+			if (h.text != null) {
+				assertSame(TextClassifier.NO_OP, h.text.getTextClassifier());
+			}
+		}
+		Context ctx = ctx();
+		android.view.View v = android.view.LayoutInflater.from(ctx).inflate(
+				R.layout.list_item_conversation_msg_in_content,
+				new FrameLayout(ctx), false);
+		ConversationMessageViewHolder h = new ConversationMessageViewHolder(v,
+				mock(ConversationListener.class),
+				true, new androidx.recyclerview.widget.RecyclerView
+				.RecycledViewPool(), new ImageItemDecoration(ctx),
+				mock(AttachmentReader.class), Runnable::run,
+				mock(VoiceMemoKeys.class));
+		assertSame(TextClassifier.NO_OP, h.text.getTextClassifier());
 	}
 
 	@Test

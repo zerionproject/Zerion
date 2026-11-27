@@ -149,6 +149,7 @@ public class ZerionControllerImpl implements ZerionController {
 				activity.getApplicationContext());
 		com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder
 				.clear();
+		com.professor.zerion.android.conversation.OpenedVideos.clear();
 		wakeLockManager.executeWakefully(() -> {
 			if (deleteAccount) accountManager.shredDatabaseKey();
 			try {

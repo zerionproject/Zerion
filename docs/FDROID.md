@@ -28,7 +28,7 @@ The reproducible build is defined by `packaging/monero-android/Dockerfile` and
 
 | Component | Pin |
 |---|---|
-| Monero | tag `v0.18.5.1`, commit `4f92268d7c16741cfb41e5bbe2aa46cc260a9ea5` |
+| Monero | tag `v0.18.5.4`, commit `85f036ba7019cd36f08e8a38a27c37ea7b522618` |
 | OpenSSL | `3.5.9` |
 | Boost | `1.84.0` |
 | libsodium | `1.0.19` |
@@ -156,8 +156,10 @@ published here, which is the signed output of that build
 cache passes on Linux (CI job `strict-from-clean-cache`) and the metadata
 lists the Linux `aapt2` artifact, so nothing in the buildserver's resolution
 is outside the metadata. CI builds the reference APK from the newest
-fdroiddata entry and refuses to start when that entry removes the file
-(`scripts/fdroid-metadata.py`).
+fdroiddata entry and refuses to start when that entry differs, after YAML
+decoding and apart from the version and commit, from the recipe pinned in
+`scripts/fdroid-recipe.yml`; a recipe change in fdroiddata therefore comes
+with a reviewed change to that file (`scripts/fdroid-metadata.py`).
 
 Earlier builds ran without it. The fdroiddata entries for 2.0.1 to 3.0.3, the
 versions F-Droid has published so far, carry `rm: gradle/verification-metadata.xml`
@@ -167,6 +169,26 @@ locked versions without checksum and signature verification, and their
 dependency integrity rested on the locked versions, HTTPS downloads and the
 release-time comparison with an independent build that kept the metadata
 (`scripts/build-fdroid-apk.sh`, which fails closed without it).
+
+The CI reference build (`scripts/fdroid-reference-build.sh`) runs
+fdroidserver and fdroiddata at fixed commits, not at their `master`
+branches, so fdroidserver and fdroiddata cannot change without a commit here;
+the build image (tag `buildserver-trixie`), `gradlew-fdroid` and the system
+packages still follow upstream.
+The pins are the commits that produced the 3.0.18 reference build:
+fdroiddata `e3d332b139f35112ffe1503ec93606dbfd05ab40` (2026-10-20) and
+fdroidserver `0c3166f227d5917c913fa0d66a1ecab3bc7362b8`, which was
+fdroidserver's `master` on 2026-10-20. The script fetches each commit by its
+hash and stops unless the checkout is exactly that commit, and it writes both
+hashes to `provenance.txt` next to the APK. To move to newer commits, read the
+current ones with
+`git ls-remote https://gitlab.com/fdroid/fdroiddata.git master` and
+`git ls-remote https://gitlab.com/fdroid/fdroidserver.git master`, change
+`FDROIDDATA_COMMIT` and `FDROIDSERVER_COMMIT` in the script and the two
+hashes in this paragraph in one commit, and keep it only when the CI
+reference build passes with the new commits. The recipe itself still comes from the newest fdroiddata
+entry (`scripts/fdroid-metadata.py`), so CI keeps testing what F-Droid will
+build.
 
 Two inputs are still not pinned by the recipe itself: it names
 `reproducible-apk-tools` by the tag `v0.3.0`, which resolved to commit

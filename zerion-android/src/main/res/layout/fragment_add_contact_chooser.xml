@@ -9,20 +9,10 @@
 	android:paddingTop="32dp"
 	android:paddingBottom="24dp">
 
-	<TextView
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:gravity="center"
-		android:text="@string/add_contact_method_subtitle"
-		android:textColor="@color/zerion_text_secondary"
-		android:textSize="16sp"
-		android:letterSpacing="0.01" />
-
 	<androidx.cardview.widget.CardView
-		android:id="@+id/qrExchangeCard"
+		android:id="@+id/sendInviteCard"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:layout_marginTop="28dp"
 		android:foreground="?attr/selectableItemBackground"
 		android:clickable="true"
 		android:focusable="true"
@@ -51,7 +41,7 @@
 						android:layout_width="24dp"
 						android:layout_height="24dp"
 						android:layout_gravity="center"
-						android:src="@drawable/ic_camera_24dp"
+						android:src="@drawable/ic_link"
 						app:tint="@color/zerion_accent_icon"
 						android:contentDescription="@null" />
 
@@ -62,82 +52,7 @@
 					android:layout_height="wrap_content"
 					android:layout_weight="1"
 					android:layout_marginStart="14dp"
-					android:text="@string/qr_exchange_card_title"
-					android:textColor="@color/zerion_text_primary"
-					android:textSize="18sp"
-					android:textStyle="bold" />
-
-				<TextView
-					android:layout_width="wrap_content"
-					android:layout_height="wrap_content"
-					android:background="@drawable/bg_recommended_badge"
-					android:paddingHorizontal="10dp"
-					android:paddingVertical="3dp"
-					android:text="@string/recommended"
-					android:textColor="@color/zerion_on_accent"
-					android:textSize="12sp"
-					android:textStyle="bold" />
-
-			</LinearLayout>
-
-			<TextView
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content"
-				android:layout_marginTop="12dp"
-				android:text="@string/qr_exchange_card_description"
-				android:textColor="@color/zerion_text_secondary"
-				android:textSize="14sp"
-				android:lineSpacingExtra="2dp" />
-
-		</LinearLayout>
-
-	</androidx.cardview.widget.CardView>
-
-	<androidx.cardview.widget.CardView
-		android:id="@+id/linkExchangeCard"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:layout_marginTop="14dp"
-		android:foreground="?attr/selectableItemBackground"
-		android:clickable="true"
-		android:focusable="true"
-		app:cardBackgroundColor="@color/zerion_surface_elevated"
-		app:cardCornerRadius="20dp"
-		app:cardElevation="0dp">
-
-		<LinearLayout
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:orientation="vertical"
-			android:padding="20dp">
-
-			<LinearLayout
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content"
-				android:orientation="horizontal"
-				android:gravity="center_vertical">
-
-				<FrameLayout
-					android:layout_width="48dp"
-					android:layout_height="48dp"
-					android:background="@drawable/bg_add_contact_icon_neutral">
-
-					<ImageView
-						android:layout_width="24dp"
-						android:layout_height="24dp"
-						android:layout_gravity="center"
-						android:src="@drawable/ic_link"
-						app:tint="@color/zerion_text_primary"
-						android:contentDescription="@null" />
-
-				</FrameLayout>
-
-				<TextView
-					android:layout_width="0dp"
-					android:layout_height="wrap_content"
-					android:layout_weight="1"
-					android:layout_marginStart="14dp"
-					android:text="@string/link_exchange_card_title"
+					android:text="@string/add_contact_send_invite_title"
 					android:textColor="@color/zerion_text_primary"
 					android:textSize="18sp"
 					android:textStyle="bold" />
@@ -148,7 +63,7 @@
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:layout_marginTop="12dp"
-				android:text="@string/link_exchange_card_description"
+				android:text="@string/add_contact_send_invite_description"
 				android:textColor="@color/zerion_text_secondary"
 				android:textSize="14sp"
 				android:lineSpacingExtra="2dp" />
@@ -158,7 +73,7 @@
 	</androidx.cardview.widget.CardView>
 
 	<androidx.cardview.widget.CardView
-		android:id="@+id/nearbyPairCard"
+		android:id="@+id/scanQrCard"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginTop="14dp"
@@ -201,7 +116,7 @@
 					android:layout_height="wrap_content"
 					android:layout_weight="1"
 					android:layout_marginStart="14dp"
-					android:text="@string/nearby_pair_card_title"
+					android:text="@string/add_contact_scan_qr_title"
 					android:textColor="@color/zerion_text_primary"
 					android:textSize="18sp"
 					android:textStyle="bold" />
@@ -212,7 +127,7 @@
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:layout_marginTop="12dp"
-				android:text="@string/nearby_pair_card_description"
+				android:text="@string/add_contact_scan_qr_description"
 				android:textColor="@color/zerion_text_secondary"
 				android:textSize="14sp"
 				android:lineSpacingExtra="2dp" />

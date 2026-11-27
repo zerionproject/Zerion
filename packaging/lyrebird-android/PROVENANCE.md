@@ -16,16 +16,22 @@ Up to 3.0.17 the app took lyrebird 0.6.2 from the Briar Project's published
 `org.briarproject:lyrebird-android` artifact, built by that project's
 go-reproducer with Go 1.22.12. Go 1.22 stopped receiving security fixes when
 Go 1.24 was released (the Go project supports the two newest major releases),
-and lyrebird 0.9.0, the current upstream release, declares `go 1.26.0` in its
+and lyrebird 0.10.0, the current upstream release, declares `go 1.26.10` in its
 `go.mod`, so it cannot be built with that toolchain at all. The build now runs
 from this directory with the current Go 1.26 point release.
 
-What changed upstream between 0.6.2 and 0.9.0 (lyrebird's ChangeLog): webtunnel
+What changed upstream between 0.6.2 and 0.10.0 (lyrebird's ChangeLog): webtunnel
 gained certificate chain pinning, several server names, uTLS by default and the
 `sni-imitation` option (0.7.0); meek gained several url and front pairs per
 bridge line through the `targets` argument (0.8.0); the chrome120 uTLS
 imitation profile was fixed (0.8.1); the proxy configuration of snowflake was
-fixed (0.9.0). The bridge lines the app bundles use none of the new arguments;
+fixed (0.9.0); the snowflake library moved to 2.15.3 (0.10.0), which also raised
+its pion DTLS and STUN modules to 3.1.5 and 3.1.6, closing panics a hostile
+snowflake peer or STUN server could trigger in 3.1.2 and 3.1.1 (CVE-2026-54908,
+CVE-2026-54909), klauspost/compress to 1.19.2 (CVE-2026-63209) and brotli to
+1.2.2. golang.org/x/net stays at 0.59.0 in 0.10.0, so the HTTP/2 client CPU
+exhaustion of CVE-2026-78669, reachable only from a hostile meek or webtunnel
+bridge, is still open upstream. The bridge lines the app bundles use none of the new arguments;
 `BundledBridgeSourcesTest` checks every bundled line against the arguments the
 pinned lyrebird parses and fails when a line needs a newer one, for example
 meek `targets` with a lyrebird older than 0.8.0.
@@ -35,7 +41,7 @@ meek `targets` with a lyrebird older than 0.8.0.
 - `liblyrebird.so` for `arm64-v8a` and `armeabi-v7a`: the lyrebird client
   (`./cmd/lyrebird`), with cgo, as a position-independent executable for
   Android API 21, stripped of symbols and debug information, with a 16 KB
-  maximum page size. It reports version `0.9.0` to Tor.
+  maximum page size. It reports version `0.10.0` to Tor.
 - The executable is a Go program and statically links the Go runtime and
   standard library and the Go modules listed in `out/<abi>/liblyrebird.so.buildinfo`
   (the output of `go version -m`); their licences are recorded in NOTICE.md.
@@ -44,9 +50,9 @@ meek `targets` with a lyrebird older than 0.8.0.
 
 | Component | Pin |
 |---|---|
-| lyrebird | tag `0.9.0`, commit `89d54872b176f936232ff39f7a8189b77d83d65e`, from `https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird.git`. The annotated tag carries a good signature (`GOODSIG`, `VALIDSIG`, made 2026-10-06) by Ruben Pollan (meskio), primary key `07948FFA64160A425BCD27EAC732B1D1C28F4E2F`, signing subkey `B3B33A7FF6695F35CC01047E52B8F5AC97A2DA86`. The copy of that key in tor-browser-build's `keyring/anti-censorship.gpg` has expired; the copy published on keys.openpgp.org (same fingerprint, valid until 2027-03-14), fetched on 2026-10-18 from `https://keys.openpgp.org/vks/v1/by-fingerprint/07948FFA64160A425BCD27EAC732B1D1C28F4E2F` and committed unchanged as `keys/07948FFA64160A425BCD27EAC732B1D1C28F4E2F.asc` (SHA-256 `51e92dd30cf4219c9dfce06f21e61903bcefb57ff09c5c7a7472b7e00796af63`, pinned in the script), verifies the tag. The script checks the signature itself on every build with `verify-signed-tag.sh`, which uses gpgv or, where gpgv is not installed, sqv, against that key alone, and refuses the checkout unless the tag points at the pinned commit and the signature is good and made by that primary key |
-| `go.sum` | the file of that commit, SHA-256 `fa42d4b4701287b67f4e51bb52220d115fa2fa98f00cb4f8eb215a05a321965b` |
-| Go | 1.26.9, the official `go1.26.9.linux-amd64.tar.gz`, SHA-256 `42d158b4d8f7b61ac0a830567c940a86098fb7aac52e467a5ebec03ef5cc2f8d` as listed at https://go.dev/dl/?mode=json; `GOTOOLCHAIN=local`. go1.26.9 is the newest 1.26 point release on 2026-10-18 |
+| lyrebird | tag `0.10.0`, commit `59ac7e400c384773f5584dbe366516ad04a33d9f`, from `https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird.git`. The annotated tag carries a good signature (made 2026-11-04) by Cecylia Bocovich (cohosh), primary key `5A618CE840883942BAF1334F009DE379FD9B7B90`, which does not expire. That key is published by the Tor Project's own web key directory for `cohosh@torproject.org` (`https://openpgpkey.torproject.org/.well-known/openpgpkey/torproject.org/hu/rwug38dmktmtmn7c39k3ch7ghyf9h9o1?l=cohosh`, fetched 2026-11-18) and is also in tor-browser-build's `keyring/anti-censorship.gpg`; the key as served by the web key directory, exported armoured and committed as `keys/5A618CE840883942BAF1334F009DE379FD9B7B90.asc` (SHA-256 `3dd605dcb45c1d222b560374db7e432b431195705c25d1d02a334963be71a15f`, pinned in the script), verifies the tag. Up to this release the pinned signer was Ruben Pollan (meskio), `07948FFA64160A425BCD27EAC732B1D1C28F4E2F`, who signed 0.9.0; his key file was removed with the pin. The script checks the signature itself on every build with `verify-signed-tag.sh`, which uses gpgv or, where gpgv is not installed, sqv, against that key alone, and refuses the checkout unless the tag points at the pinned commit and the signature is good and made by that primary key |
+| `go.sum` | the file of that commit, SHA-256 `9c21e4a52e4690d079af130f3aa2e8621de6d7be6f8f1224cc77df49b20f38b6` |
+| Go | 1.26.11, the official `go1.26.11.linux-amd64.tar.gz`, SHA-256 `9849f4e04ee35303714e34fbc3ac8ab44ea3e448a95aa182f91e3b9b79c710ec` as listed at https://go.dev/dl/?mode=json; `GOTOOLCHAIN=local`. go1.26.9 is the newest 1.26 point release on 2026-10-18 |
 | Go modules | exactly those named by `go.sum`, downloaded from `proxy.golang.org` with `-mod=readonly` (go.mod and go.sum cannot change, a module without a go.sum entry is refused) and checked by `go mod verify`; the build itself runs with `GOPROXY=off`. 61 modules are linked into each executable, and the script refuses an executable whose build information lists a module whose version and hash are not in `go.sum`, or a replaced module |
 | Android NDK | r29 (`29.0.14206865`), zip SHA-256 `4abbbcdc842f3d4879206e9695d52709603e52dd68d3c1fff04b3b5e7a308ecf`, the same zip and stamp file as the Tor build; the script refuses to run when its NDK pin differs from `../tor-android/build-tor-android.sh` |
 | Android API | 21 (`aarch64-linux-android21-clang`, `armv7a-linux-androideabi21-clang`) |
@@ -69,7 +75,7 @@ in that order, in the toolchain's `net/interface.go`, in x/net's
 originals must declare `zoneCache` of that type, and anet's only `go:linkname`
 targets must be `net.zoneCache` and x/net's `internal/socket.zoneCache`. A Go
 release that changes the struct stops the build until anet's copy matches
-again. In Go 1.26.9 the struct is at `src/net/interface.go` lines 182 to 187,
+again. In Go 1.26.11, as in 1.26.9, the struct is at `src/net/interface.go` lines 182 to 187,
 the same fields as anet 0.0.5's copy at lines 157 to 162.
 
 The script asserts the commit after checkout, records the tag, commit, Go
@@ -94,8 +100,8 @@ both ABIs inside the repository, unless the result equals the committed
 
 | File | SHA-256 | Size |
 |---|---|---|
-| `out/arm64-v8a/liblyrebird.so` | `9a89df982f1137b120fae152d46ab400558cef7d633987d5518c4ff24a088869` | 17674792 bytes |
-| `out/armeabi-v7a/liblyrebird.so` | `1e521cb83a15fcbbe26a06683b3212d1a924d45c316dde46f0e0a9b25dd5e135` | 17014432 bytes |
+| `out/arm64-v8a/liblyrebird.so` | `9de80888ad67dfc30b8a0494e24f796a86fa7b3f589fb0bcdaef980ad6356ea1` | 18322728 bytes |
+| `out/armeabi-v7a/liblyrebird.so` | `fbc7865b52623bcfc3efe670c0a56797067bcfe33c788b972e93a5e82d897be0` | 17500544 bytes |
 
 The same values are the lyrebird pins in
 `zerion-core-android/src/main/resources/org/zerionproject/tor/binaries.sha256`,
@@ -106,6 +112,23 @@ environments and an update of all three places.
 
 ## Verification
 
+- Two environments (2026-11-18, lyrebird 0.10.0 with Go 1.26.11): the hashes
+  above came out byte for byte the same in the Briar reproducer image and in
+  F-Droid's `buildserver-trixie` image as the `vagrant` user, each running
+  `fdroid-build.sh` from an empty toolchain directory, module cache and build
+  cache; the tag verified with the new pinned key in both (gpgv in the F-Droid
+  image, sqv in the reproducer image), the Go archive matched its SHA-256 and
+  every linked module matched the tag's `go.sum`.
+- Two environments (2026-11-18, earlier the same day, lyrebird 0.9.0 rebuilt
+  with Go 1.26.11, superseded by the 0.10.0 build above): `78d489321c56f9bd55a609b47f568f4089d0dafe020fc30d77872db6a0f27179`
+  (arm64-v8a) and `4a5ff39e4f0302034111ced36939a019806b6db7e92f28ae59a7eff39b51af31` (armeabi-v7a) came out byte for byte the same in the Briar reproducer image
+  and in F-Droid's `buildserver-trixie` image as the `vagrant` user, run as
+  the second step of `../tor-android/fdroid-build.sh` in both; the Go
+  archive matched the pinned SHA-256 in both, the tag verified with the
+  pinned key (sqv), the `go.sum` hash was unchanged and `go version -m`
+  reports `go1.26.11`. The `ipv6ZoneCache` struct is unchanged between Go
+  1.26.9 and 1.26.11, so the linkname check passed without a change to the
+  pinned fields.
 Each run started from an empty Go toolchain directory, module cache and build
 cache. The runs of 2026-10-18 used the first revision of the script, which had
 the same pins, environment and build commands but not the signature check,
@@ -147,7 +170,7 @@ overridable variables; the run of 2026-10-19 used the current revision.
   2028 and to 2035 by faketime, after the key's expiry, the tag still verifies
   (gpgv reports `EXPKEYSIG` with `VALIDSIG` for the pinned key).
 - Build information (`go version -m`, in `out/<abi>/liblyrebird.so.buildinfo`):
-  `go1.26.9`, `-buildmode=pie`, `-compiler=gc`, `-trimpath=true`,
+  `go1.26.11`, `-buildmode=pie`, `-compiler=gc`, `-trimpath=true`,
   `CGO_ENABLED=1`, `GOOS=android`, `GOARCH=arm64 GOARM64=v8.0` or
   `GOARCH=arm GOARM=7`, and 61 modules, each with the version and hash its
   `go.sum` line gives, none replaced. With `-trimpath` the go command does not

@@ -20,6 +20,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.util.DisplayNames;
 
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
@@ -114,7 +115,7 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 			try {
 				for (ChannelSubscriber sub
 						: channelManager.getAnnouncedSubscribers(channelId)) {
-					String name = sub.getDisplayName().trim();
+					String name = DisplayNames.clean(sub.getDisplayName()).trim();
 					if (!name.isEmpty()) {
 						names.put(hex(sub.getEd25519PubKey()), name);
 					}
@@ -189,7 +190,7 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 		List<String> names = new ArrayList<>();
 		java.util.Map<String, Integer> counts = new java.util.HashMap<>();
 		for (ChannelSubscriber sub : subs) {
-			String name = sub.getDisplayName().trim();
+			String name = DisplayNames.clean(sub.getDisplayName()).trim();
 			if (name.isEmpty()) {
 				name = ctx.getString(
 						R.string.channels_delegations_unnamed_person);

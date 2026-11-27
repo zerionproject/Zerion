@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -149,7 +150,17 @@ public class SecurityFragment extends Fragment {
 
 		screenshotProtectionSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) {
-				uiPrefs.edit().putBoolean(PREF_SCREENSHOT_PROTECTION, isChecked).apply();
+				if (refuseUnsavedSetting()) {
+					revert(buttonView, !isChecked);
+					return;
+				}
+				if (!uiPrefs.edit()
+						.putBoolean(PREF_SCREENSHOT_PROTECTION, isChecked)
+						.commit()) {
+					showToast(R.string.security_settings_not_saved);
+					revert(buttonView, !isChecked);
+					return;
+				}
 				securityManager.applyScreenshotProtection(requireActivity());
 			}
 		});
@@ -221,12 +232,15 @@ public class SecurityFragment extends Fragment {
 			wipeOnFailedLoginsSwitch.setOnCheckedChangeListener(
 					(buttonView, isChecked) -> {
 				if (!buttonView.isPressed()) return;
+				if (refuseUnsavedSetting()) {
+					revert(buttonView, !isChecked);
+					return;
+				}
 				if (isChecked) {
 					withAccountPassword(this::showWipeOnFailedLoginsDialog,
 							() -> wipeOnFailedLoginsSwitch.setChecked(false));
 				} else {
-					withAccountPassword(() -> bruteForceProtection
-									.setWipeOnRepeatedFailures(false),
+					withAccountPassword(() -> saveWipeOnFailedLogins(false),
 							() -> wipeOnFailedLoginsSwitch.setChecked(true));
 				}
 			});
@@ -244,7 +258,9 @@ public class SecurityFragment extends Fragment {
 
 		View hardenedCard = view.findViewById(R.id.hardened_mode_card);
 		if (hardenedCard != null) {
-			hardenedCard.setOnClickListener(v -> showHardenedModeDialog());
+			hardenedCard.setOnClickListener(v -> {
+				if (!refuseUnsavedSetting()) showHardenedModeDialog();
+			});
 			TextView hardenedSummary =
 					view.findViewById(R.id.hardened_mode_summary);
 			if (hardenedSummary != null) {
@@ -254,6 +270,33 @@ public class SecurityFragment extends Fragment {
 
 		observeSettings();
 		updateWipePasswordSummary();
+	}
+
+	private boolean refuseUnsavedSetting() {
+		if (!AppModule.isSecureStorageFailed()) return false;
+		showToast(R.string.security_settings_not_saved);
+		return true;
+	}
+
+	private static void revert(CompoundButton toggle, boolean checked) {
+		toggle.setPressed(false);
+		toggle.setChecked(checked);
+	}
+
+	private void saveWipeOnFailedLogins(boolean enabled) {
+		if (refuseUnsavedSetting()) {
+			if (wipeOnFailedLoginsSwitch != null) {
+				revert(wipeOnFailedLoginsSwitch,
+						bruteForceProtection.isWipeOnRepeatedFailures());
+			}
+			return;
+		}
+		if (bruteForceProtection.setWipeOnRepeatedFailures(enabled)) return;
+		showToast(R.string.security_settings_not_saved);
+		if (wipeOnFailedLoginsSwitch != null) {
+			revert(wipeOnFailedLoginsSwitch,
+					bruteForceProtection.isWipeOnRepeatedFailures());
+		}
 	}
 
 	private void withAccountPassword(Runnable granted, Runnable refused) {
@@ -320,8 +363,7 @@ public class SecurityFragment extends Fragment {
 				.setMessage(R.string.pref_wipe_on_failed_logins_confirm_message)
 				.setPositiveButton(
 						R.string.pref_wipe_on_failed_logins_confirm_button,
-						(d, w) -> bruteForceProtection
-								.setWipeOnRepeatedFailures(true))
+						(d, w) -> saveWipeOnFailedLogins(true))
 				.setNegativeButton(android.R.string.cancel,
 						(d, w) -> wipeOnFailedLoginsSwitch.setChecked(false))
 				.setOnCancelListener(
@@ -386,7 +428,8 @@ public class SecurityFragment extends Fragment {
 		if (enablingDestructive) {
 			new SecureAlertDialogBuilder(requireContext())
 					.setTitle(R.string.hardened_mode_usb_confirm_title)
-					.setMessage(R.string.hardened_mode_usb_confirm_message)
+					.setMessage(usbConfirmMessage(requireContext(),
+							antiForensics.isDataTransferActive()))
 					.setPositiveButton(
 							R.string.hardened_mode_usb_confirm_action,
 							(d, w) -> showUsbPanicScopeDialog(checked))
@@ -395,6 +438,14 @@ public class SecurityFragment extends Fragment {
 			return;
 		}
 		applyHardenedSelections(checked, false);
+	}
+
+	static String usbConfirmMessage(Context context, boolean connectedNow) {
+		String message =
+				context.getString(R.string.hardened_mode_usb_confirm_message);
+		if (!connectedNow) return message;
+		return message + "\n\n" + context.getString(
+				R.string.hardened_mode_usb_connected_warning);
 	}
 
 	private void showUsbPanicScopeDialog(boolean[] checked) {
@@ -416,7 +467,8 @@ public class SecurityFragment extends Fragment {
 
 	private void applyHardenedSelections(boolean[] checked,
 			boolean usbPanicWipes) {
-		uiPrefs.edit()
+		if (refuseUnsavedSetting()) return;
+		boolean saved = uiPrefs.edit()
 				.putBoolean(com.professor.zerion.android.security
 						.HardenedModeEvaluator.PREF_HARDENED_BOOT,
 						checked[0])
@@ -430,7 +482,12 @@ public class SecurityFragment extends Fragment {
 						.HardenedModeEvaluator
 						.PREF_HARDENED_USB_PANIC_WIPE,
 						usbPanicWipes)
-				.apply();
+				.commit();
+		if (!saved) {
+			showToast(R.string.security_settings_not_saved);
+			refreshHardenedSummary();
+			return;
+		}
 		android.app.Activity activity = getActivity();
 		if (activity instanceof com.professor.zerion.android.activity
 				.ZerionActivity) {

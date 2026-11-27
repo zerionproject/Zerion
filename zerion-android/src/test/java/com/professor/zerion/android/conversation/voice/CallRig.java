@@ -69,6 +69,7 @@ final class CallRig {
 	final List<String> createdEndpoints =
 			Collections.synchronizedList(new ArrayList<>());
 	final AtomicInteger disposed = new AtomicInteger();
+	final AtomicInteger disposedOnMain = new AtomicInteger();
 	final CountDownLatch releaseDials = new CountDownLatch(1);
 	@Nullable
 	volatile DuplexTransportConnection dialResult = null;
@@ -116,6 +117,15 @@ final class CallRig {
 		VoiceCallService s = controller.get();
 		install(s);
 		return s;
+	}
+
+	VoiceCallService startedWithRig(boolean incoming) throws Exception {
+		controller = Robolectric.buildService(VoiceCallService.class,
+				intent(incoming)).create();
+		install(controller.get());
+		controller.startCommand(0, 1);
+		idle();
+		return controller.get();
 	}
 
 	VoiceCallService ringingOutgoing() throws Exception {
@@ -195,6 +205,9 @@ final class CallRig {
 						(p, m, a) -> {
 							if (m.getName().equals("dispose")) {
 								disposed.incrementAndGet();
+								if (Looper.myLooper() == Looper.getMainLooper()) {
+									disposedOnMain.incrementAndGet();
+								}
 								return null;
 							}
 							if (m.getName().equals("getInputStream")) {
@@ -210,6 +223,9 @@ final class CallRig {
 						(p, m, a) -> {
 							if (m.getName().equals("dispose")) {
 								disposed.incrementAndGet();
+								if (Looper.myLooper() == Looper.getMainLooper()) {
+									disposedOnMain.incrementAndGet();
+								}
 								return null;
 							}
 							if (m.getName().equals("getOutputStream")) {

@@ -25,14 +25,32 @@ public class TorBridgeConfiguratorTest {
 		assertEquals(Arrays.asList(
 				"Bridge obfs4 192.0.2.1:443 AAAA cert=BBBB iat-mode=0",
 				"Bridge obfs4 192.0.2.2:443 CCCC",
-				"bridge obfs4 192.0.2.3:443 DDDD",
-				"Bridge snowflake 192.0.2.4:80 EEEE",
-				"Bridge DisableNetwork 0",
-				"Bridge UseBridges 0 Bridge obfs4 192.0.2.5:443"), bridges);
+				"Bridge obfs4 192.0.2.3:443 DDDD",
+				"Bridge snowflake 192.0.2.4:80 EEEE"), bridges);
 		for (String line : bridges) {
 			assertTrue(line, line.toLowerCase(java.util.Locale.US)
 					.startsWith("bridge "));
 			assertFalse(line, line.contains("\n") || line.contains("\r"));
+		}
+	}
+
+	@Test
+	public void storedLinesAreValidatedAgainBeforeTheyReachTor() {
+		List<String> bridges = TorBridgeConfigurator.parseCustomBridges(
+				"obfs4 192.0.2.1:443 AAAA\"\r\n"
+						+ "SocksPort 9999\n"
+						+ "obfs4 192.0.2.2:443 BBBB\rDisableNetwork 1\n"
+						+ "obfs4 192.0.2.3:443 \"CCCC\"\n"
+						+ "Bridge obfs4 192.0.2.4:443 DD\\DD\n"
+						+ "obfs4 192.0.2.5:443 EEEE\tFFFF\n"
+						+ "obfs4   192.0.2.6:443   GGGG\n"
+						+ "Bridge obfs4 192.0.2.7:443 HHHH");
+		assertEquals(Arrays.asList(
+				"Bridge obfs4 192.0.2.6:443 GGGG",
+				"Bridge obfs4 192.0.2.7:443 HHHH"), bridges);
+		for (String line : bridges) {
+			assertTrue(line, org.zerionproject.tor.BridgeLines.isWellFormed(
+					line.substring("Bridge ".length())));
 		}
 	}
 

@@ -43,6 +43,8 @@ import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import org.zerionproject.core.api.plugin.TorConstants;
 
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_COVER_TRAFFIC;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_KEEP_AWAKE;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
 
@@ -89,7 +91,15 @@ public class ConnectionsFragment extends Fragment {
 	private SwitchMaterial i2pDirectReseedSwitch;
 	private View i2pDirectReseedCard;
 	private SwitchMaterial meshSwitch;
+	private TextView meshAliasValue;
+	private TextView meshRangeValue;
+	private boolean meshShortRange = false;
+	private TextView meshReachValue;
+	private boolean meshOpen = false;
+	private SwitchMaterial meshPauseSwitch;
 	private SwitchMaterial offlineModeSwitch;
+	private SwitchMaterial coverTrafficSwitch;
+	private SwitchMaterial keepAwakeSwitch;
 	private boolean enableMeshForOffline = false;
 
 	private final ActivityResultLauncher<String[]> meshPermissionLauncher =
@@ -100,6 +110,12 @@ public class ConnectionsFragment extends Fragment {
 							if (granted == null || !granted) allGranted = false;
 						}
 						onMeshPermissionResult(allGranted);
+					});
+
+	private final ActivityResultLauncher<android.content.Intent>
+			bluetoothOnLauncher = registerForActivityResult(
+					new androidx.activity.result.contract.ActivityResultContracts
+							.StartActivityForResult(), result -> {
 					});
 
 	private View torNetworkCard;
@@ -140,6 +156,20 @@ public class ConnectionsFragment extends Fragment {
 
 		torNetworkCard = view.findViewById(R.id.tor_network_card);
 		torNetworkValue = view.findViewById(R.id.tor_network_value);
+		coverTrafficSwitch = view.findViewById(R.id.cover_traffic_switch);
+		coverTrafficSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (buttonView.isPressed()) {
+				connectionsManager.torStore.putBoolean(PREF_TOR_COVER_TRAFFIC,
+						isChecked);
+			}
+		});
+		keepAwakeSwitch = view.findViewById(R.id.keep_awake_switch);
+		keepAwakeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (buttonView.isPressed()) {
+				connectionsManager.torStore.putBoolean(PREF_TOR_KEEP_AWAKE,
+						isChecked);
+			}
+		});
 		rotateOnionCard = view.findViewById(R.id.rotate_onion_card);
 		renewalWaitingCard = view.findViewById(R.id.renewal_waiting_card);
 		renewalWaitingList = view.findViewById(R.id.renewal_waiting_list);
@@ -183,6 +213,18 @@ public class ConnectionsFragment extends Fragment {
 			if (buttonView.isPressed()) onMeshToggle(isChecked);
 		});
 		refreshMeshSwitch();
+		meshAliasValue = view.findViewById(R.id.mesh_alias_value);
+		view.findViewById(R.id.mesh_alias_card)
+				.setOnClickListener(v -> showMeshAliasDialog());
+		meshRangeValue = view.findViewById(R.id.mesh_range_value);
+		view.findViewById(R.id.mesh_range_card)
+				.setOnClickListener(v -> showMeshRangeDialog());
+		meshReachValue = view.findViewById(R.id.mesh_reach_value);
+		view.findViewById(R.id.mesh_reach_card)
+				.setOnClickListener(v -> showMeshReachDialog());
+		meshPauseSwitch = view.findViewById(R.id.mesh_pause_switch);
+		showMeshOptions(view, MeshController.isSupported());
+		refreshMeshOptions();
 
 		offlineModeSwitch = view.findViewById(R.id.offline_mode_switch);
 		offlineModeSwitch.setChecked(pluginManager.isOfflineMode());
@@ -301,6 +343,7 @@ public class ConnectionsFragment extends Fragment {
 		}
 		if (MeshController.hasPermissions(requireContext())) {
 			meshController.setMeshEnabled(true);
+			askToTurnOnBluetooth();
 		} else {
 			meshPermissionLauncher.launch(MeshController.requiredPermissions());
 		}
@@ -312,6 +355,7 @@ public class ConnectionsFragment extends Fragment {
 		if (allGranted) {
 			meshController.setMeshEnabled(true);
 			if (meshSwitch != null) meshSwitch.setChecked(true);
+			askToTurnOnBluetooth();
 			if (forOffline) pluginManager.setOfflineMode(true);
 		} else {
 			Toast.makeText(requireContext(), R.string.mesh_permission_denied,
@@ -349,8 +393,13 @@ public class ConnectionsFragment extends Fragment {
 			meshPermissionLauncher.launch(MeshController.requiredPermissions());
 			return;
 		}
+		turnOnOfflineMesh();
+	}
+
+	void turnOnOfflineMesh() {
 		meshController.setMeshEnabled(true);
 		if (meshSwitch != null) meshSwitch.setChecked(true);
+		askToTurnOnBluetooth();
 		pluginManager.setOfflineMode(true);
 	}
 
@@ -375,10 +424,187 @@ public class ConnectionsFragment extends Fragment {
 		});
 	}
 
+	void askToTurnOnBluetooth() {
+		android.content.Intent ask = bluetoothOnRequest(requireContext());
+		if (ask == null) return;
+		try {
+			bluetoothOnLauncher.launch(ask);
+		} catch (android.content.ActivityNotFoundException
+				| SecurityException ignored) {
+		}
+	}
+
+	@Nullable
+	static android.content.Intent bluetoothOnRequest(Context ctx) {
+		try {
+			android.bluetooth.BluetoothManager bm =
+					(android.bluetooth.BluetoothManager) ctx.getSystemService(
+							Context.BLUETOOTH_SERVICE);
+			android.bluetooth.BluetoothAdapter adapter =
+					bm == null ? null : bm.getAdapter();
+			if (adapter == null || adapter.isEnabled()) return null;
+		} catch (RuntimeException e) {
+			return null;
+		}
+		return new android.content.Intent(
+				android.bluetooth.BluetoothAdapter.ACTION_REQUEST_ENABLE);
+	}
+
+	static void showMeshOptions(View root, boolean supported) {
+		int visibility = supported ? View.VISIBLE : View.GONE;
+		root.findViewById(R.id.mesh_alias_card).setVisibility(visibility);
+		root.findViewById(R.id.mesh_range_card).setVisibility(visibility);
+		root.findViewById(R.id.mesh_reach_card).setVisibility(visibility);
+		root.findViewById(R.id.mesh_pause_card).setVisibility(visibility);
+	}
+
+	private void refreshMeshOptions() {
+		ioExecutor.execute(() -> {
+			String alias;
+			boolean shortRange;
+			boolean pause;
+			boolean open;
+			try {
+				alias = meshController.getBluetoothAlias();
+				shortRange = meshController.isShortRange();
+				pause = meshController.isPauseWhenScreenOff();
+				open = meshController.isOpenMesh();
+			} catch (DbException e) {
+				return;
+			}
+			if (getActivity() == null) return;
+			requireActivity().runOnUiThread(() -> {
+				if (meshAliasValue != null) meshAliasValue.setText(alias);
+				showMeshRange(shortRange);
+				showMeshReach(open);
+				if (meshPauseSwitch == null) return;
+				meshPauseSwitch.setOnCheckedChangeListener(null);
+				meshPauseSwitch.setChecked(pause);
+				meshPauseSwitch.setOnCheckedChangeListener((b, checked) -> {
+					if (b.isPressed()) {
+						meshController.setPauseWhenScreenOff(checked);
+					}
+				});
+			});
+		});
+	}
+
+	private void showMeshRange(boolean shortRange) {
+		meshShortRange = shortRange;
+		if (meshRangeValue == null) return;
+		meshRangeValue.setText(shortRange ? R.string.mesh_range_short
+				: R.string.mesh_range_normal);
+	}
+
+	private void showMeshReach(boolean open) {
+		meshOpen = open;
+		if (meshReachValue == null) return;
+		meshReachValue.setText(open ? R.string.mesh_reach_everyone
+				: R.string.mesh_reach_contacts);
+	}
+
+	private void showMeshReachDialog() {
+		String[] entries = {getString(R.string.mesh_reach_contacts),
+				getString(R.string.mesh_reach_everyone)};
+		new SecureAlertDialogBuilder(requireContext())
+				.setTitle(R.string.mesh_reach_title)
+				.setSingleChoiceItems(entries, meshOpen ? 1 : 0,
+						(dialog, which) -> {
+							dialog.dismiss();
+							if (which == 0) {
+								if (!meshOpen) return;
+								meshController.setOpenMesh(false);
+								showMeshReach(false);
+							} else if (!meshOpen) {
+								confirmOpenMesh();
+							}
+						})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void confirmOpenMesh() {
+		new SecureAlertDialogBuilder(requireContext())
+				.setTitle(R.string.mesh_reach_everyone)
+				.setMessage(R.string.mesh_reach_everyone_message)
+				.setPositiveButton(R.string.ok, (dialog, which) -> {
+					meshController.setOpenMesh(true);
+					showMeshReach(true);
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void showMeshRangeDialog() {
+		String[] entries = {getString(R.string.mesh_range_normal),
+				getString(R.string.mesh_range_short)};
+		new SecureAlertDialogBuilder(requireContext())
+				.setTitle(R.string.mesh_range_title)
+				.setSingleChoiceItems(entries, meshShortRange ? 1 : 0,
+						(dialog, which) -> {
+							boolean shortRange = which == 1;
+							meshController.setShortRange(shortRange);
+							showMeshRange(shortRange);
+							dialog.dismiss();
+						})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void showMeshAliasDialog() {
+		Context context = requireContext();
+		LinearLayout layout = new LinearLayout(context);
+		layout.setOrientation(LinearLayout.VERTICAL);
+		int padding = (int) (16 * getResources().getDisplayMetrics().density);
+		layout.setPadding(padding, padding, padding, 0);
+		TextView message = new TextView(context);
+		message.setText(R.string.mesh_alias_message);
+		message.setTextSize(13);
+		layout.addView(message);
+		EditText input = new EditText(context);
+		input.setInputType(InputType.TYPE_CLASS_TEXT
+				| InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+		input.setImeOptions(EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
+		input.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+		input.setSingleLine(true);
+		input.setFilters(new android.text.InputFilter[] {
+				new android.text.InputFilter.LengthFilter(
+						MeshController.MAX_BLUETOOTH_ALIAS_LENGTH)});
+		CharSequence current = meshAliasValue == null ? null
+				: meshAliasValue.getText();
+		if (current != null) input.setText(current);
+		layout.addView(input);
+		new SecureAlertDialogBuilder(context)
+				.setTitle(R.string.mesh_alias_title)
+				.setView(layout)
+				.setPositiveButton(R.string.ok, (dialog, which) -> {
+					String alias = input.getText().toString();
+					meshController.setBluetoothAlias(alias);
+					if (meshAliasValue != null) {
+						meshAliasValue.setText(
+								MeshController.cleanBluetoothAlias(alias));
+					}
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
 	private void observeSettings() {
 		connectionsManager.torNetwork().observe(getViewLifecycleOwner(), value -> {
 			updateTorNetworkDisplay(value);
 		});
+
+		connectionsManager.coverTraffic().observe(getViewLifecycleOwner(),
+				enabled -> {
+					if (coverTrafficSwitch.isPressed()) return;
+					coverTrafficSwitch.setChecked(Boolean.TRUE.equals(enabled));
+				});
+
+		connectionsManager.keepAwake().observe(getViewLifecycleOwner(),
+				enabled -> {
+					if (keepAwakeSwitch.isPressed()) return;
+					keepAwakeSwitch.setChecked(Boolean.TRUE.equals(enabled));
+				});
 
 		connectionsManager.customBridges().observe(getViewLifecycleOwner(),
 				this::updateCustomBridgesDisplay);
@@ -568,6 +794,11 @@ public class ConnectionsFragment extends Fragment {
 
 	private void updateCustomBridgesDisplay(@Nullable String value) {
 		if (customBridgesValue == null) return;
+		customBridgesValue.setText(customBridgesSummary(getResources(), value));
+	}
+
+	static String customBridgesSummary(android.content.res.Resources res,
+			@Nullable String value) {
 		int count = 0;
 		if (value != null) {
 			for (String line : value.split("\\r?\\n")) {
@@ -575,12 +806,15 @@ public class ConnectionsFragment extends Fragment {
 			}
 		}
 		if (count == 0) {
-			customBridgesValue.setText(
-					R.string.tor_custom_bridges_summary_none);
-		} else {
-			customBridgesValue.setText(getResources().getQuantityString(
-					R.plurals.tor_custom_bridges_summary_set, count, count));
+			return res.getString(R.string.tor_custom_bridges_summary_none);
 		}
+		int usable = org.zerionproject.transport.TorBridgeConfigurator
+				.parseCustomBridges(value).size();
+		String summary = res.getQuantityString(
+				R.plurals.tor_custom_bridges_summary_set, usable, usable);
+		if (usable == count) return summary;
+		return summary + "\n" + res.getString(
+				R.string.tor_custom_bridges_unusable, count - usable, count);
 	}
 
 	@Override

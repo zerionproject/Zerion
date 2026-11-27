@@ -17,6 +17,10 @@ public interface ContactExchangeManager {
 			SecretKey masterKey, boolean alice, boolean verified)
 			throws IOException, DbException;
 
+	Contact exchangeContacts(DuplexTransportConnection conn,
+			SecretKey exchangeKey, SecretKey rootKey, boolean alice,
+			boolean verified) throws IOException, DbException;
+
 	Contact exchangeContacts(PendingContactId p, DuplexTransportConnection conn,
 			SecretKey masterKey, boolean alice, boolean verified,
 			boolean classical)
@@ -30,4 +34,8 @@ public interface ContactExchangeManager {
 			@Nullable byte[] ourEphX25519,
 			@Nullable byte[] theirEphX25519)
 			throws IOException, DbException;
+
+	Contact exchangeContacts(PendingContactId p, DuplexTransportConnection conn,
+			HandshakeManager.HandshakeResult handshake, boolean verified,
+			boolean classical) throws IOException, DbException;
 }

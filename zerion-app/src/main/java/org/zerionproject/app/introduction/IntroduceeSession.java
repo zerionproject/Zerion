@@ -14,6 +14,7 @@ import org.zerionproject.app.api.client.SessionId;
 import org.zerionproject.app.api.introduction.Role;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -139,9 +140,28 @@ class IntroduceeSession extends Session<IntroduceeState>
 				remote, masterKey.getBytes(), s.transportKeys);
 	}
 
+	static IntroduceeSession addLocalAuthSeparated(IntroduceeSession s,
+			IntroduceeState state, Message m, byte[] ownKemSecret) {
+		Local local = new Local(s.local.alice, m.getId(), m.getTimestamp(),
+				s.local.ephemeralPublicKey, s.local.ephemeralPrivateKey,
+				s.local.transportProperties, s.local.acceptTimestamp, null,
+				s.local.mlDsaPubKey, s.local.mlKemEphemeralPublicKey,
+				s.local.mlKemEphemeralPrivateKey, ownKemSecret);
+		Remote remote = new Remote(s.remote.alice, s.remote.author,
+				s.remote.lastMessageId, s.remote.ephemeralPublicKey,
+				s.remote.transportProperties, s.remote.acceptTimestamp, null,
+				s.remote.mlDsaPubKey, s.remote.mlKemEphemeralPublicKey);
+		return new IntroduceeSession(s.getSessionId(), state,
+				s.getRequestTimestamp(), s.contactGroupId, s.introducer, local,
+				remote, null, s.transportKeys);
+	}
+
 	static IntroduceeSession withFinalKeys(IntroduceeSession s,
 			byte[] masterKey, SecretKey aliceActivateKey,
 			SecretKey bobActivateKey) {
+		wipeReplaced(s.local.macKey, aliceActivateKey, bobActivateKey);
+		wipeReplaced(s.remote.macKey, aliceActivateKey, bobActivateKey);
+		if (s.masterKey != masterKey) wipe(s.masterKey);
 		Local l = s.local;
 		Local local = new Local(l.alice, l.lastMessageId,
 				l.lastMessageTimestamp, l.ephemeralPublicKey,
@@ -163,6 +183,7 @@ class IntroduceeSession extends Session<IntroduceeState>
 
 	static IntroduceeSession withMasterKey(IntroduceeSession s,
 			byte[] masterKey) {
+		if (s.masterKey != masterKey) wipe(s.masterKey);
 		return new IntroduceeSession(s.getSessionId(), s.getState(),
 				s.getRequestTimestamp(), s.contactGroupId, s.introducer,
 				s.local, s.remote, masterKey, s.transportKeys);
@@ -170,6 +191,7 @@ class IntroduceeSession extends Session<IntroduceeState>
 
 	static IntroduceeSession awaitActivate(IntroduceeSession s, AuthMessage m,
 			Message sent, @Nullable Map<TransportId, KeySetId> transportKeys) {
+		wipe(s.masterKey);
 		Local local = Local.clear(s.local, sent.getId(), sent.getTimestamp());
 		Remote remote = Remote.clear(s.remote, m.getMessageId());
 		return new IntroduceeSession(s.getSessionId(), AWAIT_ACTIVATE,
@@ -180,6 +202,7 @@ class IntroduceeSession extends Session<IntroduceeState>
 	static IntroduceeSession clear(IntroduceeSession s, IntroduceeState state,
 			@Nullable MessageId lastLocalMessageId, long localTimestamp,
 			@Nullable MessageId lastRemoteMessageId) {
+		wipeSecrets(s);
 		Local local =
 				new Local(s.local.alice, lastLocalMessageId, localTimestamp,
 						null, null, null, -1, null, null);
@@ -189,6 +212,31 @@ class IntroduceeSession extends Session<IntroduceeState>
 		return new IntroduceeSession(s.getSessionId(), state,
 				s.getRequestTimestamp(), s.contactGroupId, s.introducer, local,
 				remote, null, null);
+	}
+
+	static void wipeSecrets(IntroduceeSession s) {
+		wipe(s.masterKey);
+		wipe(s.local.ephemeralPrivateKey);
+		wipe(s.local.mlKemEphemeralPrivateKey);
+		wipe(s.local.ownKemSecret);
+		wipe(s.local.macKey);
+		wipe(s.remote.macKey);
+	}
+
+	static void wipe(@Nullable byte[] secret) {
+		if (secret != null) Arrays.fill(secret, (byte) 0);
+	}
+
+	static void wipe(@Nullable PrivateKey privateKey) {
+		if (privateKey != null) wipe(privateKey.getEncoded());
+	}
+
+	private static void wipeReplaced(@Nullable byte[] secret,
+			SecretKey aliceActivateKey, SecretKey bobActivateKey) {
+		if (secret != aliceActivateKey.getBytes()
+				&& secret != bobActivateKey.getBytes()) {
+			wipe(secret);
+		}
 	}
 
 	@Override
@@ -331,12 +379,9 @@ class IntroduceeSession extends Session<IntroduceeState>
 
 		private static Local clear(Local s,
 				@Nullable MessageId lastMessageId, long lastMessageTimestamp) {
-			if (s.mlKemEphemeralPrivateKey != null) {
-				java.util.Arrays.fill(s.mlKemEphemeralPrivateKey, (byte) 0);
-			}
-			if (s.ownKemSecret != null) {
-				java.util.Arrays.fill(s.ownKemSecret, (byte) 0);
-			}
+			wipe(s.ephemeralPrivateKey);
+			wipe(s.mlKemEphemeralPrivateKey);
+			wipe(s.ownKemSecret);
 			return new Local(s.alice, lastMessageId, lastMessageTimestamp,
 					null, null, s.transportProperties, s.acceptTimestamp,
 					s.macKey, s.mlDsaPubKey, null, null, null);

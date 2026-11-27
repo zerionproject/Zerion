@@ -249,7 +249,7 @@ public class ExpiredMessageCleanupTest extends BrambleTestCase {
 				now,
 				BdfList.of(VOICE_SIGNAL, 0, "call", "key material"));
 		messagingManager.addLocalVoiceSignal(new VoiceSignal(m,
-				VoiceSignalType.CALL_OFFER, "call", "key material"));
+				VoiceSignalType.CALL_OFFER, "call", "key material"), false);
 		MessageId kept = receiveText(healthyGroup);
 		assertStored(m.getId(), kept);
 

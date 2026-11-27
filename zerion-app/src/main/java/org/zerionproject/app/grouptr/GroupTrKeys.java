@@ -2,6 +2,7 @@ package org.zerionproject.app.grouptr;
 
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.client.ClientHelper;
+import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.HybridSignaturePrivateKey;
 import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
@@ -54,6 +55,9 @@ final class GroupTrKeys {
 			+ PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES + 8
 			+ 2 * PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 	static final int SEALED_BINDING_BYTES = BINDING_BYTES + 16;
+	static final int BINDING_V2_BYTES =
+			BINDING_BYTES - PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
+	static final int SEALED_BINDING_V2_BYTES = BINDING_V2_BYTES + 16;
 	private static final String AES_GCM = "AES/GCM/NoPadding";
 	static final byte BINDING_DOMAIN = 0x0B;
 	static final int BINDING_INPUT_LENGTH = 32 * 4 + 8 + 1;
@@ -155,6 +159,10 @@ final class GroupTrKeys {
 			this.groupSig = groupSig;
 		}
 
+		boolean identitySigned() {
+			return identitySig.length != 0;
+		}
+
 		static Binding parse(BdfList l) throws FormatException {
 			if (l.size() != 5) throw new FormatException();
 			byte[] pub = l.getRaw(0);
@@ -166,8 +174,9 @@ final class GroupTrKeys {
 					|| mlDsa.length != PostQuantumConstants
 					.ML_DSA_65_PUBLIC_KEY_BYTES
 					|| timestamp < 0L
-					|| identitySig.length != PostQuantumConstants
-					.HYBRID_SIGNATURE_BYTES
+					|| (identitySig.length != 0
+					&& identitySig.length != PostQuantumConstants
+					.HYBRID_SIGNATURE_BYTES)
 					|| groupSig.length != PostQuantumConstants
 					.HYBRID_SIGNATURE_BYTES) {
 				throw new FormatException();
@@ -322,19 +331,29 @@ final class GroupTrKeys {
 	}
 
 	Binding bind(byte[] groupId, Own own, byte[] identity,
-			HybridSignaturePrivateKey identityKey, long timestamp)
+			@Nullable HybridSignaturePrivateKey identityKey, long timestamp)
 			throws DbException {
 		byte[] signed = bindingInput(groupId, identity, own.pub, own.mlDsa,
 				timestamp);
 		byte[] identitySig;
-		try {
-			identitySig = crypto.hybridSign(LABEL_BINDING, signed, identityKey);
-		} catch (GeneralSecurityException ex) {
-			throw new DbException(ex);
+		if (identityKey == null) {
+			identitySig = new byte[0];
+		} else {
+			try {
+				identitySig = crypto.hybridSign(LABEL_BINDING, signed,
+						identityKey);
+			} catch (GeneralSecurityException ex) {
+				throw new DbException(ex);
+			}
 		}
 		byte[] groupSig = sign(own, LABEL_BINDING, signed);
 		return new Binding(own.pub, own.mlDsa, timestamp, identitySig,
 				groupSig);
+	}
+
+	boolean verify(byte[] groupId, Binding b, Contact from) {
+		return verify(groupId, b, from.getAuthor().getPublicKey().getEncoded(),
+				from.getMlDsaSigPublicKey());
 	}
 
 	boolean verify(byte[] groupId, Binding b, byte[] identity,
@@ -347,10 +366,13 @@ final class GroupTrKeys {
 		if (Arrays.equals(identity, b.pub)) return false;
 		byte[] signed = bindingInput(groupId, identity, b.pub, b.mlDsa,
 				b.timestamp);
+		if (!verifyHybrid(b.groupSig, LABEL_BINDING, signed, b.pub,
+				b.mlDsa)) {
+			return false;
+		}
+		if (!b.identitySigned()) return true;
 		return verifyHybrid(b.identitySig, LABEL_BINDING, signed, identity,
-				identityMlDsa)
-				&& verifyHybrid(b.groupSig, LABEL_BINDING, signed, b.pub,
-				b.mlDsa);
+				identityMlDsa);
 	}
 
 	boolean verifyHybrid(byte[] sig, String label, byte[] signed,
@@ -638,8 +660,13 @@ final class GroupTrKeys {
 		return crypto.hash(LABEL_PROBE, secret, nonce);
 	}
 
+	static int sealedBindingBytes(boolean identitySigned) {
+		return identitySigned ? SEALED_BINDING_BYTES : SEALED_BINDING_V2_BYTES;
+	}
+
 	static byte[] encodeBinding(Binding b) {
-		ByteBuffer out = ByteBuffer.allocate(BINDING_BYTES);
+		ByteBuffer out = ByteBuffer.allocate(b.identitySigned()
+				? BINDING_BYTES : BINDING_V2_BYTES);
 		out.put(b.pub);
 		out.put(b.mlDsa);
 		out.putLong(b.timestamp);
@@ -649,13 +676,16 @@ final class GroupTrKeys {
 	}
 
 	static Binding decodeBinding(byte[] encoded) throws FormatException {
-		if (encoded.length != BINDING_BYTES) throw new FormatException();
+		if (encoded.length != BINDING_BYTES
+				&& encoded.length != BINDING_V2_BYTES) {
+			throw new FormatException();
+		}
 		ByteBuffer in = ByteBuffer.wrap(encoded);
 		byte[] pub = new byte[32];
 		byte[] mlDsa =
 				new byte[PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES];
-		byte[] identitySig =
-				new byte[PostQuantumConstants.HYBRID_SIGNATURE_BYTES];
+		byte[] identitySig = new byte[encoded.length == BINDING_BYTES
+				? PostQuantumConstants.HYBRID_SIGNATURE_BYTES : 0];
 		byte[] groupSig = new byte[PostQuantumConstants.HYBRID_SIGNATURE_BYTES];
 		in.get(pub);
 		in.get(mlDsa);
@@ -672,7 +702,10 @@ final class GroupTrKeys {
 
 	@Nullable
 	Binding open(byte[] secret, byte[] nonce, byte[] sealed) {
-		if (sealed.length != SEALED_BINDING_BYTES) return null;
+		if (sealed.length != SEALED_BINDING_BYTES
+				&& sealed.length != SEALED_BINDING_V2_BYTES) {
+			return null;
+		}
 		try {
 			return decodeBinding(cipher(Cipher.DECRYPT_MODE, secret, nonce,
 					sealed));

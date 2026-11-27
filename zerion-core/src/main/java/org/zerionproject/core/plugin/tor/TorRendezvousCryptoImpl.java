@@ -31,7 +31,12 @@ public class TorRendezvousCryptoImpl implements TorRendezvousCrypto {
 		h[31] &= (byte) 127;
 		h[31] |= (byte) 64;
 		byte[] base64 = Base64.encode(h);
-		return "ED25519-V3:" + new String(base64, US_ASCII);
+		try {
+			return "ED25519-V3:" + new String(base64, US_ASCII);
+		} finally {
+			java.util.Arrays.fill(h, (byte) 0);
+			java.util.Arrays.fill(base64, (byte) 0);
+		}
 	}
 
 	private static byte[] sha512(byte[] input) {

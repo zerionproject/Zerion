@@ -14,6 +14,12 @@ final class DecoyUnlockThrottle {
 		throttle = LoginThrottle.inFile(stateFile, LoginThrottle.VAULT);
 	}
 
+	DecoyUnlockThrottle(LoginThrottle.Store store) {
+		throttle = new LoginThrottle(store,
+				android.os.SystemClock::elapsedRealtime,
+				LoginThrottle.linuxBootId(), LoginThrottle.VAULT);
+	}
+
 	boolean allow() {
 		return throttle.remainingLockoutMs() <= 0;
 	}

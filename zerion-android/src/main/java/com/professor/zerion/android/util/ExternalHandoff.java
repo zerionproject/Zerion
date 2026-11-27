@@ -43,6 +43,8 @@ public final class ExternalHandoff {
 	@Nullable
 	private static File staged;
 	@Nullable
+	private static String stagedType;
+	@Nullable
 	private static Uri granted;
 	private static boolean away;
 	@Nullable
@@ -56,6 +58,12 @@ public final class ExternalHandoff {
 	interface Revoker {
 
 		void revoke(Context ctx, Uri uri);
+	}
+
+	private enum Launch {
+		STARTED,
+		SUPERSEDED,
+		NOT_OPENED
 	}
 
 	static final class Prepared {
@@ -78,15 +86,24 @@ public final class ExternalHandoff {
 	private static final long MAX_CLEAN_BYTES = 128L * 1024 * 1024;
 
 	static final Cleaner CLEAN_FIRST = (ctx, content, type) -> {
-		SharedMediaSanitizer sanitizer = new SharedMediaSanitizer(ctx);
+		SharedMediaSanitizer sanitizer = new SharedMediaSanitizer(ctx, true);
+		byte[] checked;
+		try {
+			checked = ReceivedImageGate.checkedIfImage(content);
+		} catch (IOException e) {
+			if (SharedMediaSanitizer.canClean(type)) {
+				throw MediaRefusedException.cannotClean(e);
+			}
+			return new Prepared(content, type);
+		}
 		if (SharedMediaSanitizer.canClean(type)) {
 			SharedMediaSanitizer.Cleaned clean =
-					sanitizer.sanitize(type, content, MAX_CLEAN_BYTES);
+					sanitizer.sanitize(type, checked, MAX_CLEAN_BYTES);
 			return new Prepared(clean.getData(), clean.getMimeType());
 		}
 		try {
 			SharedMediaSanitizer.Cleaned clean =
-					sanitizer.sanitize(type, content, MAX_CLEAN_BYTES);
+					sanitizer.sanitize(type, checked, MAX_CLEAN_BYTES);
 			return new Prepared(clean.getData(), clean.getMimeType());
 		} catch (MediaRefusedException e) {
 			if (e.isTooLarge()) throw e;
@@ -112,18 +129,29 @@ public final class ExternalHandoff {
 
 	public static void open(Activity activity, Executor io, byte[] content,
 			String type, Runnable onFailure) {
-		open(activity, io, content, type, onFailure, false);
+		open(activity, io, content, type, onFailure, onFailure, false);
+	}
+
+	public static void open(Activity activity, Executor io, byte[] content,
+			String type, Runnable onRefused, Runnable onNoApp) {
+		open(activity, io, content, type, onRefused, onNoApp, false);
 	}
 
 	public static void openCopy(Activity activity, Executor io, byte[] copy,
 			String type, Runnable onFailure) {
-		open(activity, io, copy, type, onFailure, true);
+		open(activity, io, copy, type, onFailure, onFailure, true);
+	}
+
+	public static void openCopy(Activity activity, Executor io, byte[] copy,
+			String type, Runnable onRefused, Runnable onNoApp) {
+		open(activity, io, copy, type, onRefused, onNoApp, true);
 	}
 
 	private static void open(Activity activity, Executor io, byte[] content,
-			String type, Runnable onFailure, boolean owned) {
+			String type, Runnable onRefused, Runnable onNoApp, boolean owned) {
 		if (!asksFirst(type)) {
-			stageAndLaunch(activity, io, content, type, onFailure, owned);
+			stageAndLaunch(activity, io, content, type, onRefused, onNoApp,
+					owned);
 			return;
 		}
 		boolean[] confirmed = {false};
@@ -132,8 +160,8 @@ public final class ExternalHandoff {
 				.setMessage(R.string.external_open_message)
 				.setPositiveButton(R.string.external_open_confirm, (d, w) -> {
 					confirmed[0] = true;
-					stageAndLaunch(activity, io, content, type, onFailure,
-							owned);
+					stageAndLaunch(activity, io, content, type, onRefused,
+							onNoApp, owned);
 				})
 				.setNegativeButton(android.R.string.cancel, null)
 				.setOnDismissListener(d -> {
@@ -147,7 +175,8 @@ public final class ExternalHandoff {
 	}
 
 	private static void stageAndLaunch(Activity activity, Executor io,
-			byte[] content, String type, Runnable onFailure, boolean owned) {
+			byte[] content, String type, Runnable onRefused, Runnable onNoApp,
+			boolean owned) {
 		Context app = activity.getApplicationContext();
 		io.execute(() -> {
 			File file;
@@ -155,10 +184,10 @@ public final class ExternalHandoff {
 			Prepared ready = null;
 			try {
 				ready = cleaner.prepare(app, content, type);
-				file = stage(app, ready.content, ready.type);
-				shown = ready.type;
+				shown = checkedType(ready.type, ready.content);
+				file = stage(app, ready.content, shown);
 			} catch (IOException | RuntimeException e) {
-				activity.runOnUiThread(onFailure);
+				activity.runOnUiThread(onRefused);
 				return;
 			} finally {
 				if (ready != null && ready.content != content) {
@@ -168,17 +197,28 @@ public final class ExternalHandoff {
 			}
 			activity.runOnUiThread(() -> {
 				if (activity.isFinishing() || activity.isDestroyed()) {
-					end(app);
-				} else if (!launch(activity, file, shown)) {
-					end(app);
-					onFailure.run();
+					endIfStaged(app, file);
+				} else if (launchStaged(activity, file, shown)
+						== Launch.NOT_OPENED) {
+					endIfStaged(app, file);
+					onNoApp.run();
 				}
 			});
 		});
 	}
 
+	static String checkedType(String declared, byte[] content)
+			throws IOException {
+		String type = ExternalViewerTypes.typeForContent(declared, content);
+		if (type == null) throw new IOException("content does not open");
+		return type;
+	}
+
 	static File stage(Context ctx, byte[] content, String type)
 			throws IOException {
+		if (!checkedType(type, content).equals(type)) {
+			throw new IOException("content does not open as the given type");
+		}
 		end(ctx);
 		synchronized (LOCK) {
 			File dir = new File(ctx.getCacheDir(), DIR);
@@ -200,42 +240,58 @@ public final class ExternalHandoff {
 				throw e;
 			}
 			staged = f;
+			stagedType = type;
 			return f;
 		}
 	}
 
 	static boolean launch(Activity activity, File file, String type) {
+		return launchStaged(activity, file, type) == Launch.STARTED;
+	}
+
+	private static Launch launchStaged(Activity activity, File file,
+			String type) {
+		synchronized (LOCK) {
+			if (!file.equals(staged)) return Launch.SUPERSEDED;
+		}
 		Uri uri;
 		try {
 			uri = FileProvider.getUriForFile(activity,
 					activity.getPackageName() + ".fileprovider", file);
 		} catch (IllegalArgumentException e) {
-			return false;
+			return Launch.NOT_OPENED;
 		}
 		Intent view = new Intent(Intent.ACTION_VIEW);
 		view.setDataAndType(uri, type);
 		view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 		synchronized (LOCK) {
-			if (!file.equals(staged)) return false;
+			if (!file.equals(staged)) return Launch.SUPERSEDED;
+			if (!type.equals(stagedType)) return Launch.NOT_OPENED;
 			granted = uri;
 			away = false;
 		}
 		watch(activity.getApplication());
 		try {
 			activity.startActivity(view);
-			return true;
+			return Launch.STARTED;
 		} catch (ActivityNotFoundException | SecurityException e) {
-			return false;
+			return Launch.NOT_OPENED;
 		}
 	}
 
 	public static void end(Context ctx) {
+		endIfStaged(ctx, null);
+	}
+
+	private static void endIfStaged(Context ctx, @Nullable File only) {
 		File file;
 		Uri uri;
 		synchronized (LOCK) {
+			if (only != null && !only.equals(staged)) return;
 			file = staged;
 			uri = granted;
 			staged = null;
+			stagedType = null;
 			granted = null;
 			away = false;
 		}
@@ -262,6 +318,7 @@ public final class ExternalHandoff {
 	static void resetForTests() {
 		synchronized (LOCK) {
 			staged = null;
+			stagedType = null;
 			granted = null;
 			away = false;
 			watched = null;

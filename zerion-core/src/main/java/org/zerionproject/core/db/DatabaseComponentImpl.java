@@ -1,5 +1,8 @@
 package org.zerionproject.core.db;
 
+import org.zerionproject.core.api.contact.request.ContactLink;
+import org.zerionproject.core.api.contact.request.IncomingRequest;
+import org.zerionproject.core.api.contact.request.OutgoingRequest;
 import org.zerionproject.core.api.cleanup.event.CleanupTimerStartedEvent;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
@@ -91,6 +94,7 @@ import javax.inject.Inject;
 import static java.util.Collections.singletonList;
 import static org.zerionproject.core.api.sync.Group.Visibility.INVISIBLE;
 import static org.zerionproject.core.api.sync.Group.Visibility.SHARED;
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH;
 import static org.zerionproject.core.api.sync.validation.MessageState.DELIVERED;
 import static org.zerionproject.core.api.sync.validation.MessageState.UNKNOWN;
 import static org.zerionproject.core.db.DatabaseConstants.MAX_OFFERED_MESSAGES;
@@ -550,6 +554,12 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		T txn = unbox(transaction);
 		if (!db.containsContact(txn, c))
 			throw new NoSuchContactException();
+		Collection<MessageId> neverFit = db.getRequestedMessagesLongerThan(txn,
+				c, MAX_ONE_RECORD_MESSAGE_LENGTH);
+		if (!neverFit.isEmpty()) {
+			for (MessageId m : neverFit) db.setMessageShared(txn, m, false);
+			db.lowerRequestedFlag(txn, c, neverFit);
+		}
 		Collection<MessageId> ids =
 				db.getRequestedMessagesToSend(txn, c, capacity, maxLatency);
 		if (ids.isEmpty()) return null;
@@ -1312,6 +1322,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	public void lowerCleanupTimerDuration(Transaction transaction,
+			MessageId m, long duration) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsMessage(txn, m))
+			throw new NoSuchMessageException();
+		db.lowerCleanupTimerDuration(txn, m, duration);
+	}
+
+	@Override
 	public void setContactVerified(Transaction transaction, ContactId c)
 			throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
@@ -1656,5 +1676,198 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		public void visit(TaskAction a) {
 			eventExecutor.execute(a.getTask());
 		}
+	}
+
+	@Override
+	public void addContactLink(Transaction transaction, ContactLink link)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.addContactLink(txn, link);
+	}
+
+	@Override
+	public void updateContactLink(Transaction transaction, ContactLink link)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.updateContactLink(txn, link);
+		transaction.requestPurge();
+	}
+
+	@Override
+	public void removeContactLink(Transaction transaction, byte[] linkId)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.removeContactLink(txn, linkId);
+		transaction.requestPurge();
+	}
+
+	@Override
+	public Collection<ContactLink> getContactLinks(Transaction transaction)
+			throws DbException {
+		T txn = unbox(transaction);
+		return db.getContactLinks(txn);
+	}
+
+	@Override
+	@Nullable
+	public byte[] getRequestAccountSecret(Transaction transaction, AuthorId local)
+			throws DbException {
+		T txn = unbox(transaction);
+		return db.getRequestAccountSecret(txn, local);
+	}
+
+	@Override
+	public void setRequestAccountSecret(Transaction transaction, AuthorId local, byte[] secret)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.setRequestAccountSecret(txn, local, secret);
+	}
+
+	@Override
+	public void addOutgoingRequest(Transaction transaction, OutgoingRequest r)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.addOutgoingRequest(txn, r);
+	}
+
+	@Override
+	public void updateOutgoingRequest(Transaction transaction, OutgoingRequest r)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.updateOutgoingRequest(txn, r);
+		transaction.requestPurge();
+	}
+
+	@Override
+	public void removeOutgoingRequest(Transaction transaction, byte[] requestId)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.removeOutgoingRequest(txn, requestId);
+		transaction.requestPurge();
+	}
+
+	@Override
+	public Collection<OutgoingRequest> getOutgoingRequests(Transaction transaction)
+			throws DbException {
+		T txn = unbox(transaction);
+		return db.getOutgoingRequests(txn);
+	}
+
+	@Override
+	public void addIncomingRequest(Transaction transaction, IncomingRequest r)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.addIncomingRequest(txn, r);
+	}
+
+	@Override
+	public void updateIncomingRequest(Transaction transaction, IncomingRequest r)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.updateIncomingRequest(txn, r);
+		transaction.requestPurge();
+	}
+
+	@Override
+	public void removeIncomingRequest(Transaction transaction, byte[] requestId)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.removeIncomingRequest(txn, requestId);
+		transaction.requestPurge();
+	}
+
+	@Override
+	public Collection<IncomingRequest> getIncomingRequests(Transaction transaction)
+			throws DbException {
+		T txn = unbox(transaction);
+		return db.getIncomingRequests(txn);
+	}
+
+	@Override
+	public void addRequestReplay(Transaction transaction, byte[] requestIdHash, int kind,
+			@Nullable byte[] oneTimeKeyHash, byte[] linkId, long expiresAt)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.addRequestReplay(txn, requestIdHash, kind, oneTimeKeyHash, linkId, expiresAt);
+	}
+
+	@Override
+	public int countRequestReplay(Transaction transaction, byte[] linkId)
+			throws DbException {
+		T txn = unbox(transaction);
+		return db.countRequestReplay(txn, linkId);
+	}
+
+	@Override
+	public boolean containsRequestReplay(Transaction transaction, byte[] requestIdHash, int kind)
+			throws DbException {
+		T txn = unbox(transaction);
+		return db.containsRequestReplay(txn, requestIdHash, kind);
+	}
+
+	@Override
+	public boolean containsOneTimeKey(Transaction transaction, byte[] oneTimeKeyHash,
+			byte[] requestIdHash)
+			throws DbException {
+		T txn = unbox(transaction);
+		return db.containsOneTimeKey(txn, oneTimeKeyHash, requestIdHash);
+	}
+
+	@Override
+	public void removeExpiredRequestReplay(Transaction transaction, long now)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.removeExpiredRequestReplay(txn, now);
+	}
+
+	@Override
+	public void addRequestBlock(Transaction transaction, byte[] linkId, byte[] senderTag,
+			long createdAt)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.addRequestBlock(txn, linkId, senderTag, createdAt);
+	}
+
+	@Override
+	public boolean containsRequestBlock(Transaction transaction, byte[] linkId, byte[] senderTag)
+			throws DbException {
+		T txn = unbox(transaction);
+		return db.containsRequestBlock(txn, linkId, senderTag);
+	}
+
+	@Override
+	public Collection<byte[]> getRequestBlocks(Transaction transaction, byte[] linkId)
+			throws DbException {
+		T txn = unbox(transaction);
+		return db.getRequestBlocks(txn, linkId);
+	}
+
+	@Override
+	public void removeRequestBlock(Transaction transaction, byte[] linkId, byte[] senderTag)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.removeRequestBlock(txn, linkId, senderTag);
+	}
+
+	@Override
+	public void removeRequestBlocks(Transaction transaction, byte[] linkId)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.removeRequestBlocks(txn, linkId);
 	}
 }

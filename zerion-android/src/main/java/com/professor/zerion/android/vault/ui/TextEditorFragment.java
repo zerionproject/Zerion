@@ -42,6 +42,13 @@ public class TextEditorFragment extends BaseFragment {
 	private static final String ARG_INITIAL_CONTENT = "initial_content";
 	private static final String ARG_IS_EDIT_MODE = "is_edit_mode";
 	private static final String ARG_ITEM_ID = "item_id";
+	private static final String STATE_SAVE_REQUEST = "save_request";
+	private static final String STATE_NEW_PASSWORD_LOST =
+			"new_password_lost";
+	private static final long NO_SAVE = 0L;
+	private static final String TAG_NEW_PASSWORD_DIALOG = "password_dialog";
+	private static final String TAG_DOCUMENT_PASSWORD_DIALOG =
+			"document_password_dialog";
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -60,6 +67,10 @@ public class TextEditorFragment extends BaseFragment {
 	private boolean isEditMode = false;
 	private String itemId;
 	private boolean hasUnsavedChanges = false;
+	@Nullable
+	private char[] pendingNewPassword;
+	private boolean newPasswordLost = false;
+	private long saveRequest = NO_SAVE;
 	private boolean isMonospace = true;
 
 	public static TextEditorFragment newInstance() {
@@ -97,19 +108,43 @@ public class TextEditorFragment extends BaseFragment {
 			isEditMode = getArguments().getBoolean(ARG_IS_EDIT_MODE, false);
 			itemId = getArguments().getString(ARG_ITEM_ID);
 		}
+		if (savedInstanceState != null) {
+			saveRequest = savedInstanceState.getLong(STATE_SAVE_REQUEST,
+					NO_SAVE);
+			newPasswordLost = savedInstanceState.getBoolean(
+					STATE_NEW_PASSWORD_LOST, false);
+		}
 
 		requireActivity().getOnBackPressedDispatcher().addCallback(this,
 				new OnBackPressedCallback(true) {
 					@Override
 					public void handleOnBackPressed() {
-						if (hasUnsavedChanges) {
-							showUnsavedChangesDialog();
-						} else {
-							setEnabled(false);
-							requireActivity().getOnBackPressedDispatcher().onBackPressed();
+						if (onBackPressed()) {
+							return;
 						}
+						setEnabled(false);
+						requireActivity().getOnBackPressedDispatcher().onBackPressed();
 					}
 				});
+	}
+
+	public boolean onBackPressed() {
+		if (isSaving()) {
+			return true;
+		}
+		if (hasUnsavedChanges && getView() != null) {
+			showUnsavedChangesDialog();
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public void onSaveInstanceState(@NonNull Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putLong(STATE_SAVE_REQUEST, saveRequest);
+		outState.putBoolean(STATE_NEW_PASSWORD_LOST,
+				pendingNewPassword != null || newPasswordLost);
 	}
 
 	@Override
@@ -142,6 +177,22 @@ public class TextEditorFragment extends BaseFragment {
 		setupToolbar();
 		setupEditorFeatures();
 		loadInitialContent();
+
+		if (isSaving() && !viewModel.isDocumentSavePending(saveRequest)) {
+			saveRequest = NO_SAVE;
+		}
+		setEditingEnabled(!isSaving());
+		viewModel.getDocumentSaveResult().observe(getViewLifecycleOwner(),
+				finished -> collectSaveResult());
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		requireView().post(() -> {
+			collectSaveResult();
+			tellIfTheNewPasswordWasLost();
+		});
 	}
 
 	private void setupToolbar() {
@@ -155,6 +206,9 @@ public class TextEditorFragment extends BaseFragment {
 		}
 
 		toolbar.setNavigationOnClickListener(v -> {
+			if (isSaving()) {
+				return;
+			}
 			if (hasUnsavedChanges) {
 				showUnsavedChangesDialog();
 			} else if (getActivity() != null) {
@@ -241,56 +295,74 @@ public class TextEditorFragment extends BaseFragment {
 		return super.onOptionsItemSelected(item);
 	}
 
-	private void saveDocument() {
-		String name = documentNameInput.getText().toString().trim();
-		String content = documentContentInput.getText().toString();
+	private void forgetPendingNewPassword() {
+		wipe(pendingNewPassword);
+		pendingNewPassword = null;
+	}
 
-		if (name.isEmpty()) {
-			documentNameLayout.setError(getString(R.string.text_editor_name_required));
-			documentNameInput.requestFocus();
+	private void tellIfTheNewPasswordWasLost() {
+		if (!newPasswordLost || isSaving() || !isResumed()) {
 			return;
 		}
+		newPasswordLost = false;
+		Toast.makeText(requireContext(),
+				R.string.vault_doc_new_password_not_applied,
+				Toast.LENGTH_LONG).show();
+	}
 
-		documentNameLayout.setError(null);
-
-		if (!name.toLowerCase().endsWith(".txt")) {
-			name = name + ".txt";
+	private String withTheLostNewPassword(String message) {
+		if (!newPasswordLost) {
+			return message;
 		}
+		newPasswordLost = false;
+		return getString(R.string.vault_doc_new_password_not_applied)
+				+ "\n\n" + message;
+	}
 
-		byte[] contentBytes = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+	@Override
+	public void onDestroyView() {
+		if (pendingNewPassword != null) {
+			newPasswordLost = true;
+		}
+		forgetPendingNewPassword();
+		super.onDestroyView();
+	}
 
+	private void saveDocument() {
+		if (isSaving()) {
+			return;
+		}
+		forgetPendingNewPassword();
+		newPasswordLost = false;
+		String name = checkedName();
+		if (name == null) {
+			return;
+		}
+		byte[] contentBytes = contentBytes();
+		savePlain(beginSave(), name, contentBytes);
+	}
+
+	private void savePlain(long request, String name, byte[] contentBytes) {
 		if (isEditMode && itemId != null) {
-			viewModel.updateDocument(itemId, name, contentBytes);
-			showSnackbar(getString(R.string.text_editor_document_updated));
+			viewModel.updateDocument(request, itemId, name, contentBytes);
 		} else {
-			viewModel.addDocumentWithPassword(name, contentBytes, null);
-			showSnackbar(getString(R.string.text_editor_document_saved));
-		}
-
-		hasUnsavedChanges = false;
-
-		if (getActivity() != null) {
-			getActivity().getOnBackPressedDispatcher().onBackPressed();
+			viewModel.addDocumentWithPassword(request, name, contentBytes,
+					null);
 		}
 	}
 
 	private void saveDocumentWithPassword() {
-		String name = documentNameInput.getText().toString().trim();
-		String content = documentContentInput.getText().toString();
-
-		if (name.isEmpty()) {
-			documentNameLayout.setError(getString(R.string.text_editor_name_required));
-			documentNameInput.requestFocus();
+		if (isSaving()) {
 			return;
 		}
-
-		documentNameLayout.setError(null);
-
-		if (!name.toLowerCase().endsWith(".txt")) {
-			name = name + ".txt";
+		forgetPendingNewPassword();
+		newPasswordLost = false;
+		String name = checkedName();
+		if (name == null) {
+			return;
 		}
+		String content = documentContentInput.getText().toString();
 
-		String finalName = name;
 		DocumentPasswordDialog dialog = DocumentPasswordDialog.newPasswordDialog(
 				getString(R.string.vault_document_protect_title),
 				getString(R.string.text_editor_protect_message)
@@ -299,15 +371,22 @@ public class TextEditorFragment extends BaseFragment {
 		dialog.setCallback(new DocumentPasswordDialog.PasswordCallback() {
 			@Override
 			public void onPasswordEntered(@Nullable char[] password) {
+				if (isSaving() || getView() == null) {
+					wipe(password);
+					return;
+				}
 				byte[] contentBytes = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-				viewModel.addDocumentWithPassword(finalName, contentBytes, password);
-
-				showSnackbar(getString(
-						R.string.text_editor_saved_with_password));
-				hasUnsavedChanges = false;
-
-				if (getActivity() != null) {
-					getActivity().getOnBackPressedDispatcher().onBackPressed();
+				long request = beginSave();
+				if (password == null) {
+					savePlain(request, name, contentBytes);
+				} else if (isEditMode && itemId != null) {
+					forgetPendingNewPassword();
+					pendingNewPassword = password.clone();
+					viewModel.replaceDocumentWithPassword(request, itemId,
+							name, contentBytes, password, null);
+				} else {
+					viewModel.addDocumentWithPassword(request, name,
+							contentBytes, password);
 				}
 			}
 
@@ -316,7 +395,140 @@ public class TextEditorFragment extends BaseFragment {
 			}
 		});
 
-		dialog.show(getParentFragmentManager(), "password_dialog");
+		dialog.show(getParentFragmentManager(), TAG_NEW_PASSWORD_DIALOG);
+	}
+
+	private void askForTheDocumentPassword(String message) {
+		DocumentPasswordDialog dialog = DocumentPasswordDialog.newUnlockDialog(
+				getString(R.string.vault_password_required_title), message);
+
+		dialog.setCallback(new DocumentPasswordDialog.PasswordCallback() {
+			@Override
+			public void onPasswordEntered(@Nullable char[] password) {
+				if (password != null) {
+					saveProtectedDocument(password);
+				} else {
+					forgetPendingNewPassword();
+				}
+			}
+
+			@Override
+			public void onPasswordCancelled() {
+				forgetPendingNewPassword();
+			}
+		});
+
+		dialog.show(getParentFragmentManager(), TAG_DOCUMENT_PASSWORD_DIALOG);
+	}
+
+	private void saveProtectedDocument(char[] password) {
+		String name = isSaving() || getView() == null || itemId == null
+				? null : checkedName();
+		if (name == null) {
+			wipe(password);
+			forgetPendingNewPassword();
+			return;
+		}
+		byte[] contentBytes = contentBytes();
+		if (pendingNewPassword != null) {
+			viewModel.replaceDocumentWithPassword(beginSave(), itemId, name,
+					contentBytes, pendingNewPassword.clone(), password);
+			return;
+		}
+		viewModel.updateProtectedDocument(beginSave(), itemId, name,
+				contentBytes, password);
+	}
+
+	private void collectSaveResult() {
+		if (!isSaving() || !isResumed()) {
+			return;
+		}
+		DocumentSaveResult result =
+				viewModel.takeDocumentSaveResult(saveRequest);
+		if (result == null) {
+			return;
+		}
+		saveRequest = NO_SAVE;
+		setEditingEnabled(true);
+
+		if (result.isStored()) {
+			forgetPendingNewPassword();
+			newPasswordLost = false;
+			if (result.outcome
+					== DocumentSaveResult.Outcome.SAVED_EARLIER_VERSION_KEPT) {
+				viewModel.clearMessages();
+				Toast.makeText(requireContext(), result.message,
+						Toast.LENGTH_LONG).show();
+			}
+			closeEditor();
+			return;
+		}
+
+		viewModel.clearMessages();
+		if (result.outcome == DocumentSaveResult.Outcome.PASSWORD_REQUIRED) {
+			askForTheDocumentPassword(withTheLostNewPassword(result.message));
+			return;
+		}
+		showSnackbar(result.message);
+		if (result.outcome == DocumentSaveResult.Outcome.WRONG_PASSWORD) {
+			askForTheDocumentPassword(withTheLostNewPassword(getString(
+					R.string.vault_doc_password_needed_to_save)));
+			return;
+		}
+		forgetPendingNewPassword();
+		newPasswordLost = false;
+	}
+
+	private boolean isSaving() {
+		return saveRequest != NO_SAVE;
+	}
+
+	private long beginSave() {
+		saveRequest = viewModel.newDocumentSaveRequest();
+		setEditingEnabled(false);
+		return saveRequest;
+	}
+
+	private void setEditingEnabled(boolean enabled) {
+		documentNameInput.setEnabled(enabled);
+		documentContentInput.setEnabled(enabled);
+		fabSave.setEnabled(enabled);
+	}
+
+	private void closeEditor() {
+		hasUnsavedChanges = false;
+		if (getActivity() != null) {
+			getActivity().getOnBackPressedDispatcher().onBackPressed();
+		}
+	}
+
+	@Nullable
+	private String checkedName() {
+		String name = documentNameInput.getText().toString().trim();
+
+		if (name.isEmpty()) {
+			documentNameLayout.setError(getString(R.string.text_editor_name_required));
+			documentNameInput.requestFocus();
+			return null;
+		}
+
+		documentNameLayout.setError(null);
+
+		if (!name.toLowerCase().endsWith(".txt")) {
+			name = name + ".txt";
+		}
+		return name;
+	}
+
+	private byte[] contentBytes() {
+		return documentContentInput.getText().toString()
+				.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+	}
+
+	private static void wipe(@Nullable char[] password) {
+		if (password != null) {
+			java.util.Arrays.fill(password, '\0');
+		}
 	}
 
 	private void showUnsavedChangesDialog() {
@@ -340,11 +552,11 @@ public class TextEditorFragment extends BaseFragment {
 			new com.professor.zerion.android.util.ZerionSnackbarBuilder()
 					.make(v, message,
 							com.google.android.material.snackbar.Snackbar
-									.LENGTH_SHORT)
+									.LENGTH_LONG)
 					.show();
 		} else if (getContext() != null) {
 			Toast.makeText(requireContext(), message,
-					Toast.LENGTH_SHORT).show();
+					Toast.LENGTH_LONG).show();
 		}
 	}
 

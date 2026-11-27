@@ -19,6 +19,7 @@ import org.zerionproject.core.api.sync.Group;
 import org.zerionproject.core.api.sync.InvalidMessageException;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.zerionproject.core.api.sync.validation.IncomingMessageHook;
 import org.zerionproject.core.api.sync.validation.MessageValidator;
 import org.zerionproject.core.api.sync.validation.MessageState;
@@ -37,8 +38,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -330,6 +333,22 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void anEditLongerThanOneSyncRecordHoldsIsRefused()
+			throws Exception {
+		MessagingManagerImpl sender = senderSeeing(9);
+		MessageId mine = own("short", now - HOUR);
+
+		assertEquals(EditResult.NOT_EDITABLE, sender.editMessage(contact,
+				mine, org.zerionproject.core.util.StringUtils.getRandomString(
+						org.zerionproject.app.api.messaging.MessagingConstants
+								.MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH
+								+ 1)));
+
+		assertTrue(localControls(MESSAGE_EDIT).isEmpty());
+		assertEquals("short", messagingManager.getMessageText(mine));
+	}
+
+	@Test
 	public void editingSendsAnEditTheContactAccepts() throws Exception {
 		MessagingManagerImpl sender = senderSeeing(9);
 		MessageId mine = own("Hey Allfs good", now - HOUR);
@@ -598,7 +617,42 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 		return BdfList.of(MESSAGE_REACTION, target.getBytes(), "heart");
 	}
 
+	@Test
+	public void anEditIsMarkedAsAMessageTheUserChoseToSend()
+			throws Exception {
+		List<MessageId> marked = new ArrayList<>();
+		MessagingManagerImpl sender = senderSeeing(9, marked::add);
+		MessageId mine = own("one", now + HOUR);
+
+		sender.editMessage(contact, mine, "two");
+
+		Collection<MessageId> edits = localControls(MESSAGE_EDIT);
+		assertEquals(1, edits.size());
+		assertEquals(new ArrayList<>(edits), marked);
+	}
+
+	@Test
+	public void aDeleteForEveryoneIsMarkedAsAMessageTheUserChoseToSend()
+			throws Exception {
+		List<MessageId> marked = new ArrayList<>();
+		MessagingManagerImpl sender = senderSeeing(9, marked::add);
+		MessageId mine = own("oops", now - HOUR);
+		markSent(mine);
+
+		assertTrue(sender.deleteForEveryone(contact, singletonList(mine)));
+
+		Collection<MessageId> deletes = localControls(MESSAGE_DELETE);
+		assertEquals(1, deletes.size());
+		assertEquals(new ArrayList<>(deletes), marked);
+	}
+
 	private MessagingManagerImpl senderSeeing(int minorVersion) {
+		return senderSeeing(minorVersion, id -> {
+		});
+	}
+
+	private MessagingManagerImpl senderSeeing(int minorVersion,
+			UserMessageMarker marker) {
 		ClientVersioningManager real = device.getClientVersioningManager();
 		ClientVersioningManager seen = (ClientVersioningManager)
 				Proxy.newProxyInstance(
@@ -617,7 +671,7 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 				device.getAutoDeleteManager(),
 				device.getStreamingAttachmentWriter(),
 				device.getIdentityManager(), validator,
-				device.getCryptoComponent());
+				device.getCryptoComponent(), marker);
 	}
 
 	private PrivateMessageFormat formatSeenAt(int minorVersion)

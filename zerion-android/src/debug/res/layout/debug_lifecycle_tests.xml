@@ -217,6 +217,33 @@
 
 		</LinearLayout>
 
+		<LinearLayout
+			android:id="@+id/lifecycle_puzzle_card"
+			style="@style/Zerion.Settings.Row.Clickable">
+
+			<ImageView
+				style="@style/Zerion.Settings.Row.Icon"
+				android:src="@drawable/ic_timer"
+				android:importantForAccessibility="no" />
+
+			<LinearLayout
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Title"
+					android:text="@string/lifecycle_puzzle_title" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Summary"
+					android:text="@string/lifecycle_puzzle_summary" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
 	</LinearLayout>
 
 </LinearLayout>

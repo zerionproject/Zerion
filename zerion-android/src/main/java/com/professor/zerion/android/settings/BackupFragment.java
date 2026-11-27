@@ -148,7 +148,34 @@ public class BackupFragment extends Fragment {
 		EditText pass = passwordField(context, R.string.backup_password_hint);
 		EditText confirm =
 				passwordField(context, R.string.backup_password_confirm_hint);
+		com.professor.zerion.android.login.StrengthMeter meter =
+				new com.professor.zerion.android.login.StrengthMeter(context);
+		meter.setStrength(0);
+		pass.addTextChangedListener(new android.text.TextWatcher() {
+			@Override
+			public void beforeTextChanged(CharSequence s, int start,
+					int count, int after) {
+			}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before,
+					int count) {
+			}
+
+			@Override
+			public void afterTextChanged(android.text.Editable s) {
+				char[] typed = peekChars(pass);
+				try {
+					meter.setStrength(com.professor.zerion.android.backup
+							.BackupPassphrase.strength(strengthEstimator,
+									typed));
+				} finally {
+					Arrays.fill(typed, '\0');
+				}
+			}
+		});
 		layout.addView(pass);
+		layout.addView(meter);
 		layout.addView(confirm);
 		androidx.appcompat.app.AlertDialog dlg =
 				new SecureAlertDialogBuilder(context)
@@ -167,8 +194,9 @@ public class BackupFragment extends Fragment {
 							if (p1.length < 1) {
 								toast(R.string.backup_password_empty);
 							} else if (!com.professor.zerion.android.backup
-									.BackupPassphrase.longEnough(p1)) {
-								toast(R.string.backup_password_too_short);
+									.BackupPassphrase.acceptable(
+											strengthEstimator, p1)) {
+								toast(R.string.backup_passphrase_too_weak);
 							} else if (!com.professor.zerion.android.login
 									.AccountPasswordPolicy
 									.sameNormalForm(p1, p2)) {
@@ -317,6 +345,9 @@ public class BackupFragment extends Fragment {
 		}
 		if (reason == BackupException.Reason.TOO_LARGE) {
 			return R.string.backup_export_too_large;
+		}
+		if (reason == BackupException.Reason.WEAK_PASSPHRASE) {
+			return R.string.backup_passphrase_too_weak;
 		}
 		return R.string.backup_export_failed;
 	}

@@ -35,7 +35,11 @@ public interface HandshakeCrypto {
 			byte[] kemSecretToBob, boolean alice, byte ourMinor,
 			byte theirMinor) throws GeneralSecurityException;
 
-	byte[] proveOwnership(SecretKey masterKey, boolean alice);
+	HandshakeKeys deriveSessionKeys(SecretKey handshakeSecret,
+			boolean separated);
 
-	boolean verifyOwnership(SecretKey masterKey, boolean alice, byte[] proof);
+	byte[] proveOwnership(SecretKey confirmationKey, boolean alice);
+
+	boolean verifyOwnership(SecretKey confirmationKey, boolean alice,
+			byte[] proof);
 }

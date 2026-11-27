@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:background="?attr/selectableItemBackground"
+	android:minHeight="64dp"
+	android:orientation="vertical"
+	android:paddingHorizontal="16dp"
+	android:paddingVertical="10dp">
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical">
+
+		<TextView
+			android:id="@+id/requestTitle"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:textColor="@color/zerion_text_primary"
+			android:textSize="16sp" />
+
+		<TextView
+			android:id="@+id/requestSubtitle"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="2dp"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="13sp" />
+
+		<TextView
+			android:id="@+id/requestTime"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="2dp"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="12sp" />
+
+		<ProgressBar
+			android:id="@+id/requestProgress"
+			style="?android:attr/progressBarStyleHorizontal"
+			android:layout_width="match_parent"
+			android:layout_height="4dp"
+			android:layout_marginTop="6dp"
+			android:indeterminate="true"
+			android:visibility="gone" />
+
+	</LinearLayout>
+
+	<com.google.android.material.button.MaterialButton
+		android:id="@+id/requestAction"
+		style="@style/Zerion.Button.Text"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_gravity="end"
+		android:minHeight="48dp"
+		android:visibility="gone" />
+
+</LinearLayout>

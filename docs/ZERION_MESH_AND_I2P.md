@@ -68,13 +68,18 @@ From the radio up:
 2. **Managed flooding** (`MeshForwarder`). Store-carry-forward across multiple
    hops, with de-duplication and bounded storage.
 3. **Async sealed-sender crypto** (`AsyncMeshDelivery`, `AsyncSealedSender`).
-   Post-quantum encryption to a recipient's published prekey, with an inner
-   sender signature.
+   Post-quantum encryption to a recipient's published prekey, with the sender
+   authenticated inside the sealed record.
 4. **Message routing** (`MeshMessageRouter`). Turns an opened payload into a
    stored message, an acknowledgement, a presence update, or a group record.
 5. **Application senders** (`MeshTextSender`, `MeshGroupSender`).
 
 ## 4. BLE transport
+
+This section describes the open mode. In the Contacts only mode, the default
+from 3.0.19, devices advertise and scan in the same way but link over a plain
+connection-oriented channel and offer no GATT service (see "Contacts only
+mode" in protocol/MESH-TRANSPORT.md).
 
 Every device acts at the same time as a GATT peripheral (advertising and
 accepting connections) and a GATT central (scanning and connecting). This lets
@@ -102,26 +107,119 @@ minutes, longer than the address, so an observer could chain address changes
 through it.) Before replacing its set, a device tells the devices it is linked
 to its new nonce in a link-local frame that is never relayed, so they do not
 dial it again as a stranger. The advertisement carries no device name
-(`setIncludeDeviceName(false)`). While the mesh is active the Bluetooth adapter
-name, which a connecting central can read, is set to `Android`, the same on
-every device, before the radio starts; the user's name is restored when the
-mesh stops or is disabled, and at the next app start if the app ended while
-the mesh ran. (Up to 3.0.14 the name was a random `BT-xxxxxx` kept for the
-whole session, set only after the radio had started.) Each device holds at
+(`setIncludeDeviceName(false)`); how the phone's Bluetooth name is kept off
+the air is described under "Bluetooth privacy" below. (Up to 3.0.14 the name
+was a random `BT-xxxxxx` kept for the whole session, set only after the radio
+had started.) Each device holds at
 most 6 outbound and 6 inbound links; when the slots are full, a link that has
-carried nothing new since it came up, or nothing for 6 minutes, gives up its
-slot to the next device. Frames are fragmented to fit the negotiated BLE MTU
-and reassembled on the receiving side.
+delivered no envelope this device opened since it came up, or none for 6
+minutes, gives up its slot to the next device, and otherwise, at most once a
+minute, a link up for at least 10 minutes is chosen at random. Only an
+envelope from a contact that opens here and is not a replay counts, so random
+frames keep no slot (from 3.0.19; up to 3.0.18 any frame new to the device
+counted). Frames are fragmented to fit the negotiated BLE MTU and reassembled
+on the receiving side; they wait for the radio, and for the forwarder, in
+queues of at most 64 frames or 1 MiB each, the oldest frame dropped first,
+frames relayed for others before the device's own (unbounded up to 3.0.18).
 
 The transport tracks the Bluetooth adapter state: if the mesh is enabled while
 Bluetooth is off, it registers for `ACTION_STATE_CHANGED` and brings the radio
 up the moment Bluetooth is switched on, and tears it back down when Bluetooth is
 switched off, without needing the mesh to be toggled again.
 
-Residual: the discovery secret ships in the app and its public source, so anyone
-can compute the current identifier and detect Zerion presence. Fully hiding participation
-would require contact-scoped discovery, which breaks open relaying. This is a
-documented, deferred design choice.
+From 3.0.19 the mesh links with contacts only unless the user chooses the open
+mode: the advertisement is then a random value with a tag only the device's
+contacts can check, valid for about half an hour, and a link passes frames only
+after both sides proved a key the two contacts share (see "Contacts only mode" in
+protocol/MESH-TRANSPORT.md). In the open mode the discovery seed ships in the
+app and its public source, so anyone can compute the current identifier and
+detect a device that runs the open mesh. A device that
+connects can read the fixed GATT service only in the open mode; the Contacts
+only mode uses a plain channel and offers no service.
+
+### Bluetooth privacy
+
+What the mesh and Pair Nearby show to nearby radios, and what they cannot hide:
+
+- **Device name.** Neither the mesh nor Pair Nearby exposes the phone's
+  Bluetooth name. Neither puts it in an advertisement. The name is also a
+  phone-wide setting that any device connected over Bluetooth can read, so
+  from 3.0.19, while the mesh or Pair Nearby runs, the app replaces it with a
+  mask before it advertises, scans or connects, and puts the user's own name
+  back when the last of the two stops; if the app ended while the name was
+  masked, the name is put back at the next app start. The mesh and Pair
+  Nearby share one owner of the name, so one of them stopping does not bring
+  the real name back while the other still runs. The mask is `Android` unless
+  the user picks another one under Settings > Connections > "Bluetooth name
+  while the mesh runs" (at most 32 characters; control, formatting and other
+  invisible characters are removed). `Android` is the same on every phone that
+  keeps it; a name of your own is the same in every session and can therefore
+  link sessions of this phone. Because the name is phone-wide, a car kit or
+  headset paired with the phone also sees the mask while it is in place. The
+  app asks Android to apply the mask and waits up to one second for it to take
+  effect, then starts the radio even if the change is still pending, so a
+  device that connects in that moment can still read the real name; if
+  Android does not apply the change at all, the app cannot hide the name.
+  Masking needs Android 12 or newer and the Nearby devices permission
+  (BLUETOOTH_CONNECT). If the name cannot be put back, for example because
+  Bluetooth is off, the app tries again when Bluetooth is switched on. (Up to
+  3.0.18 Pair Nearby left the real name in place, so a device that connected
+  during pairing could read it.)
+- **App markers.** In the open mode of the mesh, the fixed GATT service and characteristic of the mesh, the
+  fixed frame and proof characteristics of Pair Nearby, the rotating discovery
+  identifier (which anyone can compute) and the 0xFFFF manufacturer marker
+  whose nonce starts with 0xFF 0xFF are the same on every device. They identify
+  the app, not the person, but they do tell an observer that a phone nearby
+  runs Zerion.
+- **Proximity and signal strength.** No software setting hides that a phone
+  is transmitting, roughly where it is, or how strong its signal is; anyone
+  with a radio can measure that. The transmit power can only be lowered.
+  Settings > Connections > "Bluetooth range" offers Normal (medium power, the
+  default, unchanged) and Short (low power, fewer phones in reach, so fewer
+  relays). Pair Nearby always advertises at low power, since the two phones are
+  side by side. The setting applies to the advertising packets only: the
+  power used on an open connection is chosen by the phone's Bluetooth
+  controller, and some controllers ignore the requested advertising level.
+  Lower power shrinks the distance at which the phone is heard; it does not
+  make it look like another phone.
+- **Addresses.** The app never sets a Bluetooth address. Whether each
+  advertising set gets its own random address, and how often that address
+  changes, is decided by the phone's Android Bluetooth stack; it has not yet
+  been confirmed on a device.
+- **Advertising timing.** From 3.0.19 the mesh and Pair Nearby advertise
+  through advertising sets in legacy mode, with the same advertised data as
+  before, so 3.0.14 and later phones still find them. Each set picks a random
+  interval between 100 and 250 ms (up to 3.0.18 a fixed 250 ms), and when the
+  mesh replaces its set it stops the old one at once and starts the new one
+  after a random pause of 0.25 to 2.5 seconds, so a fixed interval or an
+  immediate hand-over no longer joins two sets. The phone is kept awake for at
+  most 3 seconds during the hand-over so the pause does not stretch while it
+  sleeps, and a set that Android fails to start is tried again after 10
+  seconds. Signal strength and timing can still let an observer guess that two
+  sets come from one phone.
+- **Screen off.** Settings > Connections > "Pause Bluetooth mesh while the
+  screen is off" is off by default, so delivery is unchanged unless the user
+  turns it on. When on, the mesh stops advertising, scanning and its links
+  about 10 minutes after the screen turns off and starts again when the screen
+  turns on. The 10 minutes are counted in real time, but a sleeping phone only
+  checks the time at its next wake-up alarm, so the pause can start up to about
+  15 minutes later than that. While paused the phone neither sends nor relays
+  mesh messages; they wait until the mesh runs again.
+- **Pair Nearby listener.** From 3.0.19 the phone waiting in Pair Nearby no
+  longer takes the first device that connects. A connecting phone first writes
+  a 16-byte proof derived from the scanned code. Until a device has sent the
+  right proof it cannot switch on notifications or write pairing data; the
+  listener does not cut its link, because a Bluetooth link can be shared with
+  the mesh or with this phone's own connection to the other phone. The
+  listener waits up to 8 seconds per connecting device, for at most 3 devices
+  at a time, and still accepts the right proof from a device it saw no connect
+  event for, as happens when a link is reused. Only wrong proofs count: after
+  5, the listener stops advertising for 10 seconds and then starts again with
+  a fresh count. If advertising cannot be started, the listener closes at
+  once. A phone running 3.0.18 or earlier does not send the proof, so it
+  cannot finish a connection to a 3.0.19 listener; the two still pair,
+  because the 3.0.19 phone connects to the older phone's listener, which does
+  not ask for a proof.
 
 ## 5. Managed flooding
 
@@ -142,8 +240,13 @@ documented, deferred design choice.
   forwarded once, not repeatedly.
 - Recent frames are kept in memory only, bounded in bytes (`STORE_MAX_BYTES`,
   currently 2 MB) and frames, the neighbour holding the most giving up its
-  oldest first, and nothing hands them to a device that links later; a per-node
-  frame rate limit (currently 200 frames/second) bounds abuse.
+  oldest first, and nothing hands them to a device that links later. A
+  per-node limit of 200 frames and about 256 KiB a second bounds abuse (bytes
+  are counted from 3.0.19). Each neighbour has smaller limits of its own, but a
+  neighbour is known only by its Bluetooth address, which it can change at
+  will, so against a determined sender only the per-node limits bind. Half of
+  the per-node rate is kept for neighbours whose envelopes opened on the
+  device in the last 6 minutes (from 3.0.19).
 
 Delivery to a recipient that comes into range later rests on the sender: a
 direct message stays in the sender's outbox and is sealed afresh and sent again
@@ -160,30 +263,51 @@ the live online Mode 3-Full ratchet.
 Each message is sealed to the recipient's published **prekey bundle** using a
 hybrid key encapsulation: ML-KEM-768 (post-quantum) combined with X25519
 (classical), mixed through a keyed KDF, feeding an XSalsa20-Poly1305
-authenticated cipher. Inside the sealed envelope is a signature over the sender
-identity, the recipient, and the payload, using the sender's hybrid Ed25519 +
-ML-DSA-65 identity key; both halves must verify. This gives:
+authenticated cipher. Inside the sealed envelope the sender authenticates the
+sender identity, the recipient, and the payload. From 3.0.19, toward a
+contact that has announced messaging version 17 (3.0.19) at any time, this is
+a tag under a key only the two contacts hold, derived from the mesh link keys
+they exchanged over Tor, so the opened record proves the sender to the
+recipient and to nobody else, as messages over Tor always have; toward such a
+contact without a usable link key nothing is sent over the mesh. Toward a
+contact whose known version is below 17 and that never announced 17 it is a
+signature with the sender's hybrid Ed25519 + ML-DSA-65 identity key, both
+halves of which must verify, and to a contact whose version is not known yet
+nothing is sealed. The two
+forms have the same length, so a relay cannot tell them apart. This gives:
 
 - **Confidentiality and integrity to relays.** Only the holder of the recipient
   prekey's private half can open the envelope. Every relay sees a padded opaque
   blob plus the routing fields (prekey selector, ephemeral key, time-to-live,
   deduplication id), not the sender or the content.
 - **Sender authentication.** The recipient knows for certain which contact sent
-  the message, and a relay cannot forge or alter one.
-- **Post-quantum protection.** Both the key agreement and the signature combine a
-  classical and a post-quantum primitive, so an attacker must break both.
+  the message, and a relay cannot forge or alter one. With the keyed tag, the
+  recipient alone can check this; a record copied from its phone proves nothing
+  to a third party.
+- **Post-quantum protection.** The key agreement, and the signature where one
+  is used, combine a classical and a post-quantum primitive, so an attacker must
+  break both; the keyed tag is symmetric.
 
 The envelope is padded to one of two sizes, 4096 or 16384 bytes (`MeshPadding`),
 so the plaintext length is observable only as which of the two it needed, and it carries a send timestamp used for replay-window and
 freshness checks. On receipt, the delivery layer marks an envelope as seen before
-handing it to the router, so a replayed envelope is not delivered twice.
+handing it to the router, so a replayed envelope is not delivered twice. The
+deduplication id is looked up only after the envelope opened, in the seen set
+of its sender, and only for a contact; before opening, the device skips only
+envelopes it already opened, recognised by a hash of the whole envelope. From
+3.0.19; up to 3.0.18 an envelope from anyone holding the recipient's bundle
+that reused a deduplication id seen in flight made the device drop the
+genuine envelope.
 
 ## 7. Prekey distribution
 
 Sealing to a recipient requires their current prekey bundle. Bundles are
 exchanged over the encrypted online channel (Tor or I2P) whenever a pair is
 online together: on connection, a device sends its bundle to a contact, throttled
-so it is not resent constantly. Received bundles are verified against the
+so it is not resent constantly. From 3.0.19 a bundle goes to a contact only
+once its messaging version is known (a new contact's bundle follows its first
+version update), unsigned (version 2) to a contact that has announced version
+17 at any time and signed only to a contact that never did. Received bundles are verified against the
 contact's identity and stored (`MeshBundleStore`). When the pair later goes
 offline, the mesh already holds the bundle it needs.
 
@@ -361,9 +485,15 @@ Two devices that have never met can still become contacts with no internet, usin
 an offline QR key-agreement. The same authenticated key-agreement that Zerion
 runs for online pairing runs instead over a direct point-to-point BLE link, with
 the QR code carrying the key-agreement commitment so a relayed man-in-the-middle
-cannot match it. Roles are fixed (the device showing the QR is the server, the
-device scanning is the client) so there is no connection glare. After pairing,
-the two are contacts and can exchange prekeys and messages over the mesh.
+cannot match it. Both phones listen and, once each has scanned the other's
+code, both try to connect to the other's listener; whichever link comes up
+first is used and the other is closed. The key agreement itself decides from
+the two codes which side speaks first, so a link opened in either direction
+works. After pairing, the two are contacts and can exchange prekeys and
+messages over the mesh.
+How Pair Nearby masks the phone's Bluetooth name, advertises at low power and
+refuses a device that cannot prove it scanned the code is described under
+"Bluetooth privacy" in Section 4.
 
 ## 14. Where the code lives
 
@@ -416,8 +546,10 @@ The router is configured conservatively (`BundledI2pRouter`):
   storage on first start.
 - It carries no participating tunnels (`router.maxParticipatingTunnels = 0`) and
   is not a floodfill participant, so the device relays only its own traffic.
-- NTCP2 and SSU (UDP) transports are enabled; UPnP is disabled in both the router
-  and the Android layer.
+- Only the NTCP2 (TCP) transport is enabled; SSU (UDP) and UPnP are disabled.
+- The router's SNTP client is disabled (`time.disabled = true`), so it sends
+  no time queries outside Tor (from 3.0.19; up to 3.0.18 it queried public NTP
+  servers directly over UDP).
 - Bandwidth is capped (currently 128 KB/s inbound, 64 KB/s outbound).
 - Router logging is set to the critical level only.
 
@@ -466,6 +598,9 @@ onion address, the transport-property length limit was raised to accommodate it.
 I2P is a duplex transport under the same connection machinery as Tor. Inbound
 streams are accepted from an `I2PServerSocket` (bounded to 64 concurrent inbound
 connections) and outbound streams are dialled with `I2PSocketManager.connect`.
+A dial gives up after 60 seconds, and a stream that carries nothing for 60
+seconds is closed, so a silent peer holds neither an inbound slot nor a dial
+(from 3.0.19; up to 3.0.18 neither had a timeout).
 Both are handed to the shared `ZtpConnectionHandler`, so every connection, over
 Tor or over I2P, runs the identical ZWF frame format, ZPP paced pull
 protocol, and Mode 3-Full ratchet described in the whitepaper. I2P changes only
@@ -483,6 +618,12 @@ reveal the device address (unless direct reseeding is switched on, Section 17),
 but steady-state I2P participation is observable at
 the "this device is an I2P node" level. This is why Tor stays mandatory and
 always on, and I2P is an extra you turn on deliberately.
+
+The router's own state is kept unencrypted in app storage under `files/i2p`:
+its identity keys (`router.keys`), its network database (`netDb/`) and its
+peer profiles (`peerProfiles/`). Anyone who can read the app's files learns
+the router identity and which I2P peers it has used. This matters only once
+I2P ships in a release build.
 
 ## 21. Where the code lives
 

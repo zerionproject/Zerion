@@ -48,3 +48,92 @@ task jarTest(type: Jar, dependsOn: testClasses) {
 artifacts {
 	testOutput jarTest
 }
+
+def toolsSource = file('src/tools/java')
+def toolsClasses = layout.buildDirectory.dir('classes/java/tools')
+def toolsOutput = files(toolsClasses).builtBy('compileToolsJava')
+
+tasks.register('compileToolsJava', JavaCompile) {
+	description = 'Compiles the developer tools in src/tools/java against the main classes; they are not part of any shipped artefact'
+	source = fileTree(toolsSource)
+	classpath = sourceSets.main.output + sourceSets.main.compileClasspath
+	destinationDirectory = toolsClasses
+	options.annotationProcessorPath = files()
+	options.encoding = 'UTF-8'
+}
+
+sourceSets.test.compileClasspath += toolsOutput
+sourceSets.test.runtimeClasspath += toolsOutput
+
+tasks.register('simulateTranscript', JavaExec) {
+	group = 'tools'
+	description = 'Forges one-to-one frames, a mesh envelope or pairing values under a key both peers hold and checks them with the production code; pass the scenario with --args'
+	classpath = toolsOutput + sourceSets.main.runtimeClasspath
+	mainClass = 'org.zerionproject.tools.TranscriptSimulator'
+}
+
+def simulatorJar = tasks.register('transcriptSimulatorJar', Jar) {
+	group = 'tools'
+	description = 'Builds one runnable jar of the transcript simulator with the classes it needs inside; run it with java -jar; it is not part of any shipped artefact'
+	archiveBaseName = 'zerion-transcript-simulator'
+	archiveAppendix = ''
+	archiveVersion = ''
+	archiveClassifier = ''
+	destinationDirectory = layout.buildDirectory.dir('tools')
+	manifest {
+		attributes 'Main-Class': 'org.zerionproject.tools.TranscriptSimulator'
+	}
+	def runtimeFiles = sourceSets.main.runtimeClasspath
+	inputs.files(runtimeFiles)
+	dependsOn runtimeFiles
+	from toolsOutput
+	from {
+		runtimeFiles.collect { it.isFile() ? zipTree(it) : it }
+	}
+	exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA',
+			'META-INF/*.EC', 'META-INF/INDEX.LIST', 'META-INF/versions/**',
+			'module-info.class'
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	preserveFileTimestamps = false
+	reproducibleFileOrder = true
+}
+
+tasks.register('checkTranscriptSimulatorJar') {
+	group = 'tools'
+	description = 'Runs the transcript simulator jar on its own, without a class path: it must list its scenarios and verify one forged record of each'
+	dependsOn simulatorJar
+	doLast {
+		def jar = simulatorJar.get().archiveFile.get().asFile
+		def java = new File(System.getProperty('java.home'), 'bin/java')
+		def start = { List<String> arguments ->
+			def process = new ProcessBuilder(
+					[java.path, '-jar', jar.path] + arguments)
+					.directory(temporaryDir)
+					.redirectErrorStream(true)
+					.start()
+			process.outputStream.close()
+			def output = process.inputStream.getText('UTF-8')
+			[process.waitFor(), output]
+		}
+		def (listCode, list) = start([])
+		['one-to-one', 'mesh', 'pairing'].each { scenario ->
+			if (!list.readLines().any { it.startsWith(scenario + ' ') }) {
+				throw new GradleException(
+						"the jar did not list the scenario ${scenario}:\n${list}")
+			}
+		}
+		if (listCode != 2) {
+			throw new GradleException(
+					"the jar ended with ${listCode} after listing its scenarios")
+		}
+		[['one-to-one', '--verify', 'a:Hello', 'b:Hello'],
+				['mesh', '--verify', 'Hello'],
+				['pairing', '--verify']].each { arguments ->
+			def (code, output) = start(arguments)
+			if (code != 0 || !output.contains(': OK')) {
+				throw new GradleException(
+						"the jar failed ${arguments} with ${code}:\n${output}")
+			}
+		}
+	}
+}

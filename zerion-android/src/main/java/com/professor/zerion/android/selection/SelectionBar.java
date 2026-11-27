@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.function.IntSupplier;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
@@ -49,6 +50,11 @@ public final class SelectionBar {
 		void onSelectionAction(SelectionAction action);
 
 		void onSelectionClosed();
+
+		@StringRes
+		default int titleFor(SelectionAction action) {
+			return 0;
+		}
 	}
 
 	private final AppCompatActivity activity;
@@ -197,6 +203,8 @@ public final class SelectionBar {
 					&& (!a.isPrimary() || moved.contains(a));
 			item.setVisible(visible);
 			if (visible) any = true;
+			int title = visible ? host.titleFor(a) : 0;
+			if (title != 0) item.setTitle(title);
 			if (visible && a == SelectionAction.DELETE) {
 				item.setTitle(dangerTitle(item.getTitle()));
 			}

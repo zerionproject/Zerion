@@ -19,7 +19,9 @@ import static java.util.Objects.requireNonNull;
 
 public class CompositeSendButton extends LinearLayout {
 
-	private final AppCompatImageButton sendButton, attachmentButton, voiceButton;
+	private final AppCompatImageButton sendButton, voiceButton;
+	@Nullable
+	private AppCompatImageButton attachmentButton;
 	@Nullable
 	private final ImageView bombBadge;
 	private final ProgressBar progressBar;
@@ -34,14 +36,19 @@ public class CompositeSendButton extends LinearLayout {
 		inflater.inflate(R.layout.view_composite_send_button, this, true);
 
 		sendButton = findViewById(R.id.sendButton);
-		attachmentButton = findViewById(R.id.attachmentButton);
 		voiceButton = findViewById(R.id.voiceButton);
 		bombBadge = findViewById(R.id.bombBadge);
 		progressBar = findViewById(R.id.progressBar);
 
 		hasImageSupport = true;
-		attachmentButton.setEnabled(true);
-		attachmentButton.setVisibility(VISIBLE);
+	}
+
+	public void setAttachmentButton(@Nullable AppCompatImageButton button) {
+		attachmentButton = button;
+		if (button != null) {
+			button.setEnabled(true);
+			button.setVisibility(VISIBLE);
+		}
 	}
 
 	@Override
@@ -74,7 +81,7 @@ public class CompositeSendButton extends LinearLayout {
 	}
 
 	public void setOnAttachmentClickListener(@Nullable OnClickListener l) {
-		attachmentButton.setOnClickListener(l);
+		if (attachmentButton != null) attachmentButton.setOnClickListener(l);
 	}
 
 	public void setOnVoiceClickListener(@Nullable OnClickListener l) {
@@ -91,7 +98,7 @@ public class CompositeSendButton extends LinearLayout {
 
 	public void setImagesSupported() {
 		hasImageSupport = true;
-		attachmentButton.setEnabled(true);
+		if (attachmentButton != null) attachmentButton.setEnabled(true);
 	}
 
 	public boolean hasImageSupport() {
@@ -105,8 +112,10 @@ public class CompositeSendButton extends LinearLayout {
 	}
 
 	public void showImageButton(boolean showImageButton, boolean sendEnabled) {
-		attachmentButton.setVisibility(VISIBLE);
-		attachmentButton.setEnabled(hasImageSupport);
+		if (attachmentButton != null) {
+			attachmentButton.setVisibility(VISIBLE);
+			attachmentButton.setEnabled(hasImageSupport);
+		}
 
 		if (sendEnabled) {
 			sendButton.setVisibility(VISIBLE);
@@ -126,10 +135,14 @@ public class CompositeSendButton extends LinearLayout {
 		if (show) {
 			sendButton.setVisibility(INVISIBLE);
 			voiceButton.setVisibility(INVISIBLE);
-			attachmentButton.setVisibility(INVISIBLE);
+			if (attachmentButton != null) {
+				attachmentButton.setVisibility(INVISIBLE);
+			}
 			progressBar.setVisibility(VISIBLE);
 		} else {
-			attachmentButton.setVisibility(VISIBLE);
+			if (attachmentButton != null) {
+				attachmentButton.setVisibility(VISIBLE);
+			}
 			progressBar.setVisibility(INVISIBLE);
 		}
 	}

@@ -71,6 +71,7 @@ import static org.zerionproject.core.api.db.DatabaseComponent.TIMER_NOT_STARTED;
 import static org.zerionproject.core.api.db.Metadata.REMOVE;
 import static org.zerionproject.core.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.zerionproject.core.api.record.Record.RECORD_HEADER_BYTES;
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH;
 import static org.zerionproject.core.api.sync.Group.Visibility.INVISIBLE;
 import static org.zerionproject.core.api.sync.Group.Visibility.SHARED;
 import static org.zerionproject.core.api.sync.Group.Visibility.VISIBLE;
@@ -2137,6 +2138,44 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void testRequestedMessagesThatCanNeverFitOneRecordAreListed()
+			throws Exception {
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+
+		db.addIdentity(txn, identity);
+		assertEquals(contactId,
+				db.addContact(txn, author, localAuthor.getId(), null, true));
+		db.addGroup(txn, group);
+		db.addGroupVisibility(txn, contactId, groupId, true);
+		Message old = getMessage(groupId, 2_000, 1_000L);
+		Message fits = getMessage(groupId, 2_000, 2_000L);
+		db.addMessage(txn, old, DELIVERED, true, false, null);
+		db.addMessage(txn, fits, DELIVERED, true, false, null);
+		try (java.sql.PreparedStatement ps = txn.prepareStatement(
+				"UPDATE statuses SET length = ? WHERE messageId = ?")) {
+			ps.setInt(1, MAX_ONE_RECORD_MESSAGE_LENGTH + 1);
+			ps.setBytes(2, old.getId().getBytes());
+			assertEquals(1, ps.executeUpdate());
+		}
+		db.raiseRequestedFlag(txn, contactId, old.getId());
+		db.raiseRequestedFlag(txn, contactId, fits.getId());
+
+		assertEquals(singletonList(old.getId()),
+				db.getRequestedMessagesLongerThan(txn, contactId,
+						MAX_ONE_RECORD_MESSAGE_LENGTH));
+		assertEquals(singletonList(fits.getId()),
+				db.getRequestedMessagesToSend(txn, contactId, 10_000,
+						MAX_LATENCY));
+		db.lowerRequestedFlag(txn, contactId, singletonList(old.getId()));
+		assertEquals(emptyList(), db.getRequestedMessagesLongerThan(txn,
+				contactId, MAX_ONE_RECORD_MESSAGE_LENGTH));
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
 	public void testMessageRetransmission() throws Exception {
 		long now = System.currentTimeMillis();
 		AtomicLong time = new AtomicLong(now);
@@ -2548,6 +2587,31 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 		db.deleteMessage(txn, messageId);
 		assertTrue(db.getMessagesToDelete(txn).isEmpty());
 		assertEquals(NO_CLEANUP_DEADLINE, db.getNextCleanupDeadline(txn));
+	}
+
+	@Test
+	public void testCleanupTimerDurationIsLoweredOnlyBeforeItStarts()
+			throws Exception {
+		long now = System.currentTimeMillis();
+		AtomicLong time = new AtomicLong(now);
+		Database<Connection> db =
+				open(false, new TestMessageFactory(), new SettableClock(time));
+		Connection txn = db.startTransaction();
+		db.addGroup(txn, group);
+		db.addMessage(txn, message, DELIVERED, false, false, null);
+
+		db.lowerCleanupTimerDuration(txn, messageId, 60_000);
+		db.lowerCleanupTimerDuration(txn, messageId, 90_000);
+		db.lowerCleanupTimerDuration(txn, messageId, 30_000);
+		assertEquals(NO_CLEANUP_DEADLINE, db.getNextCleanupDeadline(txn));
+
+		assertEquals(now + 30_000, db.startCleanupTimer(txn, messageId));
+
+		db.lowerCleanupTimerDuration(txn, messageId, 10_000);
+		assertEquals(now + 30_000, db.getNextCleanupDeadline(txn));
+
+		db.commitTransaction(txn);
+		db.close();
 	}
 
 	@Test

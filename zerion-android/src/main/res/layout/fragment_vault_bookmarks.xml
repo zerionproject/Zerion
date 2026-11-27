@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/vault_search_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/vault_search_hint"
+                android:inputType="text"
+                android:maxLines="1"
+                android:imeOptions="actionSearch" />
+
+            <TextView
+                android:id="@+id/vault_sort_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:text="@string/vault_sort_name" />
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/bookmarks_list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:clipToPadding="false" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/empty_state"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_bookmark"
+            app:tint="?android:attr/textColorTertiary"
+            android:importantForAccessibility="no"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/vault_bookmarks_empty_title"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/vault_bookmarks_empty_subtitle"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorTertiary" />
+
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="48dp"
+        android:src="@drawable/ic_add_24dp"
+        android:contentDescription="@string/vault_bookmark_add_action"
+        app:backgroundTint="@color/zerion_primary_accent"
+        app:tint="@color/zerion_on_accent"
+        app:rippleColor="@color/zerion_on_accent_ripple" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

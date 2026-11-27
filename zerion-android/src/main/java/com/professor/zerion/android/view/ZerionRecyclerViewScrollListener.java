@@ -54,8 +54,8 @@ public abstract class ZerionRecyclerViewScrollListener<A extends ItemReturningAd
 	}
 
 	private void onItemVisible(int position) {
-		I item = requireNonNull(adapter.getItemAt(position));
-		onItemVisible(item);
+		I item = adapter.getItemAt(position);
+		if (item != null) onItemVisible(item);
 	}
 
 	protected abstract void onItemVisible(I item);

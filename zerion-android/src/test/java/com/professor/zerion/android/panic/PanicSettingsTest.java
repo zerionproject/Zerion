@@ -103,4 +103,46 @@ public class PanicSettingsTest {
 						+ new PanicSettingsStore(encrypted())
 						.getTriggerPackageName());
 	}
+
+	@Test
+	public void signOutOnPanicWaitsForAConnectedApp() {
+		encrypted().edit()
+				.remove(PanicSettingsStore.KEY_TRIGGER_PACKAGE)
+				.putBoolean(PanicPreferencesFragment.KEY_LOCK, true)
+				.commit();
+		SwitchPreferenceCompat lock =
+				shownPanicScreen().findPreference(PanicPreferencesFragment.KEY_LOCK);
+		assertEquals("sign out off without an app: "
+						+ app.getString(R.string.panic_setting_signout_needs_app),
+				"sign out " + (lock.isEnabled() ? "on" : "off")
+						+ " without an app: " + lock.getSummary());
+	}
+
+	@Test
+	public void signOutOnPanicCanBeSetOnceAnAppIsConnected() {
+		android.content.pm.PackageInfo info =
+				new android.content.pm.PackageInfo();
+		info.packageName = "org.example.panic";
+		info.applicationInfo = new android.content.pm.ApplicationInfo();
+		info.applicationInfo.packageName = info.packageName;
+		shadowOf(app.getPackageManager()).installPackage(info);
+		encrypted().edit()
+				.putString(PanicSettingsStore.KEY_TRIGGER_PACKAGE,
+						"org.example.panic")
+				.commit();
+		SwitchPreferenceCompat lock =
+				shownPanicScreen().findPreference(PanicPreferencesFragment.KEY_LOCK);
+		assertEquals(true, lock.isEnabled());
+		assertEquals(app.getString(R.string.panic_setting_signout_summary),
+				String.valueOf(lock.getSummary()));
+	}
+
+	private PanicPreferencesFragment shownPanicScreen() {
+		Host host = Robolectric.buildActivity(Host.class).setup().get();
+		PanicPreferencesFragment f = new PanicPreferencesFragment();
+		host.getSupportFragmentManager().beginTransaction()
+				.add(android.R.id.content, f).commitNow();
+		shadowOf(Looper.getMainLooper()).idle();
+		return f;
+	}
 }

@@ -56,6 +56,7 @@ final class DocumentOpener {
 				a.runOnUiThread(() -> {
 					if (a.isFinishing() || a.isDestroyed()) return;
 					ExternalHandoff.open(a, HANDOFF, content, viewType,
+							() -> toast(a, R.string.media_document_open_failed),
 							() -> toast(a, R.string.media_document_no_app));
 				});
 			} catch (Exception e) {

@@ -5,6 +5,8 @@ import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
 import org.zerionproject.core.api.crypto.pcs.PcsRatchet;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.tor.TorActivitySink;
+import org.zerionproject.tor.TorWakePolicy;
 import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.zerionproject.crypto.SettingsStreamCounterStore;
 import org.zerionproject.crypto.StreamCounterContactHook;
@@ -13,6 +15,8 @@ import org.zerionproject.sync.ZmmDbRecordSink;
 import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.connection.ContactConnectionDiagnostics;
 import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.sync.UserMessageMarker;
+import org.zerionproject.sync.LocalMessageLog;
 import org.zerionproject.sync.ZppConnectionRegistry;
 import org.zerionproject.sync.ZppConnectionRegistryImpl;
 import org.zerionproject.sync.ZppConnectionRunnerImpl;
@@ -80,6 +84,11 @@ public class ZerionTransportModule {
 	}
 
 	@Provides
+	UserMessageMarker provideUserMessageMarker(LocalMessageLog log) {
+		return log;
+	}
+
+	@Provides
 	@Singleton
 	org.zerionproject.sync.ZppPacingPolicy providePacingPolicy() {
 		return new org.zerionproject.sync.ZppPacingPolicy();
@@ -92,10 +101,18 @@ public class ZerionTransportModule {
 	}
 
 	@Provides
+	TorActivitySink provideTorActivitySink(TorWakePolicy wakePolicy) {
+		return wakePolicy;
+	}
+
+	@Provides
+	@Singleton
 	ZppConnectionRunner provideConnectionRunner(ZppRecordSink recordSink,
 			ZppConnectionRegistry registry,
-			org.zerionproject.sync.ZppPacingPolicy pacingPolicy) {
-		return new ZppConnectionRunnerImpl(recordSink, registry, pacingPolicy);
+			org.zerionproject.sync.ZppPacingPolicy pacingPolicy,
+			TorActivitySink activity) {
+		return new ZppConnectionRunnerImpl(recordSink, registry, pacingPolicy,
+				activity);
 	}
 
 	@Provides

@@ -8,6 +8,8 @@ import android.widget.Toast;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.contact.add.nearby.AddNearbyContactFragment;
+import com.professor.zerion.android.contact.request.ScannedCode;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -26,7 +28,7 @@ import static android.widget.Toast.LENGTH_LONG;
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class AddContactActivity extends ZerionActivity implements
-		BaseFragmentListener {
+		BaseFragmentListener, AddNearbyContactFragment.LinkScannedHandler {
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -56,6 +58,17 @@ public class AddContactActivity extends ZerionActivity implements
 			ab.setDisplayHomeAsUpEnabled(true);
 		}
 
+		getSupportFragmentManager().registerFragmentLifecycleCallbacks(
+				new androidx.fragment.app.FragmentManager
+						.FragmentLifecycleCallbacks() {
+					@Override
+					public void onFragmentStarted(
+							androidx.fragment.app.FragmentManager fm,
+							androidx.fragment.app.Fragment f) {
+						int title = titleFor(f);
+						if (title != 0) setTitle(title);
+					}
+				}, false);
 		viewModel.onCreate();
 		if (getIntent().getBooleanExtra(EXTRA_RE_ADD_CONTACT, false)) {
 			viewModel.setReAddExisting(true);
@@ -66,24 +79,59 @@ public class AddContactActivity extends ZerionActivity implements
 		});
 
 		viewModel.getQrExchangeChosen().observeEvent(this,
-				v -> showNextFragment(new QrExchangeFragment()));
-		viewModel.getLinkExchangeChosen().observeEvent(this,
-				v -> showNextFragment(new LinkExchangeFragment()));
+				v -> showNextFragment(viewModel.isTorConnected()
+						? new QrExchangeFragment()
+						: AddNearbyContactFragment.newInstance(true)));
+		viewModel.getOfflineScanRoute().observeEvent(this,
+				this::onOfflineScanRoute);
+		viewModel.getSendInviteChosen().observeEvent(this,
+				v -> showNextFragment(new SendInviteFragment()));
 
 		if (state == null) {
-			Intent i = getIntent();
-			String incomingLink = extractLinkFromIntent(i);
-			if (incomingLink != null && viewModel.isValidRemoteContactLink(incomingLink)) {
-
-				viewModel.setRemoteHandshakeLink(incomingLink);
-				showInitialFragment(new LinkExchangeFragment());
+			String text = extractLinkFromIntent(getIntent());
+			String link = ScannedCode.extractLink(text);
+			if (link != null) {
+				viewModel.setInvitePrefill(link);
+				showInitialFragment(new SendInviteFragment());
 			} else {
-
 				showInitialFragment(new AddContactChooserFragment());
+				if (text != null) {
+					Toast.makeText(this, R.string.invalid_link, LENGTH_LONG)
+							.show();
+				}
 			}
-			if (incomingLink != null && !viewModel.isValidRemoteContactLink(incomingLink)) {
-				Toast.makeText(this, R.string.invalid_link, LENGTH_LONG).show();
-			}
+		}
+	}
+
+	static int titleFor(androidx.fragment.app.Fragment f) {
+		if (f instanceof SendInviteFragment) return R.string.send_invite_title;
+		if (f instanceof AddContactChooserFragment
+				|| f instanceof QrExchangeFragment
+				|| f instanceof AddNearbyContactFragment) {
+			return R.string.add_contact_screen_title;
+		}
+		return 0;
+	}
+
+	@Override
+	public void onLinkScannedWithoutInternet(String text) {
+		viewModel.onLinkScannedWithoutInternet(text);
+	}
+
+	private void onOfflineScanRoute(AddContactViewModel.ScanRoute route) {
+		switch (route.getKind()) {
+			case INVITE:
+				viewModel.onSendInviteChosen(route.getText());
+				break;
+			case REFUSED:
+				Toast.makeText(this, route.getMessage(), LENGTH_LONG).show();
+				break;
+			case IN_PERSON:
+				Toast.makeText(this, R.string.scan_qr_link_needs_internet,
+						LENGTH_LONG).show();
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -106,15 +154,14 @@ public class AddContactActivity extends ZerionActivity implements
 		return null;
 	}
 
-	private void handleIncomingLink(String link) {
-		if (viewModel.isOwnLink(link)) {
-			Toast.makeText(this, R.string.intent_own_link, LENGTH_LONG).show();
-		} else if (viewModel.isValidRemoteContactLink(link)) {
-			viewModel.setRemoteHandshakeLink(link);
-			showInitialFragment(new LinkExchangeFragment());
-		} else {
+	private void handleIncomingLink(String text) {
+		String link = ScannedCode.extractLink(text);
+		if (link == null) {
 			Toast.makeText(this, R.string.invalid_link, LENGTH_LONG).show();
+			return;
 		}
+		viewModel.setInvitePrefill(link);
+		showInitialFragment(new SendInviteFragment());
 	}
 
 	@Override

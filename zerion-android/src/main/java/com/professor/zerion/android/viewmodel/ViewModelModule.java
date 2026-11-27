@@ -2,7 +2,6 @@ package com.professor.zerion.android.viewmodel;
 
 import com.professor.zerion.android.chat.ChatsViewModel;
 import com.professor.zerion.android.contact.add.remote.AddContactViewModel;
-import com.professor.zerion.android.contact.add.remote.PendingContactListViewModel;
 import com.professor.zerion.android.conversation.ConversationViewModel;
 import com.professor.zerion.android.conversation.ImageViewModel;
 import com.professor.zerion.android.vault.ui.VaultViewModel;
@@ -55,12 +54,6 @@ public abstract class ViewModelModule {
 			com.professor.zerion.android.contact.add.nearby.AddNearbyContactViewModel.class)
 	abstract ViewModel bindAddNearbyContactViewModel(
 			com.professor.zerion.android.contact.add.nearby.AddNearbyContactViewModel vm);
-
-	@Binds
-	@IntoMap
-	@ViewModelKey(PendingContactListViewModel.class)
-	abstract ViewModel bindPendingRequestsViewModel(
-			PendingContactListViewModel pendingContactListViewModel);
 
 	@Binds
 	@IntoMap

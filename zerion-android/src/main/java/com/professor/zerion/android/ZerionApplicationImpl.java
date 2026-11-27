@@ -61,6 +61,7 @@ public class ZerionApplicationImpl extends Application
 		super.onCreate();
 		if (android.os.Process.isIsolated()) return;
 		processStartedAt = System.currentTimeMillis();
+		installImageDecoder();
 
 		if (IS_DEBUG_BUILD) enableStrictMode();
 
@@ -76,6 +77,12 @@ public class ZerionApplicationImpl extends Application
 		registerActivityLifecycleCallbacks(new ForegroundTracker());
 	}
 
+	protected void installImageDecoder() {
+		com.professor.zerion.android.util.ReceivedImageGate.useDecoder(
+				new com.professor.zerion.android.attachment
+						.IsolatedImageDecoder(this));
+	}
+
 	private final java.util.concurrent.atomic.AtomicInteger startedActivities =
 			new java.util.concurrent.atomic.AtomicInteger(0);
 
@@ -85,6 +92,7 @@ public class ZerionApplicationImpl extends Application
 		public void onActivityStarted(@NonNull android.app.Activity a) {
 			if (startedActivities.getAndIncrement() == 0) {
 				applyWhileOpenMode(true);
+				setTorForeground(true);
 			}
 		}
 
@@ -92,6 +100,7 @@ public class ZerionApplicationImpl extends Application
 		public void onActivityStopped(@NonNull android.app.Activity a) {
 			if (startedActivities.decrementAndGet() == 0) {
 				applyWhileOpenMode(false);
+				setTorForeground(false);
 			}
 		}
 
@@ -116,6 +125,13 @@ public class ZerionApplicationImpl extends Application
 
 		@Override
 		public void onActivityDestroyed(@NonNull android.app.Activity a) {
+		}
+	}
+
+	private void setTorForeground(boolean appInForeground) {
+		AndroidComponent component = applicationComponent;
+		if (component != null) {
+			component.torWakePolicy().setForeground(appInForeground);
 		}
 	}
 

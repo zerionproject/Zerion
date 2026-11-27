@@ -272,6 +272,55 @@ public final class BtcNodeRouting {
 		return broadcastEndpointFor(scanEp, routing);
 	}
 
+	@Nullable
+	public ElectrumEndpoint feeCheckEndpoint(String walletId,
+			ElectrumEndpoint scanEp, ElectrumEndpoint broadcastEp) {
+		if (!ROUTING_TOR.equals(routing(walletId))) {
+			return null;
+		}
+		if (broadcastEp.port != scanEp.port
+				|| !broadcastEp.host.equalsIgnoreCase(scanEp.host)) {
+			return broadcastEp.direct ? null : broadcastEp;
+		}
+		String scanSpec = scanEp.host + ":" + scanEp.port;
+		if (userNodes().contains(scanSpec)) {
+			return null;
+		}
+		String alt = alternateShippedNode(scanSpec);
+		return alt == null ? null : endpointFor(alt);
+	}
+
+	@Nullable
+	static String alternateShippedNode(String spec) {
+		if (!DEFAULT_ONION_NODE.isEmpty() && spec.equals(DEFAULT_ONION_NODE)) {
+			return DEFAULT_ONION_NODE_2.isEmpty() ? DEFAULT_NODE
+					: DEFAULT_ONION_NODE_2;
+		}
+		if (!DEFAULT_ONION_NODE_2.isEmpty()
+				&& spec.equals(DEFAULT_ONION_NODE_2)) {
+			return DEFAULT_ONION_NODE;
+		}
+		if (spec.equals(DEFAULT_NODE)) {
+			return DEFAULT_ONION_NODE.isEmpty() ? null : DEFAULT_ONION_NODE;
+		}
+		return null;
+	}
+
+	private List<String> userNodes() {
+		List<String> out = new ArrayList<>();
+		try {
+			JSONObject o = settings.readIfPresent();
+			JSONArray arr = o == null ? null : o.optJSONArray("nodes");
+			if (arr != null) {
+				for (int i = 0; i < arr.length(); i++) {
+					out.add(arr.getString(i));
+				}
+			}
+		} catch (Throwable ignored) {
+		}
+		return out;
+	}
+
 	public List<ElectrumEndpoint> fallbacks(String walletId,
 			ElectrumEndpoint scanEp) {
 		String routing = routing(walletId);

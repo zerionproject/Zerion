@@ -73,8 +73,10 @@ import org.zerionproject.app.api.conversation.ConversationResponse;
 import org.zerionproject.app.api.client.SessionId;
 import org.zerionproject.app.api.introduction.IntroductionManager;
 import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PinnedMessage;
 import org.zerionproject.app.api.messaging.PrivateMessageFormat;
 import org.zerionproject.app.api.messaging.PrivateMessageHeader;
+import org.zerionproject.app.api.messaging.ViewOnceMedia;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -97,6 +99,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
@@ -129,7 +132,7 @@ import static com.professor.zerion.android.util.UiUtils.launchActivityToOpenFile
 import static com.professor.zerion.android.util.UiUtils.observeOnce;
 import static com.professor.zerion.android.view.AuthorView.setAvatar;
 import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_ATTACHMENTS_PER_MESSAGE;
-import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH;
 import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_ONLY;
 
 @MethodsNotNullByDefault
@@ -226,10 +229,16 @@ public class ConversationActivity extends ZerionActivity
 	@Nullable
 	private Parcelable layoutManagerState;
 	private SelectionBar selectionBar;
+	private View pinnedBanner;
+	private TextView pinnedBannerText;
+	@Nullable
+	private PinnedMessage pinnedMessage;
 	private SwipeToReplyCallback swipeCallback;
+	@Nullable
+	private ConversationScrollListener scrollListener;
 	private final Set<String> voiceMemoRebuildsRequested = new HashSet<>();
 	@Nullable
-	private MessageId pendingSecretBurnId;
+	private androidx.appcompat.app.AlertDialog viewOnceNotice;
 	@Nullable
 	private com.google.android.material.floatingactionbutton.FloatingActionButton scrollToBottomButton;
 
@@ -298,12 +307,10 @@ public class ConversationActivity extends ZerionActivity
 			contactVerified = mayReceiveMedia(contactItem.getContact());
 			updateVerifyBanner();
 		});
-		viewModel.areKeysOutOfSync().observe(this, outOfSync -> {
-			TextView banner = findViewById(R.id.keysOutOfSyncBanner);
-			if (banner == null) return;
-			banner.setVisibility(Boolean.TRUE.equals(outOfSync)
-					? View.VISIBLE : View.GONE);
-		});
+		viewModel.areKeysOutOfSync().observe(this, outOfSync ->
+				updateKeysBanner());
+		viewModel.areKeysNotRenewing().observe(this, notRenewing ->
+				updateKeysBanner());
 		viewModel.getContactDisplayName().observe(this, contactName -> {
 			requireNonNull(contactName);
 			toolbarTitle.setText(contactName);
@@ -344,9 +351,11 @@ public class ConversationActivity extends ZerionActivity
 		list.setEmptyImage(R.drawable.il_empty_state_contact_list);
 		list.setEmptyText(getString(R.string.no_private_messages));
 		list.setEmptyAction(getString(R.string.no_private_messages_action));
-		ConversationScrollListener scrollListener =
+		scrollListener =
 				new ConversationScrollListener(adapter, viewModel,
-						() -> !lockManager.isLocked());
+						() -> !lockManager.isLocked() && getLifecycle()
+								.getCurrentState().isAtLeast(
+										androidx.lifecycle.Lifecycle.State.STARTED));
 		list.getRecyclerView().addOnScrollListener(scrollListener);
 		selectionBar = new SelectionBar(this, this);
 		SelectionRows.clearOnEmptyTap(list.getRecyclerView(), selectionBar);
@@ -377,11 +386,17 @@ public class ConversationActivity extends ZerionActivity
 							.setImagesSupported();
 				}
 			});
+			TextAttachmentController attachments =
+					(TextAttachmentController) sendController;
+			viewModel.getViewOnceSupported().observe(this, supported ->
+					attachments.setViewOnceAvailable(
+							Boolean.TRUE.equals(supported),
+							viewModel.isOfflineMode()));
 		} else {
 			sendController = new TextSendController(textInputView, this, false);
 		}
 		textInputView.setSendController(sendController);
-		textInputView.setMaxTextLength(MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+		textInputView.setMaxTextLength(MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH);
 		textInputView.setReady(false);
 		textInputView.setOnKeyboardShownListener(this::scrollToBottom);
 
@@ -425,6 +440,27 @@ public class ConversationActivity extends ZerionActivity
 
 		viewModel.getMessageHeaders().observe(this, this::onMessageHeadersLoaded);
 
+		pinnedBanner = findViewById(R.id.pinnedBanner);
+		pinnedBannerText = findViewById(R.id.pinnedBannerText);
+		View pinnedBannerClose = findViewById(R.id.pinnedBannerClose);
+		pinnedBannerClose.setOnClickListener(v -> viewModel.unpinMessage());
+		pinnedBanner.setOnClickListener(v -> {
+			PinnedMessage p = pinnedMessage;
+			if (p != null) onQuoteClicked(p.getMessageId());
+		});
+		viewModel.getPinnedMessage().observe(this, p -> {
+			pinnedMessage = p;
+			bindPinnedBanner();
+			selectionBar.refresh();
+		});
+		viewModel.getPinSupported().observe(this, s -> selectionBar.refresh());
+		viewModel.getPinNotice().observeEvent(this, res -> {
+			if (res != null) {
+				new ZerionSnackbarBuilder().make(list, res,
+						Snackbar.LENGTH_LONG).show();
+			}
+		});
+
 		viewModel.getMessageTextLoaded().observeEvent(this, pair -> {
 			if (pair != null) {
 				displayMessageText(pair.getFirst(), pair.getSecond());
@@ -441,6 +477,17 @@ public class ConversationActivity extends ZerionActivity
 
 		viewModel.getMessageEdited().observeEvent(this, pair -> {
 			if (pair != null) onMessageEdited(pair.getFirst(), pair.getSecond());
+		});
+
+		viewModel.getViewOnceReady().observeEvent(this, ready -> {
+			ConversationViewModel.ViewOnceResult result;
+			while ((result = viewModel.takeViewOnceResult()) != null) {
+				onViewOnceReady(result);
+			}
+		});
+
+		viewModel.getViewOnceViewed().observeEvent(this, viewed -> {
+			if (viewed != null) markViewOnceOpened(viewed);
 		});
 
 		viewModel.getEditRefused().observeEvent(this, res -> {
@@ -472,6 +519,7 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.getChatCleared().observeEvent(this, cleared -> {
 			if (cleared != null && cleared) {
 				textCache.clear();
+				adapter.forgetAllSecretNotes();
 				adapter.clear();
 				Glide.get(this).clearMemory();
 			}
@@ -483,6 +531,7 @@ public class ConversationActivity extends ZerionActivity
 					textCache.remove(msgId);
 				}
 				Glide.get(this).clearMemory();
+				adapter.forgetSecretNotes(messageIds);
 				adapter.incrementRevision();
 				adapter.removeItems(messageIds);
 				markQuotesUnavailable(messageIds);
@@ -588,6 +637,11 @@ public class ConversationActivity extends ZerionActivity
 							Toast.LENGTH_SHORT).show();
 					return;
 				}
+				if (secretNoteTooLong(text)) {
+					Toast.makeText(this, R.string.text_too_long,
+							Toast.LENGTH_SHORT).show();
+					return;
+				}
 				showSecretNoteTimerPicker(text);
 			});
 		}
@@ -599,6 +653,26 @@ public class ConversationActivity extends ZerionActivity
 		TextView keysBanner = findViewById(R.id.keysOutOfSyncBanner);
 		if (keysBanner != null) {
 			keysBanner.setOnClickListener(v -> openContactInfo());
+		}
+		TextView renewalBanner = findViewById(R.id.keysNotRenewingBanner);
+		if (renewalBanner != null) {
+			renewalBanner.setOnClickListener(v -> openContactInfo());
+		}
+	}
+
+	private void updateKeysBanner() {
+		boolean outOfSync = Boolean.TRUE.equals(
+				viewModel.areKeysOutOfSync().getValue());
+		boolean notRenewing = Boolean.TRUE.equals(
+				viewModel.areKeysNotRenewing().getValue());
+		TextView outOfSyncBanner = findViewById(R.id.keysOutOfSyncBanner);
+		if (outOfSyncBanner != null) {
+			outOfSyncBanner.setVisibility(outOfSync ? View.VISIBLE : View.GONE);
+		}
+		TextView notRenewingBanner = findViewById(R.id.keysNotRenewingBanner);
+		if (notRenewingBanner != null) {
+			notRenewingBanner.setVisibility(!outOfSync && notRenewing
+					? View.VISIBLE : View.GONE);
 		}
 	}
 
@@ -996,6 +1070,12 @@ public class ConversationActivity extends ZerionActivity
 			return;
 		}
 		conversationShown = true;
+		if (sendController instanceof TextAttachmentController) {
+			((TextAttachmentController) sendController).setViewOnceAvailable(
+					Boolean.TRUE.equals(
+							viewModel.getViewOnceSupported().getValue()),
+					viewModel.isOfflineMode());
+		}
 		adapter.setMessageStyle(com.professor.zerion.android.settings.MessageStyle.read(this));
 		notificationManager.blockContactNotification(contactId);
 		notificationManager.clearContactNotification(contactId);
@@ -1036,11 +1116,7 @@ public class ConversationActivity extends ZerionActivity
 		}
 		conversationShown = false;
 
-		if (pendingSecretBurnId != null) {
-			viewModel.deleteMessages(
-					java.util.Collections.singleton(pendingSecretBurnId));
-			pendingSecretBurnId = null;
-		}
+		adapter.secretNotes().burnAll();
 	}
 
 	@Override
@@ -1213,7 +1289,59 @@ public class ConversationActivity extends ZerionActivity
 			offered.add(SelectionAction.REACT);
 			offered.add(SelectionAction.INFO);
 		}
+		if (chosen.size() == 1 && PinnedPreview.canPin(chosen.get(0))) {
+			offered.add(isPinned(chosen.get(0)) ? SelectionAction.UNPIN
+					: SelectionAction.PIN);
+		}
 		return offered;
+	}
+
+	private boolean isPinned(ConversationItem item) {
+		PinnedMessage p = pinnedMessage;
+		return p != null && p.getMessageId().equals(item.getId());
+	}
+
+	@Override
+	public int titleFor(SelectionAction action) {
+		if (action == SelectionAction.PIN) return R.string.action_pin_message;
+		if (action == SelectionAction.UNPIN) {
+			return R.string.action_unpin_message;
+		}
+		return 0;
+	}
+
+	@UiThread
+	private void pinSelectedMessage() {
+		ConversationItem item = singleSelected();
+		finishSelection();
+		if (item == null) return;
+		if (item instanceof ConversationViewOnceItem
+				|| item instanceof ConversationSecretNoteItem
+				|| SecretNotes.isSecret(item.getText())) {
+			new ZerionSnackbarBuilder().make(list, R.string.pin_not_possible,
+					Snackbar.LENGTH_LONG).show();
+			return;
+		}
+		viewModel.pinMessage(item.getId());
+	}
+
+	@UiThread
+	private void bindPinnedBanner() {
+		if (pinnedBanner == null) return;
+		PinnedMessage p = pinnedMessage;
+		if (p == null) {
+			pinnedBanner.setVisibility(View.GONE);
+			return;
+		}
+		int position = adapter.getPositionOfMessage(p.getMessageId());
+		ConversationItem item = adapter.getItemAt(position);
+		if (item == null || viewModel.isDeleted(p.getMessageId())) {
+			pinnedBanner.setVisibility(View.GONE);
+			return;
+		}
+		pinnedBannerText.setText(PinnedPreview.of(this, item,
+				textCache.get(p.getMessageId())));
+		pinnedBanner.setVisibility(View.VISIBLE);
 	}
 
 	@Override
@@ -1242,6 +1370,13 @@ public class ConversationActivity extends ZerionActivity
 				break;
 			case INFO:
 				showSelectedInfo();
+				break;
+			case PIN:
+				pinSelectedMessage();
+				break;
+			case UNPIN:
+				finishSelection();
+				viewModel.unpinMessage();
 				break;
 			default:
 				break;
@@ -1465,6 +1600,11 @@ public class ConversationActivity extends ZerionActivity
 		}
 	}
 
+	private boolean isPinnedId(MessageId m) {
+		PinnedMessage p = pinnedMessage;
+		return p != null && p.getMessageId().equals(m);
+	}
+
 	private boolean canDeleteSelectionForEveryone() {
 		if (!Boolean.TRUE.equals(
 				viewModel.getEditAndDeleteSupported().getValue())) {
@@ -1474,6 +1614,10 @@ public class ConversationActivity extends ZerionActivity
 			int pos = adapter.getPositionOfKey(key);
 			if (pos < 0) return false;
 			ConversationItem item = adapter.getItemAt(pos);
+			if (item instanceof ConversationViewOnceItem
+					&& !item.isIncoming()) {
+				continue;
+			}
 			if (!(item instanceof ConversationMessageItem)
 					|| item.isIncoming()) {
 				return false;
@@ -1617,6 +1761,15 @@ public class ConversationActivity extends ZerionActivity
 			} else {
 				layoutManager.onRestoreInstanceState(layoutManagerState);
 			}
+			markVisibleRead();
+			bindPinnedBanner();
+		});
+	}
+
+	private void markVisibleRead() {
+		RecyclerView rv = list.getRecyclerView();
+		rv.post(() -> {
+			if (scrollListener != null) scrollListener.markVisibleRead(rv);
 		});
 	}
 
@@ -1676,6 +1829,7 @@ public class ConversationActivity extends ZerionActivity
 			String edited = viewModel.getEditedText(m);
 			String text = edited != null ? edited : loaded;
 			textCache.put(m, text);
+			if (isPinnedId(m)) bindPinnedBanner();
 			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part part =
 					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
 							.parse(text);
@@ -1830,6 +1984,24 @@ public class ConversationActivity extends ZerionActivity
 		if (!secretNotesToDelete.isEmpty()) {
 			viewModel.deleteMessages(secretNotesToDelete);
 		}
+	}
+
+	@Override
+	public LiveData<SendState> onSendClick(@Nullable String text,
+			List<AttachmentHeader> headers, long expectedAutoDeleteTimer,
+			boolean viewOnce) {
+		if (!viewOnce) {
+			return onSendClick(text, headers, expectedAutoDeleteTimer);
+		}
+		typingManager.onMessageSent();
+		ConversationItem replyToItem = textInputView.getReplyingToItem();
+		LiveData<SendState> result = viewModel.sendMessage(null, headers,
+				expectedAutoDeleteTimer, replyToItem, true);
+		textInputView.hideReplyPreview();
+		result.observe(this, state -> {
+			if (state == SendState.SENT) Glide.get(this).clearMemory();
+		});
+		return result;
 	}
 
 	@Override
@@ -1998,22 +2170,15 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onCustomStickerPicked(byte[] pngBytes) {
-
-		org.zerionproject.core.api.sync.GroupId gid =
-				viewModel.getMessagingGroupId().getValue();
-		if (gid == null) {
-			Toast.makeText(this, R.string.sticker_import_failed,
-					Toast.LENGTH_SHORT).show();
-			return;
-		}
 		com.professor.zerion.android.sticker.StickerSendTask task =
 				new com.professor.zerion.android.sticker.StickerSendTask(
 						ioExecutor, messagingManager);
-		task.send(gid, pngBytes,
+		task.send(this, viewModel.getMessagingGroupId(), pngBytes,
 				new com.professor.zerion.android.sticker.StickerSendTask.Callback() {
 					@Override
 					public void onStickerHeaderReady(
 							org.zerionproject.app.api.attachment.AttachmentHeader h) {
+						if (isFinishing() || isDestroyed()) return;
 						Long t = viewModel.getAutoDeleteTimer().getValue();
 						long timer = t == null ? NO_AUTO_DELETE_TIMER : t;
 						viewModel.sendMessage(null,
@@ -2023,8 +2188,9 @@ public class ConversationActivity extends ZerionActivity
 
 					@Override
 					public void onStickerSendFailed(Exception e) {
+						if (isFinishing() || isDestroyed()) return;
 						Toast.makeText(ConversationActivity.this,
-								R.string.sticker_import_failed,
+								R.string.sticker_send_failed,
 								Toast.LENGTH_SHORT).show();
 					}
 				});
@@ -2411,27 +2577,88 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
-	public void onSecretNoteRevealing(boolean revealing) {
-		if (revealing) {
-			getWindow().addFlags(
-					android.view.WindowManager.LayoutParams.FLAG_SECURE);
-		}
+	public void onSecretNoteRevealed(MessageId messageId,
+			int countdownSeconds) {
+		getWindow().addFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
+		viewModel.startSecretNoteCountdown(messageId, countdownSeconds);
 	}
 
 	@Override
-	public void onSecretNoteRevealed(MessageId messageId) {
-		if (pendingSecretBurnId != null
-				&& !pendingSecretBurnId.equals(messageId)) {
-			viewModel.deleteMessages(
-					java.util.Collections.singleton(pendingSecretBurnId));
+	public void onViewOnceClicked(ConversationViewOnceItem item) {
+		if (!item.canOpen()) return;
+		if (viewOnceNotice != null && viewOnceNotice.isShowing()) return;
+		if (!viewModel.isViewOnceNoticeDue()) {
+			viewModel.openViewOnce(item.getId());
+			return;
 		}
-		pendingSecretBurnId = messageId;
+		viewOnceNotice = new SecureAlertDialogBuilder(this)
+				.setTitle(R.string.view_once)
+				.setMessage(R.string.view_once_notice)
+				.setPositiveButton(R.string.ok, (d, w) -> {
+					viewModel.markViewOnceNoticeShown();
+					viewModel.openViewOnce(item.getId());
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void onViewOnceReady(ConversationViewModel.ViewOnceResult result) {
+		ViewOnceMedia media = result.media;
+		if (media == null) {
+			Toast.makeText(this, R.string.grouptr_attach_read_failed,
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
+		markViewOnceOpened(result.messageId);
+		if (isFinishing() || isDestroyed() || !getLifecycle()
+				.getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+			media.wipe();
+			Toast.makeText(this, R.string.view_once_missed,
+					Toast.LENGTH_LONG).show();
+			return;
+		}
+		String name = viewModel.getContactDisplayName().getValue();
+		ConversationItem item = adapter.getItemAt(
+				adapter.getPositionOfMessage(result.messageId));
+		MediaViewer.Item shown = new MediaViewer.Item(media.getData(),
+				media.getContentType())
+				.titled(name == null ? "" : name,
+						item == null ? 0L : item.getTime())
+				.once()
+				.taken();
+		boolean opened = media.isVideo()
+				? MediaViewer.playVideo(this, ioExecutor, shown)
+				: MediaViewer.showImage(this, ioExecutor, shown);
+		if (!opened) {
+			media.wipe();
+			Toast.makeText(this, media.isVideo()
+					? R.string.video_playback_error
+					: R.string.grouptr_attach_read_failed,
+					Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	private void markViewOnceOpened(MessageId id) {
+		int position = adapter.getPositionOfMessage(id);
+		ConversationItem item = adapter.getItemAt(position);
+		if (item instanceof ConversationViewOnceItem
+				&& !((ConversationViewOnceItem) item).isOpened()) {
+			((ConversationViewOnceItem) item).markOpened();
+			adapter.notifyItemChanged(position);
+		}
 	}
 
 	@Override
 	public void onSecretNoteOpened(MessageId messageId) {
-		if (messageId.equals(pendingSecretBurnId)) pendingSecretBurnId = null;
+		textCache.remove(messageId);
 		viewModel.deleteMessages(java.util.Collections.singleton(messageId));
+	}
+
+	static boolean secretNoteTooLong(String text) {
+		return org.zerionproject.core.util.StringUtils.utf8IsTooLong(
+				ConversationSecretNoteItem.wrapContent(text, 43200),
+				MAX_DELIVERABLE_PRIVATE_MESSAGE_TEXT_LENGTH);
 	}
 
 	private void showSecretNoteTimerPicker(String text) {
@@ -2654,6 +2881,14 @@ public class ConversationActivity extends ZerionActivity
 				DocumentOpener.open(this, dbExecutor, attachmentRetriever,
 						attachmentItem.getHeader());
 			} else if (attachmentItem.isVideo()) {
+				if (messageItem.isIncoming() && ImageViewHolder.videoOpened(
+						messageItem.getId(), attachmentItem)) {
+					int position = adapter.getPositionOfMessage(
+							messageItem.getId());
+					if (position != RecyclerView.NO_POSITION) {
+						adapter.notifyItemChanged(position);
+					}
+				}
 				Intent intent = new Intent(this, VideoPlayerActivity.class);
 				intent.putExtra(VideoPlayerActivity.ATTACHMENT, attachmentItem);
 				intent.putExtra(VideoPlayerActivity.ITEM_ID, messageItem.getId().getBytes());

@@ -13,6 +13,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import javax.annotation.Nullable;
@@ -135,4 +136,12 @@ class HyperSqlDatabase extends JdbcDatabase {
 			throw new DbException(e);
 		}
 	}
+
+	@Override
+	@Nullable
+	protected byte[] ownedBytes(ResultSet rs, int column) throws SQLException {
+		byte[] b = rs.getBytes(column);
+		return b == null ? null : b.clone();
+	}
+
 }

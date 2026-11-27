@@ -21,6 +21,7 @@ import com.professor.zerion.android.homelist.HomeList;
 import com.professor.zerion.android.homelist.HomeListAdapter;
 import com.professor.zerion.android.homelist.HomeRow;
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
+import com.professor.zerion.android.util.DisplayNames;
 
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactManager;
@@ -210,8 +211,8 @@ public class GroupTrListFragment extends BaseFragment
 		Map<String, String> names = new HashMap<>();
 		try {
 			for (Contact c : contactManager.getContacts()) {
-				String name = c.getAlias() != null ? c.getAlias()
-						: c.getAuthor().getName();
+				String name = DisplayNames.clean(c.getAlias() != null
+						? c.getAlias() : c.getAuthor().getName());
 				names.put(StringUtils.toHexString(
 						c.getAuthor().getPublicKey().getEncoded()), name);
 				names.put(CONTACT_PREFIX + c.getId().getInt(), name);
@@ -239,9 +240,10 @@ public class GroupTrListFragment extends BaseFragment
 		return names;
 	}
 
-	private static String groupName(Resources res, String name) {
-		return name.isEmpty() ? res.getString(R.string.grouptr_unnamed_group)
-				: name;
+	static String groupName(Resources res, String name) {
+		String clean = DisplayNames.clean(name).trim();
+		return clean.isEmpty() ? res.getString(R.string.grouptr_unnamed_group)
+				: clean;
 	}
 
 	private static HomeInvite invite(Resources res, GroupTrPendingInvite p,

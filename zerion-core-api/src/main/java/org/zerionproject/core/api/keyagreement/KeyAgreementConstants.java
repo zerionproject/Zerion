@@ -20,4 +20,14 @@ public interface KeyAgreementConstants {
 
 	String MASTER_KEY_LABEL =
 			"org.zerionproject.core.keyagreement/MASTER_SECRET";
+
+	byte CAPABILITY_KEY_SEPARATION = 0x01;
+
+	int TRANSPORT_ID_CAPABILITIES = 0x7F;
+
+	String HYBRID_SHARED_SECRET_LABEL_SEPARATED =
+			"org.zerionproject.core.keyagreement/HYBRID_SHARED_SECRET_V5_SEPARATED";
+
+	String EXCHANGE_KEY_LABEL =
+			"org.zerionproject.core.keyagreement/EXCHANGE_KEY";
 }

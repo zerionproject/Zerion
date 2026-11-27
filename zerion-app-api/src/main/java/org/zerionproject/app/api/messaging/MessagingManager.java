@@ -27,7 +27,7 @@ public interface MessagingManager extends ConversationClient {
 
 	int MINOR_VERSION =
 			org.zerionproject.core.api.contact.B3Constants.B3_PROOF_ENABLED
-					? 13 : 5;
+					? 17 : 5;
 
 	int VOICE_MEMO_V2_MIN_VERSION = 7;
 
@@ -47,6 +47,22 @@ public interface MessagingManager extends ConversationClient {
 
 	int GROUP_MEMBER_KEYS_MIN_VERSION = 13;
 
+	int VIEW_ONCE_MIN_VERSION = 14;
+
+	int PIN_MIN_VERSION = 15;
+
+	int MESH_LINK_KEYS_MIN_VERSION = 16;
+
+	int GROUP_SETTINGS_RELAY_MIN_VERSION = 16;
+
+	int GROUP_POST_RELAY_MIN_VERSION = 17;
+
+	int GROUP_BINDING_V2_MIN_VERSION = 17;
+
+	int MESH_SENDER_AUTH_V2_MIN_VERSION = 17;
+
+	int MESH_LINK_KEY_BYTES = 32;
+
 	long EDIT_WINDOW_MS = 24L * 60 * 60 * 1000;
 
 	enum EditResult {
@@ -54,6 +70,12 @@ public interface MessagingManager extends ConversationClient {
 		NOT_SUPPORTED_BY_CONTACT,
 		NOT_EDITABLE,
 		TOO_LATE
+	}
+
+	enum PinResult {
+		PINNED,
+		PINNED_HERE_ONLY,
+		NOT_PINNABLE
 	}
 
 	int LEGACY_MAX_GROUP_POST_BODY_LENGTH = 64 * 1024;
@@ -85,6 +107,9 @@ public interface MessagingManager extends ConversationClient {
 
 	void addLocalMeshMessage(Transaction txn, PrivateMessage m)
 			throws DbException;
+
+	boolean sendMeshLinkKeys(ContactId contactId, byte[] advertKey,
+			byte[] pairSecret) throws DbException;
 
 	void sendPrekeyBundle(ContactId contactId, byte[] bundle)
 			throws DbException;
@@ -157,7 +182,8 @@ public interface MessagingManager extends ConversationClient {
 		}
 	}
 
-	void addLocalVoiceSignal(VoiceSignal signal) throws DbException;
+	void addLocalVoiceSignal(VoiceSignal signal, boolean userAction)
+			throws DbException;
 
 	AttachmentHeader addLocalAttachment(GroupId groupId, long timestamp,
 			String contentType, InputStream is) throws DbException, IOException;
@@ -214,6 +240,40 @@ public interface MessagingManager extends ConversationClient {
 			throws DbException;
 
 	boolean deleteForEveryone(ContactId c, Collection<MessageId> messageIds)
+			throws DbException;
+
+	boolean supportsViewOnce(ContactId c) throws DbException;
+
+	@Nullable
+	ViewOnceMedia openViewOnce(ContactId c, MessageId m) throws DbException;
+
+	Collection<MessageId> getUnclearedViewOnceMedia(Transaction txn)
+			throws DbException;
+
+	long SECRET_NOTE_MAX_COUNTDOWN_MS = 12L * 60 * 60 * 1000;
+
+	int SECRET_NOTE_MAX_OPENED_RECORDS = 64;
+
+	boolean startSecretNoteCountdown(ContactId c, MessageId m,
+			long countdownMillis) throws DbException;
+
+	Collection<MessageId> getSecretNotesOpenedEarlier(ContactId c)
+			throws DbException;
+
+	Collection<MessageId> deleteSecretNotesOpenedEarlier(ContactId c)
+			throws DbException;
+
+	boolean supportsPin(ContactId c) throws DbException;
+
+	PinResult pinMessage(ContactId c, MessageId m) throws DbException;
+
+	boolean unpinMessage(ContactId c) throws DbException;
+
+	@Nullable
+	PinnedMessage getPinnedMessage(ContactId c) throws DbException;
+
+	@Nullable
+	PinnedMessage getPinnedMessage(Transaction txn, ContactId c)
 			throws DbException;
 
 	default void setInvitationCards(@Nullable InvitationCards cards) {

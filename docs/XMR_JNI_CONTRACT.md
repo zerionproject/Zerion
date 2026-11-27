@@ -2,7 +2,7 @@
 
 The hardened contract of the `libzmonero.so` JNI boundary
 (`packaging/monero-android/jni/zmonero.cpp`) as currently shipped. This layer
-forwards to Monero `wallet2_api` (pinned v0.18.5.1 / `4f92268d`) and makes no
+forwards to Monero `wallet2_api` (pinned v0.18.5.4 / `85f036ba`) and makes no
 policy decision: authentication, session lifetime, storage sealing and the
 send-authorization gate are enforced in Java. It contains no key logic of its
 own beyond wiping secrets it copies.
@@ -84,11 +84,14 @@ kind:
 - Pending JNI exceptions are checked and cleared (`clearPending`) around JNI
   calls that can throw (string and byte-array construction, history and lookup
   encoding), so a pending exception cannot corrupt a later call.
-- Secrets copied across the boundary (passwords, seeds) are wiped: incoming
-  byte arrays are zeroed and released with `JNI_ABORT`, `std::string` copies are
-  wiped (`wipe`) after use, and byte arrays returned to Java are wiped after the
-  region copy. On the Java side, `NativeMoneroEngine` encodes `char[]` to a
-  scratch `byte[]`, passes it, and zeroes it in a `finally`.
+- Secrets copied across the boundary (passwords, seeds) are wiped. For an
+  incoming byte array the native side zeroes the buffer that
+  `GetByteArrayElements` returned and releases it with `JNI_ABORT`
+  (`bytesToStd`). When the VM handed out a copy, that zeroes the native copy
+  only and leaves the Java array as it was, so the Java array is wiped by its
+  owner: `NativeMoneroEngine` encodes `char[]` to a scratch `byte[]`, passes
+  it, and zeroes it in a `finally`. `std::string` copies are wiped (`wipe`)
+  after use, and byte arrays returned to Java are wiped after the region copy.
 
 ## Thread ownership and lifecycle
 
@@ -146,7 +149,12 @@ calls with the interrupt lock for the cross-thread signals.
 `libzmonero.so` is built reproducibly from the pinned Monero source in a pinned
 Docker image; the shipped per-ABI SHA-256 hashes are recorded in
 `packaging/monero-android/PROVENANCE.md`. The library links 16 KB-page-aligned on
-arm64 (`-Wl,-z,max-page-size=16384`), verified with `llvm-readelf -l`. Removing
+arm64 (`-Wl,-z,max-page-size=16384`), verified with `llvm-readelf -l`, and
+exports only the JNI entry points (`jni/zmonero.map` with
+`-Wl,--exclude-libs,ALL`; the build and `verify-exports.sh` check the dynamic
+symbol table with `llvm-nm -D --defined-only`), so the statically linked
+OpenSSL, Boost, libsodium and Monero symbols are not visible to any other
+library in the process. Removing
 developer comments from `zmonero.cpp` produces a byte-identical library (the
 compiler discards comments), so the recorded hashes are unaffected by
 documentation changes. The link-only rebuild (`relink.sh`) reproduces the exact

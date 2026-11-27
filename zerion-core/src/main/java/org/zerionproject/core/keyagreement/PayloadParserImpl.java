@@ -20,7 +20,9 @@ import java.util.List;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
+import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.CAPABILITY_KEY_SEPARATION;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.COMMIT_LENGTH;
+import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_CAPABILITIES;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_LAN;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_BLUETOOTH;
@@ -62,10 +64,13 @@ class PayloadParserImpl implements PayloadParser {
 		byte[] commitment = payload.getRaw(0);
 		if (commitment.length != COMMIT_LENGTH) throw new FormatException();
 		List<TransportDescriptor> recognised = new ArrayList<>();
+		boolean keySeparation = false;
 		for (int i = 1; i < payload.size(); i++) {
 			BdfList descriptor = payload.getList(i);
 			int transportId = descriptor.getInt(0);
-			if (transportId == TRANSPORT_ID_LAN) {
+			if (transportId == TRANSPORT_ID_CAPABILITIES) {
+				keySeparation |= offersKeySeparation(descriptor);
+			} else if (transportId == TRANSPORT_ID_LAN) {
 				recognised.add(new TransportDescriptor(
 						LanTcpConstants.ID, descriptor));
 			} else if (transportId == TRANSPORT_ID_BLUETOOTH) {
@@ -74,6 +79,15 @@ class PayloadParserImpl implements PayloadParser {
 						descriptor));
 			}
 		}
-		return new Payload(commitment, recognised);
+		return new Payload(commitment, recognised, keySeparation);
+	}
+
+	private static boolean offersKeySeparation(BdfList descriptor) {
+		if (descriptor.size() < 2) return false;
+		try {
+			return (descriptor.getLong(1) & CAPABILITY_KEY_SEPARATION) != 0;
+		} catch (FormatException e) {
+			return false;
+		}
 	}
 }

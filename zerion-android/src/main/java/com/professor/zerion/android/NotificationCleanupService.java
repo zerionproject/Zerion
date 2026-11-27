@@ -13,6 +13,7 @@ import javax.inject.Inject;
 import androidx.annotation.Nullable;
 
 import static com.professor.zerion.android.navdrawer.NavDrawerActivity.CONTACT_ADDED_URI;
+import static com.professor.zerion.android.navdrawer.NavDrawerActivity.CONTACT_REQUEST_URI;
 import static com.professor.zerion.android.navdrawer.NavDrawerActivity.CONTACT_URI;
 import static com.professor.zerion.android.navdrawer.NavDrawerActivity.GROUP_URI;
 
@@ -59,6 +60,8 @@ public class NotificationCleanupService extends IntentService {
 			notificationManager.clearAllGroupMessageNotifications();
 		} else if (uri.equals(CONTACT_ADDED_URI)) {
 			notificationManager.clearAllContactAddedNotifications();
+		} else if (uri.equals(CONTACT_REQUEST_URI)) {
+			notificationManager.clearContactRequestNotification();
 		}
 	}
 }

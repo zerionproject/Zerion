@@ -2,6 +2,8 @@ package com.professor.zerion.android.contact.add.nearby.ble;
 
 import android.app.Application;
 
+import com.professor.zerion.android.mesh.BluetoothNameGuard;
+
 import org.zerionproject.core.api.plugin.PluginCallback;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.plugin.duplex.DuplexPlugin;
@@ -16,10 +18,13 @@ import javax.inject.Inject;
 public class BluetoothKeyAgreementPluginFactory implements DuplexPluginFactory {
 
 	private final Application application;
+	private final BluetoothNameGuard nameGuard;
 
 	@Inject
-	public BluetoothKeyAgreementPluginFactory(Application application) {
+	public BluetoothKeyAgreementPluginFactory(Application application,
+			BluetoothNameGuard nameGuard) {
 		this.application = application;
+		this.nameGuard = nameGuard;
 	}
 
 	@Override
@@ -34,6 +39,6 @@ public class BluetoothKeyAgreementPluginFactory implements DuplexPluginFactory {
 
 	@Override
 	public DuplexPlugin createPlugin(PluginCallback callback) {
-		return new BluetoothKeyAgreementPlugin(application, callback);
+		return new BluetoothKeyAgreementPlugin(application, callback, nameGuard);
 	}
 }

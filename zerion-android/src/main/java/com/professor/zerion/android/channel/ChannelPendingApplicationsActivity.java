@@ -20,6 +20,7 @@ import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.util.DisplayNames;
 
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
@@ -126,7 +127,7 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 	private void confirmApprove(ChannelApplication app) {
 		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_pending_approve)
-				.setMessage(app.getDisplayName())
+				.setMessage(DisplayNames.clean(app.getDisplayName()))
 				.setPositiveButton(R.string.channels_pending_approve,
 						(d, w) -> doApprove(app))
 				.setNegativeButton(android.R.string.cancel, null)
@@ -155,7 +156,7 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 	private void confirmDeny(ChannelApplication app) {
 		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_pending_deny)
-				.setMessage(app.getDisplayName())
+				.setMessage(DisplayNames.clean(app.getDisplayName()))
 				.setPositiveButton(R.string.channels_pending_deny,
 						(d, w) -> doDeny(app))
 				.setNegativeButton(android.R.string.cancel, null)
@@ -246,7 +247,7 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 
 		void bind(ChannelApplication app) {
 			android.content.Context ctx = itemView.getContext();
-			String shown = app.getDisplayName().trim();
+			String shown = DisplayNames.clean(app.getDisplayName()).trim();
 			name.setText(shown.isEmpty() ? ctx.getString(
 					R.string.channels_delegations_unnamed_person) : shown);
 			subtitle.setText(ctx.getString(

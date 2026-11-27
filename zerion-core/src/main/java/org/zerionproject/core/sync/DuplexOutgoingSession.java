@@ -70,6 +70,8 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 	private static final long MIN_PEER_IDLE_TIME_MS =
 			COVER_INTERVAL_MS_CAP * 2L;
 	private static final double SYNTHETIC_OFFER_PROB = 0.08;
+	private static final java.security.SecureRandom COVER_RANDOM =
+			new java.security.SecureRandom();
 	private static final int SYNTHETIC_OFFER_BYTES =
 			32 + RECORD_HEADER_BYTES;
 
@@ -118,20 +120,17 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 		this.streamWriter = streamWriter;
 		this.recordWriter = recordWriter;
 		this.priority = priority;
-		java.util.concurrent.ThreadLocalRandom rng =
-				java.util.concurrent.ThreadLocalRandom.current();
-		this.coverIntervalMs = drawCoverInterval(rng,
+		this.coverIntervalMs = drawCoverInterval(COVER_RANDOM,
 				COVER_INTERVAL_MS_BASE,
 				COVER_INTERVAL_MS_JITTER_MEAN,
 				COVER_INTERVAL_MS_CAP);
-		this.slotBytes = SLOT_BYTES_BASE
-				+ rng.nextInt(-SLOT_BYTES_JITTER,
-						SLOT_BYTES_JITTER + 1);
+		this.slotBytes = SLOT_BYTES_BASE - SLOT_BYTES_JITTER
+				+ COVER_RANDOM.nextInt(2 * SLOT_BYTES_JITTER + 1);
 		writerTasks = new LinkedBlockingQueue<>();
 	}
 
 	private static long drawCoverInterval(
-			java.util.concurrent.ThreadLocalRandom rng, long base,
+			java.security.SecureRandom rng, long base,
 			long jitterMean, long cap) {
 		double u = rng.nextDouble();
 		if (u <= 0d) u = 1e-12;
@@ -144,7 +143,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 	buildSyntheticOffer() {
 		byte[] randomId = new byte[
 				org.zerionproject.core.api.UniqueId.LENGTH];
-		java.util.concurrent.ThreadLocalRandom.current().nextBytes(randomId);
+		COVER_RANDOM.nextBytes(randomId);
 		return new org.zerionproject.core.api.sync.Offer(
 				java.util.Collections.singletonList(
 						new org.zerionproject.core.api.sync.MessageId(
@@ -196,8 +195,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 							long room = slotBytes - written
 									- RECORD_HEADER_BYTES;
 							if (room >= SYNTHETIC_OFFER_BYTES
-									&& java.util.concurrent.ThreadLocalRandom
-									.current().nextDouble()
+									&& COVER_RANDOM.nextDouble()
 									< SYNTHETIC_OFFER_PROB) {
 								recordWriter.writeOffer(
 										buildSyntheticOffer());

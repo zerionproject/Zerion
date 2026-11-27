@@ -8,7 +8,7 @@ final class MeshDiscovery {
 
 	static final long EPOCH_MS = 10 * 60 * 1000L;
 
-	private static final byte[] MESH_DISCOVERY_SECRET = {
+	private static final byte[] OPEN_DISCOVERY_SEED = {
 			(byte) 0x3a, (byte) 0x91, (byte) 0xe7, (byte) 0x42,
 			(byte) 0xbc, (byte) 0x18, (byte) 0x6f, (byte) 0xd0,
 			(byte) 0x59, (byte) 0xa3, (byte) 0x2e, (byte) 0x87,
@@ -28,7 +28,7 @@ final class MeshDiscovery {
 	static UUID discoveryUuid(long epoch, UUID fallback) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			md.update(MESH_DISCOVERY_SECRET);
+			md.update(OPEN_DISCOVERY_SEED);
 			byte[] e = new byte[8];
 			for (int i = 0; i < 8; i++) {
 				e[i] = (byte) (epoch >>> (8 * (7 - i)));

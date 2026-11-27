@@ -16,6 +16,13 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 
+import javax.annotation.Nullable;
+
+import androidx.annotation.UiThread;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
+
 @NotNullByDefault
 public final class StickerSendTask {
 
@@ -32,6 +39,22 @@ public final class StickerSendTask {
 			MessagingManager messagingManager) {
 		this.ioExecutor = ioExecutor;
 		this.messagingManager = messagingManager;
+	}
+
+	@UiThread
+	public void send(LifecycleOwner owner, LiveData<GroupId> groupId,
+			byte[] pngBytes, Callback cb) {
+		groupId.observe(owner, new Observer<GroupId>() {
+			@Override
+			public void onChanged(@Nullable GroupId id) {
+				groupId.removeObserver(this);
+				if (id == null) {
+					cb.onStickerSendFailed(new IOException("no conversation"));
+				} else {
+					send(id, pngBytes, cb);
+				}
+			}
+		});
 	}
 
 	public void send(GroupId groupId, byte[] pngBytes, Callback cb) {

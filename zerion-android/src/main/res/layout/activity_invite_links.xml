@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="?attr/zerionColorBackground"
+	android:fitsSystemWindows="true"
+	android:orientation="vertical">
+
+	<include layout="@layout/toolbar" />
+
+	<ScrollView
+		android:id="@+id/inviteLinksRoot"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1">
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:paddingBottom="24dp">
+
+			<TextView
+				android:id="@+id/invitesPausedBanner"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:background="?attr/zerionColorSurfaceVariant"
+				android:clickable="true"
+				android:focusable="true"
+				android:gravity="center_vertical"
+				android:minHeight="48dp"
+				android:padding="12dp"
+				android:textColor="@color/zerion_text_primary"
+				android:textSize="14sp"
+				android:visibility="gone" />
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:paddingHorizontal="20dp"
+				android:paddingTop="16dp"
+				android:text="@string/invite_links_intro"
+				android:textColor="@color/zerion_text_primary"
+				android:textSize="14sp" />
+
+			<com.google.android.material.button.MaterialButton
+				android:id="@+id/inviteLinksMoreInfo"
+				style="@style/Zerion.Button.Text"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="8dp"
+				android:text="@string/contact_more_info" />
+
+			<TextView
+				android:id="@+id/inviteLinksLimits"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:accessibilityLiveRegion="polite"
+				android:paddingHorizontal="20dp"
+				android:text="@string/invite_links_limits"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="13sp"
+				android:visibility="gone" />
+
+			<TextView
+				style="@style/Zerion.Settings.SectionHeader"
+				android:text="@string/invite_links_title" />
+
+			<LinearLayout
+				android:id="@+id/inviteLinksContainer"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical" />
+
+			<LinearLayout
+				android:id="@+id/inviteLinkNotices"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical" />
+
+			<TextView
+				android:id="@+id/inviteLinksEmpty"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:paddingHorizontal="20dp"
+				android:text="@string/invite_links_empty"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="14sp"
+				android:visibility="gone" />
+
+			<com.google.android.material.button.MaterialButton
+				android:id="@+id/inviteLinksAdd"
+				style="@style/Zerion.Button.Outlined"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="20dp"
+				android:layout_marginTop="8dp"
+				android:text="@string/invite_links_add" />
+
+			<TextView
+				style="@style/Zerion.Settings.SectionHeader"
+				android:text="@string/zero_id_title" />
+
+			<TextView
+				android:id="@+id/zeroIdWindow"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:accessibilityLiveRegion="polite"
+				android:paddingHorizontal="20dp"
+				android:textColor="@color/zerion_text_primary"
+				android:textSize="14sp" />
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:paddingHorizontal="20dp"
+				android:paddingTop="8dp"
+				android:text="@string/zero_id_rotates_info"
+				android:textColor="@color/zerion_text_primary"
+				android:textSize="14sp" />
+
+			<com.google.android.material.button.MaterialButton
+				android:id="@+id/zeroIdMoreInfo"
+				style="@style/Zerion.Button.Text"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="8dp"
+				android:text="@string/contact_more_info" />
+
+			<TextView
+				android:id="@+id/zeroIdMoreText"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:accessibilityLiveRegion="polite"
+				android:paddingHorizontal="20dp"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="13sp"
+				android:visibility="gone" />
+
+			<LinearLayout
+				android:id="@+id/zeroIdNotices"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical" />
+
+			<com.google.android.material.button.MaterialButton
+				android:id="@+id/zeroIdKeepReceiving"
+				style="@style/Zerion.Button.Primary"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="20dp"
+				android:layout_marginTop="8dp"
+				android:text="@string/zero_id_keep_receiving"
+				android:visibility="gone" />
+
+			<com.google.android.material.button.MaterialButton
+				android:id="@+id/zeroIdKeepReceivingQuiet"
+				style="@style/Zerion.Button.Text"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="8dp"
+				android:text="@string/zero_id_keep_receiving" />
+
+			<com.google.android.material.button.MaterialButton
+				android:id="@+id/zeroIdResetButton"
+				style="@style/Zerion.Button.Negative"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="8dp"
+				android:text="@string/zero_id_reset" />
+
+			<LinearLayout
+				android:id="@+id/blockedSection"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical"
+				android:visibility="gone">
+
+				<TextView
+					style="@style/Zerion.Settings.SectionHeader"
+					android:text="@string/blocked_senders_title" />
+
+				<LinearLayout
+					android:id="@+id/blockedContainer"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:orientation="vertical" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+	</ScrollView>
+
+</LinearLayout>

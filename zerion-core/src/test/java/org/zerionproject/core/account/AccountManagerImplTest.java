@@ -62,6 +62,12 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 	private final Identity identity = getIdentity();
 	private final LocalAuthor localAuthor = identity.getLocalAuthor();
 	private final String authorName = localAuthor.getName();
+	private static final String[] EMPTY_IN_NORMAL_FORM = {
+			"\uD83D\uDE00\uD83D\uDD12\uD83D\uDE00\uD83D\uDD12"
+					+ "\uD83D\uDE00\uD83D\uDD12",
+			"\u200B\u200B\u200B\u200B\u200B\u200B\u200B\u200B"
+	};
+
 	private final char[] password = getRandomString(10).toCharArray();
 	private final char[] newPassword = getRandomString(10).toCharArray();
 	private final File testDir = getTestDirectory();
@@ -329,6 +335,32 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 	public void testChangePasswordRejectsWhitespaceNewPassword()
 			throws Exception {
 		accountManager.changePassword(password, "  ".toCharArray());
+	}
+
+	@Test
+	public void testCreateAccountRejectsPasswordEmptyInItsNormalForm() {
+		for (String t : EMPTY_IN_NORMAL_FORM) {
+			assertTrue(t.length() >= 8);
+			assertFalse(accountManager.createAccount(authorName,
+					t.toCharArray()));
+			assertFalse(accountManager.hasDatabaseKey());
+			assertFalse(keyFile.exists());
+			assertFalse(keyBackupFile.exists());
+		}
+	}
+
+	@Test
+	public void testChangePasswordRejectsNewPasswordEmptyInItsNormalForm()
+			throws Exception {
+		for (String t : EMPTY_IN_NORMAL_FORM) {
+			try {
+				accountManager.changePassword(password, t.toCharArray());
+				fail();
+			} catch (IllegalArgumentException expected) {
+				assertFalse(keyFile.exists());
+				assertFalse(keyBackupFile.exists());
+			}
+		}
 	}
 
 	@Test

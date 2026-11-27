@@ -64,6 +64,7 @@ class ConversationVisitor implements
 	@Override
 	@Nullable
 	public ConversationItem visitPrivateMessageHeader(PrivateMessageHeader h) {
+		if (h.isViewOnce()) return new ConversationViewOnceItem(h, contactName);
 		if (h.hasText()) {
 			String text = textCache.getText(h.getId());
 			if (text != null) {

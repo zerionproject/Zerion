@@ -54,10 +54,12 @@ public class LinkDialogFragment extends DialogFragment {
 		View v = inflater.inflate(R.layout.fragment_link_dialog, container,
 				false);
 
-		TextView urlView = v.findViewById(R.id.urlView);
-		urlView.setText(url);
-
 		Context ctx = requireContext();
+
+		TextView urlView = v.findViewById(R.id.urlView);
+		com.professor.zerion.android.util.UiUtils.keepLinkActionsInApp(urlView);
+		urlView.setText(com.professor.zerion.android.util.BrowserGuard
+				.shownWithNote(ctx, url));
 
 		Button openButton = v.findViewById(R.id.openButton);
 		openButton.setOnClickListener(v1 -> {

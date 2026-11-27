@@ -71,6 +71,58 @@ class ChannelSignatures {
 	}
 
 	@CryptoExecutor
+	byte[] signMemberPostsManifest(byte[] signedInput,
+			PrivateKey hybridPrivateKey) throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_MANIFEST_V5,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyMemberPostsManifest(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_MANIFEST_V5,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException | RuntimeException e) {
+			return false;
+		}
+	}
+
+	@CryptoExecutor
+	byte[] signPostV3(byte[] signedInput, PrivateKey hybridPrivateKey)
+			throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_POST_V3,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyPostV3(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_POST_V3,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException | RuntimeException e) {
+			return false;
+		}
+	}
+
+	@CryptoExecutor
+	byte[] signUserMemberPost(byte[] signedInput,
+			PrivateKey ed25519PrivateKey, @Nullable byte[] mlDsaPriv)
+			throws GeneralSecurityException {
+		return signUser(ChannelConstants.SIGNING_LABEL_MEMBER_POST,
+				signedInput, ed25519PrivateKey, mlDsaPriv);
+	}
+
+	boolean verifyUserMemberPost(byte[] signature, byte[] signedInput,
+			PublicKey ed25519PublicKey, @Nullable byte[] mlDsaPub) {
+		return verifyUser(ChannelConstants.SIGNING_LABEL_MEMBER_POST,
+				signature, signedInput, ed25519PublicKey, mlDsaPub);
+	}
+
+	@CryptoExecutor
 	byte[] signUserPostChange(byte[] signedInput,
 			PrivateKey ed25519PrivateKey, @Nullable byte[] mlDsaPriv)
 			throws GeneralSecurityException {

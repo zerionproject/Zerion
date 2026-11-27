@@ -28,6 +28,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,6 +46,10 @@ import static org.zerionproject.core.api.record.Record.RECORD_HEADER_BYTES;
 import static org.zerionproject.core.api.sync.Group.Visibility.SHARED;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_IDS;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_LENGTH;
+import static org.zerionproject.core.api.sync.SyncConstants.MAX_ONE_RECORD_MESSAGE_LENGTH;
+import static org.zerionproject.sync.ZppSendScheduler.RANK_AUTOMATIC;
+import static org.zerionproject.sync.ZppSendScheduler.RANK_REPLY;
+import static org.zerionproject.sync.ZppSendScheduler.RANK_USER;
 
 @ThreadSafe
 @NotNullByDefault
@@ -55,7 +60,12 @@ public class ZppOutgoingSource implements EventListener {
 	private static final int MAX_LANE_DEPTH = 512;
 	private static final long BACKPRESSURE_RETRY_MS = 2_000L;
 	private static final long BULK_ROOM_RETRY_MS = 10_000L;
+	private static final long DUE_NOW_RETRY_MS = 10_000L;
 	static final long FRESH_MESSAGE_MS = 10 * 60_000L;
+	private static final int REPLY_OVERHEAD_BYTES = 96;
+	static final int MAX_IDS_PER_RECORD = Math.min(MAX_MESSAGE_IDS,
+			(ZmmConstants.MAX_RECORD_BYTES - RECORD_HEADER_BYTES)
+					/ MessageId.LENGTH);
 
 	private final DatabaseComponent db;
 	private final Executor dbExecutor;
@@ -74,6 +84,17 @@ public class ZppOutgoingSource implements EventListener {
 	private final AtomicBoolean generateOfferQueued = new AtomicBoolean(false);
 	private final AtomicBoolean generateRequestQueued = new AtomicBoolean(false);
 	private final AtomicBoolean bulkRoomRetryQueued = new AtomicBoolean(false);
+	private final AtomicBoolean waitingForRoom = new AtomicBoolean(false);
+	private final AtomicBoolean ackWaiting = new AtomicBoolean(false);
+	private final AtomicBoolean requestWaiting = new AtomicBoolean(false);
+	private final AtomicBoolean offerWaiting = new AtomicBoolean(false);
+	private final AtomicBoolean userOfferDue = new AtomicBoolean(false);
+	private final Object claimLock = new Object();
+	@GuardedBy("claimLock")
+	private final Set<MessageId> claimedOffers = new HashSet<>();
+	@GuardedBy("claimLock")
+	private boolean claimsReturned = false;
+	private final Set<Reservation> reservations = new HashSet<>();
 	private final AtomicLong nextSendTime = new AtomicLong(Long.MAX_VALUE);
 	private final AtomicLong messageIdCounter = new AtomicLong(0);
 	private volatile boolean stopped = false;
@@ -114,6 +135,15 @@ public class ZppOutgoingSource implements EventListener {
 	public void stop() {
 		stopped = true;
 		eventBus.removeListener(this);
+		synchronized (claimLock) {
+			claimsReturned = true;
+			localMessages.restoreOffers(claimedOffers);
+			claimedOffers.clear();
+		}
+		synchronized (reservations) {
+			for (Reservation r : reservations) r.release();
+			reservations.clear();
+		}
 		cancelRetransmit();
 	}
 
@@ -145,11 +175,23 @@ public class ZppOutgoingSource implements EventListener {
 	private void runGenerateAck() {
 		if (stopped) return;
 		generateAckQueued.set(false);
-		if (!proceedOrDefer(this::generateAck)) return;
+		boolean paced = scheduler.isRanked();
+		if (paced && ackWaiting.get()) return;
+		if (!paced && !proceedOrDefer(this::generateAck)) return;
+		int max = paced ? idsPerFrame() : MAX_IDS_PER_RECORD;
 		try {
 			Ack a = db.transactionWithNullableResult(false, txn ->
-					db.generateAck(txn, contactId, MAX_MESSAGE_IDS));
-			if (a != null) {
+					db.generateAck(txn, contactId, max));
+			if (a != null && paced) {
+				ackWaiting.set(true);
+				if (!enqueue(codec.encodeAck(a), false, false, RANK_REPLY,
+						null, () -> {
+							ackWaiting.set(false);
+							generateAck();
+						})) {
+					ackWaiting.set(false);
+				}
+			} else if (a != null) {
 				enqueue(codec.encodeAck(a), false);
 				generateAck();
 			}
@@ -174,21 +216,43 @@ public class ZppOutgoingSource implements EventListener {
 					});
 			if (b != null) {
 				long now = clock.currentTimeMillis();
+				List<MessageId> neverFit = new ArrayList<>();
 				for (Message m : b) {
 					if (!inFlight.add(m.getId())) continue;
-					enqueueMessage(m, isFresh(m, now));
+					if (!enqueueMessage(m, isFresh(m, now))) {
+						neverFit.add(m.getId());
+					}
 				}
+				stopOffering(neverFit);
 				generateBatch();
 			} else if (scheduler.getBulkDepth() > 0) {
+				waitingForRoom.set(true);
 				retryWhenBulkLaneHasRoom();
 			}
 		} catch (DbException | IOException e) {
 		}
 	}
 
+	private void roomFreed() {
+		if (waitingForRoom.getAndSet(false)) generateBatch();
+	}
+
+	@DatabaseExecutor
+	private void stopOffering(List<MessageId> neverFit) {
+		for (MessageId id : neverFit) {
+			try {
+				db.transaction(false, txn -> db.setMessageNotShared(txn, id));
+			} catch (DbException e) {
+			}
+		}
+	}
+
 	private long batchCapacity() {
 		long room = (long) (MAX_LANE_DEPTH - scheduler.getBulkDepth())
 				* maxRecordBytes;
+		if (scheduler.getBulkDepth() == 0) {
+			room = Math.max(room, ZmmConstants.MAX_RECORD_BYTES);
+		}
 		return Math.max(maxRecordBytes, Math.min(BATCH_CAPACITY, room));
 	}
 
@@ -205,11 +269,14 @@ public class ZppOutgoingSource implements EventListener {
 	private void runGenerateOffer() {
 		if (stopped) return;
 		generateOfferQueued.set(false);
-		if (!proceedOrDefer(this::generateOffer)) return;
+		boolean paced = scheduler.isRanked();
+		boolean urgent = userOfferDue.getAndSet(false) && paced;
+		if (paced && !urgent && offerWaiting.get()) return;
+		if (!urgent && !proceedOrDefer(this::generateOffer)) return;
 		try {
 			Offer o = db.transactionWithNullableResult(false, txn -> {
-				Offer offer = db.generateOffer(txn, contactId, MAX_MESSAGE_IDS,
-						maxLatency);
+				Offer offer = db.generateOffer(txn, contactId,
+						MAX_IDS_PER_RECORD, maxLatency);
 				setNextSendTime(db.getNextSendTime(txn, contactId, maxLatency));
 				return offer;
 			});
@@ -219,7 +286,25 @@ public class ZppOutgoingSource implements EventListener {
 					if (!inFlight.contains(id)) ids.add(id);
 				}
 				if (!ids.isEmpty()) {
-					enqueue(codec.encodeOffer(new Offer(ids)), false);
+					byte[] offer = codec.encodeOffer(new Offer(ids));
+					List<MessageId> claimed = claimFirstOffers(ids);
+					if (!claimed.isEmpty()) {
+						if (!holdClaims(claimed)) return;
+						enqueue(offer, false, true, RANK_USER,
+								() -> offerLeft(claimed), null);
+					} else if (paced) {
+						offerWaiting.set(true);
+						if (!enqueue(offer, false, false, RANK_AUTOMATIC, null,
+								() -> {
+									offerWaiting.set(false);
+									generateOffer();
+								})) {
+							offerWaiting.set(false);
+						}
+					} else {
+						enqueue(offer, false, false, RANK_AUTOMATIC, null,
+								null);
+					}
 				}
 				generateOffer();
 			}
@@ -231,11 +316,23 @@ public class ZppOutgoingSource implements EventListener {
 	private void runGenerateRequest() {
 		if (stopped) return;
 		generateRequestQueued.set(false);
-		if (!proceedOrDefer(this::generateRequest)) return;
+		boolean paced = scheduler.isRanked();
+		if (paced && requestWaiting.get()) return;
+		if (!paced && !proceedOrDefer(this::generateRequest)) return;
+		int max = paced ? idsPerFrame() : MAX_IDS_PER_RECORD;
 		try {
 			Request r = db.transactionWithNullableResult(false, txn ->
-					db.generateRequest(txn, contactId, MAX_MESSAGE_IDS));
-			if (r != null) {
+					db.generateRequest(txn, contactId, max));
+			if (r != null && paced) {
+				requestWaiting.set(true);
+				if (!enqueue(codec.encodeRequest(r), false, false, RANK_REPLY,
+						null, () -> {
+							requestWaiting.set(false);
+							generateRequest();
+						})) {
+					requestWaiting.set(false);
+				}
+			} else if (r != null) {
 				enqueue(codec.encodeRequest(r), false);
 				generateRequest();
 			}
@@ -248,37 +345,147 @@ public class ZppOutgoingSource implements EventListener {
 		return localMessages.takeFirstSend(m.getId());
 	}
 
-	private void enqueue(byte[] syncRecord, boolean userOriginated)
-			throws IOException {
-		enqueue(syncRecord, userOriginated, null);
+	List<MessageId> claimFirstOffers(Collection<MessageId> offered) {
+		List<MessageId> claimed = new ArrayList<>();
+		for (MessageId id : offered) {
+			if (localMessages.takeFirstOffer(id)) claimed.add(id);
+		}
+		return claimed;
 	}
 
-	private void enqueue(byte[] syncRecord, boolean userOriginated,
-			@Nullable Runnable onSent) throws IOException {
-		if (syncRecord.length > ZmmConstants.MAX_RECORD_BYTES) {
-			if (onSent != null) onSent.run();
-			return;
+	private boolean holdClaims(List<MessageId> claimed) {
+		synchronized (claimLock) {
+			if (stopped) {
+				localMessages.restoreOffers(claimed);
+				return false;
+			}
+			claimedOffers.addAll(claimed);
+			return true;
 		}
+	}
+
+	private void offerLeft(List<MessageId> claimed) {
+		synchronized (claimLock) {
+			if (claimsReturned) {
+				for (MessageId id : claimed) localMessages.takeFirstOffer(id);
+			} else {
+				claimedOffers.removeAll(claimed);
+			}
+		}
+	}
+
+	int idsPerFrame() {
+		return Math.max(1, Math.min(MAX_IDS_PER_RECORD,
+				(maxRecordBytes - REPLY_OVERHEAD_BYTES) / MessageId.LENGTH));
+	}
+
+	private void enqueue(byte[] syncRecord, boolean userOriginated)
+			throws IOException {
+		enqueue(syncRecord, userOriginated, userOriginated,
+				userOriginated ? RANK_USER : RANK_AUTOMATIC, null, null);
+	}
+
+	private boolean enqueue(byte[] syncRecord, boolean userOriginated,
+			boolean opensWindow, int rank, @Nullable Runnable onFirstSent,
+			@Nullable Runnable onSent) throws IOException {
+		if (syncRecord.length > ZmmConstants.MAX_RECORD_BYTES) return false;
 		long id = messageIdCounter.getAndIncrement();
 		List<byte[]> frames = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
 				syncRecord, id, maxRecordBytes);
 		boolean bulkLane = frames.size() > 1;
 		int last = frames.size() - 1;
 		for (int i = 0; i <= last; i++) {
-			scheduler.enqueueRecord(frames.get(i), userOriginated, bulkLane,
-					i == last ? onSent : null);
+			scheduler.enqueueRecord(frames.get(i), userOriginated,
+					opensWindow, rank, bulkLane,
+					both(i == 0 ? onFirstSent : null, i == last ? onSent : null));
 		}
+		return true;
 	}
 
-	private void enqueueMessage(Message m, boolean userOriginated)
+	@Nullable
+	private static Runnable both(@Nullable Runnable first,
+			@Nullable Runnable second) {
+		if (first == null) return second;
+		if (second == null) return first;
+		return () -> {
+			first.run();
+			second.run();
+		};
+	}
+
+	private boolean enqueueMessage(Message m, boolean userOriginated)
 			throws IOException {
 		MessageId id = m.getId();
+		if (m.getRawLength() > MAX_ONE_RECORD_MESSAGE_LENGTH) return false;
 		try {
-			enqueue(codec.encodeMessage(m), userOriginated,
-					() -> inFlight.remove(id));
+			byte[] record = codec.encodeMessage(m);
+			if (record.length > ZmmConstants.MAX_RECORD_BYTES) return false;
+			Runnable onSent = () -> {
+				inFlight.remove(id);
+				roomFreed();
+			};
+			List<byte[]> frames = ZmmFragmenter.fragment(
+					ZmmConstants.TYPE_SYNC, record,
+					messageIdCounter.getAndIncrement(), maxRecordBytes);
+			Reservation reservation = reserve(id, frames.size());
+			int users = reservation == null ? 0 : reservation.left;
+			boolean bulkLane = frames.size() > 1;
+			int last = frames.size() - 1;
+			for (int i = 0; i <= last; i++) {
+				boolean user = i < users;
+				Runnable sent = i == last ? onSent : null;
+				scheduler.enqueueRecord(frames.get(i), userOriginated, false,
+						user ? RANK_USER : RANK_AUTOMATIC, bulkLane,
+						user ? ZppSendScheduler.charged(reservation, sent)
+								: sent);
+			}
+			return true;
 		} catch (IOException | RuntimeException e) {
 			inFlight.remove(id);
 			throw e;
+		}
+	}
+
+	@Nullable
+	private Reservation reserve(MessageId id, int frames) {
+		int left = localMessages.reserveUserFrames(id, frames);
+		if (left == 0) return null;
+		Reservation r = new Reservation(id, left);
+		synchronized (reservations) {
+			if (stopped) {
+				r.release();
+				return null;
+			}
+			reservations.add(r);
+		}
+		return r;
+	}
+
+	private final class Reservation implements Runnable {
+
+		private final MessageId id;
+		@GuardedBy("reservations")
+		private int left;
+
+		private Reservation(MessageId id, int left) {
+			this.id = id;
+			this.left = left;
+		}
+
+		@Override
+		public void run() {
+			boolean reserved;
+			synchronized (reservations) {
+				reserved = left > 0;
+				if (reserved && --left == 0) reservations.remove(this);
+			}
+			localMessages.noteUserFrameSent(id, reserved);
+		}
+
+		@GuardedBy("reservations")
+		private void release() {
+			if (left > 0) localMessages.releaseUserFrames(id, left);
+			left = 0;
 		}
 	}
 
@@ -292,7 +499,10 @@ public class ZppOutgoingSource implements EventListener {
 
 	private void setNextSendTime(long time) {
 		long old = nextSendTime.getAndSet(time);
-		if (time < old && time != Long.MAX_VALUE) scheduleRetransmit(time);
+		if (time < old && time != Long.MAX_VALUE) {
+			long now = clock.currentTimeMillis();
+			scheduleRetransmit(time > now ? time : now + DUE_NOW_RETRY_MS);
+		}
 	}
 
 	private void scheduleRetransmit(long absoluteTime) {
@@ -331,7 +541,12 @@ public class ZppOutgoingSource implements EventListener {
 			}
 		} else if (e instanceof MessageSharedEvent) {
 			MessageSharedEvent m = (MessageSharedEvent) e;
-			if (m.getGroupVisibility().get(contactId) == TRUE) generateOffer();
+			if (m.getGroupVisibility().get(contactId) == TRUE) {
+				if (localMessages.isUnannounced(m.getMessageId())) {
+					userOfferDue.set(true);
+				}
+				generateOffer();
+			}
 		} else if (e instanceof GroupVisibilityUpdatedEvent) {
 			GroupVisibilityUpdatedEvent g = (GroupVisibilityUpdatedEvent) e;
 			if (g.getVisibility() == SHARED

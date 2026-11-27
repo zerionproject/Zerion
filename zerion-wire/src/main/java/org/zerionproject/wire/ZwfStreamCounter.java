@@ -7,6 +7,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongSupplier;
 
 import static org.zerionproject.wire.ZwfConstants.DIRECTION_RECV;
 import static org.zerionproject.wire.ZwfConstants.DIRECTION_SEND;
@@ -23,9 +24,49 @@ public class ZwfStreamCounter {
 	private final ConcurrentMap<Integer, AtomicLong> generations =
 			new ConcurrentHashMap<>();
 
+	public static final long BEYOND_WINDOW_SEARCH_INTERVAL_MS = 60_000L;
+
+	private final LongSupplier clock;
+	private final Map<Integer, Long> nextBeyondWindowSearch = new HashMap<>();
+	private final Map<Integer, Long> foundBeyondWindow = new HashMap<>();
+
 	public ZwfStreamCounter(StreamCounterStore store) {
-		if (store == null) throw new NullPointerException();
+		this(store, ZwfStreamCounter::monotonicMillis);
+	}
+
+	public ZwfStreamCounter(StreamCounterStore store, LongSupplier clock) {
+		if (store == null || clock == null) throw new NullPointerException();
 		this.store = store;
+		this.clock = clock;
+	}
+
+	private static long monotonicMillis() {
+		return System.nanoTime() / 1_000_000L;
+	}
+
+	public boolean startBeyondWindowSearch(int contactId) {
+		long now = clock.getAsLong();
+		synchronized (lock) {
+			Long next = nextBeyondWindowSearch.get(contactId);
+			if (next != null && now - next < 0) return false;
+			nextBeyondWindowSearch.put(contactId,
+					now + BEYOND_WINDOW_SEARCH_INTERVAL_MS);
+			return true;
+		}
+	}
+
+	public void beyondWindowSearchMatched(int contactId, long streamId) {
+		synchronized (lock) {
+			nextBeyondWindowSearch.remove(contactId);
+			foundBeyondWindow.put(contactId, streamId);
+		}
+	}
+
+	public long foundBeyondWindow(int contactId) {
+		synchronized (lock) {
+			Long streamId = foundBeyondWindow.get(contactId);
+			return streamId == null ? -1 : streamId;
+		}
 	}
 
 	public long generation(int contactId) {

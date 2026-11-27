@@ -315,6 +315,90 @@ for H in "${WALLET_API_H}" "${PENDING_TX_H}"; do
   [ "${PATCH_COUNT}" = "1" ] || { echo "friend patch count=${PATCH_COUNT} in ${H} (expected 1)"; exit 4; }
 done
 echo "wallet API friend patches verified (wallet.h + pending_transaction.h)"
+# Documented minimal patch: epee's HTTP client collects a whole response body
+# in memory and trusts the node for its size, so a node could answer a wallet
+# request with a body of any length. The wallet talks to a node the user chose,
+# over Tor. The client now refuses a Content-Length over the cap of the request
+# before reading the body and stops a body (sized, chunked or connection-close)
+# once it would exceed that cap; the request fails and the wallet retries as
+# for any other node error. The cap depends on the request the wallet made:
+# 128 MiB for the binary endpoints (*.bin) and the transaction fetch
+# (/gettransactions), whose honest replies can be large (a get_blocks.bin
+# chunk is bounded by FIND_BLOCKCHAIN_SUPPLEMENT_MAX_SIZE, 100 MiB, plus its
+# output indices); 1 MiB for the JSON-RPC methods whose replies are a few
+# hundred bytes of metadata (get_version, get_info, get_fee_estimate,
+# hard_fork_info, the block header lookups and the RPC access methods); 64 MiB
+# for every other request (the JSON-RPC output distribution and histogram, the
+# block header range, the transaction pool and the small JSON endpoints). The
+# JSON-RPC method is read from the request body the wallet built, never from
+# the reply. Each patch must apply exactly once.
+EPEE_HTTP_H=/build/monero/contrib/epee/include/net/http_client.h
+cat > /build/zerion_body_cap.inc <<'ZERION_EOF'
+			size_t m_zerion_body_cap = (size_t) 128 * 1024 * 1024; // Zerion: bounded response body
+			static size_t zerion_body_cap_for(const boost::string_ref uri, const boost::string_ref body)
+			{
+				const size_t large = (size_t) 128 * 1024 * 1024;
+				const size_t medium = (size_t) 64 * 1024 * 1024;
+				const size_t small = (size_t) 1024 * 1024;
+				const std::string u(uri.data(), uri.size());
+				if (u.size() >= 4 && u.compare(u.size() - 4, 4, ".bin") == 0) return large;
+				if (u == "/gettransactions" || u == "/get_transactions") return large;
+				if (u != "/json_rpc") return medium;
+				const std::string b(body.data(), body.size());
+				const size_t key = b.find("\"method\"");
+				if (key == std::string::npos) return medium;
+				const size_t q1 = b.find('"', key + 8);
+				if (q1 == std::string::npos) return medium;
+				const size_t q2 = b.find('"', q1 + 1);
+				if (q2 == std::string::npos) return medium;
+				const std::string method = b.substr(q1 + 1, q2 - q1 - 1);
+				static const char* const small_methods[] = {
+					"get_version", "get_info", "get_fee_estimate", "hard_fork_info",
+					"getblockheaderbyheight", "get_block_header_by_height",
+					"getlastblockheader", "get_last_block_header",
+					"getblockcount", "get_block_count",
+					"rpc_access_info", "rpc_access_submit_nonce"
+				};
+				for (const char* const m : small_methods)
+					if (method == m) return small;
+				return medium;
+			}
+ZERION_EOF
+if ! grep -q 'Zerion: bounded response body' "${EPEE_HTTP_H}"; then
+  sed -i "/^\t*size_t m_len_in_remain;/r /build/zerion_body_cap.inc" "${EPEE_HTTP_H}"
+  sed -i "/inline bool invoke(const boost::string_ref uri, const boost::string_ref method, const boost::string_ref body/{n;n;s|^\(\t*\)CRITICAL_REGION_LOCAL(m_lock);|&\n\1m_zerion_body_cap = zerion_body_cap_for(uri, body); // Zerion: bounded response body|}" "${EPEE_HTTP_H}"
+  sed -i "s|^\(\t*\)m_response_info.m_body += piece_of_transfer;|\1if (m_response_info.m_body.size() + piece_of_transfer.size() > m_zerion_body_cap) { LOG_ERROR(\"response body over the cap of this request, closing\"); m_state = reciev_machine_state_error; return false; } // Zerion: bounded response body\n\1m_response_info.m_body += piece_of_transfer;|" "${EPEE_HTTP_H}"
+  sed -i "s|^\(\t*\)\tcontent_len_valid = string_tools::get_xtype_from_string(m_len_in_summary, m_response_info.m_header_info.m_content_length);|&\n\1if (content_len_valid \&\& m_len_in_summary > m_zerion_body_cap) { LOG_ERROR(\"Content-Length over the cap of this request, refusing\"); m_state = reciev_machine_state_error; return false; } // Zerion: bounded response body|" "${EPEE_HTTP_H}"
+fi
+PATCH_COUNT=$(grep -c 'Zerion: bounded response body' "${EPEE_HTTP_H}")
+[ "${PATCH_COUNT}" = "4" ] || { echo "epee http_client.h body cap patch count=${PATCH_COUNT} (expected 4)"; exit 4; }
+grep -q 'static size_t zerion_body_cap_for(const boost::string_ref uri, const boost::string_ref body)' "${EPEE_HTTP_H}" || { echo "epee body cap helper missing"; exit 4; }
+grep -q 'm_zerion_body_cap = zerion_body_cap_for(uri, body);' "${EPEE_HTTP_H}" || { echo "epee body cap not set in invoke"; exit 4; }
+grep -q 'm_body.size() + piece_of_transfer.size() > m_zerion_body_cap' "${EPEE_HTTP_H}" || { echo "epee body cap patch missing in handle_target_data"; exit 4; }
+grep -q 'content_len_valid && m_len_in_summary > m_zerion_body_cap' "${EPEE_HTTP_H}" || { echo "epee body cap patch missing in header analysis"; exit 4; }
+echo "epee HTTP response body cap patch verified (http_client.h, per-request caps)"
+# Documented minimal patch: the same client fills two more buffers from the
+# node before any body is counted: the reply header, collected until its blank
+# line, and the size line of a chunk, collected until its line end. Neither had
+# a limit, so a node could send a header or a size line that never ends. A
+# reply header over 64 KiB and a chunk size line over 1 KiB now fail the
+# request like any other node error. The chunk buffer also starts empty for
+# every chunked reply, so what a failed reply left in it cannot break the next
+# one. Each patch must apply exactly once.
+if ! grep -q 'Zerion: bounded response header' "${EPEE_HTTP_H}"; then
+  sed -i 's~^\(\t*\)std::string::size_type pos = m_header_cache.find(".r.n.r.n");$~&\n\1if ((pos == std::string::npos ? m_header_cache.size() : pos) > (size_t) 64 * 1024) { LOG_ERROR("response header over the cap"); m_state = reciev_machine_state_error; return false; } // Zerion: bounded response header~' "${EPEE_HTTP_H}"
+  sed -i 's~^\(\t\t\t\t\t\)m_chunked_state = http_chunked_state_chunk_head;$~&\n\1m_chunked_cache.clear(); // Zerion: fresh chunk cache per reply~' "${EPEE_HTTP_H}"
+  sed -i 's~^\(\t*\)if(!get_chunk_head(m_chunked_cache, m_len_in_remain, is_matched))$~\1if(!get_chunk_head(m_chunked_cache, m_len_in_remain, is_matched) || (!is_matched \&\& m_chunked_cache.size() > (size_t) 1024)) // Zerion: bounded chunk size line~' "${EPEE_HTTP_H}"
+fi
+PATCH_COUNT=$(grep -c 'Zerion: bounded response header' "${EPEE_HTTP_H}")
+[ "${PATCH_COUNT}" = "1" ] || { echo "epee http_client.h header cap patch count=${PATCH_COUNT} (expected 1)"; exit 4; }
+PATCH_COUNT=$(grep -c 'Zerion: fresh chunk cache per reply' "${EPEE_HTTP_H}")
+[ "${PATCH_COUNT}" = "1" ] || { echo "epee http_client.h chunk cache reset patch count=${PATCH_COUNT} (expected 1)"; exit 4; }
+PATCH_COUNT=$(grep -c 'Zerion: bounded chunk size line' "${EPEE_HTTP_H}")
+[ "${PATCH_COUNT}" = "1" ] || { echo "epee http_client.h chunk size line cap patch count=${PATCH_COUNT} (expected 1)"; exit 4; }
+grep -qF '(pos == std::string::npos ? m_header_cache.size() : pos) > (size_t) 64 * 1024' "${EPEE_HTTP_H}" || { echo "epee header cap patch missing in handle_header"; exit 4; }
+grep -qF '(!is_matched && m_chunked_cache.size() > (size_t) 1024)' "${EPEE_HTTP_H}" || { echo "epee chunk size line cap patch missing in handle_body_body_chunked"; exit 4; }
+echo "epee HTTP response header and chunk size line cap patches and chunk cache reset verified (http_client.h)"
 MB=/build/monero/build/${ABI}
 # Dependencies are built; drop the cross compilers from the environment so
 # Monero's translations ExternalProject (which has no toolchain file) builds its
@@ -400,8 +484,20 @@ ${CXX} -shared -fPIC -O2 -fvisibility=hidden -std=c++17 \
   ${DEPS}/lib/libunbound.a ${DEPS}/lib/libexpat.a ${DEPS}/lib/libiconv.a \
   ${DEPS}/lib/libssl.a ${DEPS}/lib/libcrypto.a \
   -llog -latomic -static-libstdc++ \
+  -Wl,--version-script=/build/jni/zmonero.map -Wl,--exclude-libs,ALL \
   -o ${OUT}/libzmonero.so
 ${STRIP} --strip-unneeded ${OUT}/libzmonero.so
+# The version script keeps every symbol of the statically linked archives
+# (OpenSSL, Boost, libsodium, unbound, expat, the C++ runtime and Monero
+# itself) local, so only the JNI entry points are exported and no other
+# library in the process can resolve or interpose those symbols. The build
+# refuses a library that exports anything else.
+EXPORTED=$(${TC}/bin/llvm-nm -D --defined-only ${OUT}/libzmonero.so | awk '{print $3}')
+OTHER=$(echo "${EXPORTED}" | grep -v -E '^(JNI_OnLoad|JNI_OnUnload|Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_)' | grep -c . || true)
+JNI_COUNT=$(echo "${EXPORTED}" | grep -c -E '^(JNI_OnLoad|JNI_OnUnload|Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_)' || true)
+[ "${OTHER}" = "0" ] || { echo "libzmonero.so exports ${OTHER} symbols outside the JNI surface"; echo "${EXPORTED}" | grep -v -E '^(JNI_OnLoad|JNI_OnUnload|Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_)' | head -20; exit 5; }
+[ "${JNI_COUNT}" -ge 1 ] || { echo "libzmonero.so exports no JNI entry point"; exit 5; }
+echo "exports: ${JNI_COUNT} JNI entry points, nothing else"
 # Fingerprint of this build: tools, host facts, the optional Monero features
 # CMake settled on, and the SHA-256 of every archive that went into the link.
 # A host whose library differs from the pinned value can be compared with the
@@ -412,6 +508,7 @@ ${STRIP} --strip-unneeded ${OUT}/libzmonero.so
   echo "host $(uname -srm) nproc=$(nproc) umask=$(umask)"
   echo "tools cmake=$(cmake --version | head -1 | cut -d' ' -f3) make=$(make --version | head -1 | cut -d' ' -f3) perl=$(perl -e 'print $^V') git=$(git --version | cut -d' ' -f3) $(python3 --version 2>&1)"
   echo "clang $(${CXX} --version | head -1)"
+  echo "map jni/zmonero.map $(sha256sum /build/jni/zmonero.map | cut -d' ' -f1)"
   grep -E '^(HIDAPI|Readline|Backtrace|CCACHE|LRELEASE|USE_READLINE|USE_CCACHE|STACK_TRACE|ARCH|BUILD_TAG)[A-Za-z_]*:' ${MB}/CMakeCache.txt | LC_ALL=C sort | sed 's/^/monero-cmake /' || true
   for a in $(cd ${DEPS}/lib && ls *.a | LC_ALL=C sort); do
     echo "dep ${a} $(sha256sum ${DEPS}/lib/${a} | cut -d' ' -f1)"

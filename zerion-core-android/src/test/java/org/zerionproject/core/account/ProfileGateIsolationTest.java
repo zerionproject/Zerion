@@ -159,7 +159,8 @@ public class ProfileGateIsolationTest extends BrambleMockTestCase {
 		writeKeyFile("a", ctA);
 		writeKeyFile("b", ctB);
 		accountManager = new AndroidAccountManager(databaseConfig, crypto,
-				identityManager, prefs, app, profileManager) {
+				identityManager, prefs, app, profileManager,
+				LockoutStores.plaintext()) {
 			@Override
 			protected LoginThrottle createLoginThrottle(File stateFile) {
 				return LoginThrottle.inFile(new File(testDir, "login.lockout"),

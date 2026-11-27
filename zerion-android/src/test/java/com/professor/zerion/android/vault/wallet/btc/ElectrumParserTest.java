@@ -16,7 +16,7 @@ public class ElectrumParserTest {
 			"1111111111111111111111111111111111111111111111111111111111111111";
 
 	@Test
-	public void parsesHistory() {
+	public void parsesHistory() throws IOException {
 		String resp = "{\"jsonrpc\":\"2.0\",\"result\":[{\"tx_hash\":\""
 				+ TXID + "\",\"height\":800000},{\"tx_hash\":\"" + TXID
 				+ "\",\"height\":0}],\"id\":1}";
@@ -27,20 +27,25 @@ public class ElectrumParserTest {
 	}
 
 	@Test
-	public void historyMissingHashIsSkipped() {
+	public void historyMissingHashIsSkipped() throws IOException {
 		String resp = "{\"result\":[{\"height\":800000}]}";
 		assertTrue(ElectrumClient.parseHistory(resp).isEmpty());
 	}
 
 	@Test
-	public void historyGarbageIsEmptyNotCrash() {
-		assertTrue(ElectrumClient.parseHistory("total garbage").isEmpty());
-		assertTrue(ElectrumClient.parseHistory("").isEmpty());
-		assertTrue(ElectrumClient.parseHistory("{}").isEmpty());
+	public void historyGarbageIsRefusedNotEmpty() {
+		for (String r : new String[]{"total garbage", "", "{}",
+				"{\"result\":null}", "{\"result\":{}}",
+				"{\"result\":[],\"result\":[]}"}) {
+			assertThrows(r, IOException.class,
+					() -> ElectrumClient.parseHistory(r));
+			assertThrows(r, IOException.class,
+					() -> ElectrumClient.parseUnspent(r));
+		}
 	}
 
 	@Test
-	public void historyEntryWithMalformedHashIsSkipped() {
+	public void historyEntryWithMalformedHashIsSkipped() throws IOException {
 		String r = "{\"result\":[{\"tx_hash\":\"zz\",\"height\":1},"
 				+ "{\"tx_hash\":\"" + "a".repeat(64) + "\",\"height\":2},"
 				+ "{\"tx_hash\":\"\\\"],\\\"method\\\":\\\"x\",\"height\":3}]}";
@@ -53,7 +58,7 @@ public class ElectrumParserTest {
 	}
 
 	@Test
-	public void unspentEntryWithMalformedFieldsIsSkipped() {
+	public void unspentEntryWithMalformedFieldsIsSkipped() throws IOException {
 		String good = "b".repeat(64);
 		String r = "{\"result\":[{\"tx_hash\":\"nothex\",\"tx_pos\":0,\"value\":1},"
 				+ "{\"tx_hash\":\"" + good + "\",\"tx_pos\":-1,\"value\":1},"
@@ -66,7 +71,7 @@ public class ElectrumParserTest {
 	}
 
 	@Test
-	public void listsAreBounded() {
+	public void listsAreBounded() throws IOException {
 		StringBuilder sb = new StringBuilder("{\"result\":[");
 		for (int i = 0; i < ElectrumClient.MAX_LIST_ITEMS + 100; i++) {
 			if (i > 0) sb.append(',');
@@ -79,7 +84,7 @@ public class ElectrumParserTest {
 	}
 
 	@Test
-	public void parsesUnspent() {
+	public void parsesUnspent() throws IOException {
 		String resp = "{\"result\":[{\"tx_hash\":\"" + TXID
 				+ "\",\"tx_pos\":2,\"height\":799990,\"value\":123456}]}";
 		List<ElectrumClient.Utxo> u = ElectrumClient.parseUnspent(resp);
@@ -89,7 +94,7 @@ public class ElectrumParserTest {
 	}
 
 	@Test
-	public void unspentMalformedIsSkipped() {
+	public void unspentMalformedIsSkipped() throws IOException {
 		String resp = "{\"result\":[{\"tx_pos\":2,\"value\":100}]}";
 		assertTrue(ElectrumClient.parseUnspent(resp).isEmpty());
 	}

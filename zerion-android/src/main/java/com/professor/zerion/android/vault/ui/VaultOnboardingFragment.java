@@ -147,8 +147,9 @@ public class VaultOnboardingFragment extends BaseFragment {
 		passwordLayout.setError(null);
 		confirmPasswordLayout.setError(null);
 
-		if (passwordLength > 0 && passwordLength < 8) {
-			passwordLayout.setError(getString(R.string.password_min_8_chars));
+		boolean usable = passwordInput.holdsNewVaultPassword();
+		if (passwordLength > 0 && !usable) {
+			passwordLayout.setError(getString(R.string.vault_password_rule));
 			createVaultButton.setEnabled(false);
 			return;
 		}
@@ -168,7 +169,7 @@ public class VaultOnboardingFragment extends BaseFragment {
 			}
 		}
 
-		createVaultButton.setEnabled(passwordLength >= 8 && confirmPasswordLength >= 8);
+		createVaultButton.setEnabled(usable && confirmPasswordLength > 0);
 	}
 
 	private void createVault() {
@@ -182,8 +183,9 @@ public class VaultOnboardingFragment extends BaseFragment {
 				return;
 			}
 
-			if (password.length < 8) {
-				passwordLayout.setError(getString(R.string.password_min_8_chars));
+			if (!com.professor.zerion.android.vault.VaultManager
+					.acceptsNewPassword(password)) {
+				passwordLayout.setError(getString(R.string.vault_password_rule));
 				return;
 			}
 

@@ -51,6 +51,8 @@ import androidx.recyclerview.widget.RecyclerView;
 public class VaultGalleryFragment extends BaseFragment {
 
 	private static final int REQUEST_IMAGE_PICK = 1001;
+	@Nullable
+	private android.app.Dialog mediaDialog = null;
 	private static final int REQUEST_IMAGE_CAPTURE = 1002;
 	private static final int REQUEST_CAMERA_PERMISSION = 2001;
 
@@ -198,9 +200,11 @@ public class VaultGalleryFragment extends BaseFragment {
 		}
 
 		Activity openActivity = requireActivity();
+		dismissMediaDialog();
 		android.app.Dialog dialog = com.professor.zerion.android.security
 				.SecureDialogs.protectSecret(new android.app.Dialog(openActivity,
 						android.R.style.Theme_Black_NoTitleBar_Fullscreen));
+		mediaDialog = dialog;
 
 		View dialogView = LayoutInflater.from(openActivity)
 				.inflate(R.layout.dialog_media_viewer, null);
@@ -227,6 +231,7 @@ public class VaultGalleryFragment extends BaseFragment {
 
 		final android.graphics.Bitmap[] bitmapHolder = new android.graphics.Bitmap[1];
 		dialog.setOnDismissListener(d -> {
+			if (mediaDialog == dialog) mediaDialog = null;
 			if (bitmapHolder[0] != null && !bitmapHolder[0].isRecycled()) {
 				bitmapHolder[0].recycle();
 				bitmapHolder[0] = null;
@@ -262,6 +267,12 @@ public class VaultGalleryFragment extends BaseFragment {
 					Activity a = getActivity();
 					if (a != null) {
 						a.runOnUiThread(() -> {
+							if (!viewModel.isVaultUnlocked()
+									|| !dialog.isShowing()) {
+								dialog.dismiss();
+								if (!bitmap.isRecycled()) bitmap.recycle();
+								return;
+							}
 							if (imageView != null) {
 								imageView.setImageBitmap(bitmap);
 							}
@@ -416,8 +427,6 @@ public class VaultGalleryFragment extends BaseFragment {
 								"photo_" + System.currentTimeMillis() + ".jpg";
 						viewModel.addMediaToVault(VaultItem.ItemType.IMAGE,
 								fileName, content, "image/jpeg");
-						showSnackbar(getString(
-								R.string.vault_gallery_photo_saved));
 					}
 				} finally {
 					SecureMemory.secureDeleteFile(photo, 0L, false);
@@ -459,7 +468,6 @@ public class VaultGalleryFragment extends BaseFragment {
 							}
 
 							viewModel.addMediaToVault(VaultItem.ItemType.IMAGE, fileName, content, "image/jpeg");
-							showSnackbar(getString(R.string.vault_gallery_image_saved));
 						}
 					} catch (Exception e) {
 						showSnackbar(getString(R.string.vault_gallery_image_save_failed));
@@ -518,7 +526,29 @@ public class VaultGalleryFragment extends BaseFragment {
 		}
 	}
 
+	void dismissMediaDialog() {
+		android.app.Dialog d = mediaDialog;
+		mediaDialog = null;
+		if (d != null && d.isShowing()) d.dismiss();
+	}
+
+	@Nullable
+	android.app.Dialog mediaDialog() {
+		return mediaDialog;
+	}
+
+	@Override
+	public void onDestroyView() {
+		dismissMediaDialog();
+		super.onDestroyView();
+	}
+
 	private void observeViewModel() {
+		viewModel.getVaultState().observe(getViewLifecycleOwner(), state -> {
+			if (state != VaultViewModel.VaultState.UNLOCKED) {
+				dismissMediaDialog();
+			}
+		});
 		viewModel.getVaultItems().observe(getViewLifecycleOwner(), items -> {
 			if (items != null) {
 				List<VaultItem> mediaItems = new ArrayList<>();
@@ -532,6 +562,18 @@ public class VaultGalleryFragment extends BaseFragment {
 				allItems.clear();
 				allItems.addAll(mediaItems);
 				applyFilterAndSort();
+			}
+		});
+		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), m -> {
+			if (m != null && !m.isEmpty()) {
+				showSnackbar(m);
+				viewModel.clearMessages();
+			}
+		});
+		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), m -> {
+			if (m != null && !m.isEmpty()) {
+				showSnackbar(m);
+				viewModel.clearMessages();
 			}
 		});
 

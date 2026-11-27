@@ -1,13 +1,10 @@
 package com.professor.zerion.android.sticker;
 
-import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyProperties;
-
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.KeyStore;
 
-import javax.crypto.KeyGenerator;
+import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 
 @NotNullByDefault
@@ -19,24 +16,19 @@ public final class StickerKeystore {
 	private StickerKeystore() {
 	}
 
-	public static SecretKey getOrCreate() throws Exception {
-		KeyStore ks = KeyStore.getInstance(PROVIDER);
-		ks.load(null);
-		KeyStore.Entry entry = ks.getEntry(KEY_ALIAS, null);
-		if (entry instanceof KeyStore.SecretKeyEntry) {
-			return ((KeyStore.SecretKeyEntry) entry).getSecretKey();
+	@Nullable
+	public static SecretKey getIfExists() {
+		try {
+			KeyStore ks = KeyStore.getInstance(PROVIDER);
+			ks.load(null);
+			KeyStore.Entry entry = ks.getEntry(KEY_ALIAS, null);
+			if (entry instanceof KeyStore.SecretKeyEntry) {
+				return ((KeyStore.SecretKeyEntry) entry).getSecretKey();
+			}
+			return null;
+		} catch (Exception e) {
+			return null;
 		}
-		KeyGenerator g = KeyGenerator.getInstance(
-				KeyProperties.KEY_ALGORITHM_AES, PROVIDER);
-		KeyGenParameterSpec spec = new KeyGenParameterSpec.Builder(KEY_ALIAS,
-				KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
-				.setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-				.setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-				.setKeySize(256)
-				.setRandomizedEncryptionRequired(true)
-				.build();
-		g.init(spec);
-		return g.generateKey();
 	}
 
 	public static void deleteKey() {

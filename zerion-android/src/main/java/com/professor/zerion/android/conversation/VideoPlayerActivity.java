@@ -16,8 +16,16 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.ByteArrayDataSource;
+import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.Renderer;
+import androidx.media3.exoplayer.RenderersFactory;
 import androidx.media3.exoplayer.source.ProgressiveMediaSource;
+import androidx.media3.extractor.Extractor;
+import androidx.media3.extractor.ExtractorsFactory;
+import androidx.media3.extractor.mkv.MatroskaExtractor;
+import androidx.media3.extractor.mp4.FragmentedMp4Extractor;
+import androidx.media3.extractor.mp4.Mp4Extractor;
 import androidx.media3.ui.PlayerView;
 
 import org.zerionproject.core.api.db.DatabaseExecutor;
@@ -102,6 +110,7 @@ public class VideoPlayerActivity extends ZerionActivity
 	private String token;
 	@Nullable
 	private MessageId message;
+	private boolean once = false;
 
 	private boolean playWhenReady = true;
 	private int currentWindow = 0;
@@ -129,6 +138,7 @@ public class VideoPlayerActivity extends ZerionActivity
 				finish();
 				return;
 			}
+			once = MediaViewer.once(token);
 		} else {
 			byte[] id = getIntent().getByteArrayExtra(ITEM_ID);
 			if (id != null) {
@@ -150,10 +160,11 @@ public class VideoPlayerActivity extends ZerionActivity
 		ImageButton closeButton = findViewById(R.id.close_button);
 		closeButton.setOnClickListener(v -> finish());
 		ImageButton saveButton = findViewById(R.id.save_button);
-		saveButton.setVisibility(SaveCleanCopy.canSave(shownType())
+		saveButton.setVisibility(!once && SaveCleanCopy.canSave(shownType())
 				? View.VISIBLE : View.GONE);
 		saveButton.setOnClickListener(v -> save());
 		ImageButton openButton = findViewById(R.id.open_elsewhere_button);
+		if (once) openButton.setVisibility(View.GONE);
 		openButton.setOnClickListener(v -> openElsewhere());
 		showHeading(MediaViewer.get(token));
 
@@ -195,6 +206,7 @@ public class VideoPlayerActivity extends ZerionActivity
 		super.onStop();
 		releasePlayer();
 		wipeVideo();
+		if (once && !isChangingConfigurations()) contentGone();
 	}
 
 	@Override
@@ -423,22 +435,79 @@ public class VideoPlayerActivity extends ZerionActivity
 		}
 	}
 
+	static RenderersFactory videoRenderers(android.content.Context context) {
+		return new DefaultRenderersFactory(context) {
+			@Override
+			protected void buildImageRenderers(
+					java.util.ArrayList<Renderer> out) {
+			}
+
+			@Override
+			protected void buildTextRenderers(
+					android.content.Context context,
+					androidx.media3.exoplayer.text.TextOutput output,
+					android.os.Looper outputLooper, int extensionRendererMode,
+					java.util.ArrayList<Renderer> out) {
+			}
+
+			@Override
+			protected void buildMetadataRenderers(
+					android.content.Context context,
+					androidx.media3.exoplayer.metadata.MetadataOutput output,
+					android.os.Looper outputLooper, int extensionRendererMode,
+					java.util.ArrayList<Renderer> out) {
+			}
+
+			@Override
+			protected void buildCameraMotionRenderers(
+					android.content.Context context, int extensionRendererMode,
+					java.util.ArrayList<Renderer> out) {
+			}
+		};
+	}
+
+	static ExtractorsFactory videoExtractors() {
+		return () -> new Extractor[] {new Mp4Extractor(),
+				new FragmentedMp4Extractor(), new MatroskaExtractor()};
+	}
+
 	private void startPlayback(byte[] video) {
 		if (isFinishing() || isDestroyed()) return;
+		if (!com.professor.zerion.android.util.MediaMagic.isVideo(video)) {
+			showLoading(false);
+			showError(getString(R.string.video_playback_error));
+			wipeVideo();
+			return;
+		}
 
-		player = new ExoPlayer.Builder(this).build();
+		player = new ExoPlayer.Builder(this, videoRenderers(this)).build();
 
 		if (playerView != null) {
+			playerView.setArtworkDisplayMode(
+					PlayerView.ARTWORK_DISPLAY_MODE_OFF);
+			playerView.setDefaultArtwork(null);
 			playerView.setPlayer(player);
 		}
 
 		player.addListener(new Player.Listener() {
 			@Override
 			public void onPlaybackStateChanged(int playbackState) {
-				if (playbackState == Player.STATE_READY) {
+				onPlaybackState(playbackState);
+			}
+
+			@Override
+			public void onTracksChanged(
+					androidx.media3.common.Tracks tracks) {
+				if (!tracks.getGroups().isEmpty() && !tracks.isTypeSelected(
+						androidx.media3.common.C.TRACK_TYPE_VIDEO)) {
+					ExoPlayer current = player;
+					if (current != null) {
+						current.stop();
+						current.clearMediaItems();
+					}
 					showLoading(false);
-				} else if (playbackState == Player.STATE_BUFFERING) {
-					showLoading(true);
+					showError(getString(R.string.video_playback_error));
+					wipeVideo();
 				}
 			}
 
@@ -451,11 +520,21 @@ public class VideoPlayerActivity extends ZerionActivity
 		});
 
 		player.setMediaSource(new ProgressiveMediaSource.Factory(
-				() -> new ByteArrayDataSource(video))
+				() -> new ByteArrayDataSource(video), videoExtractors())
 				.createMediaSource(MediaItem.fromUri(Uri.EMPTY)));
 		player.setPlayWhenReady(playWhenReady);
 		player.seekTo(currentWindow, playbackPosition);
 		player.prepare();
+	}
+
+	void onPlaybackState(int playbackState) {
+		if (playbackState == Player.STATE_READY) {
+			showLoading(false);
+		} else if (playbackState == Player.STATE_BUFFERING) {
+			showLoading(true);
+		} else if (playbackState == Player.STATE_ENDED && once) {
+			contentGone();
+		}
 	}
 
 	private void releasePlayer() {
@@ -541,6 +620,7 @@ public class VideoPlayerActivity extends ZerionActivity
 	}
 
 	private void save() {
+		if (once) return;
 		String type = shownType();
 		SaveCleanCopy.confirm(this, type, () -> readContent(
 				data -> SaveCleanCopy.startCopy(this, data, type),
@@ -548,6 +628,7 @@ public class VideoPlayerActivity extends ZerionActivity
 	}
 
 	private void openElsewhere() {
+		if (once) return;
 		readContent(data -> {
 			String type = ExternalViewerTypes.typeForContent(shownType(),
 					data);
@@ -557,6 +638,7 @@ public class VideoPlayerActivity extends ZerionActivity
 				return;
 			}
 			ExternalHandoff.openCopy(this, ioExecutor, data, type,
+					() -> toast(R.string.video_playback_error),
 					() -> toast(R.string.media_document_no_app));
 		}, R.string.video_playback_error);
 	}

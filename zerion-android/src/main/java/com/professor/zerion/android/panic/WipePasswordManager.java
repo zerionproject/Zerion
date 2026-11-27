@@ -99,16 +99,6 @@ public class WipePasswordManager {
 		return securePrefs.getBoolean(PREF_NEEDS_MIGRATION, false);
 	}
 
-	public synchronized boolean setWipePassword(String password) {
-		if (password == null) return false;
-		char[] chars = password.toCharArray();
-		try {
-			return setWipePassword(chars);
-		} finally {
-			java.util.Arrays.fill(chars, '\0');
-		}
-	}
-
 	public synchronized boolean setWipePassword(char[] typed) {
 		enforceNonUiThread();
 
@@ -155,16 +145,6 @@ public class WipePasswordManager {
 			if (!Character.isWhitespace(c)) return false;
 		}
 		return true;
-	}
-
-	public synchronized boolean verifyWipePassword(String password) {
-		if (password == null) return false;
-		char[] chars = password.toCharArray();
-		try {
-			return verifyWipePassword(chars);
-		} finally {
-			java.util.Arrays.fill(chars, '\0');
-		}
 	}
 
 	public synchronized boolean verifyWipePassword(char[] typed) {
@@ -297,16 +277,6 @@ public class WipePasswordManager {
 			return editor.commit();
 		} catch (Exception e) {
 			return false;
-		}
-	}
-
-	private byte[] hashPasswordPBKDF2(String password, byte[] salt, int iterations)
-			throws NoSuchAlgorithmException, InvalidKeySpecException {
-		char[] chars = password.toCharArray();
-		try {
-			return hashPasswordPBKDF2(chars, salt, iterations);
-		} finally {
-			java.util.Arrays.fill(chars, '\0');
 		}
 	}
 

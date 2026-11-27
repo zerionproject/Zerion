@@ -75,7 +75,9 @@ public class GroupPostHistoryDeliveryTest extends BrambleMockTestCase {
 			Runnable::run, settingsManager, clientHelper, crypto,
 			identityManager, contactManager, messagingManager, eventBus,
 			clock, context.mock(org.zerionproject.core.api.system
-					.TaskScheduler.class));
+					.TaskScheduler.class), id -> {
+				}, new org.zerionproject.app.messaging.UnsignedFormsMemory(db,
+						settingsManager, contactManager, messagingManager));
 
 	@Test
 	public void aMembersPostDeliveredByAStrangerStaysHidden()
@@ -130,6 +132,8 @@ public class GroupPostHistoryDeliveryTest extends BrambleMockTestCase {
 			allowing(db).transaction(with(true), withDbRunnable(txn));
 			allowing(db).transactionWithNullableResult(with(true),
 					withNullableDbCallable(txn));
+			allowing(db).transactionWithResult(with(true),
+					withDbCallable(txn));
 			allowing(identityManager).getLocalAuthor(txn);
 			will(returnValue(local));
 			allowing(contactManager).getContacts(txn);

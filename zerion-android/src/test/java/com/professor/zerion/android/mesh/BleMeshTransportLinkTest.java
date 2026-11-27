@@ -10,6 +10,7 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 
 import org.zerionproject.transport.mesh.MeshForwarder;
+import org.zerionproject.transport.mesh.MeshFrame;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,8 +25,11 @@ import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Delayed;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -93,6 +97,55 @@ public class BleMeshTransportLinkTest {
 		assertTrue("the new peer was not dialled",
 				clients.containsKey("BB:00:00:00:00:01"));
 		assertEquals(6, clients.size());
+	}
+
+	@Test
+	public void relayedFramesThisNodeCannotOpenDoNotKeepALinkUseful()
+			throws Exception {
+		String key = "s:AA:00:00:00:00:03";
+		MeshLinkPolicy policy = (MeshLinkPolicy) field("policy");
+		policy.onLinkUp(key, android.os.SystemClock.elapsedRealtime());
+		ShadowSystemClock.advanceBy(Duration.ofMillis(
+				MeshLinkPolicy.NEW_LINK_GRACE_MS + 10_000L));
+		Method onBytes = BleMeshTransport.class.getDeclaredMethod("onBytes",
+				String.class, byte[].class);
+		onBytes.setAccessible(true);
+		SecureRandom random = new SecureRandom();
+		for (int i = 0; i < 3; i++) {
+			byte[] id = new byte[MeshFrame.MESSAGE_ID_BYTES];
+			random.nextBytes(id);
+			byte[] frame = new MeshFrame(3, id, new byte[100]).encode();
+			onBytes.invoke(transport, key, withLengthPrefix(frame));
+		}
+		CountDownLatch drained = new CountDownLatch(1);
+		((Executor) field("receiveExecutor")).execute(drained::countDown);
+		assertTrue(drained.await(5, TimeUnit.SECONDS));
+		assertEquals("novel but unopened frames kept the slot", key,
+				policy.idleLinkToEvict(Collections.singleton(key),
+						android.os.SystemClock.elapsedRealtime()));
+	}
+
+	@Test
+	public void aFrameOpenedForThisNodeKeepsItsLinkUseful() throws Exception {
+		String key = "s:AA:00:00:00:00:04";
+		MeshLinkPolicy policy = (MeshLinkPolicy) field("policy");
+		policy.onLinkUp(key, android.os.SystemClock.elapsedRealtime());
+		ShadowSystemClock.advanceBy(Duration.ofMillis(
+				MeshLinkPolicy.NEW_LINK_GRACE_MS + 10_000L));
+		transport.onOpenedFrom(key);
+		assertEquals(null, policy.idleLinkToEvict(
+				Collections.singleton(key),
+				android.os.SystemClock.elapsedRealtime()));
+	}
+
+	private static byte[] withLengthPrefix(byte[] frame) {
+		byte[] out = new byte[4 + frame.length];
+		out[0] = (byte) (frame.length >>> 24);
+		out[1] = (byte) (frame.length >>> 16);
+		out[2] = (byte) (frame.length >>> 8);
+		out[3] = (byte) frame.length;
+		System.arraycopy(frame, 0, out, 4, frame.length);
+		return out;
 	}
 
 	private ScanResult result(String address, byte[] nonce) throws Exception {

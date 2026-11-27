@@ -189,6 +189,8 @@ final class ContactConnectionLines {
 						s.getRepairAttempts());
 			case REVOKED:
 				return Line.of(R.string.contact_connection_auth_revoked);
+			case FULL:
+				return Line.of(R.string.contact_connection_auth_full);
 			default:
 				return Line.of(R.string.contact_connection_auth_unsupported);
 		}

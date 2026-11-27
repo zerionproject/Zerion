@@ -18,7 +18,9 @@ import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.identity.LocalAuthor;
+import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.api.transport.KeyManager;
+import org.zerionproject.core.contact.request.ContactLinkStore;
 import org.zerionproject.core.test.BrambleMockTestCase;
 import org.zerionproject.core.test.DbExpectations;
 import org.jmock.imposters.ByteBuddyClassImposteriser;
@@ -69,6 +71,8 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 	private boolean alice;
 
 	private ContactManagerImpl contactManager;
+	private ContactLinkStore linkStore;
+	private Clock clock;
 
 	@Before
 	public void setUp() {
@@ -91,13 +95,36 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		timestamp = System.currentTimeMillis();
 		alice = new Random().nextBoolean();
 
+		linkStore = context.mock(ContactLinkStore.class);
+		clock = context.mock(Clock.class);
 		contactManager = new ContactManagerImpl(db, keyManager, identityManager,
-				pendingContactFactory, crypto, pcsStateManager);
+				pendingContactFactory, crypto, pcsStateManager, linkStore,
+				clock);
 	}
 
 	@Test
 	public void convertingPendingContactRotatesHandshakeKeys()
 			throws Exception {
+		KeyPair perAdd = new KeyPair(
+				new org.zerionproject.core.api.crypto.HybridAgreementPublicKey(
+						org.zerionproject.core.test.TestUtils
+								.getRandomBytes(1216)),
+				new org.zerionproject.core.api.crypto.HybridAgreementPrivateKey(
+						org.zerionproject.core.test.TestUtils
+								.getRandomBytes(2432)));
+		convert(null, perAdd, true);
+		convert(new byte[][] {perAdd.getPublic().getEncoded(),
+				perAdd.getPrivate().getEncoded()}, perAdd, true);
+		for (String other : new String[] {"ZeroID", "permanent", "one-time"}) {
+			byte[][] snapshot = {
+					org.zerionproject.core.test.TestUtils.getRandomBytes(1216),
+					org.zerionproject.core.test.TestUtils.getRandomBytes(2432)};
+			convert(snapshot, perAdd, false);
+		}
+	}
+
+	private void convert(@javax.annotation.Nullable byte[][] snapshot,
+			KeyPair perAdd, boolean rotates) throws Exception {
 		Transaction txn = new Transaction(null, false);
 		PendingContactId p = pendingContact.getId();
 
@@ -109,8 +136,68 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 			oneOf(db).getContactsByAuthorId(txn, remote.getId());
 			will(returnValue(java.util.Collections.emptyList()));
 			oneOf(db).getPendingContactOurKeys(txn, p);
+			will(returnValue(snapshot));
+			if (snapshot != null) {
+				oneOf(identityManager).getHybridHandshakeKeys(txn);
+				will(returnValue(perAdd));
+			}
+			oneOf(db).getSettings(txn, PendingContactFlags.IN_PERSON);
+			will(returnValue(new org.zerionproject.core.api.settings
+					.Settings()));
+			oneOf(db).getSettings(txn, PendingContactFlags.RE_ADD);
+			will(returnValue(new org.zerionproject.core.api.settings
+					.Settings()));
+			oneOf(db).removePendingContact(txn, p);
+			oneOf(identityManager).getHandshakeKeys(txn);
+			will(returnValue(handshakeKeyPair));
+			oneOf(db).addContact(txn, remote, local,
+					pendingContact.getPublicKey(), verified, false, false,
+					(byte[]) null);
+			will(returnValue(contactId));
+			oneOf(db).setContactAlias(txn, contactId,
+					pendingContact.getAlias());
+			oneOf(keyManager).addContact(txn, contactId,
+					pendingContact.getPublicKey(), handshakeKeyPair);
+			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
+					timestamp, alice, active);
+			oneOf(pcsStateManager).initializePairingRoot(txn, contactId,
+					rootKey);
+			oneOf(db).getContact(txn, contactId);
+			will(returnValue(contact));
+			if (rotates) {
+				oneOf(identityManager).rotateHybridHandshakeKeys(txn);
+			} else {
+				never(identityManager).rotateHybridHandshakeKeys(txn);
+			}
+		}});
+
+		assertEquals(contactId, contactManager.addContact(txn, p, remote,
+				local, rootKey, timestamp, alice, verified, active, null));
+		context.assertIsSatisfied();
+	}
+
+	@Test
+	public void aPendingContactHookSeesTheConversion() throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+		java.util.List<ContactId> seen = new java.util.ArrayList<>();
+		contactManager.registerPendingContactHook((t, pc, c) -> {
+			assertEquals(p, pc);
+			seen.add(c);
+		});
+		context.checking(new DbExpectations() {{
+			oneOf(db).containsContact(txn, remote.getId(), local);
+			will(returnValue(false));
+			oneOf(db).getPendingContact(txn, p);
+			will(returnValue(pendingContact));
+			oneOf(db).getContactsByAuthorId(txn, remote.getId());
+			will(returnValue(java.util.Collections.emptyList()));
+			oneOf(db).getPendingContactOurKeys(txn, p);
 			will(returnValue(null));
-			oneOf(db).getSettings(txn, ContactManagerImpl.IN_PERSON_NAMESPACE);
+			oneOf(db).getSettings(txn, PendingContactFlags.IN_PERSON);
+			will(returnValue(new org.zerionproject.core.api.settings
+					.Settings()));
+			oneOf(db).getSettings(txn, PendingContactFlags.RE_ADD);
 			will(returnValue(new org.zerionproject.core.api.settings
 					.Settings()));
 			oneOf(db).removePendingContact(txn, p);
@@ -132,9 +219,9 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(contact));
 			oneOf(identityManager).rotateHybridHandshakeKeys(txn);
 		}});
-
-		assertEquals(contactId, contactManager.addContact(txn, p, remote,
-				local, rootKey, timestamp, alice, verified, active, null));
+		contactManager.addContact(txn, p, remote, local, rootKey, timestamp,
+				alice, verified, active, null);
+		assertEquals(singletonList(contactId), seen);
 	}
 
 	@Test
@@ -234,6 +321,10 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 			oneOf(db).getContact(txn, contactId);
 			will(returnValue(contact));
 			oneOf(db).removeContact(txn, contactId);
+			oneOf(db).mergeSettings(with(txn),
+					with(any(org.zerionproject.core.api.settings.Settings
+							.class)),
+					with(ContactManagerImpl.CONNECTION_KEYS_NAMESPACE));
 		}});
 
 		contactManager.removeContact(contactId);
@@ -408,44 +499,15 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	public void aPairingWithAnExistingContactReplacesItsKeysAndKeepsIt()
+	public void aReAddOfAnExistingContactReplacesItsKeysAndKeepsIt()
 			throws Exception {
 		Transaction txn = new Transaction(null, false);
 		PendingContactId p = pendingContact.getId();
-		org.zerionproject.core.api.settings.Settings none =
-				new org.zerionproject.core.api.settings.Settings();
 
 		context.checking(new DbExpectations() {{
-			oneOf(db).getPendingContact(txn, p);
-			will(returnValue(pendingContact));
-			oneOf(db).getContactsByAuthorId(txn, remote.getId());
-			will(returnValue(java.util.Collections.singletonList(contact)));
-			oneOf(db).getPendingContactOurKeys(txn, p);
-			will(returnValue(null));
-			oneOf(db).getSettings(txn, ContactManagerImpl.IN_PERSON_NAMESPACE);
-			will(returnValue(none));
-			oneOf(db).removePendingContact(txn, p);
-			oneOf(db).containsContact(txn, remote.getId(), local);
-			will(returnValue(true));
-			oneOf(db).getContactsByAuthorId(txn, remote.getId());
-			will(returnValue(java.util.Collections.singletonList(contact)));
-			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
-					timestamp, alice, true);
-			oneOf(db).removePcsSessionState(txn, contactId,
-					DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT);
-			oneOf(db).removePcsSessionState(txn, contactId,
-					DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING);
-			oneOf(pcsStateManager).initializePairingRoot(txn, contactId,
-					rootKey);
-			oneOf(db).mergeSettings(with(txn), with(any(
-					org.zerionproject.core.api.settings.Settings.class)),
-					with(ContactManagerImpl.CONNECTION_KEYS_NAMESPACE));
-			oneOf(identityManager).rotateHybridHandshakeKeys(txn);
-			never(db).addContact(with(any(Transaction.class)),
-					with(any(Author.class)), with(any(AuthorId.class)),
-					with(any(org.zerionproject.core.api.crypto.PublicKey.class)),
-					with(any(boolean.class)), with(any(boolean.class)),
-					with(any(boolean.class)), with(any(byte[].class)));
+			existingContactPairing(this, txn, p, none(), marked());
+			clears(this, txn, PendingContactFlags.RE_ADD);
+			reKeys(this, txn);
 		}});
 
 		assertEquals(contactId, contactManager.addContact(txn, p, remote,
@@ -453,14 +515,295 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void replacingAContactsKeysIsAnnouncedAndAddingANewContactIsNot()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+
+		context.checking(new DbExpectations() {{
+			existingContactPairing(this, txn, p, none(), marked());
+			clears(this, txn, PendingContactFlags.RE_ADD);
+			reKeys(this, txn);
+		}});
+
+		assertEquals(0, keysReplacedIn(txn));
+		assertEquals(contactId, contactManager.addContact(txn, p, remote,
+				local, rootKey, timestamp, alice, verified, active, null));
+		assertEquals(1, keysReplacedIn(txn));
+
+		Transaction added = new Transaction(null, false);
+		context.checking(new DbExpectations() {{
+			oneOf(db).addContact(added, remote, local, null, verified, true,
+					false, (byte[]) null);
+			will(returnValue(contactId));
+			oneOf(keyManager).addRotationKeys(added, contactId, rootKey,
+					timestamp, alice, active);
+			oneOf(pcsStateManager).initializePairingRoot(added, contactId,
+					rootKey);
+			oneOf(db).getContact(added, contactId);
+			will(returnValue(contact));
+		}});
+		assertEquals(contactId, contactManager.addContact(added, remote, local,
+				rootKey, timestamp, alice, verified, active));
+		assertEquals(0, keysReplacedIn(added));
+	}
+
+	private int keysReplacedIn(Transaction txn) {
+		int n = 0;
+		for (org.zerionproject.core.api.db.CommitAction a : txn.getActions()) {
+			if (!(a instanceof org.zerionproject.core.api.db.EventAction)) {
+				continue;
+			}
+			org.zerionproject.core.api.event.Event e =
+					((org.zerionproject.core.api.db.EventAction) a).getEvent();
+			if (e instanceof org.zerionproject.core.api.contact.event
+					.ContactKeysReplacedEvent) {
+				assertEquals(contactId, ((org.zerionproject.core.api.contact
+						.event.ContactKeysReplacedEvent) e).getContactId());
+				n++;
+			}
+		}
+		return n;
+	}
+
+	@Test
+	public void aReAddReplacesTheKeysWhenThePeerReplacesThemToo()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+
+		context.checking(new DbExpectations() {{
+			existingContactPairing(this, txn, p, none(), marked());
+			clears(this, txn, PendingContactFlags.RE_ADD);
+			reKeys(this, txn);
+		}});
+
+		assertEquals(contactId, contactManager.addContact(txn, p, remote,
+				local, rootKey, timestamp, alice, verified, active, null,
+				true));
+	}
+
+	@Test
+	public void aReAddIsRefusedWhenThePeerDoesNotReplaceTheKeys()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+
+		context.checking(new DbExpectations() {{
+			existingContactPairing(this, txn, p, none(), marked());
+			clears(this, txn, PendingContactFlags.RE_ADD);
+			neverReKeys(this, txn);
+		}});
+
+		assertRefused(txn, p, false);
+	}
+
+	@Test
+	public void aPairingTheUserDidNotAskForLeavesAnExistingContactAlone()
+			throws Exception {
+		for (Boolean peer : new Boolean[] {null, true, false}) {
+			Transaction txn = new Transaction(null, false);
+			PendingContactId p = pendingContact.getId();
+
+			context.checking(new DbExpectations() {{
+				existingContactPairing(this, txn, p, none(), none());
+				neverReKeys(this, txn);
+			}});
+
+			assertRefused(txn, p, peer);
+			context.assertIsSatisfied();
+		}
+	}
+
+	@Test
+	public void aMarkOfAnEarlierPendingContactWithTheSameIdDoesNotCount()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+		PendingContact earlier = new PendingContact(p,
+				pendingContact.getPublicKey(), pendingContact.getAlias(),
+				pendingContact.getTimestamp() - 1);
+		org.zerionproject.core.api.settings.Settings stale =
+				new org.zerionproject.core.api.settings.Settings();
+		stale.putBoolean(PendingContactFlags.key(earlier), true);
+
+		context.checking(new DbExpectations() {{
+			existingContactPairing(this, txn, p, stale, stale);
+			neverReKeys(this, txn);
+		}});
+
+		assertRefused(txn, p, null);
+	}
+
+	@Test
+	public void anExistingContactScannedInPersonIsReKeyedAndVerified()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+
+		context.checking(new DbExpectations() {{
+			existingContactPairing(this, txn, p, marked(), none());
+			clears(this, txn, PendingContactFlags.IN_PERSON);
+			reKeys(this, txn);
+			oneOf(db).setContactVerified(txn, contactId);
+		}});
+
+		assertEquals(contactId, contactManager.addContact(txn, p, remote,
+				local, rootKey, timestamp, alice, verified, active, null));
+	}
+
+	@Test
+	public void bothMarksAreReadBeforeTheAddIsRefused()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+
+		context.checking(new DbExpectations() {{
+			existingContactPairing(this, txn, p, marked(), marked());
+			clears(this, txn, PendingContactFlags.IN_PERSON);
+			clears(this, txn, PendingContactFlags.RE_ADD);
+			neverReKeys(this, txn);
+		}});
+
+		assertRefused(txn, p, false);
+	}
+
+	@Test
+	public void removingAPendingContactClearsItsMarks() throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).getPendingContact(txn, p);
+			will(returnValue(pendingContact));
+			oneOf(db).getSettings(txn, PendingContactFlags.IN_PERSON);
+			will(returnValue(marked()));
+			clears(this, txn, PendingContactFlags.IN_PERSON);
+			oneOf(db).getSettings(txn, PendingContactFlags.RE_ADD);
+			will(returnValue(marked()));
+			clears(this, txn, PendingContactFlags.RE_ADD);
+			oneOf(db).removePendingContact(txn, p);
+		}});
+
+		contactManager.removePendingContact(txn, p);
+	}
+
+	@Test
+	public void intendsToReplaceKeysReadsEitherMark() throws Exception {
+		PendingContactId p = pendingContact.getId();
+		org.zerionproject.core.api.settings.Settings[][] cases = {
+				{none(), none()}, {marked(), none()}, {none(), marked()}};
+		boolean[] expected = {false, true, true};
+		for (int i = 0; i < cases.length; i++) {
+			Transaction txn = new Transaction(null, true);
+			org.zerionproject.core.api.settings.Settings inPerson =
+					cases[i][0];
+			org.zerionproject.core.api.settings.Settings reAdd = cases[i][1];
+			context.checking(new DbExpectations() {{
+				oneOf(db).getPendingContact(txn, p);
+				will(returnValue(pendingContact));
+				oneOf(db).getSettings(txn, PendingContactFlags.IN_PERSON);
+				will(returnValue(inPerson));
+				allowing(db).getSettings(txn, PendingContactFlags.RE_ADD);
+				will(returnValue(reAdd));
+			}});
+			assertEquals(expected[i],
+					contactManager.intendsToReplaceKeys(txn, p));
+			context.assertIsSatisfied();
+		}
+	}
+
+	private void assertRefused(Transaction txn, PendingContactId p,
+			@javax.annotation.Nullable Boolean peerReplacesKeys)
+			throws Exception {
+		try {
+			contactManager.addContact(txn, p, remote, local, rootKey,
+					timestamp, alice, verified, active, null,
+					peerReplacesKeys);
+			fail();
+		} catch (org.zerionproject.core.api.db.ContactExistsException e) {
+			assertEquals(remote, e.getRemoteAuthor());
+		}
+	}
+
+	private static org.zerionproject.core.api.settings.Settings none() {
+		return new org.zerionproject.core.api.settings.Settings();
+	}
+
+	private org.zerionproject.core.api.settings.Settings marked() {
+		org.zerionproject.core.api.settings.Settings s =
+				new org.zerionproject.core.api.settings.Settings();
+		s.putBoolean(PendingContactFlags.key(pendingContact), true);
+		return s;
+	}
+
+	private void clears(DbExpectations e, Transaction txn, String flag)
+			throws Exception {
+		e.oneOf(db).mergeSettings(e.with(txn), e.with(e.any(
+				org.zerionproject.core.api.settings.Settings.class)),
+				e.with(flag));
+	}
+
+	private void existingContactPairing(DbExpectations e, Transaction txn,
+			PendingContactId p,
+			org.zerionproject.core.api.settings.Settings inPerson,
+			org.zerionproject.core.api.settings.Settings reAdd)
+			throws Exception {
+		e.oneOf(db).getPendingContact(txn, p);
+		e.will(e.returnValue(pendingContact));
+		e.allowing(db).getContactsByAuthorId(txn, remote.getId());
+		e.will(e.returnValue(java.util.Collections.singletonList(contact)));
+		e.oneOf(db).getPendingContactOurKeys(txn, p);
+		e.will(e.returnValue(null));
+		e.oneOf(db).getSettings(txn, PendingContactFlags.IN_PERSON);
+		e.will(e.returnValue(inPerson));
+		e.oneOf(db).getSettings(txn, PendingContactFlags.RE_ADD);
+		e.will(e.returnValue(reAdd));
+		e.oneOf(db).removePendingContact(txn, p);
+		e.oneOf(db).containsContact(txn, remote.getId(), local);
+		e.will(e.returnValue(true));
+		e.never(db).addContact(e.with(e.any(Transaction.class)),
+				e.with(e.any(Author.class)), e.with(e.any(AuthorId.class)),
+				e.with(e.any(org.zerionproject.core.api.crypto.PublicKey.class)),
+				e.with(e.any(boolean.class)), e.with(e.any(boolean.class)),
+				e.with(e.any(boolean.class)), e.with(e.any(byte[].class)));
+	}
+
+	private void neverReKeys(DbExpectations e, Transaction txn)
+			throws Exception {
+		e.never(keyManager).addRotationKeys(e.with(e.any(Transaction.class)),
+				e.with(e.any(ContactId.class)), e.with(e.any(SecretKey.class)),
+				e.with(e.any(long.class)), e.with(e.any(boolean.class)),
+				e.with(e.any(boolean.class)));
+		e.never(db).removePcsSessionState(e.with(e.any(Transaction.class)),
+				e.with(e.any(ContactId.class)), e.with(e.any(int.class)));
+		e.never(pcsStateManager).initializePairingRoot(
+				e.with(e.any(Transaction.class)), e.with(e.any(ContactId.class)),
+				e.with(e.any(SecretKey.class)));
+		e.never(identityManager).rotateHybridHandshakeKeys(txn);
+		e.never(db).setContactVerified(e.with(e.any(Transaction.class)),
+				e.with(e.any(ContactId.class)));
+	}
+
+	private void reKeys(DbExpectations e, Transaction txn) throws Exception {
+		e.oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
+				timestamp, alice, true);
+		e.oneOf(db).removePcsSessionState(txn, contactId,
+				DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT);
+		e.oneOf(db).removePcsSessionState(txn, contactId,
+				DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING);
+		e.oneOf(pcsStateManager).initializePairingRoot(txn, contactId,
+				rootKey);
+		e.oneOf(db).mergeSettings(e.with(txn), e.with(e.any(
+				org.zerionproject.core.api.settings.Settings.class)),
+				e.with(ContactManagerImpl.CONNECTION_KEYS_NAMESPACE));
+		e.oneOf(identityManager).rotateHybridHandshakeKeys(txn);
+	}
+
+	@Test
 	public void aLinkScannedInPersonVerifiesTheContact() throws Exception {
 		Transaction txn = new Transaction(null, false);
 		PendingContactId p = pendingContact.getId();
-		org.zerionproject.core.api.settings.Settings marked =
-				new org.zerionproject.core.api.settings.Settings();
-		marked.putBoolean(org.zerionproject.core.util.StringUtils
-				.toHexString(p.getBytes()), true);
-
 		context.checking(new DbExpectations() {{
 			oneOf(db).getPendingContact(txn, p);
 			will(returnValue(pendingContact));
@@ -468,11 +811,11 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(java.util.Collections.emptyList()));
 			oneOf(db).getPendingContactOurKeys(txn, p);
 			will(returnValue(null));
-			oneOf(db).getSettings(txn, ContactManagerImpl.IN_PERSON_NAMESPACE);
-			will(returnValue(marked));
-			oneOf(db).mergeSettings(with(txn), with(any(
-					org.zerionproject.core.api.settings.Settings.class)),
-					with(ContactManagerImpl.IN_PERSON_NAMESPACE));
+			oneOf(db).getSettings(txn, PendingContactFlags.IN_PERSON);
+			will(returnValue(marked()));
+			clears(this, txn, PendingContactFlags.IN_PERSON);
+			oneOf(db).getSettings(txn, PendingContactFlags.RE_ADD);
+			will(returnValue(none()));
 			oneOf(db).removePendingContact(txn, p);
 			oneOf(db).containsContact(txn, remote.getId(), local);
 			will(returnValue(false));

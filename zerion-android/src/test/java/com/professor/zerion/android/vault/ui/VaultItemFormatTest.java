@@ -129,7 +129,7 @@ public class VaultItemFormatTest {
 	public void plainNotesAreStoredAsUtf8AndReplaced() throws Exception {
 		VaultViewModelRig rig = new VaultViewModelRig();
 		VaultViewModel vm = rig.newModel();
-		vm.saveNote("Groceries", "milk é", null);
+		vm.saveNote(vm.newNoteSaveRequest(), "Groceries", "milk é", null);
 		VaultItem item = rig.vault.named("Groceries");
 		assertEquals(VaultItem.ItemType.NOTE, item.type);
 		assertArrayEquals("milk é".getBytes(StandardCharsets.UTF_8),
@@ -138,7 +138,8 @@ public class VaultItemFormatTest {
 		await(() -> loaded.getValue() != null);
 		assertEquals("milk é", loaded.getValue());
 
-		vm.saveNote("Groceries", "bread", item.id);
+		vm.saveNote(vm.newNoteSaveRequest(), "Groceries", "bread",
+				item.id);
 		assertEquals(1, rig.vault.size());
 		VaultItem replaced = rig.vault.named("Groceries");
 		assertTrue(!replaced.id.equals(item.id));
@@ -150,7 +151,8 @@ public class VaultItemFormatTest {
 	public void protectedNotesUseTheVersionTwoLayout() throws Exception {
 		VaultViewModelRig rig = new VaultViewModelRig();
 		VaultViewModel vm = rig.newModel();
-		vm.saveNoteWithPassword("Diary", "dear diary", "pw".toCharArray(),
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "Diary",
+				"dear diary", "pw".toCharArray(),
 				null);
 		VaultItem item = rig.vault.named("🔒 Diary");
 		assertNotNull(item);
@@ -182,7 +184,8 @@ public class VaultItemFormatTest {
 	public void aWrongPasswordOpensNoNote() throws Exception {
 		VaultViewModelRig rig = new VaultViewModelRig();
 		VaultViewModel vm = rig.newModel();
-		vm.saveNoteWithPassword("Diary", "dear diary", "pw".toCharArray(),
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "Diary",
+				"dear diary", "pw".toCharArray(),
 				null);
 		VaultItem item = rig.vault.named("🔒 Diary");
 		LiveData<String> opened = vm.loadPasswordProtectedNote(item.id,
@@ -226,7 +229,7 @@ public class VaultItemFormatTest {
 	public void aLockedVaultAsksTheNoteScreenToRetry() throws Exception {
 		VaultViewModelRig rig = new VaultViewModelRig();
 		VaultViewModel vm = rig.newModel();
-		vm.saveNote("N", "body", null);
+		vm.saveNote(vm.newNoteSaveRequest(), "N", "body", null);
 		VaultItem item = rig.vault.named("N");
 		rig.vault.unlocked = false;
 		LiveData<String> loaded = vm.loadNoteContent(item.id);

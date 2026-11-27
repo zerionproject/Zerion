@@ -116,6 +116,38 @@ public class AntiForensicsTest {
 	}
 
 	@Test
+	public void theCurrentUsbStateIsReadWithoutRegisteringAReceiver() {
+		Application app = RuntimeEnvironment.getApplication();
+		AtomicBoolean receiverPassed = new AtomicBoolean();
+		Intent[] sticky = {usb(true, true, "mtp")};
+		AntiForensics af = new AntiForensics(app, (c, r, f) -> {
+			if (r != null) receiverPassed.set(true);
+			assertTrue(f.hasAction(AntiForensics.ACTION_USB_STATE));
+			return sticky[0];
+		}, DIRECT);
+		assertTrue(af.isDataTransferActive());
+		sticky[0] = usb(true, true, "adb");
+		assertTrue(af.isDataTransferActive());
+		sticky[0] = usb(true, true);
+		assertFalse("charging only", af.isDataTransferActive());
+		sticky[0] = usb(false, false);
+		assertFalse(af.isDataTransferActive());
+		sticky[0] = null;
+		assertFalse("no USB state broadcast yet", af.isDataTransferActive());
+		assertFalse(receiverPassed.get());
+		assertEquals(UsbPanicState.OFF, af.getUsbPanicState());
+	}
+
+	@Test
+	public void aUsbStateThatCannotBeReadCountsAsNotConnected() {
+		AntiForensics af = new AntiForensics(
+				RuntimeEnvironment.getApplication(), (c, r, f) -> {
+					throw new SecurityException();
+				}, DIRECT);
+		assertFalse(af.isDataTransferActive());
+	}
+
+	@Test
 	public void enablingReportsArmedOnlyWhenTheReceiverIsRegistered() {
 		Application app = RuntimeEnvironment.getApplication();
 		shadowOf(app).grantPermissions(app.getPackageName()

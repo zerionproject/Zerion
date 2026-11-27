@@ -23,6 +23,10 @@ public final class InMemoryVault {
 	public final VaultManager manager = mock(VaultManager.class);
 	public volatile boolean unlocked = true;
 	public volatile long lockGeneration = 1;
+	public final List<Runnable> lockListeners =
+			new java.util.concurrent.CopyOnWriteArrayList<>();
+	public final java.util.Queue<Exception> deleteFailures =
+			new java.util.concurrent.ConcurrentLinkedQueue<>();
 
 	private final Map<String, VaultItem> items = new LinkedHashMap<>();
 	private final Map<String, byte[]> contents = new HashMap<>();
@@ -33,6 +37,15 @@ public final class InMemoryVault {
 		when(manager.vaultExists()).thenReturn(true);
 		when(manager.isUnlocked()).thenAnswer(a -> unlocked);
 		when(manager.getLockGeneration()).thenAnswer(a -> lockGeneration);
+		when(manager.isLockedNow()).thenAnswer(a -> !unlocked);
+		doAnswer(a -> {
+			lockListeners.add(a.getArgument(0));
+			return null;
+		}).when(manager).addLockListener(any());
+		doAnswer(a -> {
+			lockListeners.remove((Runnable) a.getArgument(0));
+			return null;
+		}).when(manager).removeLockListener(any());
 		when(manager.listItems()).thenAnswer(a -> list());
 		when(manager.addItem(any(), anyString(), any())).thenAnswer(a ->
 				add(a.getArgument(0), a.getArgument(1), a.getArgument(2),
@@ -43,6 +56,9 @@ public final class InMemoryVault {
 		when(manager.addItemWithPassword(any(), anyString(), any(), any()))
 				.thenAnswer(a -> add(a.getArgument(0), a.getArgument(1),
 						a.getArgument(2), a.getArgument(3)));
+		when(manager.addMediaItemWithPassword(any(), anyString(), any(),
+				any(), any())).thenAnswer(a -> add(a.getArgument(0),
+				a.getArgument(1), a.getArgument(2), a.getArgument(4)));
 		when(manager.getItemContent(anyString())).thenAnswer(a ->
 				content(a.getArgument(0), null, false));
 		when(manager.loadDocumentContentSecure(anyString())).thenAnswer(a ->
@@ -53,11 +69,17 @@ public final class InMemoryVault {
 		when(manager.itemHasExtraPassword(anyString())).thenAnswer(a ->
 				hasPassword(a.getArgument(0)));
 		doAnswer(a -> {
+			Exception failure = deleteFailures.poll();
+			if (failure != null) throw failure;
 			remove(a.getArgument(0));
 			return null;
 		}).when(manager).deleteItem(anyString());
 		when(manager.withoutActivityRefresh(any())).thenAnswer(a ->
 				((Callable<?>) a.getArgument(0)).call());
+	}
+
+	public void runLockListeners() {
+		for (Runnable r : lockListeners) r.run();
 	}
 
 	public synchronized List<VaultItem> list() {

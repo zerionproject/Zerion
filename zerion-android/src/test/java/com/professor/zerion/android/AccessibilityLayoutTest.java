@@ -29,7 +29,8 @@ public class AccessibilityLayoutTest {
 			"dialog_add_profile.xml#@+id/profile_password_input",
 			"dialog_add_profile.xml#@+id/profile_password_confirm_input"));
 	private static final String[][] TARGETS = {
-			{"view_composite_send_button.xml", "@+id/attachmentButton", "both"},
+			{"text_input_view.xml", "@+id/secretNoteButton", "both"},
+			{"text_input_view.xml", "@+id/attachmentButton", "both"},
 			{"view_composite_send_button.xml", "@+id/voiceButton", "both"},
 			{"view_composite_send_button.xml", "@+id/sendButton", "both"},
 			{"reply_preview.xml", "@+id/cancel_reply", "both"},

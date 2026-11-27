@@ -37,9 +37,11 @@ interface ConversationListener {
 
 	void onSecretNoteOpened(org.zerionproject.core.api.sync.MessageId messageId);
 
-	void onSecretNoteRevealed(org.zerionproject.core.api.sync.MessageId messageId);
+	void onSecretNoteRevealed(org.zerionproject.core.api.sync.MessageId messageId,
+			int countdownSeconds);
 
-	void onSecretNoteRevealing(boolean revealing);
+	default void onViewOnceClicked(ConversationViewOnceItem item) {
+	}
 
 	List<AttachmentItem> loadAttachmentsForItem(ConversationMessageItem item);
 

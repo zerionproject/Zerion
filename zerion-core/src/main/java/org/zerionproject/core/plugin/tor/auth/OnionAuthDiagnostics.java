@@ -18,6 +18,7 @@ public final class OnionAuthDiagnostics {
 	private final long ownGeneration;
 	private final long contactGeneration;
 	private final boolean holdsPreviousAddress;
+	private final boolean heldByCapacity;
 
 	public OnionAuthDiagnostics(State state, boolean commitSent, int repairs,
 			boolean rekeying, int silenceRepairs, int openDials,
@@ -30,7 +31,16 @@ public final class OnionAuthDiagnostics {
 			boolean rekeying, int silenceRepairs, int openDials,
 			long ownGeneration, long contactGeneration,
 			boolean holdsPreviousAddress) {
+		this(state, commitSent, repairs, rekeying, silenceRepairs, openDials,
+				ownGeneration, contactGeneration, holdsPreviousAddress, false);
+	}
+
+	public OnionAuthDiagnostics(State state, boolean commitSent, int repairs,
+			boolean rekeying, int silenceRepairs, int openDials,
+			long ownGeneration, long contactGeneration,
+			boolean holdsPreviousAddress, boolean heldByCapacity) {
 		this.holdsPreviousAddress = holdsPreviousAddress;
+		this.heldByCapacity = heldByCapacity;
 		this.state = state;
 		this.commitSent = commitSent;
 		this.repairs = repairs;
@@ -81,5 +91,9 @@ public final class OnionAuthDiagnostics {
 
 	public boolean isHoldingPreviousAddress() {
 		return holdsPreviousAddress;
+	}
+
+	public boolean isHeldByCapacity() {
+		return heldByCapacity;
 	}
 }

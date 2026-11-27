@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:orientation="vertical"
+	android:paddingHorizontal="20dp"
+	android:paddingTop="10dp">
+
+	<TextView
+		android:id="@+id/inviteLinkLabel"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="@color/zerion_text_primary"
+		android:textSize="16sp"
+		android:textStyle="bold" />
+
+	<TextView
+		android:id="@+id/inviteLinkCounts"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp" />
+
+	<TextView
+		android:id="@+id/inviteLinkState"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp" />
+
+	<androidx.constraintlayout.widget.ConstraintLayout
+		android:id="@+id/inviteLinkActions"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content">
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/inviteLinkShare"
+			style="@style/Zerion.Button.Text"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/share_button" />
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/inviteLinkCopy"
+			style="@style/Zerion.Button.Text"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/copy_button" />
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/inviteLinkQr"
+			style="@style/Zerion.Button.Text"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/show_qr_button" />
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/inviteLinkResume"
+			style="@style/Zerion.Button.Text"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/invite_links_resume_now"
+			android:visibility="gone" />
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/inviteLinkWithdraw"
+			style="@style/Zerion.Button.Text"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/invite_links_withdraw" />
+
+		<androidx.constraintlayout.helper.widget.Flow
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			app:constraint_referenced_ids="inviteLinkShare,inviteLinkCopy,inviteLinkQr,inviteLinkResume,inviteLinkWithdraw"
+			app:flow_horizontalBias="0"
+			app:flow_horizontalGap="4dp"
+			app:flow_horizontalStyle="packed"
+			app:flow_wrapMode="chain"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toTopOf="parent" />
+
+	</androidx.constraintlayout.widget.ConstraintLayout>
+
+</LinearLayout>

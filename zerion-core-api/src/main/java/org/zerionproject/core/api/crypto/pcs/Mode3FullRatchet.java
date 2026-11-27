@@ -11,7 +11,7 @@ public interface Mode3FullRatchet {
 	Mode3FullState createInitialState();
 
 	PqSendResult pqEncapsulateSend(Mode3FullState state,
-			long ownSendsSinceRotation);
+			long ownSendsSinceRotation, long receivedSinceRotation);
 
 	PqRecvResult pqDecapsulateRecv(Mode3FullState state, KpId kpId,
 			byte[] ciphertext, byte[] theirNewPqPk) throws PcsException;

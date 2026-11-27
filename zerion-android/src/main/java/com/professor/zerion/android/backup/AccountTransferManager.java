@@ -36,6 +36,8 @@ import static com.professor.zerion.android.backup.TransferException.Reason.PROTO
 public class AccountTransferManager {
 
 	public static final String LINK_PREFIX = "zerion-transfer://";
+	private static final java.util.regex.Pattern ONION_V3 =
+			java.util.regex.Pattern.compile("^[a-z2-7]{56}$");
 
 	private static final int PUBKEY_LEN = 32;
 	private static final int MAX_BUNDLE_BYTES = 512 * 1024 * 1024;
@@ -206,6 +208,9 @@ public class AccountTransferManager {
 		}
 		if (theirPub.length != PUBKEY_LEN) throw new TransferException(PROTOCOL);
 		String onion = body.substring(sep + 1);
+		if (!ONION_V3.matcher(onion).matches()) {
+			throw new TransferException(PROTOCOL);
+		}
 		KeyPair myKp = crypto.generateAgreementKeyPair();
 		byte[] myPub = myKp.getPublic().getEncoded();
 		cb.onStatus(Status.CONNECTING);

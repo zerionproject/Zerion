@@ -11,6 +11,7 @@
 		android:id="@+id/player_view"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
+		app:artwork_display_mode="off"
 		app:show_buffering="when_playing"
 		app:use_controller="true"
 		app:resize_mode="fit" />

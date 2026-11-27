@@ -38,6 +38,9 @@ import static org.mockito.Mockito.verify;
 @Config(sdk = 29)
 public class AccountTransferManagerTest {
 
+	private static final String ONION =
+			"fakeonionfakeonionfakeonionfakeonionfakeonionfakeonionfa";
+
 	private CryptoComponent crypto;
 	private final AccountRetirement retirement = mock(AccountRetirement.class);
 	private final AtomicReference<Integer> publishedPort =
@@ -49,7 +52,7 @@ public class AccountTransferManagerTest {
 		public OnionHandle publish(int localPort, @Nullable String privateKey) {
 			publishedPort.set(localPort);
 			dialPort.compareAndSet(null, localPort);
-			return new OnionHandle("fakeonionfakeonionfakeonion", "");
+			return new OnionHandle(ONION, "");
 		}
 
 		@Override
@@ -300,7 +303,7 @@ public class AccountTransferManagerTest {
 			AccountTransferManager receiver = new AccountTransferManager(
 					crypto, publisher, loopback, backup, retirement);
 			String payload = AccountTransferManager.LINK_PREFIX
-					+ Base32.encode(hostilePub) + ":hostile";
+					+ Base32.encode(hostilePub) + ":" + ONION;
 			try {
 				receiver.receive(payload, "pw".toCharArray(),
 						new AccountTransferManager.Callback() {
@@ -344,5 +347,88 @@ public class AccountTransferManagerTest {
 				code.substring(0, 3) + " " + code.substring(3)));
 		org.junit.Assert.assertFalse(AccountTransferManager.codesMatch(code,
 				"000000".equals(code) ? "000001" : "000000"));
+	}
+
+	@Test(timeout = 20_000)
+	public void aScannedAddressThatIsNotAV3OnionIsNeverDialled()
+			throws Exception {
+		AccountBackupManager backup = mock(AccountBackupManager.class);
+		java.util.List<String> dialled =
+				new java.util.concurrent.CopyOnWriteArrayList<>();
+		SocketFactory recording = new SocketFactory() {
+			@Override
+			public Socket createSocket(String host, int port)
+					throws IOException {
+				dialled.add(host);
+				throw new IOException("unreachable");
+			}
+
+			@Override
+			public Socket createSocket(String host, int port,
+					InetAddress localHost, int localPort) throws IOException {
+				return createSocket(host, port);
+			}
+
+			@Override
+			public Socket createSocket(InetAddress host, int port)
+					throws IOException {
+				return createSocket(host.getHostAddress(), port);
+			}
+
+			@Override
+			public Socket createSocket(InetAddress address, int port,
+					InetAddress localAddress, int localPort)
+					throws IOException {
+				return createSocket(address.getHostAddress(), port);
+			}
+		};
+		AccountTransferManager receiver = new AccountTransferManager(crypto,
+				publisher, recording, backup, retirement);
+		byte[] pub = new byte[32];
+		new Random(13).nextBytes(pub);
+		String key = Base32.encode(pub);
+		String[] addresses = {
+				"example.org",
+				"203.0.113.7",
+				"hostile",
+				ONION + ".onion",
+				ONION.toUpperCase(java.util.Locale.ROOT),
+				ONION.substring(1),
+				ONION + "a",
+				ONION.substring(1) + "1",
+				ONION + ".evil.example.org",
+				"",
+		};
+		for (String address : addresses) {
+			try {
+				receiver.receive(AccountTransferManager.LINK_PREFIX + key + ":"
+						+ address, "pw".toCharArray(),
+						new AccountTransferManager.Callback() {
+							@Override
+							public void onStatus(
+									AccountTransferManager.Status status) {
+							}
+
+							@Override
+							public void onPairingReady(String qrPayload) {
+							}
+
+							@Override
+							public void onShowConfirmationCode(String code) {
+							}
+
+							@Override
+							public String onEnterConfirmationCode() {
+								return null;
+							}
+						});
+				fail("accepted " + address);
+			} catch (TransferException expected) {
+				assertEquals(address, TransferException.Reason.PROTOCOL,
+						expected.reason);
+			}
+		}
+		assertEquals("nothing was dialled", 0, dialled.size());
+		verify(backup, never()).provisionFromBundle(any(), any());
 	}
 }

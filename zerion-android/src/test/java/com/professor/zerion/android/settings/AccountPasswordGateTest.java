@@ -65,7 +65,8 @@ public class AccountPasswordGateTest {
 						+ "ProfilesFragment.java")), StandardCharsets.UTF_8);
 		assertTrue(security.contains(
 				"withAccountPassword(this::showWipeOnFailedLoginsDialog"));
-		assertTrue(security.contains(".setWipeOnRepeatedFailures(false),"));
+		assertTrue(security.contains(
+				"withAccountPassword(() -> saveWipeOnFailedLogins(false),"));
 		assertTrue(security.contains(
 				"wipePasswordCard.setOnClickListener(v -> withAccountPassword("));
 		assertTrue(security.contains(

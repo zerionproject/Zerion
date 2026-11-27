@@ -51,6 +51,12 @@ final class ChannelPostCeilings {
 		if (delegateEd != null) n += delegateEd.length;
 		byte[] delegateMl = p.getDelegateSignerMlDsaPubKey();
 		if (delegateMl != null) n += delegateMl.length;
+		ChannelPost.MemberAuthor author = p.getMemberAuthor();
+		if (author != null) {
+			n += author.getEd25519PubKey().length
+					+ author.getMlDsaPubKey().length
+					+ utf8(author.getName()) + 1L;
+		}
 		for (ChannelPost.ChannelAttachment a : p.getAttachments()) {
 			n += 32L + a.getBlobHash().length + utf8(a.getMimeType())
 					+ a.getPerAttachmentKey().length;

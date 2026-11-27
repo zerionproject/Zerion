@@ -5,10 +5,12 @@ import android.graphics.Bitmap;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
+import android.text.format.Formatter;
 import android.util.LruCache;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.Transformation;
@@ -25,15 +27,16 @@ import com.professor.zerion.android.attachment.AttachmentKinds;
 import com.professor.zerion.android.conversation.glide.ZerionImageTransformation;
 import com.bumptech.glide.Glide;
 import com.professor.zerion.android.conversation.glide.Radii;
+import com.professor.zerion.android.util.ByteArrayMediaDataSource;
 import com.professor.zerion.android.util.UiUtils;
 import org.zerionproject.app.api.attachment.Attachment;
 import org.zerionproject.app.api.attachment.AttachmentNotYetAvailableException;
 import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -53,6 +56,7 @@ import static com.bumptech.glide.load.engine.DiskCacheStrategy.NONE;
 import static com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.AVAILABLE;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.ERROR;
+import static org.zerionproject.app.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE;
 
 @NotNullByDefault
 public class ImageViewHolder extends ViewHolder {
@@ -71,11 +75,15 @@ public class ImageViewHolder extends ViewHolder {
 				}
 			};
 
+	private static final LruCache<String, Long> VIDEO_SIZES =
+			new LruCache<>(256);
+
 	private static final Executor THUMBNAIL_DECODE_EXECUTOR =
 			Executors.newSingleThreadExecutor();
 
 	public static void clearVideoThumbCache() {
 		VIDEO_THUMB_CACHE.evictAll();
+		VIDEO_SIZES.evictAll();
 	}
 
 	public static void evictVideoThumbs(Collection<MessageId> items) {
@@ -83,31 +91,59 @@ public class ImageViewHolder extends ViewHolder {
 		Set<String> prefixes = new HashSet<>();
 		for (MessageId item : items) prefixes.add(thumbPrefix(item));
 		for (String key : VIDEO_THUMB_CACHE.snapshot().keySet()) {
-			int split = key.indexOf(':');
-			if (split > 0 && prefixes.contains(key.substring(0, split + 1))) {
-				VIDEO_THUMB_CACHE.remove(key);
-			}
+			if (ofAny(prefixes, key)) VIDEO_THUMB_CACHE.remove(key);
 		}
+		for (String key : VIDEO_SIZES.snapshot().keySet()) {
+			if (ofAny(prefixes, key)) VIDEO_SIZES.remove(key);
+		}
+		OpenedVideos.removeIf(key -> ofAny(prefixes, key));
+	}
+
+	public static boolean videoOpened(MessageId item, AttachmentItem video) {
+		if (video.getState() != AVAILABLE) return false;
+		return videoOpened(item, video.getMessageId());
+	}
+
+	public static boolean videoOpened(MessageId item, MessageId attachment) {
+		return OpenedVideos.add(videoKey(item, attachment));
+	}
+
+	public static void forgetOpenedVideos() {
+		OpenedVideos.removeIf(key -> key.indexOf(':') > 0);
+	}
+
+	private static boolean ofAny(Set<String> prefixes, String key) {
+		int split = key.indexOf(':');
+		return split > 0 && prefixes.contains(key.substring(0, split + 1));
 	}
 
 	private static String thumbPrefix(MessageId item) {
 		return StringUtils.toHexString(item.getBytes()) + ":";
 	}
 
+	private static String videoKey(MessageId item, MessageId attachment) {
+		return thumbPrefix(item)
+				+ StringUtils.toHexString(attachment.getBytes());
+	}
+
 	protected final ImageView imageView;
 	@Nullable
 	protected final ImageView playOverlay;
+	@Nullable
+	private final TextView videoSize;
 	private final int imageSize;
 	private final MessageId conversationItemId;
+	private MessageId shownItemId;
 	@Nullable
 	private final AttachmentReader attachmentReader;
 	@Nullable
 	@DatabaseExecutor
 	private final Executor dbExecutor;
+	private final Executor previewExecutor;
 	private boolean incoming = true;
 	@Nullable
 	private ColorStateList ownIcon = null;
-	private Object bound = new Object();
+	private volatile Object bound = new Object();
 
 	private final class Broken implements RequestListener<Drawable> {
 
@@ -140,17 +176,32 @@ public class ImageViewHolder extends ViewHolder {
 	ImageViewHolder(View v, int imageSize, MessageId conversationItemId,
 			@Nullable AttachmentReader attachmentReader,
 			@Nullable @DatabaseExecutor Executor dbExecutor) {
+		this(v, imageSize, conversationItemId, attachmentReader, dbExecutor,
+				THUMBNAIL_DECODE_EXECUTOR);
+	}
+
+	ImageViewHolder(View v, int imageSize, MessageId conversationItemId,
+			@Nullable AttachmentReader attachmentReader,
+			@Nullable @DatabaseExecutor Executor dbExecutor,
+			Executor previewExecutor) {
 		super(v);
 		imageView = v.findViewById(R.id.imageView);
 		playOverlay = v.findViewById(R.id.playOverlay);
+		videoSize = v.findViewById(R.id.videoSize);
 		this.imageSize = imageSize;
 		this.conversationItemId = conversationItemId;
+		this.shownItemId = conversationItemId;
 		this.attachmentReader = attachmentReader;
 		this.dbExecutor = dbExecutor;
+		this.previewExecutor = previewExecutor;
 	}
 
 	void inBubble(boolean incoming) {
 		this.incoming = incoming;
+	}
+
+	void ofMessage(MessageId item) {
+		this.shownItemId = item;
 	}
 
 	private void pictureTint() {
@@ -186,6 +237,7 @@ public class ImageViewHolder extends ViewHolder {
 	void bind(AttachmentItem attachment, Radii r, boolean single,
 			boolean needsStretch) {
 		bound = new Object();
+		if (videoSize != null) videoSize.setVisibility(View.GONE);
 		boolean isSticker = attachment.isSticker();
 		setViewDimensions(attachment, single, needsStretch, isSticker);
 
@@ -218,6 +270,8 @@ public class ImageViewHolder extends ViewHolder {
 			pictureTint();
 			loadStickerImage(attachment);
 			imageView.setScaleType(FIT_CENTER);
+		} else if (isVideo && waitsForTheFirstTap(attachment)) {
+			showUnopenedVideo(attachment);
 		} else if (isVideo) {
 			pictureTint();
 			loadVideoThumbnail(attachment, r);
@@ -290,6 +344,52 @@ public class ImageViewHolder extends ViewHolder {
 				.waitForLayout();
 	}
 
+	private boolean waitsForTheFirstTap(AttachmentItem a) {
+		return incoming && !OpenedVideos.contains(
+				videoKey(shownItemId, a.getMessageId()));
+	}
+
+	private void showUnopenedVideo(AttachmentItem a) {
+		Glide.with(imageView).clear(imageView);
+		iconTint(false);
+		imageView.setImageResource(R.drawable.ic_video);
+		imageView.setScaleType(FIT_CENTER);
+		showVideoSize(a, bound);
+	}
+
+	private void showVideoSize(AttachmentItem a, Object token) {
+		if (token != bound) return;
+		TextView label = videoSize;
+		AttachmentReader reader = attachmentReader;
+		if (label == null || reader == null) return;
+		String key = videoKey(shownItemId, a.getMessageId());
+		Long known = VIDEO_SIZES.get(key);
+		if (known != null) {
+			showVideoSize(label, a, known);
+			return;
+		}
+		previewExecutor.execute(() -> {
+			if (token != bound) return;
+			try {
+				long size = reader.getStoredSize(a.getHeader());
+				if (size <= 0) return;
+				VIDEO_SIZES.put(key, size);
+				imageView.post(() -> {
+					if (token == bound) showVideoSize(label, a, size);
+				});
+			} catch (Exception ignored) {
+			}
+		});
+	}
+
+	private void showVideoSize(TextView label, AttachmentItem a, long size) {
+		label.setText(Formatter.formatShortFileSize(label.getContext(),
+				size));
+		label.setVisibility(View.VISIBLE);
+		imageView.setContentDescription(AttachmentKinds.describe(
+				imageView.getContext(), a.getMimeType(), size));
+	}
+
 	private void loadVideoThumbnail(AttachmentItem a, Radii r) {
 		if (attachmentReader == null || dbExecutor == null) {
 			iconTint(false);
@@ -323,38 +423,33 @@ public class ImageViewHolder extends ViewHolder {
 		if (token != bound) return;
 		if (dbExecutor == null || attachmentReader == null) return;
 
-		final String thumbKey = thumbPrefix(conversationItemId)
-				+ StringUtils.toHexString(a.getHeader().getMessageId()
-						.getBytes());
+		final String thumbKey = videoKey(shownItemId, a.getMessageId());
 		Bitmap cached = VIDEO_THUMB_CACHE.get(thumbKey);
 		if (cached != null) {
 			renderVideoThumbnail(cached, r, token);
 			return;
 		}
 
-		dbExecutor.execute(() -> {
-			File tempFile = null;
+		AttachmentReader reader = attachmentReader;
+		previewExecutor.execute(() -> {
+			if (token != bound) return;
+			Bitmap ready = VIDEO_THUMB_CACHE.get(thumbKey);
+			if (ready != null) {
+				renderVideoThumbnail(ready, r, token);
+				return;
+			}
+			byte[] video = null;
 			try {
-				Attachment attachment = attachmentReader.getAttachment(a.getHeader());
-				InputStream is = attachment.getStream();
-
-				tempFile = File.createTempFile("video_thumb_", ".tmp",
-						imageView.getContext().getCacheDir());
-				tempFile.deleteOnExit();
-
-				FileOutputStream fos = new FileOutputStream(tempFile);
-				byte[] buffer = new byte[8192];
-				int bytesRead;
-				while ((bytesRead = is.read(buffer)) != -1) {
-					fos.write(buffer, 0, bytesRead);
+				Attachment attachment = reader.getAttachment(a.getHeader());
+				try (InputStream is = attachment.getStream()) {
+					video = readBounded(is, MAX_ATTACHMENT_SIZE);
 				}
-				fos.close();
-				is.close();
-
-				File decodeFile = tempFile;
-				tempFile = null;
-				THUMBNAIL_DECODE_EXECUTOR.execute(
-						() -> decodeThumbnail(decodeFile, thumbKey, r, token));
+				if (video == null || !com.professor.zerion.android.util
+						.MediaMagic.isVideo(video)) {
+					showVideoFallback(token);
+					return;
+				}
+				decodeThumbnail(video, thumbKey, r, token);
 			} catch (AttachmentNotYetAvailableException e) {
 				if (attemptNumber < MAX_THUMBNAIL_RETRY_ATTEMPTS) {
 					imageView.postDelayed(() -> loadVideoThumbnailWithRetry(
@@ -366,20 +461,80 @@ public class ImageViewHolder extends ViewHolder {
 			} catch (Exception e) {
 				showVideoFallback(token);
 			} finally {
-				if (tempFile != null) {
-					com.professor.zerion.android.vault.utils.SecureMemory
-							.secureDeleteFile(tempFile, 0L, false);
-				}
+				if (video != null) Arrays.fill(video, (byte) 0);
 			}
 		});
 	}
 
-	private void decodeThumbnail(File file, String thumbKey, Radii r,
+	@Nullable
+	static byte[] readBounded(InputStream in, int max) throws IOException {
+		WipingBuffer out = new WipingBuffer(64 * 1024);
+		byte[] buffer = new byte[8192];
+		try {
+			int n;
+			while ((n = in.read(buffer)) != -1) {
+				if (out.size() + n > max) return null;
+				out.write(buffer, 0, n);
+			}
+			return out.toExactArray();
+		} finally {
+			Arrays.fill(buffer, (byte) 0);
+			out.wipe();
+		}
+	}
+
+	static final class WipingBuffer {
+
+		private byte[] buf;
+		private int count;
+
+		WipingBuffer(int capacity) {
+			buf = new byte[capacity];
+		}
+
+		int size() {
+			return count;
+		}
+
+		byte[] current() {
+			return buf;
+		}
+
+		void write(byte[] b, int off, int len) {
+			if (count + len > buf.length) {
+				byte[] grown = Arrays.copyOf(buf,
+						Math.max(count + len, buf.length * 2));
+				Arrays.fill(buf, (byte) 0);
+				buf = grown;
+			}
+			System.arraycopy(b, off, buf, count, len);
+			count += len;
+		}
+
+		byte[] toExactArray() {
+			byte[] out = Arrays.copyOf(buf, count);
+			wipe();
+			return out;
+		}
+
+		void wipe() {
+			Arrays.fill(buf, (byte) 0);
+			count = 0;
+		}
+	}
+
+	private void decodeThumbnail(byte[] video, String thumbKey, Radii r,
 			Object token) {
+		if (token != bound) return;
+		Bitmap ready = VIDEO_THUMB_CACHE.get(thumbKey);
+		if (ready != null) {
+			renderVideoThumbnail(ready, r, token);
+			return;
+		}
 		MediaMetadataRetriever retriever = null;
 		try {
 			retriever = new MediaMetadataRetriever();
-			retriever.setDataSource(file.getAbsolutePath());
+			retriever.setDataSource(new ByteArrayMediaDataSource(video));
 			Bitmap thumbnail = retriever.getFrameAtTime(0,
 					MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
 			if (thumbnail == null) {
@@ -400,8 +555,6 @@ public class ImageViewHolder extends ViewHolder {
 				} catch (Exception ignored) {
 				}
 			}
-			com.professor.zerion.android.vault.utils.SecureMemory
-					.secureDeleteFile(file, 0L, false);
 		}
 	}
 

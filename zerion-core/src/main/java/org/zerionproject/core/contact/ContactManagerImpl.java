@@ -10,6 +10,8 @@ import org.zerionproject.core.api.contact.OwnLinkChangedException;
 import org.zerionproject.core.api.contact.PendingContact;
 import org.zerionproject.core.api.contact.PendingContactId;
 import org.zerionproject.core.api.contact.PendingContactState;
+import org.zerionproject.core.api.contact.request.ContactLink;
+import org.zerionproject.core.api.contact.request.OwnLinkException;
 import org.zerionproject.core.api.contact.event.ContactConnectionKeysEvent;
 import org.zerionproject.core.api.contact.event.PendingContactStateChangedEvent;
 import org.zerionproject.core.api.settings.Settings;
@@ -35,7 +37,9 @@ import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.identity.ReservedNames;
+import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.api.transport.KeyManager;
+import org.zerionproject.core.contact.request.ContactLinkStore;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
@@ -61,8 +65,6 @@ import static org.zerionproject.core.util.StringUtils.toUtf8;
 @NotNullByDefault
 class ContactManagerImpl implements ContactManager, EventListener {
 
-	static final String IN_PERSON_NAMESPACE =
-			"org.zerionproject.contact.scannedInPerson";
 	static final String CONNECTION_KEYS_NAMESPACE =
 			"org.zerionproject.transport.rootEvolution";
 	static final String OUT_OF_SYNC_KEY_PREFIX = "outOfSync.";
@@ -74,7 +76,13 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	private final CryptoComponent crypto;
 	private final PcsStateManager pcsStateManager;
 
+	private final ContactLinkStore linkStore;
+	private final Clock clock;
+	private final PendingContactFlags flags;
+
 	private final List<ContactHook> hooks = new CopyOnWriteArrayList<>();
+	private final List<PendingContactHook> pendingHooks =
+			new CopyOnWriteArrayList<>();
 	private final Map<PendingContactId, PendingContactState> states =
 			new ConcurrentHashMap<>();
 
@@ -84,18 +92,28 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			IdentityManager identityManager,
 			PendingContactFactory pendingContactFactory,
 			CryptoComponent crypto,
-			PcsStateManager pcsStateManager) {
+			PcsStateManager pcsStateManager,
+			ContactLinkStore linkStore,
+			Clock clock) {
+		this.linkStore = linkStore;
+		this.clock = clock;
 		this.db = db;
 		this.keyManager = keyManager;
 		this.identityManager = identityManager;
 		this.pendingContactFactory = pendingContactFactory;
 		this.crypto = crypto;
 		this.pcsStateManager = pcsStateManager;
+		this.flags = new PendingContactFlags(db);
 	}
 
 	@Override
 	public void registerContactHook(ContactHook hook) {
 		hooks.add(hook);
+	}
+
+	@Override
+	public void registerPendingContactHook(PendingContactHook hook) {
+		pendingHooks.add(hook);
 	}
 
 	@Override
@@ -149,17 +167,47 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			boolean alice, boolean verified, boolean active,
 			@Nullable byte[] peerMlDsaSigPublicKey)
 			throws DbException, GeneralSecurityException {
+		return addContact(txn, p, remote, local, rootKey, timestamp, alice,
+				verified, active, peerMlDsaSigPublicKey, null);
+	}
+
+	@Override
+	public boolean intendsToReplaceKeys(Transaction txn, PendingContactId p)
+			throws DbException {
+		PendingContact pendingContact = db.getPendingContact(txn, p);
+		return flags.peek(txn, pendingContact, PendingContactFlags.IN_PERSON)
+				|| flags.peek(txn, pendingContact, PendingContactFlags.RE_ADD);
+	}
+
+	@Override
+	public ContactId addContact(Transaction txn, PendingContactId p,
+			Author remote, AuthorId local, SecretKey rootKey, long timestamp,
+			boolean alice, boolean verified, boolean active,
+			@Nullable byte[] peerMlDsaSigPublicKey,
+			@Nullable Boolean peerReplacesKeys)
+			throws DbException, GeneralSecurityException {
 		requireNotReserved(remote);
 		PendingContact pendingContact = db.getPendingContact(txn, p);
 		boolean postQuantum = pendingContact.isPostQuantum();
 		checkForSecurityDowngrade(txn, remote.getId(), postQuantum);
 		byte[][] ourKeySnapshot = db.getPendingContactOurKeys(txn, p);
-		boolean inPerson = takeScannedInPerson(txn, p);
+		boolean perAdd = usesCurrentPerAddKey(txn, ourKeySnapshot);
+		boolean inPerson = flags.take(txn, pendingContact,
+				PendingContactFlags.IN_PERSON);
+		boolean reAdd = flags.take(txn, pendingContact,
+				PendingContactFlags.RE_ADD);
 		db.removePendingContact(txn, p);
 		states.remove(p);
 		if (db.containsContact(txn, remote.getId(), local)) {
-			return rekeyContact(txn, remote, local, rootKey, timestamp, alice,
-					peerMlDsaSigPublicKey, inPerson);
+			boolean replace = (inPerson || reAdd)
+					&& !Boolean.FALSE.equals(peerReplacesKeys);
+			if (!replace) throw new ContactExistsException(local, remote);
+			ContactId existing = rekeyContact(txn, remote, local, rootKey,
+					timestamp, alice, peerMlDsaSigPublicKey, inPerson, perAdd);
+			for (PendingContactHook hook : pendingHooks) {
+				hook.convertingPendingContact(txn, p, existing);
+			}
+			return existing;
 		}
 		verified = verified || inPerson;
 		PublicKey theirPublicKey = pendingContact.getPublicKey();
@@ -191,13 +239,25 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		initializePcsState(txn, c, rootKey);
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
-		identityManager.rotateHybridHandshakeKeys(txn);
+		for (PendingContactHook hook : pendingHooks) {
+			hook.convertingPendingContact(txn, p, c);
+		}
+		if (perAdd) identityManager.rotateHybridHandshakeKeys(txn);
 		return c;
+	}
+
+	private boolean usesCurrentPerAddKey(Transaction txn,
+			@Nullable byte[][] snapshot) throws DbException {
+		if (snapshot == null) return true;
+		KeyPair perAdd = identityManager.getHybridHandshakeKeys(txn);
+		return perAdd != null && Arrays.equals(snapshot[0],
+				perAdd.getPublic().getEncoded());
 	}
 
 	private ContactId rekeyContact(Transaction txn, Author remote,
 			AuthorId local, SecretKey rootKey, long timestamp, boolean alice,
-			@Nullable byte[] peerMlDsaSigPublicKey, boolean inPerson)
+			@Nullable byte[] peerMlDsaSigPublicKey, boolean inPerson,
+			boolean perAdd)
 			throws DbException {
 		Contact existing = getContact(txn, remote.getId(), local);
 		ContactId c = existing.getId();
@@ -214,22 +274,26 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		if (inPerson && !existing.isVerified()) db.setContactVerified(txn, c);
 		Settings s = new Settings();
 		s.putBoolean(OUT_OF_SYNC_KEY_PREFIX + c.getInt(), false);
+		s.putBoolean(org.zerionproject.transport.RootKeyStore
+				.EVOLVES_KEY_PREFIX + c.getInt(), false);
+		s.putBoolean(org.zerionproject.transport.RootKeyStore
+				.ENFORCES_KEY_PREFIX + c.getInt(), false);
+		s.putLong(org.zerionproject.transport.RootKeyStore
+				.EVOLVED_AT_KEY_PREFIX + c.getInt(), 0);
+		s.putInt(org.zerionproject.transport.RootKeyStore
+				.STALLS_KEY_PREFIX + c.getInt(), 0);
+		s.putLong(org.zerionproject.transport.RootKeyStore
+				.STALLED_SINCE_KEY_PREFIX + c.getInt(), 0);
+		s.putBoolean(org.zerionproject.transport.RootKeyStore
+				.NOT_RENEWING_KEY_PREFIX + c.getInt(), false);
 		db.mergeSettings(txn, s, CONNECTION_KEYS_NAMESPACE);
+		txn.attach(new org.zerionproject.core.api.contact.event
+				.ContactKeysReplacedEvent(c));
 		txn.attach(new ContactConnectionKeysEvent(c, false));
-		identityManager.rotateHybridHandshakeKeys(txn);
+		txn.attach(new org.zerionproject.core.api.contact.event
+				.ContactKeyRenewalEvent(c, false));
+		if (perAdd) identityManager.rotateHybridHandshakeKeys(txn);
 		return c;
-	}
-
-	private boolean takeScannedInPerson(Transaction txn, PendingContactId p)
-			throws DbException {
-		String key = org.zerionproject.core.util.StringUtils.toHexString(
-				p.getBytes());
-		Settings s = db.getSettings(txn, IN_PERSON_NAMESPACE);
-		if (!s.getBoolean(key, false)) return false;
-		Settings clear = new Settings();
-		clear.putBoolean(key, false);
-		db.mergeSettings(txn, clear, IN_PERSON_NAMESPACE);
-		return true;
 	}
 
 	private KeyPair hybridKeyPairFor(Transaction txn,
@@ -338,6 +402,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		}
 		AuthorId local = identityManager.getLocalAuthor(txn).getId();
 		db.addPendingContact(txn, p, local, reAddExisting);
+		if (reAddExisting) flags.put(txn, p, PendingContactFlags.RE_ADD);
 		if (p.isPostQuantum()) {
 			KeyPair hybridSnapshot = identityManager.getHybridHandshakeKeys(txn);
 			if (hybridSnapshot != null) {
@@ -387,17 +452,162 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			}
 			PendingContact p = addPendingContact(txn, link, alias,
 					reAddExisting);
-			if (verifiedInPerson) {
-				Settings s = new Settings();
-				s.putBoolean(org.zerionproject.core.util.StringUtils
-						.toHexString(p.getId().getBytes()), true);
-				db.mergeSettings(txn, s, IN_PERSON_NAMESPACE);
-			}
+			if (verifiedInPerson) markScannedInPerson(txn, p);
 			db.commitTransaction(txn);
 			return p;
 		} finally {
 			db.endTransaction(txn);
 		}
+	}
+
+	@Override
+	public PendingContact addPendingContactBoundToSharedLink(String link,
+			String alias, boolean reAddExisting, boolean verifiedInPerson)
+			throws DbException, FormatException, GeneralSecurityException {
+		return addPendingContactBoundToSharedLink(link, alias, null,
+				reAddExisting, verifiedInPerson);
+	}
+
+	@Override
+	public PendingContact addPendingContactBoundToSharedLink(String link,
+			String alias, @Nullable String shownOwnLink,
+			boolean reAddExisting, boolean verifiedInPerson)
+			throws DbException, FormatException, GeneralSecurityException {
+		boolean changed = false;
+		PendingContact p = null;
+		Transaction txn = db.startTransaction(false);
+		try {
+			ContactLink binding = linkStore.freshPerAddBinding(txn,
+					clock.currentTimeMillis());
+			if (binding != null && !Arrays.equals(binding.getLinkId(),
+					linkStore.currentPerAddCommitment(txn))) {
+				changed = true;
+			} else if (binding == null && shownOwnLink != null
+					&& !sameLinkBody(shownOwnLink, getHandshakeLink(txn))) {
+				changed = true;
+			} else {
+				p = addPendingContact(txn, link, alias, reAddExisting);
+				if (verifiedInPerson) markScannedInPerson(txn, p);
+			}
+			linkStore.forgetPerAddBinding(txn);
+			db.commitTransaction(txn);
+		} finally {
+			db.endTransaction(txn);
+		}
+		if (changed || p == null) throw new OwnLinkChangedException();
+		return p;
+	}
+
+	@Override
+	public PendingContact addPendingContactFromInvite(String link,
+			String alias, @Nullable String sharedZeroId)
+			throws DbException, FormatException, GeneralSecurityException {
+		return addPendingContactFromInvite(link, alias, sharedZeroId, false);
+	}
+
+	@Override
+	public PendingContact addPendingContactFromInvite(String link,
+			String alias, @Nullable String sharedZeroId,
+			boolean reAddExisting)
+			throws DbException, FormatException, GeneralSecurityException {
+		boolean changed = false;
+		PendingContact p = null;
+		Transaction txn = db.startTransaction(false);
+		try {
+			if (linkStore.isOwnLink(txn, linkStore.getCodec().parse(link))) {
+				throw new OwnLinkException();
+			}
+			ContactLink binding = sharedZeroId != null ? null
+					: linkStore.freshPerAddBinding(txn,
+					clock.currentTimeMillis());
+			ContactLink current = linkStore.getZeroId(txn);
+			if (binding != null && current != null
+					&& current.getLastSharedAt() >= binding.getLastSharedAt()) {
+				binding = null;
+			}
+			if (binding != null) {
+				if (!Arrays.equals(binding.getLinkId(),
+						linkStore.currentPerAddCommitment(txn))) {
+					changed = true;
+				} else {
+					p = addPendingContact(txn, link, alias, reAddExisting);
+				}
+				linkStore.forgetPerAddBinding(txn);
+			} else {
+				ContactLink zeroId = linkStore.getOrCreateZeroId(txn);
+				if (sharedZeroId != null && !sameLinkBody(sharedZeroId,
+						linkStore.linkString(zeroId))) {
+					changed = true;
+				} else {
+					p = addPendingContactWithKeys(txn, link, alias,
+							linkStore.keyPair(zeroId), reAddExisting);
+				}
+			}
+			db.commitTransaction(txn);
+		} finally {
+			db.endTransaction(txn);
+		}
+		if (changed || p == null) throw new OwnLinkChangedException();
+		return p;
+	}
+
+	private boolean sameLinkBody(String a, String b) {
+		try {
+			return Arrays.equals(linkStore.getCodec().parse(a).getBody(),
+					linkStore.getCodec().parse(b).getBody());
+		} catch (FormatException e) {
+			return false;
+		}
+	}
+
+	private PendingContact addPendingContactWithKeys(Transaction txn,
+			String link, String alias, KeyPair ourHybridKeys,
+			boolean reAddExisting)
+			throws DbException, FormatException, GeneralSecurityException {
+		PendingContact p =
+				pendingContactFactory.createPendingContact(link, alias);
+		byte[] newKey = p.getPublicKey().getEncoded();
+		for (PendingContact existing : db.getPendingContacts(txn)) {
+			if (Arrays.equals(existing.getPublicKey().getEncoded(), newKey)) {
+				return existing;
+			}
+		}
+		AuthorId local = identityManager.getLocalAuthor(txn).getId();
+		db.addPendingContact(txn, p, local, reAddExisting);
+		if (reAddExisting) flags.put(txn, p, PendingContactFlags.RE_ADD);
+		if (p.isPostQuantum()) {
+			db.setPendingContactOurKeys(txn, p.getId(),
+					ourHybridKeys.getPublic().getEncoded(),
+					ourHybridKeys.getPrivate().getEncoded());
+		} else {
+			KeyPair ourKeyPair = identityManager.getHandshakeKeys(txn);
+			keyManager.addPendingContact(txn, p.getId(), p.getPublicKey(),
+					ourKeyPair);
+		}
+		return p;
+	}
+
+	private void markScannedInPerson(Transaction txn, PendingContact p)
+			throws DbException {
+		flags.put(txn, p, PendingContactFlags.IN_PERSON);
+	}
+
+	@Override
+	public void recordPerAddLinkShared(String link)
+			throws DbException, FormatException {
+		Transaction txn = db.startTransaction(false);
+		try {
+			recordPerAddLinkShared(txn, link, clock.currentTimeMillis());
+			db.commitTransaction(txn);
+		} finally {
+			db.endTransaction(txn);
+		}
+	}
+
+	@Override
+	public void recordPerAddLinkShared(Transaction txn, String link,
+			long sharedAt) throws DbException, FormatException {
+		linkStore.recordPerAddShare(txn, link, sharedAt);
 	}
 
 	@Override
@@ -411,6 +621,15 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			throws DbException {
 		return db.getSettings(txn, CONNECTION_KEYS_NAMESPACE)
 				.getBoolean(OUT_OF_SYNC_KEY_PREFIX + c.getInt(), false);
+	}
+
+	@Override
+	public boolean isConnectionRenewalStalled(ContactId c)
+			throws DbException {
+		return db.transactionWithResult(true, txn ->
+				db.getSettings(txn, CONNECTION_KEYS_NAMESPACE).getBoolean(
+						org.zerionproject.transport.RootKeyStore
+								.NOT_RENEWING_KEY_PREFIX + c.getInt(), false));
 	}
 
 	@Override
@@ -448,6 +667,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	@Override
 	public void removePendingContact(Transaction txn, PendingContactId p)
 			throws DbException {
+		flags.clear(txn, db.getPendingContact(txn, p));
 		db.removePendingContact(txn, p);
 		states.remove(p);
 	}
@@ -540,6 +760,21 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.removingContact(txn, contact);
 		db.removeContact(txn, c);
+		Settings forgotten = new Settings();
+		forgotten.putBoolean(OUT_OF_SYNC_KEY_PREFIX + c.getInt(), false);
+		forgotten.putBoolean(org.zerionproject.transport.RootKeyStore
+				.EVOLVES_KEY_PREFIX + c.getInt(), false);
+		forgotten.putBoolean(org.zerionproject.transport.RootKeyStore
+				.ENFORCES_KEY_PREFIX + c.getInt(), false);
+		forgotten.putLong(org.zerionproject.transport.RootKeyStore
+				.EVOLVED_AT_KEY_PREFIX + c.getInt(), 0);
+		forgotten.putInt(org.zerionproject.transport.RootKeyStore
+				.STALLS_KEY_PREFIX + c.getInt(), 0);
+		forgotten.putLong(org.zerionproject.transport.RootKeyStore
+				.STALLED_SINCE_KEY_PREFIX + c.getInt(), 0);
+		forgotten.putBoolean(org.zerionproject.transport.RootKeyStore
+				.NOT_RENEWING_KEY_PREFIX + c.getInt(), false);
+		db.mergeSettings(txn, forgotten, CONNECTION_KEYS_NAMESPACE);
 	}
 
 	@Override

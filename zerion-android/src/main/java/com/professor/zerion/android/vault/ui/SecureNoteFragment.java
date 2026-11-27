@@ -24,6 +24,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.util.UiUtils;
+import com.professor.zerion.android.vault.crypto.ProtectedNoteCodec;
 import com.professor.zerion.android.vault.model.VaultItem;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -39,28 +40,41 @@ import androidx.lifecycle.ViewModelProvider;
 public class SecureNoteFragment extends BaseFragment {
 
 	private static final String ARG_NOTE_ID = "note_id";
+	private static final String STATE_SAVE_REQUEST = "save_request";
+	private static final String STATE_LEAVING_AFTER_SAVE =
+			"leaving_after_save";
+	private static final String STATE_OPENED_WITH_PASSWORD =
+			"opened_with_password";
+	private static final long NO_SAVE = 0L;
 
 	private VaultViewModel viewModel;
 	private String noteId;
 	private VaultItem currentNote;
 
 	private final Handler mainHandler = new Handler(Looper.getMainLooper());
+	private final Runnable leave = this::leaveAfterSave;
 
 	private TextInputEditText titleInput;
 	private EditText contentInput;
 	private TextInputLayout titleLayout;
 	private TextInputLayout notePasswordLayout;
 	private TextInputEditText notePasswordInput;
+	private TextInputLayout notePasswordConfirmLayout;
+	private TextInputEditText notePasswordConfirmInput;
+	private boolean openedWithPassword = false;
 	private SwitchMaterial lockNoteSwitch;
 	private ExtendedFloatingActionButton saveFab;
 	private FrameLayout progressOverlay;
 
 	private boolean hasChanges = false;
-	@Nullable
-	private char[] notePassword = null;
-	private boolean isSaving = false;
+	private long saveRequest = NO_SAVE;
+	private boolean leavingAfterSave = false;
 	private boolean isLoading = false;
 	private boolean contentLoaded = false;
+	private boolean contentReady = false;
+	private boolean textLostToRebuild = false;
+	@Nullable
+	private MenuItem saveMenuItem;
 	private int loadRetryCount = 0;
 	private boolean isShowingUnsavedDialog = false;
 	private static final int MAX_LOAD_RETRIES = 3;
@@ -83,6 +97,22 @@ public class SecureNoteFragment extends BaseFragment {
 		if (getArguments() != null) {
 			noteId = getArguments().getString(ARG_NOTE_ID);
 		}
+		if (savedInstanceState != null) {
+			saveRequest = savedInstanceState.getLong(STATE_SAVE_REQUEST,
+					NO_SAVE);
+			leavingAfterSave = savedInstanceState.getBoolean(
+					STATE_LEAVING_AFTER_SAVE, false);
+			openedWithPassword = savedInstanceState.getBoolean(
+					STATE_OPENED_WITH_PASSWORD, false);
+		}
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putLong(STATE_SAVE_REQUEST, saveRequest);
+		outState.putBoolean(STATE_LEAVING_AFTER_SAVE, leavingAfterSave);
+		outState.putBoolean(STATE_OPENED_WITH_PASSWORD, openedWithPassword);
 	}
 
 	@Override
@@ -96,6 +126,10 @@ public class SecureNoteFragment extends BaseFragment {
 		titleLayout = view.findViewById(R.id.note_title_layout);
 		notePasswordLayout = view.findViewById(R.id.note_password_layout);
 		notePasswordInput = view.findViewById(R.id.note_password_input);
+		notePasswordConfirmLayout =
+				view.findViewById(R.id.note_password_confirm_layout);
+		notePasswordConfirmInput =
+				view.findViewById(R.id.note_password_confirm_input);
 		lockNoteSwitch = view.findViewById(R.id.lock_note_switch);
 		saveFab = view.findViewById(R.id.save_note_fab);
 		progressOverlay = view.findViewById(R.id.progress_overlay);
@@ -103,6 +137,7 @@ public class SecureNoteFragment extends BaseFragment {
 		IncognitoInputHelper.configureForVault(titleInput);
 		IncognitoInputHelper.configureForVault(contentInput);
 		IncognitoInputHelper.configurePasswordField(notePasswordInput);
+		IncognitoInputHelper.configurePasswordField(notePasswordConfirmInput);
 
 		return view;
 	}
@@ -133,11 +168,24 @@ public class SecureNoteFragment extends BaseFragment {
 
 		setupTextWatchers();
 		setupListeners();
+
+		if (saveRequest != NO_SAVE
+				&& !viewModel.isNoteSavePending(saveRequest)) {
+			saveRequest = NO_SAVE;
+		}
+		contentReady = noteId == null;
+		textLostToRebuild = saveRequest != NO_SAVE;
+		isLoading = false;
+		contentLoaded = isHeldForSave();
+		if (isHeldForSave()) {
+			holdForSave();
+		}
 		observeViewModel();
 
-		if (noteId != null) {
+		if (noteId != null && !isHeldForSave()) {
 			loadNote();
 		}
+		showSaveAvailability();
 	}
 
 	private TextWatcher titleWatcher;
@@ -195,13 +243,24 @@ public class SecureNoteFragment extends BaseFragment {
 	private void setupListeners() {
 		lockNoteSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			notePasswordLayout.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+			showPasswordConfirmation();
 			if (!isChecked) {
 				notePasswordInput.setText("");
-				if (notePassword != null) {
-					java.util.Arrays.fill(notePassword, '\0');
-				}
-				notePassword = null;
+				notePasswordConfirmInput.setText("");
 			}
+		});
+
+		notePasswordConfirmInput.addTextChangedListener(new TextWatcher() {
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				notePasswordConfirmLayout.setError(null);
+			}
+
+			@Override
+			public void afterTextChanged(Editable s) {}
 		});
 
 		notePasswordInput.addTextChangedListener(new TextWatcher() {
@@ -228,14 +287,18 @@ public class SecureNoteFragment extends BaseFragment {
 
 		progressOverlay.setVisibility(View.VISIBLE);
 		setInputsEnabled(false);
+		showSaveAvailability();
 
 		UiUtils.observeOnce(viewModel.getVaultItems(), getViewLifecycleOwner(), items -> {
 			if (items != null && !items.isEmpty()) {
 				for (VaultItem item : items) {
 					if (item.id.equals(noteId)) {
 						currentNote = item;
-						String displayTitle = item.name.startsWith("🔒 ") ?
-							item.name.substring("🔒 ".length()) : item.name;
+						String displayTitle = item.name.startsWith(
+								ProtectedNoteCodec.TITLE_PREFIX)
+								? item.name.substring(
+										ProtectedNoteCodec.TITLE_PREFIX.length())
+								: item.name;
 
 						removeTextWatchers();
 						titleInput.setText(displayTitle);
@@ -256,8 +319,10 @@ public class SecureNoteFragment extends BaseFragment {
 
 		UiUtils.observeOnce(viewModel.loadNoteContent(noteId), getViewLifecycleOwner(), content -> {
 			isLoading = false;
-			progressOverlay.setVisibility(View.GONE);
-			setInputsEnabled(true);
+			if (!isHeldForSave()) {
+				progressOverlay.setVisibility(View.GONE);
+				setInputsEnabled(true);
+			}
 
 			if (content != null) {
 				if (content.equals("__PASSWORD_REQUIRED__")) {
@@ -286,6 +351,7 @@ public class SecureNoteFragment extends BaseFragment {
 					addTextWatchers();
 					hasChanges = false;
 					contentLoaded = true;
+					contentReady = true;
 					loadRetryCount = 0;
 				}
 			} else {
@@ -294,6 +360,7 @@ public class SecureNoteFragment extends BaseFragment {
 					requireActivity().getOnBackPressedDispatcher().onBackPressed();
 				}
 			}
+			showSaveAvailability();
 		});
 	}
 
@@ -324,9 +391,15 @@ public class SecureNoteFragment extends BaseFragment {
 										contentInput.setText(content);
 										addTextWatchers();
 										hasChanges = false;
+										openedWithPassword = true;
 										lockNoteSwitch.setChecked(true);
+										showPasswordConfirmation();
+										contentReady = true;
+										showSaveAvailability();
 									}
 								});
+					} else {
+						promptForPassword();
 					}
 				})
 				.setNegativeButton(android.R.string.cancel, (dialog, which) -> {
@@ -339,7 +412,7 @@ public class SecureNoteFragment extends BaseFragment {
 	}
 
 	private void saveNote() {
-		if (isSaving) {
+		if (!canSave()) {
 			return;
 		}
 
@@ -353,8 +426,9 @@ public class SecureNoteFragment extends BaseFragment {
 			return;
 		}
 
+		char[] password = null;
 		if (lockNoteSwitch.isChecked()) {
-			char[] password = readChars(notePasswordInput);
+			password = readChars(notePasswordInput);
 			if (password.length == 0) {
 				notePasswordLayout.setError(getString(
 						R.string.vault_error_password_empty));
@@ -366,34 +440,115 @@ public class SecureNoteFragment extends BaseFragment {
 						R.string.vault_error_password_short));
 				return;
 			}
-			if (notePassword != null) {
-				java.util.Arrays.fill(notePassword, '\0');
+			if (needsPasswordConfirmation()) {
+				char[] confirm = readChars(notePasswordConfirmInput);
+				boolean same = java.util.Arrays.equals(password, confirm);
+				java.util.Arrays.fill(confirm, '\0');
+				if (!same) {
+					java.util.Arrays.fill(password, '\0');
+					notePasswordConfirmLayout.setError(getString(
+							R.string.vault_password_mismatch));
+					return;
+				}
 			}
-			notePassword = password;
 		}
 
-		isSaving = true;
-		contentLoaded = false;
 		loadRetryCount = 0;
+		saveRequest = viewModel.newNoteSaveRequest();
+		holdForSave();
 
-		progressOverlay.setVisibility(View.VISIBLE);
-		setInputsEnabled(false);
-		saveFab.setEnabled(false);
-
-		if (notePassword != null) {
-			viewModel.saveNoteWithPassword(title, content, notePassword, noteId);
+		if (password != null) {
+			viewModel.saveNoteWithPassword(saveRequest, title, content,
+					password, noteId);
 		} else {
-			viewModel.saveNote(title, content, noteId);
+			viewModel.saveNote(saveRequest, title, content, noteId);
 		}
-		hasChanges = false;
+	}
 
-		mainHandler.postDelayed(() -> {
-			isSaving = false;
-			saveFab.setEnabled(true);
-		}, 2000);
+	private boolean isHeldForSave() {
+		return saveRequest != NO_SAVE || leavingAfterSave;
+	}
+
+	private boolean canSave() {
+		return !isHeldForSave() && !isLoading && contentReady;
+	}
+
+	private void showSaveAvailability() {
+		boolean available = canSave();
+		if (saveFab != null) {
+			saveFab.setEnabled(available);
+		}
+		if (saveMenuItem != null) {
+			saveMenuItem.setEnabled(available);
+		}
+	}
+
+	private void holdForSave() {
+		progressOverlay.setVisibility(View.VISIBLE);
+		setEditingEnabled(false);
+	}
+
+	private void collectNoteSaveResult() {
+		if (saveRequest == NO_SAVE) {
+			return;
+		}
+		NoteSaveResult result = viewModel.takeNoteSaveResult(saveRequest,
+				this::putBackUnsavedNote);
+		if (result == null) {
+			return;
+		}
+		saveRequest = NO_SAVE;
+
+		if (result.isStored()) {
+			hasChanges = false;
+			if (result.outcome
+					== NoteSaveResult.Outcome.SAVED_EARLIER_VERSION_KEPT) {
+				viewModel.clearMessages();
+				Toast.makeText(requireContext(), result.message,
+						Toast.LENGTH_LONG).show();
+			}
+			closeAfterSave();
+			return;
+		}
+
+		viewModel.clearMessages();
+		showSnackbar(result.message, com.google.android.material.snackbar
+				.Snackbar.LENGTH_LONG);
+		if (result.outcome == NoteSaveResult.Outcome.WRONG_PASSWORD) {
+			notePasswordLayout.setError(result.message);
+		}
+		boolean nothingToShow = textLostToRebuild && noteId != null;
+		textLostToRebuild = false;
+		progressOverlay.setVisibility(View.GONE);
+		setEditingEnabled(true);
+		if (nothingToShow) {
+			hasChanges = false;
+			contentLoaded = false;
+			loadRetryCount = 0;
+			loadNote();
+			return;
+		}
+		hasChanges = true;
+	}
+
+	private void putBackUnsavedNote(char[] title, char[] content,
+			boolean passwordProtected) {
+		if (!textLostToRebuild) {
+			return;
+		}
+		textLostToRebuild = false;
+		removeTextWatchers();
+		titleInput.setText(title, 0, title.length);
+		contentInput.setText(content, 0, content.length);
+		addTextWatchers();
+		lockNoteSwitch.setChecked(passwordProtected);
+		contentReady = true;
 	}
 
 	private void deleteNote() {
+		if (isHeldForSave()) {
+			return;
+		}
 		if (noteId == null) {
 			if (isAdded() && getActivity() != null) {
 				requireActivity().getOnBackPressedDispatcher().onBackPressed();
@@ -416,39 +571,45 @@ public class SecureNoteFragment extends BaseFragment {
 
 	private void observeViewModel() {
 		viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
-			if (!isSaving && !this.isLoading) {
+			if (!isHeldForSave() && !this.isLoading) {
 				progressOverlay.setVisibility(isLoading ? View.VISIBLE : View.GONE);
 				setInputsEnabled(!isLoading);
 			}
 		});
 
 		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
-			if (error != null && !error.isEmpty()) {
-				isSaving = false;
+			if (error != null && !error.isEmpty() && !isHeldForSave()) {
 				progressOverlay.setVisibility(View.GONE);
 				setInputsEnabled(true);
-				saveFab.setEnabled(true);
+				showSaveAvailability();
 
 				showSnackbar(error, com.google.android.material.snackbar.Snackbar
 						.LENGTH_LONG);
 			}
 		});
 
-		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), success -> {
-			if (viewModel.isMessage(success, R.string.vault_msg_saved)) {
-				if (!isSaving) {
-					return;
-				}
+		viewModel.getNoteSaveResult().observe(getViewLifecycleOwner(),
+				finished -> collectNoteSaveResult());
+	}
 
-				isSaving = false;
+	private void closeAfterSave() {
+		leavingAfterSave = true;
+		mainHandler.removeCallbacks(leave);
+		mainHandler.postDelayed(leave, 300);
+	}
 
-				mainHandler.postDelayed(() -> {
-					if (isAdded() && getActivity() != null) {
-						requireActivity().getOnBackPressedDispatcher().onBackPressed();
-					}
-				}, 300);
-			}
-		});
+	private void leaveAfterSave() {
+		if (isAdded() && getActivity() != null) {
+			requireActivity().getOnBackPressedDispatcher().onBackPressed();
+		}
+	}
+
+	private void setEditingEnabled(boolean enabled) {
+		setInputsEnabled(enabled);
+		lockNoteSwitch.setEnabled(enabled);
+		notePasswordInput.setEnabled(enabled);
+		notePasswordConfirmInput.setEnabled(enabled);
+		showSaveAvailability();
 	}
 
 	private void setInputsEnabled(boolean enabled) {
@@ -460,6 +621,15 @@ public class SecureNoteFragment extends BaseFragment {
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		inflater.inflate(R.menu.secure_note_menu, menu);
 		super.onCreateOptionsMenu(menu, inflater);
+		saveMenuItem = menu.findItem(R.id.action_save_note);
+		showSaveAvailability();
+	}
+
+	@Override
+	public void onPrepareOptionsMenu(Menu menu) {
+		super.onPrepareOptionsMenu(menu);
+		saveMenuItem = menu.findItem(R.id.action_save_note);
+		showSaveAvailability();
 	}
 
 	@Override
@@ -485,15 +655,31 @@ public class SecureNoteFragment extends BaseFragment {
 				titleInput.setText("");
 				contentInput.setText("");
 				notePasswordInput.setText("");
+				notePasswordConfirmInput.setText("");
 			}
 		}
+	}
+
+	private boolean needsPasswordConfirmation() {
+		return lockNoteSwitch.isChecked() && !openedWithPassword;
+	}
+
+	private void showPasswordConfirmation() {
+		notePasswordConfirmLayout.setVisibility(needsPasswordConfirmation()
+				? View.VISIBLE : View.GONE);
 	}
 
 	@Override
 	public void onResume() {
 		super.onResume();
 
-		if (contentLoaded) {
+		if (leavingAfterSave) {
+			mainHandler.removeCallbacks(leave);
+			mainHandler.post(leave);
+			return;
+		}
+		collectNoteSaveResult();
+		if (contentLoaded || isHeldForSave()) {
 			return;
 		}
 		if (isLoading) {
@@ -518,6 +704,9 @@ public class SecureNoteFragment extends BaseFragment {
 	public boolean onBackPressed() {
 		if (!isResumed() || isShowingUnsavedDialog) {
 			return false;
+		}
+		if (saveRequest != NO_SAVE) {
+			return true;
 		}
 
 		if (hasChanges) {

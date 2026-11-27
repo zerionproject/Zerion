@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.os.Build;
 import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +17,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
+import com.professor.zerion.android.ZerionApplication;
+import com.professor.zerion.android.api.ScreenFilterMonitor;
 import com.professor.zerion.android.vault.ui.IncognitoInputHelper;
 
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -35,7 +38,7 @@ public final class SecureDialogs {
 		if (w == null) return;
 		if (hostIsSecure(dialog.getContext())) protect(w);
 		View decor = w.peekDecorView();
-		if (decor != null && android.os.Build.VERSION.SDK_INT >= 30) {
+		if (decor != null && filtersCoveredTouches(dialog.getContext())) {
 			decor.setFilterTouchesWhenObscured(true);
 		}
 		if (decor != null && containsSecretInput(decor)) protect(w);
@@ -63,6 +66,24 @@ public final class SecureDialogs {
 						if (d != null) applyHostPolicy(d);
 					}
 				}, true);
+	}
+
+	static boolean filtersCoveredTouches(Context context) {
+		if (Build.VERSION.SDK_INT >= 30) return true;
+		ScreenFilterMonitor monitor = screenFilterMonitor(context);
+		return monitor == null || !monitor.getApps().isEmpty();
+	}
+
+	@Nullable
+	public static ScreenFilterMonitor screenFilterMonitor(Context context) {
+		Context app = context.getApplicationContext();
+		if (!(app instanceof ZerionApplication)) return null;
+		try {
+			return ((ZerionApplication) app).getApplicationComponent()
+					.screenFilterMonitor();
+		} catch (RuntimeException e) {
+			return null;
+		}
 	}
 
 	static boolean hostIsSecure(Context context) {

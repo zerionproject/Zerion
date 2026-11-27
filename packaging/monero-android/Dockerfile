@@ -52,13 +52,25 @@ ENV OPENSSL_VERSION=3.5.9
 ENV BOOST_VERSION=1.84.0
 ENV BOOST_UNDERSCORE=1_84_0
 ENV SODIUM_VERSION=1.0.19
-ENV MONERO_TAG=v0.18.5.1
-ENV MONERO_COMMIT=4f92268d7c16741cfb41e5bbe2aa46cc260a9ea5
+ENV MONERO_TAG=v0.18.5.4
+ENV MONERO_COMMIT=85f036ba7019cd36f08e8a38a27c37ea7b522618
 
 WORKDIR /build
 COPY build-monero-android.sh /build/build-monero-android.sh
 COPY jni/zmonero.cpp /build/jni/zmonero.cpp
+COPY jni/zmonero.map /build/jni/zmonero.map
 RUN chmod +x /build/build-monero-android.sh
+
+# The build runs as an unprivileged user that owns only /build; the NDK, the
+# host toolchain and the recipe files stay owned by root and read-only to it.
+# The F-Droid build server also builds as an unprivileged user, and both
+# produce the pinned bytes.
+RUN groupadd --gid 1000 builder \
+    && useradd --uid 1000 --gid builder --home-dir /build/home --no-create-home \
+        --shell /usr/sbin/nologin builder \
+    && mkdir -p /build/home /build/out /build/deps /build/src /build/monero \
+    && chown builder:builder /build /build/home /build/out /build/deps /build/src /build/monero
+USER builder
 
 # ABI is passed at run time: docker run -e ABI=arm64-v8a ...
 ENTRYPOINT ["/build/build-monero-android.sh"]

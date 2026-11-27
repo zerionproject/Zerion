@@ -7,7 +7,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.annotation.Config;
 import org.zerionproject.core.api.plugin.OnionTargetFactory;
+import org.zerionproject.core.api.system.TaskScheduler;
 import org.zerionproject.core.socks.UnixOnionTargetFactory;
+import org.zerionproject.tor.TorWakePolicy;
 import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.transport.TorProcessWatch;
 
@@ -34,6 +36,10 @@ public class TorListenerWiringTest {
 
 	private final Application app = ApplicationProvider.getApplicationContext();
 
+	private static TorWakePolicy wakePolicy() {
+		return new TorWakePolicy(mock(TaskScheduler.class), Runnable::run);
+	}
+
 	private static List<String> lines(String torrc) {
 		List<String> out = new ArrayList<>();
 		for (String l : torrc.split("\n")) if (!l.isEmpty()) out.add(l);
@@ -53,9 +59,10 @@ public class TorListenerWiringTest {
 			throws Exception {
 		File socks = new File(app.getFilesDir(), "zs/0123456789ab");
 		TorWrapper tor = new ZerionTorWrapperModule().provideZerionTorWrapper(
-				app, mock(AndroidWakeLockManager.class), Runnable::run,
-				Runnable::run, new File(app.getFilesDir(), "tor"), 59060,
-				59061, socks, new TorProcessWatch());
+				app, mock(AndroidWakeLockManager.class), wakePolicy(),
+				Runnable::run, Runnable::run,
+				new File(app.getFilesDir(), "tor"), 59060, 59061, socks,
+				new TorProcessWatch(), null);
 		assertEquals(socks.getAbsolutePath() + "c",
 				wrapperField(tor, "controlSocketPath"));
 	}
@@ -64,10 +71,10 @@ public class TorListenerWiringTest {
 	public void torWithAUnixControlSocketOpensNoTcpListener()
 			throws Exception {
 		TorWrapper tor = new ZerionTorWrapper(app,
-				mock(AndroidWakeLockManager.class), Runnable::run,
-				Runnable::run, "arm64_pie", new File(app.getFilesDir(), "tor"),
-				59060, 59061, ZerionTorWrapperModule.controlSocketPath(SOCKS),
-				(t, l) -> {
+				mock(AndroidWakeLockManager.class), wakePolicy(),
+				Runnable::run, Runnable::run, "arm64_pie",
+				new File(app.getFilesDir(), "tor"), 59060, 59061,
+				ZerionTorWrapperModule.controlSocketPath(SOCKS), (t, l) -> {
 				}, new TorProcessWatch());
 		Method torrc = Class.forName("org.zerionproject.tor.AbstractTorWrapper")
 				.getDeclaredMethod("torrc");

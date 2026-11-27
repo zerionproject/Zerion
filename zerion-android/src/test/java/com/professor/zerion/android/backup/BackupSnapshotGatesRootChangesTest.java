@@ -149,7 +149,10 @@ public class BackupSnapshotGatesRootChangesTest {
 		when(profiles.readDisplayName("p")).thenReturn("Name");
 		IdentityManager identities = mock(IdentityManager.class);
 		AccountBackupManager manager = new AccountBackupManager(app, db,
-				accounts, profiles, identities, store);
+				accounts, profiles, identities, store,
+				mock(org.zerionproject.app.api.messaging.MessagingManager.class),
+				org.mockito.Mockito.mock(org.zerionproject.core.api.contact
+						.request.ContactRequestManager.class));
 
 		AtomicReference<Integer> copied = new AtomicReference<>();
 		AtomicReference<Boolean> storedWhileSaving = new AtomicReference<>();

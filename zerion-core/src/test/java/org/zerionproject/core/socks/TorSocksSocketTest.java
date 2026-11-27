@@ -201,14 +201,17 @@ public class TorSocksSocketTest {
 
 	@Test(timeout = 20_000)
 	public void unreachableListenerFailsClosed() throws Exception {
-		server.close();
-		TorSocksSocket s = socket("u", "p");
+		TorSocksSocket s = new TorSocksSocket(timeout -> {
+			opened.incrementAndGet();
+			throw new java.net.ConnectException("Connection refused");
+		}, 2000, 2000, 2000, "u", "p");
 		try {
 			s.connect(InetSocketAddress.createUnresolved("x.onion", 80));
 			fail();
 		} catch (IOException expected) {
 		}
 		assertFalse(s.isConnected());
+		assertEquals(1, opened.get());
 	}
 
 	@Test(timeout = 20_000)

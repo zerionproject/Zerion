@@ -18,6 +18,8 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.util.DisplayNames;
+import com.professor.zerion.android.widget.OnboardingFullDialogFragment;
 
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.contact.Contact;
@@ -114,6 +116,14 @@ public class GroupTrAdminActivity extends ZerionActivity {
 
 		MaterialToolbar toolbar = findViewById(R.id.toolbar);
 		toolbar.setNavigationOnClickListener(v -> finish());
+		toolbar.inflateMenu(R.menu.grouptr_admin_actions);
+		toolbar.setOnMenuItemClickListener(item -> {
+			if (item.getItemId() == R.id.action_team_help) {
+				showTeamHelp();
+				return true;
+			}
+			return false;
+		});
 
 		headerAvatar = findViewById(R.id.headerAvatar);
 		headerName = findViewById(R.id.headerName);
@@ -168,6 +178,8 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				List<GroupTrMember> outOfReach = s == null
 						? new ArrayList<>()
 						: groupTrManager.getMembersOutOfReach(groupId);
+				boolean throughOwner = !outOfReach.isEmpty()
+						&& groupTrManager.ownerPassesPostsOn(groupId);
 				List<GroupTrSentInvite> invites = new ArrayList<>();
 				if (s != null && Arrays.equals(localPub,
 						s.getCreatorPubKey())) {
@@ -203,6 +215,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 						return;
 					}
 					this.outOfReach = outOfReach;
+					this.reachedThroughOwner = throughOwner;
 					this.memberContacts = bound;
 					this.sentInvites = invites;
 					this.permissions = perms;
@@ -221,6 +234,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	}
 
 	private List<GroupTrMember> outOfReach = new ArrayList<>();
+	private boolean reachedThroughOwner = false;
 	private List<GroupTrSentInvite> sentInvites = new ArrayList<>();
 
 	private boolean outOfReach(GroupTrMember m) {
@@ -231,8 +245,8 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	}
 
 	private void bind(GroupTrState s) {
-		String name = s.getName().isEmpty()
-				? getString(R.string.grouptr_unnamed_group) : s.getName();
+		String name = GroupTrListFragment.groupName(getResources(),
+				s.getName());
 		headerName.setText(name);
 		headerAvatar.setText(name.isEmpty() ? "?"
 				: name.substring(0, 1).toUpperCase());
@@ -276,14 +290,15 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			MaterialButton menu = row.findViewById(R.id.memberMenuButton);
 			MaterialSwitch mayAdd = row.findViewById(R.id.memberMayAddSwitch);
 
-			String mName = m.getName().isEmpty()
-					? getString(R.string.grouptr_member_unnamed) : m.getName();
+			String cleanName = DisplayNames.clean(m.getName()).trim();
+			String mName = cleanName.isEmpty()
+					? getString(R.string.grouptr_member_unnamed) : cleanName;
 			boolean self = localPub != null
 					&& Arrays.equals(m.getPubKey(), localPub);
 			boolean memberIsCreator = Arrays.equals(m.getPubKey(),
 					s.getCreatorPubKey());
 
-			avatar.setText(m.getName().isEmpty() ? "?"
+			avatar.setText(cleanName.isEmpty() ? "?"
 					: mName.substring(0, 1).toUpperCase());
 			nameView.setText(self ? mName + " ("
 					+ getString(R.string.grouptr_member_role_you) + ")"
@@ -294,7 +309,9 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				role = getString(R.string.grouptr_member_role_creator);
 			}
 			if (!self && outOfReach(m)) {
-				String reach = getString(R.string.grouptr_member_out_of_reach);
+				String reach = getString(reachedThroughOwner
+						? R.string.grouptr_member_out_of_reach_owner
+						: R.string.grouptr_member_out_of_reach);
 				role = role == null ? reach : role + " \u00b7 " + reach;
 			}
 			String hex = StringUtils.toHexString(m.getPubKey());
@@ -352,8 +369,8 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			TextView nameView = row.findViewById(R.id.memberName);
 			TextView roleView = row.findViewById(R.id.memberRole);
 			MaterialButton menu = row.findViewById(R.id.memberMenuButton);
-			String name = invite.getContactName().isEmpty() ? "?"
-					: invite.getContactName();
+			String contact = DisplayNames.clean(invite.getContactName()).trim();
+			String name = contact.isEmpty() ? "?" : contact;
 			avatar.setText(name.substring(0, 1).toUpperCase());
 			nameView.setText(name);
 			roleView.setText(R.string.grouptr_member_invited);
@@ -367,7 +384,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	private void confirmRevoke(GroupTrState s, GroupTrSentInvite invite) {
 		new SecureAlertDialogBuilder(this)
 				.setMessage(getString(R.string.grouptr_confirm_revoke,
-						invite.getContactName()))
+						DisplayNames.isolate(invite.getContactName())))
 				.setPositiveButton(R.string.grouptr_revoke_invite, (d, w) ->
 						ioExecutor.execute(() -> {
 							try {
@@ -395,6 +412,13 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				});
 			}
 		});
+	}
+
+	private void showTeamHelp() {
+		OnboardingFullDialogFragment.newInstance(
+				R.string.grouptr_team_help_title,
+				R.string.grouptr_team_help_text
+		).show(getSupportFragmentManager(), OnboardingFullDialogFragment.TAG);
 	}
 
 	private void bindIncognito() {
@@ -551,7 +575,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 		String removeAction =
 				getString(R.string.grouptr_member_action_remove);
 		new SecureAlertDialogBuilder(this)
-				.setTitle(m.getName())
+				.setTitle(DisplayNames.clean(m.getName()))
 				.setItems(new String[]{removeAction},
 						(d, which) -> confirmRemove(s, m))
 				.show();
@@ -586,7 +610,8 @@ public class GroupTrAdminActivity extends ZerionActivity {
 		}
 		String[] names = new String[candidates.size()];
 		for (int i = 0; i < candidates.size(); i++) {
-			names[i] = candidates.get(i).getAuthor().getName();
+			names[i] = DisplayNames.clean(
+					candidates.get(i).getAuthor().getName());
 		}
 		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.grouptr_add_member)
@@ -674,7 +699,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	private void confirmRemove(GroupTrState s, GroupTrMember m) {
 		new SecureAlertDialogBuilder(this)
 				.setMessage(getString(R.string.grouptr_confirm_remove,
-						m.getName()))
+						DisplayNames.clean(m.getName())))
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
 					ioExecutor.execute(() -> {
 						try {

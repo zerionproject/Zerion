@@ -151,6 +151,27 @@ class ChannelPullProtocol {
 			@Nullable ChannelPullCodec.ItemSync commentsSync, int version,
 			@Nullable ChannelPullCodec.Discussions discussions)
 			throws IOException {
+		return buildResponseAsPublisher(state, publisherEd25519,
+				publisherMlDsa, manifestSignature, discussionsEnabled,
+				postsToSend, contentKeyEnvelope, neighbourHints, reactions,
+				comments, reactionsSync, commentsSync, version, discussions,
+				null);
+	}
+
+	byte[] buildResponseAsPublisher(ChannelState state,
+			byte[] publisherEd25519, byte[] publisherMlDsa,
+			byte[] manifestSignature, boolean discussionsEnabled,
+			List<ChannelPost> postsToSend,
+			@Nullable byte[] contentKeyEnvelope,
+			List<String> neighbourHints,
+			List<org.zerionproject.app.api.channel.ChannelReaction>
+					reactions,
+			List<org.zerionproject.app.api.channel.ChannelComment>
+					comments,
+			@Nullable ChannelPullCodec.ItemSync reactionsSync,
+			@Nullable ChannelPullCodec.ItemSync commentsSync, int version,
+			@Nullable ChannelPullCodec.Discussions discussions,
+			@Nullable Integer posting) throws IOException {
 		byte[] wireJoinCapability = state.isPublicChannel()
 				? state.getJoinCapability() : null;
 		BdfDictionary manifestDict = pullCodec.encodeManifest(
@@ -166,7 +187,8 @@ class ChannelPullProtocol {
 				discussionsEnabled, manifestSignature);
 		return pullCodec.encodePullResponse(manifestDict, postsToSend,
 				contentKeyEnvelope, neighbourHints, reactions,
-				comments, reactionsSync, commentsSync, version, discussions);
+				comments, reactionsSync, commentsSync, version, discussions,
+				posting);
 	}
 
 	ProcessResult processSubscriberResponse(byte[] responseBytes,
@@ -228,13 +250,20 @@ class ChannelPullProtocol {
 		if (postChanges && resp.discussions == null) {
 			return ProcessResult.failure("discussions missing");
 		}
+		boolean memberPosts = resp.version >= org.zerionproject.app.api
+				.channel.ChannelConstants.PROTOCOL_VERSION_MEMBER_POSTS;
+		if (memberPosts && resp.posting == null) {
+			return ProcessResult.failure("posting missing");
+		}
 		byte[] bindings = bound ? ChannelAuthorBinding.digest(crypto,
 				resp.reactions, resp.comments) : null;
 		byte[] discussions = postChanges && resp.discussions != null
 				? codec.discussionsDigest(resp.discussions.enabled,
 						resp.discussions.exceptions) : null;
+		byte[] posting = memberPosts && resp.posting != null
+				? codec.postingDigest(resp.posting) : null;
 		ChannelState mergedState = mergeManifestIntoLocal(workingState,
-				resp.manifest, envContentKey, bindings, discussions);
+				resp.manifest, envContentKey, bindings, discussions, posting);
 		if (mergedState == null) {
 			return ProcessResult.failure("manifest merge rejected");
 		}
@@ -299,6 +328,7 @@ class ChannelPullProtocol {
 		result.reactionsSync = resp.reactionsSync;
 		result.commentsSync = resp.commentsSync;
 		result.discussions = postChanges ? resp.discussions : null;
+		result.posting = memberPosts ? resp.posting : null;
 		result.complete = complete;
 		try {
 			result.manifestOnion = resp.manifest.getString("currentOnion");
@@ -346,7 +376,7 @@ class ChannelPullProtocol {
 		boolean unreadable = false;
 		for (int i = from; i < posts.size(); i++) {
 			ChannelPost p = posts.get(i);
-			if (p.signedByDelegate() || p.isErased()) continue;
+			if (!p.carriesOwnerMarks() || p.isErased()) continue;
 			String body = openedBody(s, p);
 			if (body == null) {
 				unreadable = true;
@@ -399,7 +429,8 @@ class ChannelPullProtocol {
 	private ChannelState mergeManifestIntoLocal(ChannelState local,
 			BdfDictionary manifest, @Nullable byte[] freshContentKey,
 			@Nullable byte[] authorBindings,
-			@Nullable byte[] discussionsDigest) {
+			@Nullable byte[] discussionsDigest,
+			@Nullable byte[] postingDigest) {
 		try {
 			byte[] wirePubEd = manifest.getRaw("publisherEd25519");
 			byte[] wirePubMl = manifest.getRaw("publisherMlDsa");
@@ -410,6 +441,9 @@ class ChannelPullProtocol {
 			byte[] localMlDsa = local.getPublisherMlDsaPubKey();
 			if (localMlDsa != null && localMlDsa.length > 0
 					&& !java.util.Arrays.equals(wirePubMl, localMlDsa)) {
+				return null;
+			}
+			if (!ChannelAuthorBinding.wellFormed(wirePubEd, wirePubMl)) {
 				return null;
 			}
 			byte[] wireSig = manifest.getRaw("signature");
@@ -447,19 +481,26 @@ class ChannelPullProtocol {
 					local.getChannelId())) {
 				return null;
 			}
+			List<ChannelDelegationCert> signedActive = new ArrayList<>();
 			List<ChannelDelegationCert> active = new ArrayList<>();
 			for (Object o : manifest.getList("activeDelegations",
 					new org.zerionproject.core.api.data.BdfList())) {
 				if (!(o instanceof BdfDictionary)) continue;
 				BdfDictionary cd = (BdfDictionary) o;
-				active.add(new ChannelDelegationCert(
+				ChannelDelegationCert cert = new ChannelDelegationCert(
 						cd.getRaw("channelId"),
 						cd.getRaw("delegateeEd25519"),
 						cd.getRaw("delegateeMlDsa"),
 						cd.getLong("validFromHourMs"),
 						cd.getLong("validUntilHourMs"),
 						cd.getLong("delegationSeq"),
-						cd.getRaw("signature")));
+						cd.getRaw("signature"));
+				signedActive.add(cert);
+				if (ChannelAuthorBinding.wellFormed(
+						cert.getDelegateeEd25519PubKey(),
+						cert.getDelegateeMlDsaPubKey())) {
+					active.add(cert);
+				}
 			}
 			List<Long> revoked = new ArrayList<>();
 			for (Object o : manifest.getList("revokedDelegationSeqs",
@@ -478,13 +519,19 @@ class ChannelPullProtocol {
 					local.getChannelId(), wireSalt, wirePubEd, wirePubMl,
 					wireName, wireDesc, wireAvatar, wireCreatedAt,
 					wirePublic, wireCap, wireOnion, incomingSeq,
-					contentKeyHash, active, revoked, wirePinnedPostSeq,
+					contentKeyHash, signedActive, revoked, wirePinnedPostSeq,
 					wireRequiresApproval, wireDiscussionsEnabled);
 			org.zerionproject.core.api.crypto.HybridSignaturePublicKey
 					pub = new org.zerionproject.core.api.crypto
 					.HybridSignaturePublicKey(wirePubEd, wirePubMl);
 			boolean verified;
-			if (authorBindings != null && discussionsDigest != null) {
+			if (authorBindings != null && discussionsDigest != null
+					&& postingDigest != null) {
+				verified = signatures.verifyMemberPostsManifest(wireSig,
+						ChannelCodec.memberPostsManifestSignedInput(
+								signedInput, authorBindings,
+								discussionsDigest, postingDigest), pub);
+			} else if (authorBindings != null && discussionsDigest != null) {
 				verified = signatures.verifyPostChangesManifest(wireSig,
 						ChannelCodec.postChangesManifestSignedInput(
 								signedInput, authorBindings,
@@ -568,6 +615,8 @@ class ChannelPullProtocol {
 		ChannelPullCodec.ItemSync commentsSync;
 		@Nullable
 		ChannelPullCodec.Discussions discussions;
+		@Nullable
+		Integer posting;
 		boolean complete;
 		String manifestOnion = "";
 
